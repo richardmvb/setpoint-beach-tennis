@@ -55,7 +55,7 @@ export class StorageService {
       || (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat))
       || typeof candidate.name !== 'string' || candidate.name.length > 60
       || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 3
-      || ![4, 5, 6].includes(candidate.gamesToWin ?? 0)
+      || ![3, 4, 5, 6].includes(candidate.gamesToWin ?? 0)
       || !Number.isInteger(candidate.roundCount) || (candidate.roundCount ?? 0) < 3 || (candidate.roundCount ?? 0) > 12
       || !Array.isArray(candidate.players) || candidate.players.length > 12
       || !Array.isArray(candidate.rounds) || candidate.rounds.length > 12) return false;

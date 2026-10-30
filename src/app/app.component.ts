@@ -115,6 +115,9 @@ export class AppComponent implements OnInit {
   }
   get isGroupTournament(): boolean { return this.state.tournamentMode === 'groups'; }
   get fixedPairsMode(): boolean { return this.isGroupTournament && this.state.groupFormat === 'fixed'; }
+  get availableGamesToWin(): number[] {
+    return this.isGroupTournament ? [4, 5, 6] : [3, 4, 5, 6];
+  }
   get availableSizes(): TournamentSize[] { return this.isGroupTournament ? [8, 12] : [8, 10, 12]; }
   get availableCourts(): number[] {
     if (this.isGroupTournament) return [this.state.size / 4];
@@ -297,6 +300,7 @@ export class AppComponent implements OnInit {
     if (!this.availableSizes.includes(size)) return;
     this.state.size = size;
     this.state.courts = this.availableCourts[0];
+    this.normalizeGamesToWin();
     this.state.roundCount = this.requiredRounds;
     this.syncDefaultFixedPairs();
   }
@@ -311,6 +315,7 @@ export class AppComponent implements OnInit {
     this.state.tournamentMode = mode;
     if (!this.availableSizes.includes(this.state.size)) this.state.size = 8;
     this.state.courts = this.availableCourts[0];
+    this.normalizeGamesToWin();
     this.state.roundCount = this.requiredRounds;
     this.syncDefaultFixedPairs();
   }
@@ -567,6 +572,10 @@ export class AppComponent implements OnInit {
       this.state.players[index * 2].id,
       this.state.players[index * 2 + 1].id
     ]);
+  }
+
+  private normalizeGamesToWin(): void {
+    if (!this.availableGamesToWin.includes(this.state.gamesToWin)) this.state.gamesToWin = 4;
   }
 
   private persist(success?: string): void {
