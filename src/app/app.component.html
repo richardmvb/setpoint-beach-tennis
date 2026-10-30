@@ -1,0 +1,164 @@
+<div class="app-shell" [class.ranking-view]="page === 'ranking'">
+  <header class="topbar">
+    <button class="brand brand-button" type="button" (click)="navigate('overview')" aria-label="SETPOINT início">
+      <span class="brand-mark">SP</span>
+      <span><strong>SETPOINT</strong><small>BEACH TENNIS · TORNEIOS</small></span>
+    </button>
+    <div class="top-actions">
+      <span class="local-indicator"><i></i> Salvo neste navegador</span>
+      <button class="icon-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'" [title]="theme === 'light' ? 'Tema escuro' : 'Tema claro'">
+        <svg *ngIf="theme === 'light'" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>
+        <svg *ngIf="theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="page-heading">
+    <div><span class="eyebrow">GERENCIAMENTO DE TORNEIOS</span><h1>{{ page === 'setup' ? 'Prepare seu torneio' : page === 'overview' ? 'Seu torneio, organizado.' : page === 'players' ? 'Jogadores' : page === 'rounds' ? 'Partidas e rodadas' : page === 'ranking' ? 'Ranking individual' : 'Configurações' }}</h1>
+      <p>{{ page === 'setup' ? 'Configure o formato, confirme os atletas e gere a tabela.' : page === 'overview' ? 'Tudo o que você precisa para conduzir a competição.' : page === 'players' ? 'Inscrição individual dos participantes.' : page === 'rounds' ? 'Todas as rodadas preparadas para você gerenciar.' : page === 'ranking' ? 'Classificação calculada pelos resultados registrados.' : 'Defina as regras do seu Super.' }}</p></div>
+    <div class="heading-tag">{{ isGroupTournament ? 'GRUPOS' : 'SUPER' }} {{ state.size }}</div>
+  </section>
+
+  <nav class="main-nav" aria-label="Navegação principal">
+    <button *ngIf="!hasSchedule" type="button" [class.active]="page === 'setup'" (click)="navigate('setup')"><span>＋</span> Preparar</button>
+    <button type="button" [class.active]="page === 'overview'" (click)="navigate('overview')"><span>⌂</span> Visão geral</button>
+    <button type="button" [class.active]="page === 'players'" (click)="navigate('players')"><span>♙</span> Jogadores</button>
+    <button type="button" [class.active]="page === 'rounds'" (click)="navigate('rounds')"><span>▦</span> Partidas</button>
+    <button type="button" [class.active]="page === 'ranking'" (click)="navigate('ranking')"><span>↗</span> Ranking</button>
+    <button type="button" [class.active]="page === 'settings'" (click)="navigate('settings')"><span>⚙</span> Configurar</button>
+  </nav>
+
+  <div *ngIf="notice" class="notice" [class.error]="noticeType === 'error'" role="status">
+    <span>{{ noticeType === 'error' ? '!' : '✓' }}</span>{{ notice }}<button type="button" (click)="notice = ''" aria-label="Fechar aviso">×</button>
+  </div>
+
+  <main [class.ranking-mode]="page === 'ranking'">
+    <ng-container [ngSwitch]="page">
+      <section *ngSwitchCase="'setup'" class="setup-wizard">
+        <div class="wizard-progress" aria-label="Etapas da configuração">
+          <div [class.current]="setupStep === 1" [class.complete]="setupStep > 1"><b>01</b><span>Configuração</span></div>
+          <i></i>
+          <div [class.current]="setupStep === 2" [class.complete]="setupStep > 2"><b>02</b><span>Jogadores</span></div>
+          <i></i>
+          <div [class.current]="setupStep === 3"><b>03</b><span>Início</span></div>
+        </div>
+
+        <article *ngIf="setupStep === 1" class="surface-card wizard-panel">
+          <span class="card-kicker">ETAPA 1 DE 3</span><h2>Configure a competição</h2>
+          <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado"></div>
+          <div class="form-field"><label for="tournamentMode">Formato do torneio</label><select id="tournamentMode" name="tournamentMode" [ngModel]="state.tournamentMode" (ngModelChange)="changeTournamentMode($event)"><option [ngValue]="'super'">Super · duplas rotativas</option><option [ngValue]="'groups'">Grupos</option></select></div>
+          <div class="form-two"><div class="form-field"><label for="setupSize">Participantes</label><select id="setupSize" name="setupSize" [ngModel]="state.size" (ngModelChange)="changeSize($event)"><option *ngFor="let size of availableSizes" [ngValue]="size">{{ size }} jogadores</option></select></div><div class="form-field"><label *ngIf="isGroupTournament" for="groupFormat">Formato dos grupos</label><label *ngIf="!isGroupTournament" for="setupCourts">Quadras por rodada</label><select *ngIf="isGroupTournament" id="groupFormat" name="groupFormat" [ngModel]="state.groupFormat" (ngModelChange)="changeGroupFormat($event)"><option [ngValue]="'rotating'">Grupos de 4 · parceiros rotativos</option><option [ngValue]="'fixed'">Duplas fixas · todos contra todos</option></select><select *ngIf="!isGroupTournament" id="setupCourts" name="setupCourts" [ngModel]="state.courts" (ngModelChange)="changeCourts($event)"><option *ngFor="let courtCount of availableCourts" [ngValue]="courtCount">{{ courtCount }} quadras</option></select><input *ngIf="isGroupTournament" [value]="requiredCourts + ' quadras'" readonly></div></div>
+          <div class="form-two"><div class="form-field"><label for="setupGames">Games para vencer</label><select id="setupGames" name="setupGames" [(ngModel)]="state.gamesToWin"><option [ngValue]="4">4 games</option><option [ngValue]="5">5 games</option><option [ngValue]="6">6 games</option></select></div><div class="form-field"><label>Rodadas do formato</label><input [value]="requiredRounds" readonly></div></div>
+          <div class="wizard-actions"><span>Você poderá revisar a tabela antes de iniciar.</span><button class="button primary" type="button" (click)="nextSetupStep()">Adicionar jogadores <span>→</span></button></div>
+        </article>
+
+        <article *ngIf="setupStep === 2" class="surface-card wizard-panel">
+          <span class="card-kicker">ETAPA 2 DE 3</span><h2>Inscreva os participantes</h2>
+          <p class="muted helper-text">Adicione {{ state.size }} jogadores. {{ state.players.length }} de {{ state.size }} inscritos.</p>
+          <form class="add-player" (ngSubmit)="addPlayer()"><input name="wizardPlayerName" [(ngModel)]="newPlayerName" maxlength="40" placeholder="Nome do jogador"><button class="button primary" type="submit" [disabled]="state.players.length >= state.size || !newPlayerName.trim()">Adicionar</button></form>
+          <div class="wizard-player-list"><div *ngFor="let player of state.players; let i = index" class="player-row"><span class="player-avatar">{{ initials(player.name) }}</span><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" (click)="removePlayer(player.id)" aria-label="Remover jogador">×</button></div></div>
+          <div *ngIf="fixedPairsMode && state.players.length === state.size" class="fixed-pair-list"><span class="card-kicker">FORME AS DUPLAS FIXAS</span><div *ngFor="let pair of state.fixedPairs; let i = index" class="fixed-pair-row"><b>Dupla {{ i + 1 }}</b><select [name]="'fixedPairA' + i" [ngModel]="pair[0]" (ngModelChange)="updateFixedPair(i, 0, $event)"><option *ngFor="let player of fixedPairOptions(i)" [ngValue]="player.id">{{ player.name }}</option></select><span>+</span><select [name]="'fixedPairB' + i" [ngModel]="pair[1]" (ngModelChange)="updateFixedPair(i, 1, $event)"><option *ngFor="let player of fixedPairOptions(i)" [ngValue]="player.id">{{ player.name }}</option></select></div></div>
+          <div class="wizard-actions"><button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button class="button primary" type="button" (click)="nextSetupStep()" [disabled]="state.players.length !== state.size">Revisar torneio <span>→</span></button></div>
+        </article>
+
+        <article *ngIf="setupStep === 3" class="surface-card wizard-panel">
+          <span class="card-kicker">ETAPA 3 DE 3</span><h2>Tudo pronto para começar?</h2>
+          <div class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
+          <div class="callout"><b>{{ state.name }}</b><span>{{ isGroupTournament ? 'A classificação será calculada dentro de cada grupo. Revise as duplas e confrontos antes de iniciar.' : 'A tabela será gerada antes do início. Confira os confrontos e descansos antes de iniciar.' }}</span></div>
+          <div class="wizard-actions"><button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button class="button primary" type="button" (click)="generateSchedule()">Gerar tabela e iniciar <span>→</span></button></div>
+        </article>
+      </section>
+
+      <section *ngSwitchCase="'overview'" class="content-grid">
+        <article class="stat-card"><span>JOGADORES</span><strong>{{ state.players.length }}<small> / {{ state.size }}</small></strong><p>Inscritos no torneio</p></article>
+        <article class="stat-card"><span>RODADAS</span><strong>{{ state.rounds.length || '—' }}</strong><p>{{ state.rounds.length ? 'Pré-geradas' : 'Ainda não geradas' }}</p></article>
+        <article class="stat-card"><span>PARTIDAS</span><strong>{{ completedMatches }}<small> / {{ totalMatches }}</small></strong><p>Resultados registrados</p></article>
+
+        <article class="surface-card overview-main">
+          <div class="card-kicker">TORNEIO ATUAL</div><h2>{{ state.name }}</h2>
+          <p class="muted">{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ state.courts }} quadra(s) · {{ state.gamesToWin }} games por partida · {{ state.roundCount }} rodadas</p>
+          <div class="progress-track"><span [style.width.%]="progress"></span></div>
+          <div class="progress-caption"><span>Progresso dos resultados</span><b>{{ progress }}%</b></div>
+          <div class="button-row"><button class="button primary" (click)="navigate(hasSchedule ? 'rounds' : 'players')">{{ hasSchedule ? 'Abrir rodadas' : 'Cadastrar jogadores' }} <span>→</span></button><button class="button secondary" (click)="navigate('settings')">Configurar torneio</button></div>
+        </article>
+        <article class="surface-card overview-side"><span class="card-kicker">STATUS</span><div class="status-icon" [class.ready]="hasSchedule">{{ hasSchedule ? '✓' : '＋' }}</div><h3>{{ hasSchedule ? 'Tabela pronta' : 'Preparando torneio' }}</h3><p class="muted">{{ hasSchedule ? 'Você pode navegar entre todas as rodadas e registrar resultados em qualquer ordem.' : 'Defina as configurações, cadastre os participantes e gere a tabela completa.' }}</p></article>
+        <article class="surface-card rules-card"><div><span class="card-kicker">{{ isGroupTournament ? 'FORMATO EM GRUPOS' : 'FORMATO SUPER' }}</span><h2>Simples para organizar. Fácil de acompanhar.</h2></div><div class="rules-list"><div><b>01</b><span><strong>Inscrição individual</strong><small>Cada atleta compete por sua própria classificação.</small></span></div><div><b>02</b><span><strong>{{ isGroupTournament ? (fixedPairsMode ? 'Duplas fixas' : 'Parceiros rotativos') : 'Duplas rotativas' }}</strong><small>{{ isGroupTournament ? 'Tabela e classificação organizadas por grupo.' : 'Parceiros mudam a cada rodada, evitando repetições.' }}</small></span></div><div><b>03</b><span><strong>{{ isGroupTournament ? 'Ranking por grupo' : 'Ranking individual' }}</strong><small>Sets ganhos, saldo de games e games pró.</small></span></div></div></article>
+        <article class="surface-card quick-card"><span class="card-kicker">ATALHOS</span><button (click)="navigate('players')">Gerenciar participantes <span>→</span></button><button (click)="navigate('rounds')">Abrir tabela de jogos <span>→</span></button><button (click)="navigate('ranking')">Ver classificação <span>→</span></button></article>
+      </section>
+
+      <section *ngSwitchCase="'players'" class="content-grid">
+        <article class="surface-card player-entry"><div class="card-title-row"><div><span class="card-kicker">INSCRIÇÕES</span><h2>Participantes</h2></div><div class="counter">{{ state.players.length }}<small> / {{ state.size }}</small></div></div>
+          <div class="progress-track"><span [style.width.%]="state.players.length / state.size * 100"></span></div>
+          <form class="add-player" (ngSubmit)="addPlayer()"><input name="newPlayerName" [(ngModel)]="newPlayerName" maxlength="40" placeholder="Nome do jogador" [disabled]="hasSchedule"><button class="button primary" type="submit" [disabled]="hasSchedule || state.players.length >= state.size || !newPlayerName.trim()">Adicionar</button></form>
+          <p class="muted helper-text">Cadastre {{ state.size }} participantes para liberar a geração da tabela.</p>
+        </article>
+        <article class="surface-card player-list-card"><div class="card-title-row"><div><span class="card-kicker">LISTA DE ATLETAS</span><h2>Jogadores inscritos</h2></div><span class="mini-tag">{{ state.players.length }} inscritos</span></div>
+          <div *ngIf="!state.players.length" class="empty-state"><span>♙</span><b>Nenhum jogador cadastrado</b><small>Adicione os participantes para começar.</small></div>
+          <div *ngFor="let player of state.players; let i = index" class="player-row"><span class="player-avatar">{{ initials(player.name) }}</span><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" (click)="removePlayer(player.id)" [disabled]="hasSchedule" aria-label="Remover jogador">×</button></div>
+        </article>
+        <article class="surface-card full-card"><div class="callout"><b>Antes de gerar</b><span>Confira os nomes e o formato. Depois que a tabela for criada, os participantes e as configurações ficam bloqueados para preservar os confrontos.</span></div><button class="button primary" (click)="navigate('settings')" [disabled]="hasSchedule">Revisar configurações</button><button class="button secondary" (click)="generateSchedule()" [disabled]="hasSchedule || state.players.length !== state.size">Gerar todas as rodadas <span>→</span></button></article>
+      </section>
+
+      <section *ngSwitchCase="'rounds'" class="rounds-page">
+        <div *ngIf="!hasSchedule" class="surface-card empty-rounds"><div class="empty-icon">▦</div><h2>Sua tabela ainda não foi gerada</h2><p class="muted">Cadastre os participantes e gere todas as rodadas de uma só vez.</p><button class="button primary" (click)="navigate('players')">Ir para jogadores</button></div>
+        <ng-container *ngIf="hasSchedule && currentRound as round">
+          <article class="surface-card rounds-header"><div><span class="card-kicker">{{ state.name }}</span><h2>Calendário de partidas</h2><p class="muted">Navegue pelas abas. Os resultados podem ser lançados em qualquer ordem.</p></div><div class="round-summary"><b>{{ completedRounds }}<small> / {{ state.roundCount }}</small></b><span>rodadas concluídas</span></div></article>
+          <div class="round-tabs" role="tablist" aria-label="Rodadas do torneio"><button *ngFor="let item of state.rounds; let i = index" type="button" role="tab" [attr.aria-selected]="selectedRound === i" [class.active]="selectedRound === i" [class.done]="roundDone(i)" (click)="selectRound(i)"><span>RODADA</span><b>{{ item.number }}</b><i *ngIf="roundDone(i)">✓</i></button></div>
+          <div class="round-toolbar"><div><span class="card-kicker">RODADA {{ round.number }} DE {{ state.rounds.length }}</span><h2>{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</h2></div><span class="mini-tag">{{ roundMatchesDone(selectedRound) }} / {{ round.matches.length }} resultados</span></div>
+          <div class="round-layout"><div class="match-list">
+            <article *ngFor="let match of round.matches" class="surface-card match-card">
+              <div class="match-meta"><span class="court-label">{{ match.groupId ? groupName(match.groupId) + ' · ' : '' }}QUADRA {{ match.court }}</span><span class="match-state" [class.done]="isScored(match)">{{ isScored(match) ? '● Resultado registrado' : '○ Aguardando resultado' }}</span></div>
+              <div class="match-teams"><div class="team"><span class="team-avatar">{{ initials(playerName(match.teamA[0])) }}</span><div class="team-names"><b>{{ playerName(match.teamA[0]) }}</b><b>{{ playerName(match.teamA[1]) }}</b></div><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="scoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="scoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2"><div class="team-names"><b>{{ playerName(match.teamB[0]) }}</b><b>{{ playerName(match.teamB[1]) }}</b></div><span class="team-avatar">{{ initials(playerName(match.teamB[0])) }}</span></div><small class="score-status">{{ scoreStatus(match) }}</small></div>
+              <div *ngIf="isScored(match)" class="score-foot"><span>Placar salvo · vitória atribuída individualmente</span><button type="button" (click)="clearScore(match)">Limpar</button></div>
+            </article>
+          </div>
+          <aside class="surface-card rest-card"><span class="card-kicker">PAUSA DA RODADA</span><h3>Jogadores em descanso</h3><div *ngIf="!round.restingPlayerIds.length" class="no-rest">Todos jogam nesta rodada.</div><div *ngFor="let id of round.restingPlayerIds" class="rest-player"><span class="rest-icon">Ⅱ</span><b>{{ playerName(id) }}</b><small>Descanso</small></div><div class="callout compact"><b>Regra de equilíbrio</b><span>O gerador prioriza quem descansou menos nas rodadas anteriores. Descanso não gera pontos nem altera o saldo.</span></div><div class="round-switch"><button class="button secondary" type="button" (click)="selectRound(selectedRound - 1)" [disabled]="selectedRound === 0">← Anterior</button><button class="button primary" type="button" (click)="selectRound(selectedRound + 1)" [disabled]="selectedRound === state.rounds.length - 1">Próxima →</button></div></aside></div>
+        </ng-container>
+      </section>
+
+      <section *ngSwitchCase="'ranking'" class="content-grid ranking-page">
+        <article *ngFor="let group of groupTables" class="surface-card full-card group-ranking-card"><div class="card-title-row"><div><span class="card-kicker">{{ group.name }}</span><h2>Classificação do grupo</h2></div><span class="mini-tag">{{ fixedPairsMode ? 'Duplas' : 'Atletas' }}</span></div>
+          <div class="table-scroll"><table><thead><tr><th>POS.</th><th>{{ fixedPairsMode ? 'DUPLA' : 'JOGADOR' }}</th><th class="numeric">VIT.</th><th class="numeric">PRÓ</th><th class="numeric">SALDO</th><th class="numeric">JOGOS</th></tr></thead><tbody><tr *ngFor="let entry of group.entries; let i = index"><td><span class="rank-number" [class.top-three]="i < 3">{{ i + 1 }}</span></td><td><b>{{ entry.label }}</b></td><td class="numeric"><b>{{ entry.setsWon }}</b></td><td class="numeric">{{ entry.gamesFor }}</td><td class="numeric">{{ entry.gameBalance > 0 ? '+' : '' }}{{ entry.gameBalance }}</td><td class="numeric">{{ entry.matchesPlayed }}</td></tr></tbody></table></div>
+        </article>
+        <article class="surface-card full-card"><div class="card-title-row"><div><span class="card-kicker">CLASSIFICAÇÃO GERAL</span><h2>Ranking individual</h2><p class="muted">Atualizado automaticamente com os placares salvos.</p></div><span class="mini-tag">{{ standings.length }} atletas</span></div>
+          <div *ngIf="!hasSchedule" class="empty-state"><span>↗</span><b>O ranking aparecerá após gerar a tabela</b><small>Cadastre os atletas e gere as rodadas.</small></div>
+          <div *ngIf="hasSchedule" class="table-scroll"><table><thead><tr><th>POS.</th><th>JOGADOR</th><th class="numeric">SETS</th><th class="numeric">GAMES PRÓ</th><th class="numeric">CONTRA</th><th class="numeric">SALDO</th><th class="numeric">DESC.</th></tr></thead><tbody><tr *ngFor="let row of standings; let i = index" [class.rank-gold]="i === 0" [class.rank-silver]="i === 1" [class.rank-bronze]="i === 2"><td><span class="rank-number" [class.top-three]="i < 3">{{ (i + 1).toString().padStart(2, '0') }}</span></td><td><b>{{ row.name }}</b><small class="table-sub">{{ row.matchesPlayed }} jogos</small></td><td class="numeric"><b>{{ row.setsWon }}</b></td><td class="numeric">{{ row.gamesFor }}</td><td class="numeric">{{ row.gamesAgainst }}</td><td class="numeric"><b [class.positive]="row.gameBalance > 0" [class.negative]="row.gameBalance < 0">{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</b></td><td class="numeric">{{ row.rests }}</td></tr></tbody></table></div>
+        </article>
+        <article *ngIf="canGenerateFinal" class="surface-card full-card final-qualifier"><div><span class="card-kicker">FASE FINAL</span><h2>Os oito primeiros estão classificados</h2><p class="muted">1º + 3º contra 2º + 4º disputam o título; 5º + 7º contra 6º + 8º disputam o terceiro lugar.</p></div><button class="button primary" type="button" (click)="generateFinal()">Gerar finais</button></article>
+        <article *ngIf="state.finals as final" class="surface-card full-card finals-card"><div class="card-title-row"><div><span class="card-kicker">FASE FINAL · SET ÚNICO</span><h2>Finais do torneio</h2></div><span class="mini-tag">{{ final.complete ? 'Concluídas' : 'Em andamento' }}</span></div>
+          <div class="final-match-list"><article *ngFor="let match of final.matches" class="final-match"><div class="match-meta"><span class="court-label">{{ match.finalKind === 'championship' ? 'FINAL' : 'DISPUTA DE 3º LUGAR' }}</span><span class="match-state" [class.done]="finalWinnerSide(match)">{{ finalWinnerSide(match) ? '● Resultado registrado' : '○ Aguardando resultado' }}</span></div>
+            <div class="match-teams"><div class="team"><span class="team-avatar">{{ initials(playerName(match.teamA[0])) }}</span><div class="team-names"><b>{{ playerName(match.teamA[0]) }}</b><b>{{ playerName(match.teamA[1]) }}</b></div><input class="inline-score" type="number" min="0" max="7" step="1" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="finalScoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1 na final"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" max="7" step="1" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="finalScoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2 na final"><div class="team-names"><b>{{ playerName(match.teamB[0]) }}</b><b>{{ playerName(match.teamB[1]) }}</b></div><span class="team-avatar">{{ initials(playerName(match.teamB[0])) }}</span></div><small class="score-status">{{ finalScoreStatus(match) }}</small></div>
+            <div *ngIf="match.scoreA === 6 && match.scoreB === 6" class="tiebreak-row"><b>Tie-break</b><label><span>Dupla 1</span><input type="number" min="0" max="99" step="1" [ngModel]="scoreDrafts[match.id].tieBreakA" (ngModelChange)="finalScoreChanged(match, 'tieBreakA', $event)" [ngModelOptions]="{standalone: true}" aria-label="Pontos de tie-break da dupla 1"></label><strong>:</strong><label><span>Dupla 2</span><input type="number" min="0" max="99" step="1" [ngModel]="scoreDrafts[match.id].tieBreakB" (ngModelChange)="finalScoreChanged(match, 'tieBreakB', $event)" [ngModelOptions]="{standalone: true}" aria-label="Pontos de tie-break da dupla 2"></label></div>
+          </article></div>
+          <section *ngIf="final.complete" class="podium-section"><span class="card-kicker">PÓDIO FINAL</span><div class="podium-grid"><article *ngFor="let place of finalPodium" class="podium-place" [class]="'podium-place place-' + place.place"><b class="podium-medal">{{ place.place }}</b><span>{{ place.label }}</span><strong *ngFor="let id of place.playerIds">{{ playerName(id) }}</strong></article></div></section>
+        </article>
+        <article class="surface-card full-card ranking-rules"><span class="card-kicker">CRITÉRIOS DE DESEMPATE</span><div class="criteria"><b>01</b><span><strong>Sets ganhos</strong><small>Cada vitória vale um set para cada atleta da dupla vencedora.</small></span></div><div class="criteria"><b>02</b><span><strong>Saldo de games</strong><small>Games pró menos games contra, somados individualmente.</small></span></div><div class="criteria"><b>03</b><span><strong>Games pró</strong><small>Maior quantidade total de games marcados.</small></span></div></article>
+      </section>
+
+      <section *ngSwitchCase="'settings'" class="content-grid settings-page">
+        <article class="surface-card settings-form"><span class="card-kicker">CONFIGURAÇÃO DA COMPETIÇÃO</span><h2>Regras do torneio</h2>
+          <div class="form-field"><label for="tournamentName">Nome do torneio</label><input id="tournamentName" name="tournamentName" [(ngModel)]="state.name" maxlength="60" [disabled]="hasSchedule"></div>
+          <div class="form-field"><label for="settingsMode">Formato do torneio</label><select id="settingsMode" name="settingsMode" [ngModel]="state.tournamentMode" (ngModelChange)="changeTournamentMode($event)" [disabled]="hasSchedule"><option [ngValue]="'super'">Super · duplas rotativas</option><option [ngValue]="'groups'">Grupos</option></select></div>
+          <div class="form-two"><div class="form-field"><label for="size">Participantes</label><select id="size" name="size" [ngModel]="state.size" (ngModelChange)="changeSize($event)" [disabled]="hasSchedule"><option *ngFor="let size of availableSizes" [ngValue]="size">{{ size }} jogadores</option></select></div><div class="form-field"><label *ngIf="isGroupTournament" for="settingsGroupFormat">Formato dos grupos</label><label *ngIf="!isGroupTournament" for="courts">Quadras por rodada</label><select *ngIf="isGroupTournament" id="settingsGroupFormat" name="settingsGroupFormat" [ngModel]="state.groupFormat" (ngModelChange)="changeGroupFormat($event)" [disabled]="hasSchedule"><option [ngValue]="'rotating'">Parceiros rotativos</option><option [ngValue]="'fixed'">Duplas fixas</option></select><select *ngIf="!isGroupTournament" id="courts" name="courts" [ngModel]="state.courts" (ngModelChange)="changeCourts($event)" [disabled]="hasSchedule"><option *ngFor="let courtCount of availableCourts" [ngValue]="courtCount">{{ courtCount }} quadras</option></select><input *ngIf="isGroupTournament" [value]="requiredCourts + ' quadras'" readonly></div></div>
+          <div class="form-two"><div class="form-field"><label for="games">Games para vencer</label><select id="games" name="games" [(ngModel)]="state.gamesToWin" [disabled]="hasSchedule"><option [ngValue]="4">4 games</option><option [ngValue]="5">5 games</option><option [ngValue]="6">6 games</option></select></div><div class="form-field"><label for="roundCount">Rodadas do formato</label><input id="roundCount" [value]="requiredRounds" readonly></div></div>
+          <button class="button primary" type="button" (click)="saveSettings()" [disabled]="hasSchedule">Salvar configurações</button>
+          <p class="muted helper-text" *ngIf="hasSchedule">Para alterar as configurações, inicie um novo torneio. A tabela atual será preservada.</p>
+        </article>
+        <article class="surface-card settings-info"><span class="card-kicker">REGRAS AUTOMÁTICAS</span><h3>Como o SETPOINT monta a tabela</h3><ul *ngIf="!isGroupTournament"><li>Super 8: 7 rodadas; Super 10: 10 rodadas.</li><li>Super 12: 11 rodadas com 3 quadras ou 12 com 2 quadras.</li><li>Nenhuma dupla de parceiros se repete.</li><li>Todos os atletas enfrentam cada outro ao menos uma vez.</li><li>Todos jogam a mesma quantidade de partidas.</li></ul><ul *ngIf="isGroupTournament"><li>Grupos rotativos: grupos de quatro atletas e três rodadas.</li><li>Duplas fixas: todos contra todos, com 3 ou 5 rodadas.</li><li>Todos jogam a mesma quantidade de partidas.</li><li>A classificação é calculada dentro de cada grupo.</li></ul><div class="callout"><b>Validação</b><span>{{ isGroupTournament ? 'Os confrontos são validados e cada grupo tem sua própria classificação.' : 'A tabela só é aceita quando todos os atletas terminam com o mesmo número de jogos, sem repetir parceiros e enfrentando todos os adversários.' }}</span></div></article>
+        <article class="surface-card full-card data-card"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Os dados ficam salvos neste navegador. Exporte um backup para guardar uma cópia fora do dispositivo.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
+      </section>
+    </ng-container>
+  </main>
+  <footer class="app-footer"><span>SETPOINT <b>·</b> PROTÓTIPO 0.1</span><span>Seus dados permanecem neste navegador.</span></footer>
+
+  <div *ngIf="tieDrawModalOpen" class="tie-draw-backdrop" role="presentation">
+    <section class="tie-draw-modal" role="dialog" aria-modal="true" aria-labelledby="tieDrawTitle">
+      <span class="card-kicker">DESEMPATE DA CLASSIFICAÇÃO</span>
+      <h2 id="tieDrawTitle">Empate entre {{ activeTiePositionLabel }}</h2>
+      <p class="muted">O confronto direto foi verificado. Como ele não desfez o empate, faça um sorteio para definir a ordem antes de gerar as finais.</p>
+      <div *ngIf="!activeTieDrawResult.length" class="tie-draw-participants"><span *ngFor="let id of activeTiePlayerIds">{{ playerName(id) }}</span></div>
+      <ol *ngIf="activeTieDrawResult.length" class="tie-draw-result"><li *ngFor="let id of activeTieDrawResult; let i = index"><b>{{ i + 1 }}º</b><span>{{ playerName(id) }}</span></li></ol>
+      <div class="tie-draw-actions"><button class="button secondary" type="button" (click)="cancelTieDraw()">Cancelar</button><button class="button primary" type="button" (click)="activeTieDrawResult.length ? confirmTieDraw() : drawActiveTie()">{{ activeTieDrawResult.length ? (unresolvedFinalTiePlayers.length > 0 ? 'Confirmar e sortear próximo empate' : 'Confirmar e gerar finais') : 'Realizar sorteio' }}</button></div>
+    </section>
+  </div>
+</div>
