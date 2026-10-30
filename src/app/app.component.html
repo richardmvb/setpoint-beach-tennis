@@ -1,4 +1,15 @@
-<div class="app-shell" [class.ranking-view]="page === 'ranking'">
+<main *ngIf="isLocked" class="lock-screen">
+  <form class="lock-panel" (ngSubmit)="unlock()">
+    <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span></div>
+    <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Desbloquear torneio</h1><p>Digite a senha para continuar.</p></div>
+    <label for="sitePassword">Senha</label>
+    <input id="sitePassword" name="sitePassword" type="password" [(ngModel)]="sitePassword" autocomplete="current-password" autofocus required [attr.aria-invalid]="!!lockError" aria-describedby="lockFeedback">
+    <p id="lockFeedback" class="lock-feedback" [class.visible]="!!lockError" aria-live="polite">{{ lockError }}</p>
+    <button class="button primary" type="submit" [disabled]="!sitePassword">Desbloquear</button>
+  </form>
+</main>
+
+<div *ngIf="!isLocked" class="app-shell" [class.ranking-view]="page === 'ranking'">
   <header class="topbar">
     <button class="brand brand-button" type="button" (click)="navigate('overview')" aria-label="SETPOINT início">
       <span class="brand-mark">SP</span>

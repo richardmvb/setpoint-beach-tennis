@@ -23,6 +23,9 @@ interface GroupStandingTable {
   entries: GroupStandingEntry[];
 }
 
+const ACCESS_PASSWORD = 'bt2026';
+const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -30,6 +33,9 @@ interface GroupStandingTable {
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
+  isLocked = true;
+  sitePassword = '';
+  lockError = '';
   page: Page = 'setup';
   theme: ThemeMode = 'light';
   state: TournamentState;
@@ -49,6 +55,8 @@ export class AppComponent implements OnInit {
     private groupScheduler: GroupScheduleService,
     private finalsScheduler: FinalsService
   ) {
+    try { this.isLocked = sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true'; }
+    catch { this.isLocked = true; }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
       roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
@@ -70,6 +78,18 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void { this.applyTheme(); }
+
+  unlock(): void {
+    if (this.sitePassword !== ACCESS_PASSWORD) {
+      this.sitePassword = '';
+      this.lockError = 'Senha incorreta. Tente novamente.';
+      return;
+    }
+    try { sessionStorage.setItem(UNLOCK_SESSION_KEY, 'true'); } catch { /* desbloqueio vale até recarregar */ }
+    this.isLocked = false;
+    this.sitePassword = '';
+    this.lockError = '';
+  }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
   get hasFinals(): boolean { return !!this.state.finals; }
