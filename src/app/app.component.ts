@@ -79,6 +79,7 @@ export class AppComponent implements OnInit {
     const authCallback = new URLSearchParams(window.location.search).has('code')
       || window.location.hash.includes('access_token=');
     this.isGuestView = !!inviteToken;
+    this.sharedInviteToken = inviteToken;
     try { this.isLocked = !this.isGuestView && !authCallback && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true'; }
     catch { this.isLocked = true; }
     this.state = this.storage.loadTournament() ?? {
