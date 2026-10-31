@@ -454,7 +454,7 @@ export class AppComponent implements OnInit {
       const draft = { ...this.state, players: [], rounds: [], groups: [], fixedPairs: [], finals: null };
       localStorage.setItem(SHARED_SETUP_KEY, JSON.stringify({ state: draft, moderatorName: this.moderatorName.trim() }));
       this.storage.saveTournament(draft);
-      const redirect = new URL(window.location.href);
+      const redirect = new URL(document.baseURI);
       redirect.search = '';
       redirect.hash = '';
       await this.supabase.requestModeratorLogin(this.moderatorEmail.trim(), redirect.toString());
