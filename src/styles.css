@@ -148,3 +148,46 @@
 .lock-feedback.visible{opacity:1}
 .lock-panel>.button{width:100%;min-height:44px}
 @media(max-width:420px){.lock-brand{margin-bottom:22px}.lock-panel h1{font-size:22px}}
+.shared-moderator-fields{margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+.shared-error{margin:8px 0;color:var(--danger);font-size:12px}
+.shared-success{margin:8px 0;color:var(--green-2);font-size:12px}
+.shared-invite-panel{display:grid;gap:12px;margin:14px 0;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft)}
+.shared-invite-panel p{margin:4px 0 0;font-size:12px}
+.shared-invite-copy{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.shared-invite-copy input{min-width:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:9px;font:inherit;font-size:11px}
+.shared-guest-page{max-width:900px;margin:0 auto;display:grid;gap:12px}
+.shared-guest-header{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.shared-guest-header h1{margin:5px 0;font:700 22px var(--font-display),sans-serif}
+.shared-guest-header p{margin:0;font-size:12px}
+.guest-join-panel{max-width:520px;width:100%;margin:16px auto;padding:20px}
+.guest-join-panel h2{margin:5px 0}
+.guest-join-panel p{font-size:12px}
+.shared-loading,.shared-waiting{padding:18px;color:var(--muted);font-size:12px}
+.shared-waiting{display:grid;gap:5px}
+.shared-waiting b{color:var(--text)}
+.shared-round-list{display:grid;gap:10px}
+.shared-round{padding:13px}
+.shared-round h2,.shared-ranking h2,.shared-finals h2{margin:3px 0;font-size:16px}
+.shared-match-row{display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border)}
+.shared-team{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.shared-team b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.shared-team strong{flex:none;font-size:16px}
+.shared-team-right{text-align:right}
+.shared-ranking{padding:14px}
+.shared-group-ranking{margin-top:10px}
+.shared-group-ranking h3{margin:12px 0 5px;font-size:13px}
+.shared-standing-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--border);font-size:11px}
+.shared-standing-row span{color:var(--muted);text-align:right}
+.shared-finals{padding:14px}
+.shared-podium{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.shared-podium>div{display:grid;gap:6px;padding:12px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-soft);font-size:11px}
+.shared-podium>div:first-child{background:var(--rank-gold)}
+.shared-podium>div:nth-child(2){background:var(--rank-silver)}
+.shared-podium>div:nth-child(3){background:var(--rank-bronze)}
+@media(max-width:600px){
+	.shared-guest-header{align-items:flex-start;flex-direction:column}
+	.shared-invite-copy{grid-template-columns:1fr}
+	.shared-match-row{gap:4px}
+	.shared-team b{font-size:9px}
+	.shared-podium{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

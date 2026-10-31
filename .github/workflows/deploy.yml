@@ -31,6 +31,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Supabase runtime config
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '' }) + ';\\n');"
+
       - name: Build Angular app
         run: npm run build -- --base-href /setpoint-beach-tennis/
 

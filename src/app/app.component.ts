@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Match, Page, Player, PlayerStanding, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentSize, TournamentState } from './core/models';
+import { Match, Page, Player, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
 import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
+import { SupabaseService } from './core/supabase.service';
+import { ShareCardService } from './core/share-card.service';
 
 interface GroupStandingEntry {
   label: string;
@@ -25,6 +27,8 @@ interface GroupStandingTable {
 
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
+const SHARED_SETUP_KEY = 'setpoint.shared.setup';
+const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
 @Component({
   selector: 'app-root',
@@ -48,14 +52,34 @@ export class AppComponent implements OnInit {
   tieDrawModalOpen = false;
   activeTiePlayerIds: string[] = [];
   activeTieDrawResult: string[] = [];
+  moderatorEmail = '';
+  moderatorName = '';
+  guestName = '';
+  sharedLoading = false;
+  sharedError = '';
+  sharedNotice = '';
+  isGuestView = false;
+  isSharedModerator = false;
+  sharedSnapshot: SharedTournamentSnapshot | null = null;
+  sharedInviteToken = '';
+  sharePlayerId = '';
+  sharingResults = false;
+  shareMessage = '';
+  private syncTimeout: number | null = null;
 
   constructor(
     private storage: StorageService,
     private scheduler: ScheduleService,
     private groupScheduler: GroupScheduleService,
-    private finalsScheduler: FinalsService
+    private finalsScheduler: FinalsService,
+    private supabase: SupabaseService,
+    private shareCard: ShareCardService
   ) {
-    try { this.isLocked = sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true'; }
+    const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
+    const authCallback = new URLSearchParams(window.location.search).has('code')
+      || window.location.hash.includes('access_token=');
+    this.isGuestView = !!inviteToken;
+    try { this.isLocked = !this.isGuestView && !authCallback && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true'; }
     catch { this.isLocked = true; }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
@@ -63,12 +87,13 @@ export class AppComponent implements OnInit {
       tournamentMode: 'super', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null
     };
     this.state.tournamentMode ??= 'super';
+    this.state.hostingMode ??= 'local';
     this.state.groupFormat ??= 'rotating';
     this.state.groups ??= [];
     this.state.fixedPairs ??= [];
     this.state.finals ??= null;
     this.state.tieBreakDraws ??= [];
-    this.page = this.state.rounds.length ? 'overview' : 'setup';
+    this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
     if (!this.state.rounds.length) {
       if (!this.availableCourts.includes(this.state.courts)) this.state.courts = Math.floor(this.state.size / 4);
       this.state.roundCount = this.requiredRounds;
@@ -77,7 +102,35 @@ export class AppComponent implements OnInit {
     this.initializeScoreDrafts();
   }
 
-  ngOnInit(): void { this.applyTheme(); }
+  ngOnInit(): void {
+    this.applyTheme();
+    void this.restoreSharedFlow();
+  }
+
+  get sharedConfigured(): boolean { return this.supabase.isConfigured; }
+  get isSharedMode(): boolean { return this.state.hostingMode === 'shared'; }
+  get sharedReadOnly(): boolean { return this.isGuestView || (this.isSharedMode && !this.isSharedModerator); }
+  get sharedInviteUrl(): string {
+    if (!this.sharedInviteToken) return '';
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.hash = '';
+    url.searchParams.set('invite', this.sharedInviteToken);
+    return url.toString();
+  }
+  get sharedCapacityReached(): boolean { return this.state.players.length >= this.state.size; }
+  get canJoinSharedTournament(): boolean {
+    return this.isGuestView && !!this.sharedSnapshot?.canJoin && !this.guestName.trim();
+  }
+  get sharedStatusLabel(): string {
+    switch (this.sharedSnapshot?.status) {
+      case 'registration': return 'Inscrições abertas';
+      case 'ready': return 'Vagas preenchidas · aguardando início';
+      case 'active': return 'Torneio em andamento';
+      case 'completed': return 'Torneio concluído';
+      default: return 'Carregando torneio';
+    }
+  }
 
   unlock(): void {
     if (this.sitePassword !== ACCESS_PASSWORD) {
@@ -92,9 +145,13 @@ export class AppComponent implements OnInit {
   }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
+  get canEditScores(): boolean {
+    return !this.isGuestView && (!this.isSharedMode
+      || (this.isSharedModerator && this.state.sharedStatus === 'active'));
+  }
   get hasFinals(): boolean { return !!this.state.finals; }
   get canGenerateFinal(): boolean {
-    return this.hasSchedule && !this.hasFinals && this.state.players.length >= 8
+    return this.canEditScores && this.hasSchedule && !this.hasFinals && this.state.players.length >= 8
       && this.state.rounds.every(round => round.matches.every(match => this.isScored(match)));
   }
   get finalPodium(): PodiumPlace[] {
@@ -273,6 +330,7 @@ export class AppComponent implements OnInit {
     const name = this.newPlayerName.trim();
     if (!name) return;
     if (this.hasSchedule) return this.message('A lista está bloqueada porque a tabela já foi gerada.', 'error');
+    if (this.isSharedMode) return this.message('No torneio compartilhado, os participantes entram pelo link de convite.', 'error');
     if (this.state.players.length >= this.state.size) return this.message(`O Super ${this.state.size} permite ${this.state.size} jogadores.`, 'error');
     if (this.state.players.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return this.message('Já existe um participante com esse nome.', 'error');
     this.state.players.push({ id: this.id(), name });
@@ -282,6 +340,7 @@ export class AppComponent implements OnInit {
 
   removePlayer(id: string): void {
     if (this.hasSchedule) return;
+    if (this.isSharedMode) return this.message('Não é possível remover participantes do torneio compartilhado.', 'error');
     this.state.players = this.state.players.filter(p => p.id !== id);
     this.syncDefaultFixedPairs();
     this.persist();
@@ -320,6 +379,14 @@ export class AppComponent implements OnInit {
     this.syncDefaultFixedPairs();
   }
 
+  changeHostingMode(mode: TournamentHostingMode): void {
+    if (this.hasSchedule || (mode === 'shared' && !this.sharedConfigured)) return;
+    this.state.hostingMode = mode;
+    this.sharedError = '';
+    this.sharedNotice = '';
+    this.persist();
+  }
+
   changeGroupFormat(format: GroupFormat): void {
     this.state.groupFormat = format;
     this.state.courts = this.availableCourts[0];
@@ -347,6 +414,10 @@ export class AppComponent implements OnInit {
 
   nextSetupStep(): void {
     if (this.setupStep === 1) {
+      if (this.isSharedMode) {
+        void this.requestSharedTournamentLogin();
+        return;
+      }
       this.state.name = this.state.name.trim() || 'Meu torneio';
       this.state.roundCount = this.requiredRounds;
       this.state.courts = this.requiredCourts;
@@ -361,16 +432,233 @@ export class AppComponent implements OnInit {
     this.clearNotice();
   }
 
+  async requestSharedTournamentLogin(): Promise<void> {
+    if (!this.sharedConfigured) return this.message('O modo compartilhado ainda não está configurado neste deploy.', 'error');
+    if (!this.moderatorName.trim() || !this.moderatorEmail.trim()) {
+      return this.message('Informe seu nome e e-mail para receber o link de acesso do moderador.', 'error');
+    }
+    if (this.state.players.length || this.state.rounds.length) {
+      return this.message('Para compartilhar, comece com um torneio sem lista local. Os participantes entrarão pelo convite.', 'error');
+    }
+    this.sharedLoading = true;
+    this.sharedError = '';
+    try {
+      this.state.hostingMode = 'shared';
+      this.state.name = this.state.name.trim() || 'Meu torneio';
+      this.state.roundCount = this.requiredRounds;
+      this.state.courts = this.requiredCourts;
+      if (await this.supabase.currentUser()) {
+        await this.createSharedTournamentOnServer();
+        return;
+      }
+      const draft = { ...this.state, players: [], rounds: [], groups: [], fixedPairs: [], finals: null };
+      localStorage.setItem(SHARED_SETUP_KEY, JSON.stringify({ state: draft, moderatorName: this.moderatorName.trim() }));
+      this.storage.saveTournament(draft);
+      const redirect = new URL(window.location.href);
+      redirect.search = '';
+      redirect.hash = '';
+      await this.supabase.requestModeratorLogin(this.moderatorEmail.trim(), redirect.toString());
+      this.sharedNotice = 'Enviamos um link de acesso ao e-mail do moderador.';
+    } catch (error) {
+      this.sharedError = error instanceof Error ? error.message : 'Não foi possível enviar o link de acesso.';
+    } finally {
+      this.sharedLoading = false;
+    }
+  }
+
+  async joinSharedTournament(): Promise<void> {
+    const name = this.guestName.trim();
+    if (!this.sharedInviteToken || !name) return;
+    this.sharedLoading = true;
+    this.sharedError = '';
+    try {
+      const snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, name);
+      this.guestName = name;
+      this.isGuestView = true;
+      this.isSharedModerator = false;
+      this.applySharedSnapshot(snapshot);
+      this.subscribeToShared(snapshot.id, false);
+    } catch (error) {
+      this.sharedError = this.sharedErrorMessage(error);
+    } finally {
+      this.sharedLoading = false;
+    }
+  }
+
+  async copySharedInvite(): Promise<void> {
+    if (!this.sharedInviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(this.sharedInviteUrl);
+      this.sharedNotice = 'Link copiado.';
+    } catch {
+      this.sharedError = 'Não foi possível copiar. Selecione e copie o link manualmente.';
+    }
+  }
+
+  async renewSharedInvite(): Promise<void> {
+    if (!this.isSharedModerator || !this.state.sharedTournamentId) return;
+    this.sharedLoading = true;
+    this.sharedError = '';
+    try {
+      const invite = await this.supabase.rotateSharedInvite(this.state.sharedTournamentId);
+      this.sharedInviteToken = invite.inviteToken;
+      sessionStorage.setItem(OWNER_INVITE_KEY, invite.inviteToken);
+      this.sharedSnapshot = this.sharedSnapshot
+        ? { ...this.sharedSnapshot, inviteExpiresAt: invite.inviteExpiresAt }
+        : this.sharedSnapshot;
+      this.sharedNotice = 'Novo link de convite criado. O link anterior foi invalidado.';
+    } catch (error) {
+      this.sharedError = this.sharedErrorMessage(error);
+    } finally {
+      this.sharedLoading = false;
+    }
+  }
+
+  async shareResults(): Promise<void> {
+    if (!this.state.finals?.complete || !this.sharePlayerId) return;
+    this.sharingResults = true;
+    this.shareMessage = '';
+    try {
+      const result = await this.shareCard.sharePlayerResults(this.state, this.standings, this.sharePlayerId);
+      this.shareMessage = result === 'shared' ? 'Compartilhe a imagem no Instagram ou em outra rede.' : 'Imagem dos resultados baixada.';
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível compartilhar os resultados.';
+    } finally {
+      this.sharingResults = false;
+    }
+  }
+
+  private async restoreSharedFlow(): Promise<void> {
+    if (!this.supabase.isConfigured) {
+      if (this.sharedInviteToken) this.sharedError = 'O modo compartilhado não está configurado neste deploy.';
+      return;
+    }
+    if (this.sharedInviteToken) {
+      this.isLocked = false;
+      this.page = 'shared';
+      this.guestName = await this.supabase.getGuestName(this.sharedInviteToken);
+      try {
+        let snapshot = await this.supabase.getSharedTournament(this.sharedInviteToken);
+        if (this.guestName) snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, this.guestName);
+        this.isGuestView = true;
+        this.isSharedModerator = false;
+        this.applySharedSnapshot(snapshot);
+        this.subscribeToShared(snapshot.id, false);
+      } catch (error) {
+        this.sharedError = this.sharedErrorMessage(error);
+      }
+      return;
+    }
+
+    const pending = localStorage.getItem(SHARED_SETUP_KEY) ?? sessionStorage.getItem(SHARED_SETUP_KEY);
+    if (pending && await this.supabase.currentUser()) {
+      try {
+        const draft = JSON.parse(pending) as { state: TournamentState; moderatorName: string };
+        localStorage.removeItem(SHARED_SETUP_KEY);
+        sessionStorage.removeItem(SHARED_SETUP_KEY);
+        this.state = draft.state;
+        this.moderatorName = draft.moderatorName;
+        await this.createSharedTournamentOnServer();
+      } catch (error) {
+        this.sharedError = this.sharedErrorMessage(error);
+      }
+      return;
+    }
+
+    if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && await this.supabase.currentUser()) {
+      try {
+        const snapshot = await this.supabase.getOwnedSharedTournament(this.state.sharedTournamentId);
+        this.isSharedModerator = true;
+        this.sharedInviteToken = sessionStorage.getItem(OWNER_INVITE_KEY) ?? '';
+        this.applySharedSnapshot(snapshot);
+        this.subscribeToShared(snapshot.id, true);
+      } catch (error) {
+        this.sharedError = this.sharedErrorMessage(error);
+      }
+    }
+  }
+
+  private async createSharedTournamentOnServer(): Promise<void> {
+    try {
+      const draft = { ...this.state, hostingMode: 'shared' as const, players: [], rounds: [], groups: [], fixedPairs: [], finals: null };
+      const snapshot = await this.supabase.createSharedTournament(draft, this.moderatorName.trim());
+      localStorage.removeItem(SHARED_SETUP_KEY);
+      sessionStorage.removeItem(SHARED_SETUP_KEY);
+      this.isSharedModerator = true;
+      this.isGuestView = false;
+      this.sharedInviteToken = snapshot.inviteToken ?? '';
+      if (this.sharedInviteToken) sessionStorage.setItem(OWNER_INVITE_KEY, this.sharedInviteToken);
+      this.applySharedSnapshot(snapshot);
+      this.setupStep = 2;
+      this.persist();
+      this.subscribeToShared(snapshot.id, true);
+      this.sharedNotice = 'Torneio compartilhado criado. Envie o convite para preencher as vagas.';
+    } catch (error) {
+      this.sharedError = this.sharedErrorMessage(error);
+    }
+  }
+
+  private applySharedSnapshot(snapshot: SharedTournamentSnapshot): void {
+    this.sharedSnapshot = snapshot;
+    this.state = {
+      ...snapshot.state,
+      hostingMode: 'shared',
+      sharedTournamentId: snapshot.id,
+      sharedStatus: snapshot.status,
+      tournamentMode: snapshot.state.tournamentMode ?? 'super',
+      groupFormat: snapshot.state.groupFormat ?? 'rotating',
+      groups: snapshot.state.groups ?? [],
+      fixedPairs: snapshot.state.fixedPairs ?? [],
+      finals: snapshot.state.finals ?? null,
+      tieBreakDraws: snapshot.state.tieBreakDraws ?? []
+    };
+    if (this.fixedPairsMode && this.state.players.length === this.state.size
+      && this.state.fixedPairs?.length !== this.state.size / 2) this.syncDefaultFixedPairs();
+    this.state.roundCount = snapshot.state.roundCount;
+    this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
+    this.initializeScoreDrafts();
+  }
+
+  private subscribeToShared(id: string, owner: boolean): void {
+    this.supabase.subscribeToSharedTournament(id, () => { void this.refreshSharedState(id, owner); });
+  }
+
+  private async refreshSharedState(id: string, owner: boolean): Promise<void> {
+    try {
+      const snapshot = owner
+        ? await this.supabase.getOwnedSharedTournament(id)
+        : await this.supabase.getSharedTournament(this.sharedInviteToken);
+      this.applySharedSnapshot(snapshot);
+    } catch (error) {
+      this.sharedError = this.sharedErrorMessage(error);
+    }
+  }
+
+  private sharedErrorMessage(error: unknown): string {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('registration_closed') || message.includes('invite_expired')) return 'Este convite expirou ou as inscrições foram encerradas.';
+    if (message.includes('tournament_full')) return 'As vagas deste torneio já foram preenchidas.';
+    if (message.includes('tournament_expired')) return 'Este torneio compartilhado já expirou.';
+    if (message.includes('invalid_invite')) return 'Este link de convite não é válido.';
+    return message || 'Não foi possível acessar o torneio compartilhado.';
+  }
+
   previousSetupStep(): void {
     if (this.setupStep > 1) this.setupStep--;
     this.clearNotice();
   }
 
-  generateSchedule(): void {
+  async generateSchedule(): Promise<void> {
     if (this.state.players.length !== this.state.size) {
       return this.message(`Cadastre exatamente ${this.state.size} jogadores. Atualmente: ${this.state.players.length}.`, 'error');
     }
     if (this.hasSchedule) return this.message('A tabela já foi gerada.');
+    if (this.isSharedMode && (!this.isSharedModerator || this.state.sharedStatus !== 'ready')) {
+      return this.message('O torneio compartilhado só pode iniciar pelo moderador quando todas as vagas estiverem preenchidas.', 'error');
+    }
+    const previousRounds = this.state.rounds;
+    const previousGroups = this.state.groups;
     try {
       this.state.roundCount = this.requiredRounds;
       this.state.courts = this.requiredCourts;
@@ -386,8 +674,16 @@ export class AppComponent implements OnInit {
         this.state.groups = [];
         this.state.rounds = this.scheduler.generate(this.state.players, this.state.size, this.state.courts, this.state.roundCount);
       }
+      if (this.isSharedMode && this.state.sharedTournamentId) {
+        const snapshot = await this.supabase.startSharedTournament(this.state.sharedTournamentId, this.state);
+        this.applySharedSnapshot(snapshot);
+      }
       this.selectedRound = 0; this.initializeScoreDrafts(); this.persist('Todas as rodadas foram geradas e salvas.'); this.page = 'rounds';
     } catch (error) {
+      if (this.isSharedMode) {
+        this.state.rounds = previousRounds;
+        this.state.groups = previousGroups;
+      }
       this.message(error instanceof Error ? error.message : 'Erro ao gerar a tabela.', 'error');
     }
   }
@@ -463,6 +759,7 @@ export class AppComponent implements OnInit {
   }
 
   scoreChanged(match: Match, side: 'a' | 'b', value: number | null): void {
+    if (!this.canEditScores) return;
     const draft = this.scoreDrafts[match.id] ?? { a: match.scoreA, b: match.scoreB };
     draft[side] = value;
     this.scoreDrafts[match.id] = draft;
@@ -491,6 +788,7 @@ export class AppComponent implements OnInit {
   finalScoreChanged(
     match: Match, field: 'a' | 'b' | 'tieBreakA' | 'tieBreakB', value: number | null
   ): void {
+    if (!this.canEditScores) return;
     const draft = this.scoreDrafts[match.id] ?? {
       a: match.scoreA,
       b: match.scoreB,
@@ -523,6 +821,7 @@ export class AppComponent implements OnInit {
   }
 
   clearScore(match: Match): void {
+    if (!this.canEditScores) return;
     if (!confirm('Remover o placar desta partida? O ranking será recalculado.')) return;
     match.scoreA = null; match.scoreB = null; match.tieBreakA = null; match.tieBreakB = null;
     this.scoreDrafts[match.id] = { a: null, b: null, tieBreakA: null, tieBreakB: null };
@@ -581,6 +880,17 @@ export class AppComponent implements OnInit {
   private persist(success?: string): void {
     try { this.storage.saveTournament(this.state); if (success) this.message(success); }
     catch (error) { this.message(error instanceof Error ? error.message : 'Falha ao salvar.', 'error'); }
+    if (this.isSharedMode && this.isSharedModerator && this.state.sharedTournamentId && this.state.sharedStatus === 'active') {
+      if (this.syncTimeout !== null) window.clearTimeout(this.syncTimeout);
+      this.syncTimeout = window.setTimeout(() => {
+        void this.supabase.saveSharedTournament(this.state.sharedTournamentId!, this.state)
+          .then(snapshot => {
+            this.state.sharedStatus = snapshot.status;
+            if (this.sharedSnapshot?.id === snapshot.id) this.sharedSnapshot = snapshot;
+          })
+          .catch(error => { this.sharedError = this.sharedErrorMessage(error); });
+      }, 250);
+    }
   }
   private message(text: string, type: 'success' | 'error' = 'success'): void { this.notice = text; this.noticeType = type; }
   private clearNotice(): void { this.notice = ''; }

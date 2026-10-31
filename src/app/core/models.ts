@@ -3,8 +3,10 @@ export type TournamentMode = 'super' | 'groups';
 export type GroupFormat = 'fixed' | 'rotating';
 export type MatchPhase = 'super' | 'groups' | 'final';
 export type FinalMatchKind = 'championship' | 'third-place';
+export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed';
+export type TournamentHostingMode = 'local' | 'shared';
 export type ThemeMode = 'light' | 'dark';
-export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'settings';
+export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'settings' | 'shared';
 
 export interface Player {
   id: string;
@@ -62,11 +64,25 @@ export interface TournamentState {
   rounds: Round[];
   createdAt: string;
   tournamentMode?: TournamentMode;
+  hostingMode?: TournamentHostingMode;
+  sharedTournamentId?: string;
+  sharedStatus?: SharedTournamentStatus;
   groupFormat?: GroupFormat;
   groups?: TournamentGroup[];
   fixedPairs?: [string, string][];
   finals?: FinalStage | null;
   tieBreakDraws?: TieBreakDraw[];
+}
+
+export interface SharedTournamentSnapshot {
+  id: string;
+  status: SharedTournamentStatus;
+  capacity: TournamentSize;
+  state: TournamentState;
+  inviteToken?: string;
+  inviteExpiresAt: string;
+  expiresAt: string | null;
+  canJoin?: boolean;
 }
 
 export interface PlayerStanding {
