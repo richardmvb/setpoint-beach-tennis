@@ -11,6 +11,7 @@ export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'se
 export interface Player {
   id: string;
   name: string;
+  manual?: boolean;
 }
 
 export interface Match {
@@ -63,6 +64,8 @@ export interface TournamentState {
   players: Player[];
   rounds: Round[];
   createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
   tournamentMode?: TournamentMode;
   hostingMode?: TournamentHostingMode;
   sharedTournamentId?: string;

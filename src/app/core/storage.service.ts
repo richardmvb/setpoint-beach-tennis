@@ -9,12 +9,20 @@ export class StorageService {
   loadTournament(): TournamentState | null {
     try {
       const raw = localStorage.getItem(STATE_KEY);
-      if (!raw || raw.length > 1_000_000) return null;
+      if (!raw) return null;
+      const parsed = this.parseTournament(raw);
+      if (!parsed) localStorage.removeItem(STATE_KEY);
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  parseTournament(raw: string): TournamentState | null {
+    if (!raw || raw.length > 1_000_000) return null;
+    try {
       const parsed: unknown = JSON.parse(raw);
-      if (!this.isTournamentState(parsed)) {
-        localStorage.removeItem(STATE_KEY);
-        return null;
-      }
+      if (!this.isTournamentState(parsed)) return null;
       return {
         ...parsed,
         tournamentMode: parsed.tournamentMode ?? 'super',
@@ -53,6 +61,8 @@ export class StorageService {
     if (candidate.version !== 1 || (candidate.size !== 8 && candidate.size !== 10 && candidate.size !== 12)
       || (candidate.tournamentMode !== undefined && !['super', 'groups'].includes(candidate.tournamentMode))
       || (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat))
+      || (candidate.startedAt !== undefined && Number.isNaN(Date.parse(candidate.startedAt)))
+      || (candidate.finishedAt !== undefined && Number.isNaN(Date.parse(candidate.finishedAt)))
       || typeof candidate.name !== 'string' || candidate.name.length > 60
       || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 3
       || ![3, 4, 5, 6].includes(candidate.gamesToWin ?? 0)

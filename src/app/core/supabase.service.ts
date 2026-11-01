@@ -46,6 +46,11 @@ export class SupabaseService {
     if (error) throw error;
   }
 
+  async signInAnonymously(): Promise<void> {
+    const { error } = await this.requireClient().auth.signInAnonymously();
+    if (error) throw error;
+  }
+
   async signOut(): Promise<void> {
     if (!this.client) return;
     const { error } = await this.client.auth.signOut();
@@ -99,6 +104,26 @@ export class SupabaseService {
       p_tournament_id: id
     });
     if (error) throw error;
+    return data as SharedTournamentSnapshot;
+  }
+
+  async addSharedParticipant(id: string, displayName: string): Promise<SharedTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('add_shared_participant', {
+      p_tournament_id: id,
+      p_display_name: displayName
+    });
+    if (error) throw error;
+    await this.broadcastRefresh(id);
+    return data as SharedTournamentSnapshot;
+  }
+
+  async removeSharedParticipant(id: string, playerId: string): Promise<SharedTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('remove_shared_participant', {
+      p_tournament_id: id,
+      p_player_id: playerId
+    });
+    if (error) throw error;
+    await this.broadcastRefresh(id);
     return data as SharedTournamentSnapshot;
   }
 

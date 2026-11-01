@@ -8,8 +8,24 @@ type PlayerMatchResult = {
   won: boolean | null;
 };
 
+export function formatElapsed(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return [hours, minutes, seconds].map(part => String(part).padStart(2, '0')).join(':');
+}
+
 @Injectable({ providedIn: 'root' })
 export class ShareCardService {
+  // Finalistas usam o pódio (2 atletas por colocação); os demais, a posição no ranking.
+  placementOf(state: TournamentState, standings: PlayerStanding[], playerId: string): number {
+    const podiumIndex = state.finals?.complete ? state.finals.podiumPlayerIds.indexOf(playerId) : -1;
+    return podiumIndex >= 0
+      ? Math.floor(podiumIndex / 2) + 1
+      : standings.findIndex(row => row.playerId === playerId) + 1;
+  }
+
   async sharePlayerResults(
     state: TournamentState,
     standings: PlayerStanding[],
@@ -50,10 +66,12 @@ export class ShareCardService {
     context.fillText(player.name, 80, 220, 920);
     context.fillStyle = '#e87938';
     context.font = '800 28px Manrope, sans-serif';
-    context.fillText(`${this.ordinal(standings.findIndex(row => row.playerId === playerId) + 1)} LUGAR`, 80, 300);
+    context.fillText(`${this.ordinal(this.placementOf(state, standings, playerId))} LUGAR`, 80, 300);
     context.fillStyle = '#77827c';
     context.font = '600 18px "DM Sans", sans-serif';
-    context.fillText(`${standing.setsWon} vitórias · ${standing.matchesPlayed} jogos · saldo ${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}`, 80, 356, 920);
+    const duration = state.startedAt && state.finishedAt
+      ? ` · duração ${formatElapsed(Date.parse(state.finishedAt) - Date.parse(state.startedAt))}` : '';
+    context.fillText(`${standing.setsWon} vitórias · ${standing.matchesPlayed} jogos · saldo ${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}${duration}`, 80, 356, 920);
 
     let y = headerHeight;
     for (const result of results) {
