@@ -11,6 +11,8 @@ import { ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { PodiumComponent } from './features/podium.component';
+import { QualificationRow, QualificationService } from './core/qualification.service';
+import { QualificationStatsComponent } from './features/qualification-stats.component';
 
 interface GroupStandingEntry {
   label: string;
@@ -30,7 +32,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RankingViewComponent, PodiumComponent],
+  imports: [CommonModule, FormsModule, RankingViewComponent, PodiumComponent, QualificationStatsComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -77,7 +79,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private groupScheduler: GroupScheduleService,
     private finalsScheduler: FinalsService,
     private supabase: SupabaseService,
-    private shareCard: ShareCardService
+    private shareCard: ShareCardService,
+    private qualification: QualificationService
   ) {
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
     const authCallback = new URLSearchParams(window.location.search).has('code')
@@ -155,6 +158,18 @@ export class AppComponent implements OnInit, OnDestroy {
   get sharedConfigured(): boolean { return this.supabase.isConfigured; }
   readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
   get isSharedMode(): boolean { return this.state.hostingMode === 'shared'; }
+  get qualificationEnabled(): boolean {
+    return !!this.state.qualificationStats && this.isSharedMode && !this.isGroupTournament
+      && !this.state.finals && this.completedRounds >= 1;
+  }
+  get qualificationRows(): QualificationRow[] {
+    return this.qualificationEnabled ? this.qualification.compute(this.state, this.standings) : [];
+  }
+  setQualificationStats(enabled: boolean): void {
+    if (this.hasSchedule) return;
+    this.state.qualificationStats = enabled;
+    this.persist();
+  }
   get sharedReadOnly(): boolean { return this.isGuestView || (this.isSharedMode && !this.isSharedModerator); }
   get sharedInviteUrl(): string {
     if (!this.sharedInviteToken) return '';
@@ -428,6 +443,7 @@ export class AppComponent implements OnInit, OnDestroy {
   changeHostingMode(mode: TournamentHostingMode): void {
     if (this.hasSchedule || (mode === 'shared' && !this.sharedConfigured)) return;
     this.state.hostingMode = mode;
+    this.state.qualificationStats = mode === 'shared' ? (this.state.qualificationStats ?? true) : false;
     this.sharedError = '';
     this.sharedNotice = '';
     this.persist();

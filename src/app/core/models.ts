@@ -68,6 +68,7 @@ export interface TournamentState {
   finishedAt?: string;
   tournamentMode?: TournamentMode;
   hostingMode?: TournamentHostingMode;
+  qualificationStats?: boolean;
   sharedTournamentId?: string;
   sharedStatus?: SharedTournamentStatus;
   groupFormat?: GroupFormat;
