@@ -8,6 +8,9 @@ import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
 import { SupabaseService } from './core/supabase.service';
 import { ShareCardService, formatElapsed } from './core/share-card.service';
+import { GroupStandingTable } from './features/ranking-view.component';
+import { RankingViewComponent } from './features/ranking-view.component';
+import { PodiumComponent } from './features/podium.component';
 
 interface GroupStandingEntry {
   label: string;
@@ -19,12 +22,6 @@ interface GroupStandingEntry {
   matchesPlayed: number;
 }
 
-interface GroupStandingTable {
-  id: string;
-  name: string;
-  entries: GroupStandingEntry[];
-}
-
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
@@ -33,7 +30,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RankingViewComponent, PodiumComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -144,6 +141,15 @@ export class AppComponent implements OnInit, OnDestroy {
       .sort((a, b) => a.place - b.place || a.name.localeCompare(b.name));
   }
   trackByPlayerId(_: number, item: { playerId: string }): string { return item.playerId; }
+  get guestPlayerId(): string {
+    const name = this.guestName.trim().toLowerCase();
+    return this.state.players.find(player => player.name.trim().toLowerCase() === name)?.id ?? '';
+  }
+  get guestPlace(): number { return this.guestPlayerId ? this.placeOf(this.guestPlayerId) : 0; }
+  shareMyResults(): void {
+    this.sharePlayerId = this.guestPlayerId;
+    void this.shareResults();
+  }
 
   get sharedConfigured(): boolean { return this.supabase.isConfigured; }
   readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
