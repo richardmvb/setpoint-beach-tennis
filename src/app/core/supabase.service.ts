@@ -179,6 +179,13 @@ export class SupabaseService {
   }
 
   async broadcastRefresh(id: string): Promise<void> {
+    const subscribed = this.channels.get(id);
+    if (subscribed) {
+      if (await subscribed.send({ type: 'broadcast', event: 'refresh', payload: {} }) !== 'ok') {
+        throw new Error('Não foi possível notificar os espectadores.');
+      }
+      return;
+    }
     const client = this.requireClient();
     const channel = client.channel(`shared-tournament:${id}`);
     await new Promise<void>((resolve, reject) => {

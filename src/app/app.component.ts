@@ -70,6 +70,8 @@ export class AppComponent implements OnInit, OnDestroy {
   sharingResults = false;
   shareMessage = '';
   private syncTimeout: number | null = null;
+  private sharedPollTimer: number | null = null;
+  private sharedSignature = '';
 
   constructor(
     private storage: StorageService,
@@ -110,11 +112,13 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.applyTheme();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
+    this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
   }
 
   ngOnDestroy(): void {
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
+    if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
   }
 
   get timerRunning(): boolean { return !!this.state.startedAt && !this.state.finishedAt; }
@@ -522,7 +526,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      this.applySharedSnapshot(await this.supabase.addSharedParticipant(this.state.sharedTournamentId, name));
+      this.applySharedSnapshot(await this.supabase.addSharedParticipant(this.state.sharedTournamentId, name), true);
       this.manualParticipantName = '';
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
@@ -536,7 +540,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      this.applySharedSnapshot(await this.supabase.removeSharedParticipant(this.state.sharedTournamentId, playerId));
+      this.applySharedSnapshot(await this.supabase.removeSharedParticipant(this.state.sharedTournamentId, playerId), true);
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     } finally {
@@ -580,7 +584,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const invite = await this.supabase.rotateSharedInvite(this.state.sharedTournamentId);
       this.sharedInviteToken = invite.inviteToken;
-      sessionStorage.setItem(OWNER_INVITE_KEY, invite.inviteToken);
+      this.saveOwnerInvite(this.state.sharedTournamentId, invite.inviteToken);
       this.sharedSnapshot = this.sharedSnapshot
         ? { ...this.sharedSnapshot, inviteExpiresAt: invite.inviteExpiresAt }
         : this.sharedSnapshot;
@@ -648,8 +652,9 @@ export class AppComponent implements OnInit, OnDestroy {
       try {
         const snapshot = await this.supabase.getOwnedSharedTournament(this.state.sharedTournamentId);
         this.isSharedModerator = true;
-        this.sharedInviteToken = sessionStorage.getItem(OWNER_INVITE_KEY) ?? '';
+        this.sharedInviteToken = this.loadOwnerInvite(snapshot.id);
         this.applySharedSnapshot(snapshot);
+        if (!snapshot.state.rounds?.length) { this.page = 'setup'; this.setupStep = 2; }
         this.subscribeToShared(snapshot.id, true);
       } catch (error) {
         this.sharedError = this.sharedErrorMessage(error);
@@ -666,7 +671,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isSharedModerator = true;
       this.isGuestView = false;
       this.sharedInviteToken = snapshot.inviteToken ?? '';
-      if (this.sharedInviteToken) sessionStorage.setItem(OWNER_INVITE_KEY, this.sharedInviteToken);
+      if (this.sharedInviteToken) this.saveOwnerInvite(snapshot.id, this.sharedInviteToken);
       this.applySharedSnapshot(snapshot);
       this.setupStep = 2;
       this.persist();
@@ -677,8 +682,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  private applySharedSnapshot(snapshot: SharedTournamentSnapshot): void {
+  private applySharedSnapshot(snapshot: SharedTournamentSnapshot, keepView = false): void {
     this.sharedSnapshot = snapshot;
+    this.sharedSignature = JSON.stringify([snapshot.status, snapshot.state]);
     this.state = {
       ...snapshot.state,
       hostingMode: 'shared',
@@ -694,7 +700,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.fixedPairsMode && this.state.players.length === this.state.size
       && this.state.fixedPairs?.length !== this.state.size / 2) this.syncDefaultFixedPairs();
     this.state.roundCount = snapshot.state.roundCount;
-    this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
+    if (!keepView) this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
     this.initializeScoreDrafts();
   }
 
@@ -707,10 +713,30 @@ export class AppComponent implements OnInit, OnDestroy {
       const snapshot = owner
         ? await this.supabase.getOwnedSharedTournament(id)
         : await this.supabase.getSharedTournament(this.sharedInviteToken);
-      this.applySharedSnapshot(snapshot);
+      if (JSON.stringify([snapshot.status, snapshot.state]) === this.sharedSignature) return;
+      if (owner && this.state.rounds.length) return;
+      this.applySharedSnapshot(snapshot, true);
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     }
+  }
+
+  // Garante a atualização mesmo quando o Realtime não entrega o aviso.
+  private pollShared(): void {
+    if (document.hidden || this.sharedLoading) return;
+    if (this.isGuestView) {
+      if (this.sharedSnapshot && this.sharedSnapshot.status !== 'completed') void this.refreshSharedState(this.sharedSnapshot.id, false);
+    } else if (this.isSharedModerator && this.state.sharedTournamentId && !this.state.rounds.length) {
+      void this.refreshSharedState(this.state.sharedTournamentId, true);
+    }
+  }
+
+  private saveOwnerInvite(id: string, token: string): void {
+    try { localStorage.setItem(`${OWNER_INVITE_KEY}.${id}`, token); } catch { /* sem armazenamento local */ }
+  }
+
+  private loadOwnerInvite(id: string): string {
+    try { return localStorage.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? ''; } catch { return ''; }
   }
 
   private sharedErrorMessage(error: unknown): string {
@@ -976,7 +1002,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedInviteToken = '';
     this.sharedError = '';
     this.sharedNotice = '';
-    try { sessionStorage.removeItem(OWNER_INVITE_KEY); } catch { /* sem armazenamento de sessão */ }
+    try { if (this.state.sharedTournamentId) localStorage.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`); } catch { /* sem armazenamento local */ }
   }
 
   exportBackup(): void {
