@@ -2,18 +2,6 @@ import { Injectable } from '@angular/core';
 import { createClient, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
 import { SharedTournamentSnapshot, TournamentState } from './models';
 
-interface SetpointRuntimeConfig {
-  supabaseUrl?: string;
-  publishableKey?: string;
-  buildId?: string;
-}
-
-declare global {
-  interface Window {
-    __SETPOINT_CONFIG__?: SetpointRuntimeConfig;
-  }
-}
-
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
   private readonly client: SupabaseClient | null;
@@ -39,6 +27,14 @@ export class SupabaseService {
     const { data, error } = await this.client.auth.getUser();
     if (error) return null;
     return data.user;
+  }
+
+  onAuthStateChange(callback: (event: string, user: User | null) => void): () => void {
+    if (!this.client) return () => undefined;
+    const { data } = this.client.auth.onAuthStateChange((event, session) => {
+      callback(event, session?.user ?? null);
+    });
+    return () => data.subscription.unsubscribe();
   }
 
   async requestModeratorLogin(email: string, redirectTo: string): Promise<void> {

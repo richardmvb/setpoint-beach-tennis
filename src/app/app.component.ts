@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Match, Page, Player, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
@@ -7,12 +7,15 @@ import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
 import { SupabaseService } from './core/supabase.service';
+import type { User } from '@supabase/supabase-js';
 import { ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { PodiumComponent } from './features/podium.component';
 import { QualificationRow, QualificationService } from './core/qualification.service';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
+import { PostHogService } from './core/posthog.service';
+import { environment } from '../environments/environment';
 
 interface GroupStandingEntry {
   label: string;
@@ -36,6 +39,8 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private readonly posthogService = inject(PostHogService);
+
   isLocked = true;
   sitePassword = '';
   lockError = '';
@@ -70,6 +75,8 @@ export class AppComponent implements OnInit, OnDestroy {
   shareMessage = '';
   private syncTimeout: number | null = null;
   private sharedPollTimer: number | null = null;
+  private authStateUnsubscribe: (() => void) | null = null;
+  private identifiedUserId: string | null = null;
   private sharedSignature = '';
   guestJoined = false;
 
@@ -111,6 +118,26 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.posthogService.init(environment.posthogKey, {
+      api_host: environment.posthogHost,
+      capture_exceptions: true,
+      logs: {
+        serviceName: 'setpoint-web',
+        environment: environment.production ? 'production' : 'development',
+      },
+    });
+    this.posthogService.logInfo('setpoint application initialized', {
+      hosting_mode: this.state.hostingMode,
+      is_guest_view: this.isGuestView,
+    });
+    this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
+      if (event === 'SIGNED_IN' && user) this.identifyUser(user);
+      if (event === 'SIGNED_OUT') {
+        this.posthogService.posthog.reset();
+        this.identifiedUserId = null;
+      }
+    });
+    void this.identifyCurrentUser();
     this.applyTheme();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
@@ -120,6 +147,20 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
     if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
+    this.authStateUnsubscribe?.();
+  }
+
+  private async identifyCurrentUser(): Promise<void> {
+    const user = await this.supabase.currentUser();
+    if (user) this.identifyUser(user);
+  }
+
+  private identifyUser(user: User): void {
+    if (this.identifiedUserId && this.identifiedUserId !== user.id) {
+      this.posthogService.posthog.reset();
+    }
+    this.posthogService.posthog.identify(user.id, user.email ? { email: user.email } : {});
+    this.identifiedUserId = user.id;
   }
 
   get timerRunning(): boolean { return !!this.state.startedAt && !this.state.finishedAt; }
@@ -397,6 +438,11 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state.players.push({ id: this.id(), name });
     this.syncDefaultFixedPairs();
     this.newPlayerName = ''; this.persist();
+    this.posthogService.posthog.capture('player_added', {
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+      participant_count: this.state.players.length,
+    });
   }
 
   removePlayer(id: string): void {
@@ -414,6 +460,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state.roundCount = this.requiredRounds;
     this.state.courts = this.requiredCourts;
     this.persist('Configurações salvas.');
+    this.posthogService.posthog.capture('tournament_settings_saved', {
+      tournament_mode: this.state.tournamentMode,
+      hosting_mode: this.state.hostingMode,
+      tournament_size: this.state.size,
+      court_count: this.state.courts,
+      games_to_win: this.state.gamesToWin,
+    });
   }
 
   changeSize(size: TournamentSize): void {
@@ -586,6 +639,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isSharedModerator = false;
       this.applySharedSnapshot(snapshot);
       this.subscribeToShared(snapshot.id, false);
+      this.posthogService.posthog.capture('shared_tournament_joined', {
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+        participant_count: this.state.players.length,
+      });
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     } finally {
@@ -598,6 +656,10 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await navigator.clipboard.writeText(this.sharedInviteUrl);
       this.sharedNotice = 'Link copiado.';
+      this.posthogService.posthog.capture('shared_invite_copied', {
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+      });
     } catch {
       this.sharedError = 'Não foi possível copiar. Selecione e copie o link manualmente.';
     }
@@ -629,6 +691,11 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.shareCard.sharePlayerResults(this.state, this.standings, this.sharePlayerId);
       this.shareMessage = result === 'shared' ? 'Compartilhe a imagem no Instagram ou em outra rede.' : 'Imagem dos resultados baixada.';
+      this.posthogService.posthog.capture('results_shared', {
+        share_method: result,
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       this.shareMessage = error instanceof Error ? error.message : 'Não foi possível compartilhar os resultados.';
@@ -703,6 +770,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.persist();
       this.subscribeToShared(snapshot.id, true);
       this.sharedNotice = 'Torneio compartilhado criado. Envie o convite para preencher as vagas.';
+      this.posthogService.posthog.capture('shared_tournament_created', {
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+        moderator_auth_mode: this.moderatorAuthMode,
+      });
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     }
@@ -814,6 +886,20 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.startedAt ??= new Date().toISOString();
       this.now = Date.now();
       this.selectedRound = 0; this.initializeScoreDrafts(); this.persist('Todas as rodadas foram geradas e salvas.'); this.page = 'rounds';
+      this.posthogService.posthog.capture('schedule_generated', {
+        tournament_mode: this.state.tournamentMode,
+        hosting_mode: this.state.hostingMode,
+        tournament_size: this.state.size,
+        round_count: this.state.rounds.length,
+        court_count: this.state.courts,
+      });
+      this.posthogService.logInfo('tournament schedule generated', {
+        tournament_mode: this.state.tournamentMode,
+        hosting_mode: this.state.hostingMode,
+        tournament_size: this.state.size,
+        round_count: this.state.rounds.length,
+        court_count: this.state.courts,
+      });
     } catch (error) {
       if (this.isSharedMode) {
         this.state.rounds = previousRounds;
@@ -878,6 +964,10 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.finals = this.finalsScheduler.create(this.standings);
       this.initializeScoreDrafts();
       this.persist('Finais geradas com base nos oito primeiros do ranking.');
+      this.posthogService.posthog.capture('finals_generated', {
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+      });
     } catch (error) {
       this.message(error instanceof Error ? error.message : 'Não foi possível gerar a final.', 'error');
     }
@@ -906,6 +996,11 @@ export class AppComponent implements OnInit, OnDestroy {
     match.scoreA = a; match.scoreB = b;
     this.scoreDrafts[match.id] = { a, b };
     this.persist();
+    this.posthogService.posthog.capture('match_score_recorded', {
+      tournament_mode: this.state.tournamentMode,
+      round_number: this.selectedRound + 1,
+      match_phase: match.phase ?? (this.isGroupTournament ? 'groups' : 'super'),
+    });
   }
 
   scoreStatus(match: Match): string {
@@ -936,19 +1031,43 @@ export class AppComponent implements OnInit, OnDestroy {
       draft.tieBreakB = null;
     }
     this.scoreDrafts[match.id] = draft;
+    const hadWinner = this.finalsScheduler.winnerSide(match) !== null;
     match.scoreA = draft.a;
     match.scoreB = draft.b;
     match.tieBreakA = draft.tieBreakA ?? null;
     match.tieBreakB = draft.tieBreakB ?? null;
     this.state.finals = this.finalsScheduler.updatePodium(this.state.finals!);
     this.persist();
+    if (!hadWinner && this.finalsScheduler.winnerSide(match) !== null) {
+      this.posthogService.posthog.capture('final_score_recorded', {
+        final_kind: match.finalKind,
+        tournament_mode: this.state.tournamentMode,
+      });
+    }
   }
 
   finalizeTournament(): void {
     if (!this.canFinalizeTournament) return;
     if (!confirm('Finalizar o torneio? Depois disso nenhum resultado poderá ser alterado.')) return;
-    this.state.finishedAt = new Date().toISOString();
+    const finishedAt = new Date().toISOString();
+    this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
+    this.posthogService.posthog.capture('tournament_finalized', {
+      tournament_mode: this.state.tournamentMode,
+      hosting_mode: this.state.hostingMode,
+      tournament_size: this.state.size,
+      participant_count: this.state.players.length,
+      duration_seconds: this.state.startedAt
+        ? Math.round((Date.parse(finishedAt) - Date.parse(this.state.startedAt)) / 1000)
+        : undefined,
+    });
+    this.posthogService.logInfo('tournament finalized', {
+      tournament_mode: this.state.tournamentMode,
+      hosting_mode: this.state.hostingMode,
+      tournament_size: this.state.size,
+      participant_count: this.state.players.length,
+      has_started_at: !!this.state.startedAt,
+    });
   }
 
   finalScoreStatus(match: Match): string {
@@ -1040,6 +1159,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.message(this.state.finals?.complete
       ? 'Torneio finalizado carregado. Os dados estão em modo somente leitura.'
       : 'Backup carregado.');
+    this.posthogService.posthog.capture('backup_imported', {
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+      has_schedule: this.hasSchedule,
+      is_finalized: !!this.state.finishedAt,
+    });
   }
 
   private leaveSharedTournament(): void {
@@ -1057,6 +1182,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
     anchor.href = url; anchor.download = `setpoint-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click(); URL.revokeObjectURL(url); this.message('Backup JSON exportado.');
+    this.posthogService.posthog.capture('backup_exported', {
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+      has_schedule: this.hasSchedule,
+      is_finalized: !!this.state.finishedAt,
+    });
   }
 
   private initializeScoreDrafts(): void {

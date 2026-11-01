@@ -31,13 +31,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Supabase runtime config
+      - name: Generate runtime config
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NG_APP_POSTHOG_PROJECT_TOKEN: ${{ vars.NG_APP_POSTHOG_PROJECT_TOKEN }}
+          NG_APP_POSTHOG_HOST: ${{ vars.NG_APP_POSTHOG_HOST }}
           BUILD_ID: ${{ github.sha }}
         run: |
-          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '', buildId: (process.env.BUILD_ID || '').slice(0, 7) }) + ';\\n');"
+          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '', buildId: (process.env.BUILD_ID || '').slice(0, 7), production: true, ...(process.env.NG_APP_POSTHOG_PROJECT_TOKEN ? { posthogKey: process.env.NG_APP_POSTHOG_PROJECT_TOKEN } : {}), ...(process.env.NG_APP_POSTHOG_HOST ? { posthogHost: process.env.NG_APP_POSTHOG_HOST } : {}) }) + ';\\n');"
 
       - name: Build Angular app
         run: npm run build -- --base-href /setpoint-beach-tennis/
