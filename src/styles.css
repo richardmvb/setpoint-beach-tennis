@@ -293,3 +293,23 @@ table th{letter-spacing:1.2px}
 .podium-fourth span{font-weight:800;color:var(--muted);font-size:13px}
 .podium-fourth strong{font-size:13px;overflow-wrap:anywhere}
 @media(max-width:420px){.podium-names{font-size:11px}.podium-emoji{font-size:30px}.podium-col.place-1 .podium-emoji{font-size:38px}}
+.shared-guest-page{grid-template-columns:minmax(0,1fr)}
+.shared-guest-page>*{min-width:0}
+.shared-guest-page .full-card{grid-column:1/-1}
+.shared-guest-page .shared-guest-header h1{overflow-wrap:anywhere}
+@media(max-width:600px){
+	.shared-guest-page .table-scroll{overflow:visible}
+	.shared-guest-page table{width:100%;min-width:0;table-layout:fixed}
+	.shared-guest-page th,.shared-guest-page td{padding:5px 2px;font-size:10px}
+	.shared-guest-page th{font-size:8px;letter-spacing:0}
+	.shared-guest-page th:first-child,.shared-guest-page td:first-child{width:28px}
+	.shared-guest-page th:nth-child(3),.shared-guest-page td:nth-child(3){width:32px}
+	.shared-guest-page th:nth-child(4),.shared-guest-page td:nth-child(4),.shared-guest-page th:nth-child(5),.shared-guest-page td:nth-child(5),.shared-guest-page th:nth-child(6),.shared-guest-page td:nth-child(6){width:40px}
+	.shared-guest-page th:nth-child(7),.shared-guest-page td:nth-child(7){width:30px}
+	.shared-guest-page td:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+	.shared-guest-page .table-sub{display:none}
+	.shared-guest-page .rank-number{width:20px;height:20px;font-size:9px}
+	.shared-guest-page .card-title-row{align-items:flex-start}
+	.shared-guest-page .surface-card{padding:14px}
+	.shared-guest-page .share-picker{padding:12px}
+}
