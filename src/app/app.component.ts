@@ -955,7 +955,28 @@ export class AppComponent implements OnInit, OnDestroy {
   matchPending(match: Match): boolean { return !this.isScored(match); }
 
   resetTournament(): void {
+    if (this.isSharedModerator && this.state.sharedTournamentId) { void this.cancelSharedTournament(); return; }
     if (!confirm('Isso apagará a tabela, os placares e os participantes salvos neste navegador. Deseja continuar?')) return;
+    this.clearLocalTournament();
+  }
+
+  async cancelSharedTournament(): Promise<void> {
+    const id = this.state.sharedTournamentId;
+    if (!this.isSharedModerator || !id) return;
+    if (!confirm('Cancelar o torneio compartilhado? O link será invalidado e todos os dados serão apagados do servidor e deste navegador.')) return;
+    this.sharedLoading = true;
+    this.sharedError = '';
+    try {
+      await this.supabase.cancelSharedTournament(id);
+      this.clearLocalTournament();
+    } catch (error) {
+      this.sharedError = this.sharedErrorMessage(error);
+    } finally {
+      this.sharedLoading = false;
+    }
+  }
+
+  private clearLocalTournament(): void {
     this.storage.clearTournament();
     this.leaveSharedTournament();
     this.state = { version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4, roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(), tournamentMode: 'super', hostingMode: 'local', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null };

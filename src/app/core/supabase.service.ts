@@ -127,6 +127,12 @@ export class SupabaseService {
     return data as SharedTournamentSnapshot;
   }
 
+  async cancelSharedTournament(id: string): Promise<void> {
+    const { error } = await this.requireClient().rpc('cancel_shared_tournament', { p_tournament_id: id });
+    if (error) throw error;
+    await this.broadcastRefresh(id).catch(() => undefined);
+  }
+
   async rotateSharedInvite(id: string): Promise<{ inviteToken: string; inviteExpiresAt: string }> {
     const { data, error } = await this.requireClient().rpc('rotate_shared_invite', {
       p_tournament_id: id
