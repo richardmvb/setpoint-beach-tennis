@@ -145,6 +145,7 @@ export class AppComponent implements OnInit, OnDestroy {
   trackByPlayerId(_: number, item: { playerId: string }): string { return item.playerId; }
 
   get sharedConfigured(): boolean { return this.supabase.isConfigured; }
+  readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
   get isSharedMode(): boolean { return this.state.hostingMode === 'shared'; }
   get sharedReadOnly(): boolean { return this.isGuestView || (this.isSharedMode && !this.isSharedModerator); }
   get sharedInviteUrl(): string {

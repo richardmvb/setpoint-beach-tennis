@@ -276,3 +276,4 @@ table th{letter-spacing:1.2px}
 @media(max-width:760px){.topbar{margin:0 -16px;padding:0 16px;height:60px}.page-heading{padding:24px 0 16px}.page-heading h1{font-size:28px}.surface-card{padding:18px}.content-grid{gap:12px}.stat-card,.overview-main,.overview-side{grid-column:1/-1}.main-nav button{padding:9px 13px}}
 @media(max-width:420px){.topbar{margin:0 -12px;padding:0 12px}.page-heading h1{font-size:24px}.button{padding:12px 14px}.stat-card{grid-column:span 4}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.build-id{font-size:9px;opacity:.55;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-transform:none}

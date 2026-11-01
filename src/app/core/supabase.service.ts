@@ -5,6 +5,7 @@ import { SharedTournamentSnapshot, TournamentState } from './models';
 interface SetpointRuntimeConfig {
   supabaseUrl?: string;
   publishableKey?: string;
+  buildId?: string;
 }
 
 declare global {
