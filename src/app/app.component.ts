@@ -72,6 +72,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private syncTimeout: number | null = null;
   private sharedPollTimer: number | null = null;
   private sharedSignature = '';
+  guestJoined = false;
 
   constructor(
     private storage: StorageService,
@@ -158,7 +159,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   get sharedCapacityReached(): boolean { return this.state.players.length >= this.state.size; }
   get canJoinSharedTournament(): boolean {
-    return this.isGuestView && !!this.sharedSnapshot?.canJoin && !this.guestName.trim();
+    return this.isGuestView && !!this.sharedSnapshot?.canJoin && !this.guestJoined;
   }
   get sharedStatusLabel(): string {
     switch (this.sharedSnapshot?.status) {
@@ -557,6 +558,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, name);
       this.guestName = name;
+      this.guestJoined = true;
       this.isGuestView = true;
       this.isSharedModerator = false;
       this.applySharedSnapshot(snapshot);
@@ -623,7 +625,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.guestName = await this.supabase.getGuestName(this.sharedInviteToken);
       try {
         let snapshot = await this.supabase.getSharedTournament(this.sharedInviteToken);
-        if (this.guestName) snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, this.guestName);
+        if (this.guestName) { snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, this.guestName); this.guestJoined = true; }
         this.isGuestView = true;
         this.isSharedModerator = false;
         this.applySharedSnapshot(snapshot);

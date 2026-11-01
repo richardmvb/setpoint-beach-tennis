@@ -80,7 +80,7 @@ export class SupabaseService {
     });
     if (error) throw error;
     await this.saveGuestName(inviteToken, displayName);
-    await this.broadcastRefresh((data as SharedTournamentSnapshot).id);
+    void this.broadcastRefresh((data as SharedTournamentSnapshot).id).catch(() => undefined);
     return data as SharedTournamentSnapshot;
   }
 
@@ -196,13 +196,16 @@ export class SupabaseService {
     const client = this.requireClient();
     const channel = client.channel(`shared-tournament:${id}`);
     await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => { void client.removeChannel(channel); reject(new Error('Tempo esgotado ao notificar os espectadores.')); }, 5000);
       channel.subscribe(async status => {
         if (status === 'SUBSCRIBED') {
           const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
+          clearTimeout(timeout);
           await client.removeChannel(channel);
           if (result === 'ok') resolve();
           else reject(new Error('Não foi possível notificar os espectadores.'));
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          clearTimeout(timeout);
           await client.removeChannel(channel);
           reject(new Error('Não foi possível conectar ao canal de atualizações.'));
         }
