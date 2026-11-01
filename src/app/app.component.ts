@@ -79,6 +79,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private identifiedUserId: string | null = null;
   private sharedSignature = '';
   guestJoined = false;
+  feedbackLoading = false;
+  feedbackMessage = '';
+
+  private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
 
   constructor(
     private storage: StorageService,
@@ -205,6 +209,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sharedConfigured(): boolean { return this.supabase.isConfigured; }
+  get posthogFeedbackEnabled(): boolean { return this.posthogService.isInitialized; }
   readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
   get isSharedMode(): boolean { return this.state.hostingMode === 'shared'; }
   get qualificationEnabled(): boolean {
@@ -218,6 +223,24 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.hasSchedule) return;
     this.state.qualificationStats = enabled;
     this.persist();
+  }
+
+  async openNpsFeedback(): Promise<void> {
+    if (this.feedbackLoading) return;
+    this.feedbackLoading = true;
+    this.feedbackMessage = '';
+    try {
+      const opened = await this.posthogService.displayApiSurveyByName(this.npsSurveyName);
+      if (!opened) {
+        this.feedbackMessage = 'Pesquisa indisponível no momento.';
+        return;
+      }
+      this.posthogService.posthog.capture('nps_feedback_opened', { survey: 'nps' });
+    } catch {
+      this.feedbackMessage = 'Não foi possível abrir a pesquisa.';
+    } finally {
+      this.feedbackLoading = false;
+    }
   }
   get sharedReadOnly(): boolean { return this.isGuestView || (this.isSharedMode && !this.isSharedModerator); }
   get sharedInviteUrl(): string {

@@ -16,6 +16,39 @@ export class PostHogService {
       get: () => () => undefined,
     });
   }
+  get isInitialized(): boolean { return this.initialized; }
+
+  displayApiSurveyByName(name: string): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId) || !this.initialized) return Promise.resolve(false);
+
+    return new Promise(resolve => {
+      let settled = false;
+      const timeout = window.setTimeout(() => { settled = true; resolve(false); }, 10000);
+      posthog.getSurveys(surveys => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        const survey = surveys.find(item => item.name === name && item.type === 'api');
+        if (!survey) {
+          resolve(false);
+          return;
+        }
+
+        try {
+          posthog.displaySurvey(survey.id, {
+            displayType: 'popover',
+            ignoreConditions: true,
+            ignoreDelay: true,
+            position: 'next_to_trigger',
+            selector: '.feedback-trigger'
+          });
+          resolve(true);
+        } catch {
+          resolve(false);
+        }
+      }, true);
+    });
+  }
 
   init(apiKey: string | undefined, options: Partial<PostHogConfig>): void {
     if (!isPlatformBrowser(this.platformId) || this.initialized) {

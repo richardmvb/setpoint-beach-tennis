@@ -194,3 +194,11 @@
     </section>
   </div>
 </div>
+
+<div *ngIf="posthogFeedbackEnabled" class="feedback-float">
+  <span *ngIf="feedbackMessage" class="feedback-message" role="status">{{ feedbackMessage }}</span>
+  <button class="feedback-trigger" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading" aria-label="Responder pesquisa NPS" title="Enviar feedback">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>
+    <span>{{ feedbackLoading ? 'Abrindo…' : 'Feedback' }}</span>
+  </button>
+</div>
