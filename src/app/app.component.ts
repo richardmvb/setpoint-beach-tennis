@@ -130,6 +130,14 @@ export class AppComponent implements OnInit, OnDestroy {
       hosting_mode: this.state.hostingMode,
       is_guest_view: this.isGuestView,
     });
+    this.posthogService.posthog.capture('app_opened', {
+      view: this.page,
+      hosting_mode: this.state.hostingMode,
+      has_schedule: this.state.rounds.length > 0,
+      is_guest_view: this.isGuestView,
+    });
+    this.trackFeatureViewed(this.page);
+    if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
     this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
       if (event === 'SIGNED_IN' && user) this.identifyUser(user);
       if (event === 'SIGNED_OUT') {
@@ -159,7 +167,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.identifiedUserId && this.identifiedUserId !== user.id) {
       this.posthogService.posthog.reset();
     }
-    this.posthogService.posthog.identify(user.id, user.email ? { email: user.email } : {});
+    this.posthogService.posthog.identify(user.id);
     this.identifiedUserId = user.id;
   }
 
@@ -421,7 +429,39 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.storedTieDrawOrder(players) !== null;
   }
 
-  navigate(page: Page): void { this.page = page; this.clearNotice(); }
+  navigate(page: Page): void { this.setPage(page); this.clearNotice(); }
+
+  private setPage(page: Page): void {
+    if (this.page === page) return;
+    this.page = page;
+    this.trackFeatureViewed(page);
+  }
+
+  private trackFeatureViewed(page: Page): void {
+    this.posthogService.posthog.capture('feature_viewed', {
+      feature: page === 'rounds' ? 'matches' : page,
+      hosting_mode: this.state.hostingMode,
+      is_guest_view: this.isGuestView,
+    });
+  }
+
+  private trackSetupStepViewed(step: number): void {
+    this.posthogService.posthog.capture('tournament_setup_step_viewed', {
+      step,
+      hosting_mode: this.state.hostingMode,
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+    });
+  }
+
+  private trackSetupStepCompleted(step: number): void {
+    this.posthogService.posthog.capture('tournament_setup_step_completed', {
+      step,
+      hosting_mode: this.state.hostingMode,
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+    });
+  }
   toggleTheme(): void {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     this.storage.saveTheme(this.theme); this.applyTheme();
@@ -538,12 +578,16 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.courts = this.requiredCourts;
       this.persist();
       this.setupStep = 2;
+      this.trackSetupStepCompleted(1);
+      this.trackSetupStepViewed(2);
       return;
     }
     if (this.state.players.length !== this.state.size) {
       return this.message(`Cadastre exatamente ${this.state.size} jogadores para continuar.`, 'error');
     }
     this.setupStep = 3;
+    this.trackSetupStepCompleted(2);
+    this.trackSetupStepViewed(3);
     this.clearNotice();
   }
 
@@ -606,6 +650,11 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       this.applySharedSnapshot(await this.supabase.addSharedParticipant(this.state.sharedTournamentId, name), true);
       this.manualParticipantName = '';
+      this.posthogService.posthog.capture('shared_participant_added_manually', {
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+        participant_count: this.state.players.length,
+      });
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     } finally {
@@ -711,7 +760,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     if (this.sharedInviteToken) {
       this.isLocked = false;
-      this.page = 'shared';
+      this.setPage('shared');
       this.guestName = await this.supabase.getGuestName(this.sharedInviteToken);
       try {
         let snapshot = await this.supabase.getSharedTournament(this.sharedInviteToken);
@@ -747,7 +796,11 @@ export class AppComponent implements OnInit, OnDestroy {
         this.isSharedModerator = true;
         this.sharedInviteToken = this.loadOwnerInvite(snapshot.id);
         this.applySharedSnapshot(snapshot);
-        if (!snapshot.state.rounds?.length) { this.page = 'setup'; this.setupStep = 2; }
+        if (!snapshot.state.rounds?.length) {
+          this.setPage('setup');
+          this.setupStep = 2;
+          this.trackSetupStepViewed(2);
+        }
         this.subscribeToShared(snapshot.id, true);
       } catch (error) {
         this.sharedError = this.sharedErrorMessage(error);
@@ -770,6 +823,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.persist();
       this.subscribeToShared(snapshot.id, true);
       this.sharedNotice = 'Torneio compartilhado criado. Envie o convite para preencher as vagas.';
+      this.trackSetupStepCompleted(1);
+      this.trackSetupStepViewed(2);
+      this.posthogService.posthog.capture('tournament_created', {
+        hosting_mode: 'shared',
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+      });
       this.posthogService.posthog.capture('shared_tournament_created', {
         tournament_mode: this.state.tournamentMode,
         tournament_size: this.state.size,
@@ -798,7 +858,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.fixedPairsMode && this.state.players.length === this.state.size
       && this.state.fixedPairs?.length !== this.state.size / 2) this.syncDefaultFixedPairs();
     this.state.roundCount = snapshot.state.roundCount;
-    if (!keepView) this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
+    if (!keepView) this.setPage(this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup');
     this.initializeScoreDrafts();
   }
 
@@ -885,7 +945,21 @@ export class AppComponent implements OnInit, OnDestroy {
       }
       this.state.startedAt ??= new Date().toISOString();
       this.now = Date.now();
-      this.selectedRound = 0; this.initializeScoreDrafts(); this.persist('Todas as rodadas foram geradas e salvas.'); this.page = 'rounds';
+      this.selectedRound = 0; this.initializeScoreDrafts(); this.persist('Todas as rodadas foram geradas e salvas.'); this.setPage('rounds');
+      this.trackSetupStepCompleted(3);
+      if (!this.isSharedMode) {
+        this.posthogService.posthog.capture('tournament_created', {
+          hosting_mode: this.state.hostingMode,
+          tournament_mode: this.state.tournamentMode,
+          tournament_size: this.state.size,
+        });
+      }
+      this.posthogService.posthog.capture('tournament_started', {
+        hosting_mode: this.state.hostingMode,
+        tournament_mode: this.state.tournamentMode,
+        tournament_size: this.state.size,
+        round_count: this.state.rounds.length,
+      });
       this.posthogService.posthog.capture('schedule_generated', {
         tournament_mode: this.state.tournamentMode,
         hosting_mode: this.state.hostingMode,
@@ -1125,7 +1199,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.storage.clearTournament();
     this.leaveSharedTournament();
     this.state = { version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4, roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(), tournamentMode: 'super', hostingMode: 'local', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null };
-    this.selectedRound = 0; this.setupStep = 1; this.page = 'setup'; this.message('Novo torneio iniciado.');
+    this.selectedRound = 0; this.setupStep = 1; this.setPage('setup'); this.trackSetupStepViewed(1); this.message('Novo torneio iniciado.');
   }
 
   async importBackup(event: Event): Promise<void> {
@@ -1155,7 +1229,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.shareMessage = '';
     this.initializeScoreDrafts();
     this.persist();
-    this.page = this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup';
+    this.setPage(this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup');
     this.message(this.state.finals?.complete
       ? 'Torneio finalizado carregado. Os dados estão em modo somente leitura.'
       : 'Backup carregado.');
