@@ -313,3 +313,12 @@ table th{letter-spacing:1.2px}
 	.shared-guest-page .surface-card{padding:14px}
 	.shared-guest-page .share-picker{padding:12px}
 }
+.me{background:color-mix(in srgb,var(--orange) 24%,transparent);color:var(--text);border-radius:5px;padding:1px 4px;font-weight:800;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.podium-names strong.me{padding:1px 6px;box-shadow:0 0 0 1px var(--orange)}
+.player-row.me-row{background:color-mix(in srgb,var(--orange) 14%,transparent);border-radius:12px;box-shadow:inset 3px 0 0 var(--orange)}
+.player-row.me-row .player-info small{color:var(--orange);font-weight:800;text-transform:uppercase;letter-spacing:1px}
+tr.me-row td{background:color-mix(in srgb,var(--orange) 16%,transparent)}
+tr.me-row td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
+.shared-final-match{display:grid;gap:4px;margin-top:12px}
+.shared-final-match .shared-match-row{border:1px solid var(--border);border-radius:14px;padding:10px 12px;background:var(--surface-soft)}
+.shared-final-match small{text-align:center}

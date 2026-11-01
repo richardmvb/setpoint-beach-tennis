@@ -146,6 +146,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.state.players.find(player => player.name.trim().toLowerCase() === name)?.id ?? '';
   }
   get guestPlace(): number { return this.guestPlayerId ? this.placeOf(this.guestPlayerId) : 0; }
+  isMe(playerId: string): boolean { return this.isGuestView && !!this.guestPlayerId && playerId === this.guestPlayerId; }
   shareMyResults(): void {
     this.sharePlayerId = this.guestPlayerId;
     void this.shareResults();
