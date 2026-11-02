@@ -110,7 +110,6 @@
           <article *ngIf="state.players.length" id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><span class="player-avatar">{{ initials(player.name) }}</span><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
           <article *ngIf="sharedSnapshot.status === 'registration'" class="surface-card shared-waiting"><b>Inscrições abertas</b><span>As partidas aparecem quando o torneio começar.</span></article>
           <section *ngIf="state.rounds.length" id="guest-rounds" class="shared-round-list"><article *ngFor="let round of state.rounds" class="surface-card shared-round"><div class="card-title-row"><div><span class="card-kicker">RODADA {{ round.number }}</span><h2>{{ round.matches.length }} partidas</h2></div></div><div *ngFor="let match of round.matches"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container></div></article></section>
-          <app-qualification-stats *ngIf="qualificationEnabled && guestPlayerId" [rows]="qualificationRows" [highlightId]="guestPlayerId"></app-qualification-stats>
           <app-ranking-view *ngIf="state.rounds.length" id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId"></app-ranking-view>
           <article *ngIf="state.finals" id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2><div *ngFor="let match of state.finals.matches" class="shared-final-match"><span class="card-kicker">{{ match.finalKind === 'championship' ? 'FINAL' : 'DISPUTA DE 3º LUGAR' }}</span><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container><small *ngIf="match.tieBreakA != null && match.tieBreakB != null" class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small></div><ng-container *ngIf="state.finals.complete"><app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId"></app-podium><div *ngIf="guestPlayerId" class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button><small *ngIf="shareMessage" class="muted">{{ shareMessage }}</small></div></ng-container></article>
         </ng-container>
@@ -166,7 +165,6 @@
 
       <section *ngSwitchCase="'ranking'" class="content-grid ranking-page">
         <app-ranking-view [groupTables]="groupTables" [standings]="standings" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="hasSchedule"></app-ranking-view>
-        <app-qualification-stats *ngIf="qualificationEnabled" [rows]="qualificationRows"></app-qualification-stats>
         <article *ngIf="canGenerateFinal" class="surface-card full-card final-qualifier"><div><span class="card-kicker">FASE FINAL</span><h2>Oito classificados</h2><p class="muted">1º+3º × 2º+4º decidem o título; 5º+7º × 6º+8º, o 3º lugar.</p></div><button class="button primary" type="button" (click)="generateFinal()">Gerar finais</button></article>
         <article *ngIf="state.finals as final" class="surface-card full-card finals-card"><div class="card-title-row"><div><span class="card-kicker">FASE FINAL · SET ÚNICO</span><h2>Finais</h2></div><span class="mini-tag">{{ final.complete ? 'Concluídas' : 'Em andamento' }}</span></div>
           <div class="final-match-list"><article *ngFor="let match of final.matches" class="final-match"><div class="match-meta"><span class="court-label">{{ match.finalKind === 'championship' ? 'FINAL' : 'DISPUTA DE 3º LUGAR' }}</span><span class="match-state" [class.done]="finalWinnerSide(match)">{{ finalWinnerSide(match) ? '● Registrado' : '○ Pendente' }}</span></div>
@@ -208,6 +206,12 @@
     </section>
   </div>
 </div>
+
+<button *ngIf="!isLocked && !isDashboardRoute && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab" type="button" (click)="openQualificationStats()" aria-haspopup="dialog"><span aria-hidden="true">◎</span>{{ isGuestView ? 'Meu objetivo' : 'Projeção' }}</button>
+<button *ngIf="!isLocked && isGuestView && guestUpdateCount > 0" class="guest-update-button" type="button" (click)="openFirstGuestUpdate()"><span aria-hidden="true">↓</span>{{ guestUpdateCount }} {{ guestUpdateCount === 1 ? 'nova atualização' : 'novas atualizações' }}</button>
+@defer (when qualificationModalOpen) {
+  <app-qualification-stats [rows]="qualificationRows" [projection]="qualificationProjection" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (close)="closeQualificationStats()"></app-qualification-stats>
+}
 
 <div *ngIf="isDashboardRoute && !dashboardLocked" class="dashboard-shell">
   <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></a><h1>Métricas</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>

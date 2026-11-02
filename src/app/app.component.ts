@@ -12,7 +12,7 @@ import { ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { PodiumComponent } from './features/podium.component';
-import { QualificationRow, QualificationService } from './core/qualification.service';
+import { GoalProjection, QualificationRow, QualificationService } from './core/qualification.service';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
 import { PostHogService } from './core/posthog.service';
 import { environment } from '../environments/environment';
@@ -72,6 +72,8 @@ export class AppComponent implements OnInit, OnDestroy {
   isSharedModerator = false;
   sharedSnapshot: SharedTournamentSnapshot | null = null;
   sharedInviteToken = '';
+  guestUpdateCount = 0;
+  private firstGuestUpdateTargetId = '';
   sharePlayerId = '';
   sharingResults = false;
   shareMessage = '';
@@ -83,6 +85,9 @@ export class AppComponent implements OnInit, OnDestroy {
   guestJoined = false;
   feedbackLoading = false;
   feedbackMessage = '';
+  qualificationTargetPlace = 3;
+  qualificationTargetPlayerId = '';
+  qualificationModalOpen = false;
   isDashboardRoute = false;
   dashboardLocked = false;
   dashboardPassword = '';
@@ -242,6 +247,19 @@ export class AppComponent implements OnInit, OnDestroy {
   get qualificationRows(): QualificationRow[] {
     return this.qualificationEnabled ? this.qualification.compute(this.state, this.standings) : [];
   }
+  get qualificationPlayerId(): string {
+    return this.isGuestView ? this.guestPlayerId
+      : this.qualificationTargetPlayerId || this.standings[0]?.playerId || '';
+  }
+  get qualificationProjection(): GoalProjection | null {
+    return this.qualificationEnabled && this.qualificationPlayerId
+      ? this.qualification.projectGoal(this.state, this.standings, this.qualificationPlayerId, this.qualificationTargetPlace)
+      : null;
+  }
+  setQualificationTargetPlayer(playerId: string): void { this.qualificationTargetPlayerId = playerId; }
+  setQualificationTargetPlace(place: number): void { this.qualificationTargetPlace = place; }
+  openQualificationStats(): void { this.qualificationModalOpen = true; }
+  closeQualificationStats(): void { this.qualificationModalOpen = false; }
   setQualificationStats(enabled: boolean): void {
     if (this.hasSchedule) return;
     this.state.qualificationStats = enabled;
@@ -348,17 +366,21 @@ export class AppComponent implements OnInit, OnDestroy {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  private scrollGuestToLatestUpdate(): void {
-    const targetId = this.state.finals ? 'guest-finals'
-      : this.state.rounds.length ? 'guest-ranking' : 'guest-participants';
-    window.setTimeout(() => {
-      const target = document.getElementById(targetId);
-      if (!target) return;
-      target.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'end'
-      });
-    }, 100);
+  openFirstGuestUpdate(): void {
+    const target = document.getElementById(this.firstGuestUpdateTargetId);
+    target?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start'
+    });
+    this.guestUpdateCount = 0;
+    this.firstGuestUpdateTargetId = '';
+  }
+
+  private guestUpdateTarget(previous: TournamentState, next: TournamentState): string {
+    if ((!previous.finals && next.finals) || (!previous.finishedAt && next.finishedAt)) return 'guest-finals';
+    if (JSON.stringify(previous.players) !== JSON.stringify(next.players)) return 'guest-participants';
+    if (JSON.stringify(previous.rounds) !== JSON.stringify(next.rounds)) return 'guest-rounds';
+    return next.rounds.length ? 'guest-ranking' : 'guest-participants';
   }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
@@ -821,7 +843,6 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isSharedModerator = false;
       this.applySharedSnapshot(snapshot);
       this.subscribeToShared(snapshot.id, false);
-      this.scrollGuestToLatestUpdate();
       this.posthogService.posthog.capture('shared_tournament_joined', {
         tournament_mode: this.state.tournamentMode,
         tournament_size: this.state.size,
@@ -1012,8 +1033,12 @@ export class AppComponent implements OnInit, OnDestroy {
         : await this.supabase.getSharedTournament(this.sharedInviteToken);
       if (JSON.stringify([snapshot.status, snapshot.state]) === this.sharedSignature) return;
       if (owner && this.state.rounds.length) return;
+      const updateTarget = !owner ? this.guestUpdateTarget(this.state, snapshot.state) : '';
       this.applySharedSnapshot(snapshot, true);
-      if (!owner) this.scrollGuestToLatestUpdate();
+      if (!owner) {
+        if (this.guestUpdateCount === 0) this.firstGuestUpdateTargetId = updateTarget;
+        this.guestUpdateCount++;
+      }
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     }

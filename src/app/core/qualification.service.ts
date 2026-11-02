@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { PlayerStanding, TournamentState } from './models';
+import { Match, PlayerStanding, TournamentState } from './models';
 
 export type QualificationStatus = 'secure' | 'inside' | 'chance' | 'out';
 
@@ -17,6 +17,42 @@ export interface QualificationRow {
   status: QualificationStatus;
   headline: string;
   detail: string;
+}
+
+export interface GoalThreat {
+  playerId: string;
+  name: string;
+  position: number;
+  wins: number;
+  remainingMatches: number;
+  lossesNeeded: number;
+}
+
+export interface GoalKeyMatch {
+  id: string;
+  round: number;
+  teamA: string;
+  teamB: string;
+  guidance: string;
+  direct: boolean;
+}
+
+export interface GoalProjection {
+  playerId: string;
+  playerName: string;
+  goalPlace: number;
+  position: number;
+  wins: number;
+  remainingMatches: number;
+  remainingGames: number;
+  winsNeeded: number;
+  bestPossibleWins: number;
+  alreadyInGoal: boolean;
+  canReachAlone: boolean;
+  headline: string;
+  guidance: string;
+  threats: GoalThreat[];
+  keyMatches: GoalKeyMatch[];
 }
 
 const TOP_PLACES = 3;
@@ -61,6 +97,95 @@ export class QualificationService {
     });
   }
 
+  projectGoal(
+    state: TournamentState,
+    standings: PlayerStanding[],
+    playerId: string,
+    goalPlace: number
+  ): GoalProjection | null {
+    const player = standings.find(row => row.playerId === playerId);
+    if (!player || standings.length <= 1) return null;
+
+    const normalizedGoal = Math.max(1, Math.min(3, Math.floor(goalPlace)));
+    const remaining = this.remainingMatches(state);
+    const remainingMatches = remaining.get(playerId) ?? 0;
+    const bestPossibleWins = player.setsWon + remainingMatches;
+    const rivals = standings.filter(row => row.playerId !== playerId);
+    const cutoff = rivals[Math.min(normalizedGoal - 1, rivals.length - 1)];
+    const winsNeeded = Math.max(0, cutoff.setsWon + 1 - player.setsWon);
+    const position = standings.findIndex(row => row.playerId === playerId) + 1;
+
+    const threats = standings
+      .filter((row, index) => row.playerId !== playerId && index < normalizedGoal + 2)
+      .map(row => {
+        const rivalRemaining = remaining.get(row.playerId) ?? 0;
+        const maxAllowedWins = bestPossibleWins - row.setsWon - 1;
+        return {
+          playerId: row.playerId,
+          name: row.name,
+          position: standings.findIndex(item => item.playerId === row.playerId) + 1,
+          wins: row.setsWon,
+          remainingMatches: rivalRemaining,
+          lossesNeeded: Math.max(0, rivalRemaining - maxAllowedWins)
+        };
+      })
+      .filter(threat => threat.remainingMatches > 0 && threat.lossesNeeded > 0);
+
+    const threatById = new Map(threats.map(threat => [threat.playerId, threat]));
+    const keyMatches = state.rounds.flatMap(round => round.matches)
+      .filter(match => match.scoreA === null || match.scoreB === null)
+      .map(match => {
+        const direct = match.teamA.includes(playerId) || match.teamB.includes(playerId);
+        const involvedThreats = [...match.teamA, ...match.teamB]
+          .map(id => threatById.get(id)).filter((threat): threat is GoalThreat => !!threat);
+        if (!direct && !involvedThreats.length) return null;
+        return {
+          id: match.id,
+          round: state.rounds.find(round => round.matches.some(item => item.id === match.id))?.number ?? 0,
+          teamA: match.teamA.map(id => this.playerName(state, id)).join(' + '),
+          teamB: match.teamB.map(id => this.playerName(state, id)).join(' + '),
+          guidance: direct
+            ? 'Vencer este confronto direto ajuda a alcançar sua meta.'
+            : involvedThreats.map(threat => `Uma derrota de ${threat.name} ajuda sua projeção.`).join(' '),
+          direct
+        };
+      })
+      .filter((match): match is GoalKeyMatch => !!match)
+      .sort((a, b) => Number(b.direct) - Number(a.direct) || a.round - b.round)
+      .slice(0, 5);
+
+    const alreadyInGoal = position <= normalizedGoal;
+    const canReachAlone = winsNeeded <= remainingMatches;
+    const headline = alreadyInGoal
+      ? `Você está no objetivo: ${position}º lugar.`
+      : canReachAlone
+        ? `Vença pelo menos ${winsNeeded} de ${remainingMatches} jogos.`
+        : 'Você depende também de resultados dos rivais.';
+    const guidance = alreadyInGoal
+      ? `Para manter o ${this.ordinal(normalizedGoal)} lugar, acompanhe os rivais abaixo.`
+      : canReachAlone
+        ? `Com ${winsNeeded} vitória(s), você supera a projeção atual do ${this.ordinal(normalizedGoal)} lugar.`
+        : `Mesmo vencendo seus ${remainingMatches} jogos, você precisa que rivais diretos percam partidas.`;
+
+    return {
+      playerId,
+      playerName: player.name,
+      goalPlace: normalizedGoal,
+      position,
+      wins: player.setsWon,
+      remainingMatches,
+      remainingGames: remainingMatches * state.gamesToWin,
+      winsNeeded,
+      bestPossibleWins,
+      alreadyInGoal,
+      canReachAlone,
+      headline,
+      guidance,
+      threats,
+      keyMatches
+    };
+  }
+
   private describe(
     status: QualificationStatus, position: number, wins: number, cutoffWins: number,
     needed: number, remaining: number, maxWins: number
@@ -89,4 +214,10 @@ export class QualificationService {
     }
     return counts;
   }
+
+  private playerName(state: TournamentState, playerId: string): string {
+    return state.players.find(player => player.id === playerId)?.name ?? 'Atleta';
+  }
+
+  private ordinal(position: number): string { return `${position}º`; }
 }
