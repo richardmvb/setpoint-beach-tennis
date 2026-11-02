@@ -31,6 +31,8 @@ const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
+const GUEST_INVITE_KEY = 'setpoint.shared.guestInvite';
+const GUEST_VIEW_PARAM = 'convidado';
 
 @Component({
   selector: 'app-root',
@@ -93,7 +95,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private shareCard: ShareCardService,
     private qualification: QualificationService
   ) {
-    const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
+    const inviteToken = this.takeInviteFromUrl();
     const authCallback = new URLSearchParams(window.location.search).has('code')
       || window.location.hash.includes('access_token=');
     this.isGuestView = !!inviteToken;
@@ -910,6 +912,21 @@ export class AppComponent implements OnInit, OnDestroy {
     } else if (this.isSharedModerator && this.state.sharedTournamentId && !this.state.rounds.length) {
       void this.refreshSharedState(this.state.sharedTournamentId, true);
     }
+  }
+
+  // Tira o token da URL antes de iniciar o PostHog, para não ir para eventos nem gravações.
+  private takeInviteFromUrl(): string {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('invite');
+    if (token === null) {
+      if (!url.searchParams.has(GUEST_VIEW_PARAM)) return '';
+      try { return sessionStorage.getItem(GUEST_INVITE_KEY) ?? ''; } catch { return ''; }
+    }
+    try { sessionStorage.setItem(GUEST_INVITE_KEY, token); } catch { /* convite vale até recarregar */ }
+    url.searchParams.delete('invite');
+    url.searchParams.set(GUEST_VIEW_PARAM, '1');
+    history.replaceState(history.state, '', url);
+    return token;
   }
 
   private saveOwnerInvite(id: string, token: string): void {
