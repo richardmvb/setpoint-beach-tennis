@@ -9,14 +9,14 @@
   </form>
 </main>
 
-<main *ngIf="isDashboardRoute && dashboardLocked" class="lock-screen">
-  <form class="lock-panel" (ngSubmit)="unlockDashboard()">
+<main *ngIf="isDashboardRoute && !dashboardAuthenticated" class="lock-screen">
+  <form class="lock-panel" (ngSubmit)="requestDashboardMagicLink()">
     <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></div>
-    <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Dashboard</h1><p>Informe a senha para ver as métricas.</p></div>
-    <label for="dashboardPassword">Senha</label>
-    <input id="dashboardPassword" name="dashboardPassword" type="password" [(ngModel)]="dashboardPassword" autocomplete="current-password" autofocus required [attr.aria-invalid]="!!dashboardError" aria-describedby="dashboardFeedback">
-    <p id="dashboardFeedback" class="lock-feedback" [class.visible]="!!dashboardError" aria-live="polite">{{ dashboardError }}</p>
-    <button class="button primary" type="submit" [disabled]="!dashboardPassword">Desbloquear</button>
+    <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Dashboard</h1><p>Entre com o e-mail autorizado para receber um link de acesso.</p></div>
+    <label for="dashboardEmail">E-mail</label>
+    <input id="dashboardEmail" name="dashboardEmail" type="email" [(ngModel)]="dashboardEmail" autocomplete="email" autofocus required [attr.aria-invalid]="!!dashboardError" aria-describedby="dashboardFeedback">
+    <p id="dashboardFeedback" class="lock-feedback" [class.visible]="!!dashboardError || dashboardMagicLinkSent" aria-live="polite">{{ dashboardError || (dashboardMagicLinkSent ? 'Link enviado. Confira sua caixa de entrada.' : '') }}</p>
+    <button class="button primary" type="submit" [disabled]="!dashboardEmail.trim() || dashboardLoading">{{ dashboardLoading ? 'Enviando…' : dashboardMagicLinkSent ? 'Reenviar link' : 'Enviar link de acesso' }}</button>
   </form>
 </main>
 
@@ -70,13 +70,13 @@
           <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado"></div>
           <div class="form-field"><label for="hostingMode">Onde será gerenciado?</label><select id="hostingMode" name="hostingMode" [ngModel]="state.hostingMode" (ngModelChange)="changeHostingMode($event)"><option [ngValue]="'local'">Neste dispositivo · sem compartilhar</option><option *ngIf="sharedConfigured" [ngValue]="'shared'">Compartilhado · convite e acompanhamento ao vivo</option></select></div>
           <label *ngIf="isSharedMode && !isGroupTournament" class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Projeção do top 3</b><small>A partir da 2ª rodada, mostra o que falta para chegar ao top 3.</small></span></label>
-          <div *ngIf="isSharedMode" class="shared-moderator-fields"><div class="form-field"><label for="moderatorName">Seu nome no torneio</label><input id="moderatorName" name="moderatorName" [(ngModel)]="moderatorName" maxlength="40" placeholder="Nome do moderador"></div><div class="form-field"><label for="moderatorAuthMode">Como entrar?</label><select id="moderatorAuthMode" name="moderatorAuthMode" [(ngModel)]="moderatorAuthMode"><option [ngValue]="'anonymous'">Sem e-mail · apenas neste dispositivo</option><option [ngValue]="'email'">Link por e-mail · permite recuperar</option></select></div><div *ngIf="moderatorAuthMode === 'email'" class="form-field"><label for="moderatorEmail">E-mail do moderador</label><input id="moderatorEmail" name="moderatorEmail" type="email" [(ngModel)]="moderatorEmail" autocomplete="email" placeholder="voce@exemplo.com"></div><p class="muted helper-text">{{ moderatorAuthMode === 'anonymous' ? 'O controle fica neste navegador e não pode ser recuperado se os dados forem apagados.' : 'Enviaremos um link de acesso.' }} O moderador ocupa uma vaga.</p></div>
+          <div *ngIf="isSharedMode" class="shared-moderator-fields"><div class="form-field"><label for="moderatorName">Seu nome no torneio</label><input id="moderatorName" name="moderatorName" [(ngModel)]="moderatorName" maxlength="40" placeholder="Nome do moderador"></div><p class="muted helper-text">Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga.</p></div>
           <div class="form-field"><label for="tournamentMode">Formato do torneio</label><select id="tournamentMode" name="tournamentMode" [ngModel]="state.tournamentMode" (ngModelChange)="changeTournamentMode($event)"><option [ngValue]="'super'">Super · duplas rotativas</option><option [ngValue]="'groups'">Grupos</option></select></div>
           <div class="form-two"><div class="form-field"><label for="setupSize">Participantes</label><select id="setupSize" name="setupSize" [ngModel]="state.size" (ngModelChange)="changeSize($event)"><option *ngFor="let size of availableSizes" [ngValue]="size">{{ size }} jogadores</option></select></div><div class="form-field"><label *ngIf="isGroupTournament" for="groupFormat">Formato dos grupos</label><label *ngIf="!isGroupTournament" for="setupCourts">Quadras por rodada</label><select *ngIf="isGroupTournament" id="groupFormat" name="groupFormat" [ngModel]="state.groupFormat" (ngModelChange)="changeGroupFormat($event)"><option [ngValue]="'rotating'">Grupos de 4 · parceiros rotativos</option><option [ngValue]="'fixed'">Duplas fixas · todos contra todos</option></select><select *ngIf="!isGroupTournament" id="setupCourts" name="setupCourts" [ngModel]="state.courts" (ngModelChange)="changeCourts($event)"><option *ngFor="let courtCount of availableCourts" [ngValue]="courtCount">{{ courtCount }} quadras</option></select><input *ngIf="isGroupTournament" [value]="requiredCourts + ' quadras'" readonly></div></div>
           <div class="form-two"><div class="form-field"><label for="setupGames">Games para vencer</label><select id="setupGames" name="setupGames" [(ngModel)]="state.gamesToWin"><option *ngFor="let games of availableGamesToWin" [ngValue]="games">{{ games === 3 ? '3 games · rápido' : games + ' games' }}</option></select></div><div class="form-field"><label>Rodadas do formato</label><input [value]="requiredRounds" readonly></div></div>
           <p *ngIf="state.gamesToWin === 3" class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
           <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p><p *ngIf="sharedNotice" class="shared-success" role="status">{{ sharedNotice }}</p>
-          <div class="wizard-actions"><span></span><button class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? (moderatorAuthMode === 'email' ? 'Enviar link ao moderador' : 'Criar torneio compartilhado') : 'Adicionar jogadores' }} <span *ngIf="!sharedLoading">→</span></button></div>
+          <div class="wizard-actions"><span></span><button class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? 'Criar torneio compartilhado' : 'Adicionar jogadores' }} <span *ngIf="!sharedLoading">→</span></button></div>
         </article>
 
         <article *ngIf="setupStep === 2" class="surface-card wizard-panel">
@@ -229,7 +229,7 @@
   <app-qualification-stats [rows]="qualificationRows" [projection]="qualificationProjection" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (close)="closeQualificationStats()"></app-qualification-stats>
 }
 
-<div *ngIf="isDashboardRoute && !dashboardLocked" class="dashboard-shell">
+<div *ngIf="isDashboardRoute && dashboardAuthenticated" class="dashboard-shell">
   <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></a><h1>Métricas</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>
   <div class="dashboard-toolbar"><p class="muted">Dados agregados dos torneios compartilhados.</p><button class="button secondary" type="button" (click)="loadDashboardMetrics()" [disabled]="dashboardLoading">{{ dashboardLoading ? 'Atualizando…' : 'Atualizar' }}</button></div>
   <p *ngIf="dashboardError" class="shared-error" role="alert">{{ dashboardError }}</p>

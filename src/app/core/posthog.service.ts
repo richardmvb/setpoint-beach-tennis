@@ -60,9 +60,7 @@ export class PostHogService {
         const variableName = apiKey
           ? 'NG_APP_POSTHOG_HOST'
           : 'NG_APP_POSTHOG_PROJECT_TOKEN';
-        throw new Error(
-          `${variableName} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${variableName} is configured`
-        );
+        console.warn(`${variableName} is not configured; PostHog analytics are disabled in this local session.`);
       }
       return;
     }

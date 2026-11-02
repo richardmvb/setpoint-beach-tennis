@@ -28,9 +28,7 @@ interface GroupStandingEntry {
 }
 
 const ACCESS_PASSWORD = 'bt2026';
-const DASHBOARD_PASSWORD = 'dashbt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
-const DASHBOARD_UNLOCK_SESSION_KEY = 'setpoint.dashboard.unlocked';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
@@ -58,9 +56,7 @@ export class AppComponent implements OnInit, OnDestroy {
   tieDrawModalOpen = false;
   activeTiePlayerIds: string[] = [];
   activeTieDrawResult: string[] = [];
-  moderatorEmail = '';
   moderatorName = '';
-  moderatorAuthMode: 'anonymous' | 'email' = 'anonymous';
   manualParticipantName = '';
   now = Date.now();
   private clockTimer: number | null = null;
@@ -96,8 +92,9 @@ export class AppComponent implements OnInit, OnDestroy {
   qualificationTargetPlayerId = '';
   qualificationModalOpen = false;
   isDashboardRoute = false;
-  dashboardLocked = false;
-  dashboardPassword = '';
+  dashboardAuthenticated = false;
+  dashboardEmail = '';
+  dashboardMagicLinkSent = false;
   dashboardError = '';
   dashboardLoading = false;
   dashboardMetrics: DashboardMetrics | null = null;
@@ -125,11 +122,8 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback
         && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
-      this.dashboardLocked = this.isDashboardRoute
-        && sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true';
     } catch {
       this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback;
-      this.dashboardLocked = this.isDashboardRoute;
     }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
@@ -175,15 +169,24 @@ export class AppComponent implements OnInit, OnDestroy {
     this.trackFeatureViewed(this.page);
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
     this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
-      if (event === 'SIGNED_IN' && user) this.identifyUser(user);
+      if (event === 'SIGNED_IN' && user) {
+        this.identifyUser(user);
+        if (this.isDashboardRoute) {
+          this.dashboardAuthenticated = true;
+          void this.loadDashboardMetrics();
+        }
+      }
       if (event === 'SIGNED_OUT') {
         this.posthogService.posthog.reset();
         this.identifiedUserId = null;
+        if (this.isDashboardRoute) {
+          this.dashboardAuthenticated = false;
+          this.dashboardMetrics = null;
+        }
       }
     });
     void this.identifyCurrentUser();
     this.applyTheme();
-    if (this.isDashboardRoute && !this.dashboardLocked) void this.loadDashboardMetrics();
     if (!this.isLocked && !this.isDashboardRoute && !this.isGuestView) this.backfillLocalTournamentMetrics();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
@@ -201,7 +204,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async identifyCurrentUser(): Promise<void> {
     const user = await this.supabase.currentUser();
-    if (user) this.identifyUser(user);
+    if (user) {
+      this.identifyUser(user);
+      if (this.isDashboardRoute) {
+        this.dashboardAuthenticated = true;
+        void this.loadDashboardMetrics();
+      }
+    }
   }
 
   private identifyUser(user: User): void {
@@ -336,20 +345,28 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncLocalTournamentMetrics();
   }
 
-  unlockDashboard(): void {
-    if (this.dashboardPassword !== DASHBOARD_PASSWORD) {
-      this.dashboardPassword = '';
-      this.dashboardError = 'Senha incorreta.';
-      return;
-    }
-    try { sessionStorage.setItem(DASHBOARD_UNLOCK_SESSION_KEY, 'true'); } catch { /* desbloqueio vale até recarregar */ }
-    this.dashboardLocked = false;
-    this.dashboardPassword = '';
+  async requestDashboardMagicLink(): Promise<void> {
+    const email = this.dashboardEmail.trim();
+    if (!email || this.dashboardLoading) return;
+    this.dashboardLoading = true;
     this.dashboardError = '';
-    void this.loadDashboardMetrics();
+    this.dashboardMagicLinkSent = false;
+    try {
+      const redirect = new URL(document.baseURI);
+      redirect.pathname = `${this.appBasePath}/dashboard`;
+      redirect.search = '';
+      redirect.hash = '';
+      await this.supabase.requestModeratorLogin(email, redirect.toString());
+      this.dashboardMagicLinkSent = true;
+    } catch (error) {
+      this.dashboardError = error instanceof Error ? error.message : 'Não foi possível enviar o link de acesso.';
+    } finally {
+      this.dashboardLoading = false;
+    }
   }
 
   async loadDashboardMetrics(): Promise<void> {
+    if (this.dashboardLoading) return;
     this.dashboardLoading = true;
     this.dashboardError = '';
     try {
@@ -573,10 +590,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.page === page && (page !== 'dashboard' || this.isDashboardRoute)) return;
     if (page === 'dashboard') {
       this.isDashboardRoute = true;
-      try { this.dashboardLocked = sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true'; }
-      catch { this.dashboardLocked = true; }
       window.history.pushState({}, '', `${this.appBasePath}/dashboard`);
-      if (!this.dashboardLocked) void this.loadDashboardMetrics();
+      if (this.dashboardAuthenticated) void this.loadDashboardMetrics();
     } else if (this.isDashboardRoute) {
       this.isDashboardRoute = false;
       window.history.pushState({}, '', `${this.appBasePath}/`);
@@ -593,9 +608,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isDashboardRoute = dashboard;
     if (dashboard) {
       this.page = 'dashboard';
-      try { this.dashboardLocked = sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true'; }
-      catch { this.dashboardLocked = true; }
-      if (!this.dashboardLocked) void this.loadDashboardMetrics();
+      void this.identifyCurrentUser();
     } else {
       this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
     }
@@ -757,11 +770,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async requestSharedTournamentLogin(): Promise<void> {
     if (!this.sharedConfigured) return this.message('O modo compartilhado ainda não está configurado neste deploy.', 'error');
-    if (!this.moderatorName.trim() || (this.moderatorAuthMode === 'email' && !this.moderatorEmail.trim())) {
-      return this.message(this.moderatorAuthMode === 'email'
-        ? 'Informe seu nome e e-mail para receber o link de acesso do moderador.'
-        : 'Informe seu nome para entrar como moderador.', 'error');
-    }
+    if (!this.moderatorName.trim()) return this.message('Informe seu nome para entrar como moderador.', 'error');
     if (this.state.players.length || this.state.rounds.length) {
       return this.message('Para compartilhar, comece com um torneio sem lista local. Os participantes entrarão pelo convite.', 'error');
     }
@@ -773,24 +782,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.roundCount = this.requiredRounds;
       this.state.courts = this.requiredCourts;
       const user = await this.supabase.currentUser();
-      const reusableSession = !!user && !(this.moderatorAuthMode === 'email' && user.is_anonymous);
+      const reusableSession = !!user;
       if (reusableSession) {
         await this.createSharedTournamentOnServer();
         return;
       }
-      if (this.moderatorAuthMode === 'anonymous') {
-        await this.supabase.signInAnonymously();
-        await this.createSharedTournamentOnServer();
-        return;
-      }
-      const draft = { ...this.state, players: [], rounds: [], groups: [], fixedPairs: [], finals: null };
-      localStorage.setItem(SHARED_SETUP_KEY, JSON.stringify({ state: draft, moderatorName: this.moderatorName.trim() }));
-      this.storage.saveTournament(draft);
-      const redirect = new URL(document.baseURI);
-      redirect.search = '';
-      redirect.hash = '';
-      await this.supabase.requestModeratorLogin(this.moderatorEmail.trim(), redirect.toString());
-      this.sharedNotice = 'Enviamos um link de acesso ao e-mail do moderador.';
+      await this.supabase.signInAnonymously();
+      await this.createSharedTournamentOnServer();
     } catch (error) {
       this.sharedError = this.moderatorAuthErrorMessage(error);
     } finally {
@@ -1022,20 +1020,8 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const pending = localStorage.getItem(SHARED_SETUP_KEY) ?? sessionStorage.getItem(SHARED_SETUP_KEY);
-    if (pending && await this.supabase.currentUser()) {
-      try {
-        const draft = JSON.parse(pending) as { state: TournamentState; moderatorName: string };
-        localStorage.removeItem(SHARED_SETUP_KEY);
-        sessionStorage.removeItem(SHARED_SETUP_KEY);
-        this.state = draft.state;
-        this.moderatorName = draft.moderatorName;
-        await this.createSharedTournamentOnServer();
-      } catch (error) {
-        this.sharedError = this.sharedErrorMessage(error);
-      }
-      return;
-    }
+    localStorage.removeItem(SHARED_SETUP_KEY);
+    sessionStorage.removeItem(SHARED_SETUP_KEY);
 
     if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && await this.supabase.currentUser()) {
       try {
@@ -1080,7 +1066,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.posthogService.posthog.capture('shared_tournament_created', {
         tournament_mode: this.state.tournamentMode,
         tournament_size: this.state.size,
-        moderator_auth_mode: this.moderatorAuthMode,
+        moderator_auth_mode: 'anonymous',
       });
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
