@@ -296,9 +296,6 @@ app-player-avatar{display:inline-flex;flex:none;vertical-align:middle}
 .player-avatar img,.team-avatar img,.share-chip-avatar img,.podium-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
 .team-names b{display:flex;align-items:center;gap:4px;min-width:0}
 .team-names b app-player-avatar{width:24px;height:24px}
-.avatar-picker{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 11px;border:1px dashed var(--border);border-radius:10px;color:var(--green-2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
-.avatar-picker:hover{border-color:var(--green-2);background:var(--green-soft)}
-.avatar-preview{display:block;width:40px;height:40px;object-fit:cover;border-radius:50%;border:1px solid var(--border)}
 .podium-names strong{display:flex;align-items:center;justify-content:center;gap:5px}
 .podium-names app-player-avatar{width:28px;height:28px}
 .podium-fourth-player{display:inline-flex;align-items:center;gap:5px}
@@ -531,11 +528,27 @@ app-player-avatar .player-avatar,app-player-avatar .team-avatar,app-player-avata
 .shared-team .team-player-name{flex:1 1 0;max-width:62px}
 .shared-team b app-player-avatar{min-width:22px;max-width:22px;overflow:hidden}
 .podium-names .podium-player-name,.podium-fourth-player .podium-player-name{max-width:calc(100% - 31px)}
-.avatar-picker{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-soft);color:var(--text);font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
-.avatar-picker:hover{border-color:var(--green-2)}
-.avatar-preview{width:44px;height:44px;flex:none;object-fit:cover;border:1px solid var(--border);border-radius:50%;vertical-align:middle}
-.shared-moderator-fields .avatar-picker{margin-top:4px}
-.shared-moderator-fields .avatar-preview{display:block}
 app-player-avatar{min-width:0}
 app-player-avatar>span{display:grid;place-items:center;overflow:hidden;border-radius:50%;line-height:1}
 app-player-avatar>span:not(.has-photo){color:inherit}
+
+/* Participant forms (mobile-first, stacked) */
+.participant-form{display:grid;gap:12px;margin-top:15px}
+.participant-form.manual-participant{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.participant-form-main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.participant-form input{width:100%;min-height:48px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:16px}
+.participant-form input:focus{outline:0;border-color:var(--green-2);box-shadow:0 0 0 4px color-mix(in srgb,var(--green-2) 18%,transparent)}
+.participant-form .button{width:100%;min-height:48px}
+.gender-toggle{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--border);border-radius:12px;background:var(--surface-soft)}
+.gender-toggle button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:700;font-size:14px;font-family:inherit;cursor:pointer}
+.gender-toggle button.active{background:var(--green-2);color:#fff}
+.avatar-trigger{display:grid;place-items:center;width:56px;height:56px;padding:0;border:1.5px dashed var(--border);border-radius:50%;background:var(--surface-soft);color:var(--green-2);cursor:pointer;overflow:hidden}
+.avatar-trigger:hover,.avatar-trigger:focus-visible{border-color:var(--green-2)}
+.avatar-trigger img{width:100%;height:100%;object-fit:cover}
+.avatar-trigger-icon{font-size:26px;font-weight:700;line-height:1}
+.avatar-menu{position:absolute;z-index:30;top:62px;left:0;display:grid;min-width:210px;padding:6px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:0 14px 34px rgba(0,0,0,.22)}
+.avatar-menu-item{display:flex;align-items:center;min-height:46px;padding:0 14px;border:0;border-radius:10px;background:transparent;color:var(--text);font-weight:600;font-size:14px;font-family:inherit;text-align:left;cursor:pointer}
+.avatar-menu-item:hover{background:var(--green-soft)}
+.avatar-menu-item.danger{color:#d64545}
+.avatar-error{position:absolute;top:60px;left:0;width:max-content;max-width:240px;color:#d64545;font-size:12px}
+.form-field app-avatar-picker{display:block}

@@ -13,6 +13,8 @@ import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { RoundNavigationComponent } from './features/round-navigation.component';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
+import { AvatarPickerComponent } from './features/avatar-picker.component';
+import { GenderToggleComponent } from './features/gender-toggle.component';
 import { PodiumComponent } from './features/podium.component';
 import { GoalProjection, QualificationRow, QualificationService } from './core/qualification.service';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
@@ -37,7 +39,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, PodiumComponent, QualificationStatsComponent],
+  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, AvatarPickerComponent, GenderToggleComponent, PodiumComponent, QualificationStatsComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -71,8 +73,6 @@ export class AppComponent implements OnInit, OnDestroy {
   guestName = '';
   guestGender: PlayerGender | '' = '';
   guestAvatar = '';
-  avatarProcessing = false;
-  avatarError = '';
   sharedLoading = false;
   sharedError = '';
   sharedNotice = '';
@@ -703,63 +703,6 @@ export class AppComponent implements OnInit, OnDestroy {
     else delete player.gender;
     this.syncDefaultFixedPairs();
     this.persist();
-  }
-
-  async selectAvatar(event: Event, target: 'newPlayer' | 'moderator' | 'manual' | 'guest'): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
-    this.avatarError = '';
-    if (!file.type.startsWith('image/')) {
-      this.avatarError = 'Selecione uma imagem.';
-      return;
-    }
-    if (file.size > 5_000_000) {
-      this.avatarError = 'A imagem original deve ter até 5 MB.';
-      return;
-    }
-    this.avatarProcessing = true;
-    try {
-      const photoDataUrl = await this.compressAvatar(file);
-      if (target === 'newPlayer') this.newPlayerAvatar = photoDataUrl;
-      else if (target === 'moderator') this.moderatorAvatar = photoDataUrl;
-      else if (target === 'manual') this.manualParticipantAvatar = photoDataUrl;
-      else this.guestAvatar = photoDataUrl;
-    } catch (error) {
-      this.avatarError = error instanceof Error ? error.message : 'Não foi possível processar a foto.';
-    } finally {
-      this.avatarProcessing = false;
-    }
-  }
-
-  private async compressAvatar(file: File): Promise<string> {
-    const image = await createImageBitmap(file);
-    try {
-      for (const [size, quality] of [[96, 0.68], [80, 0.56], [64, 0.48]] as const) {
-        const canvas = document.createElement('canvas');
-        canvas.width = size;
-        canvas.height = size;
-        const context = canvas.getContext('2d');
-        if (!context) throw new Error('Não foi possível processar a foto.');
-        const scale = Math.max(size / image.width, size / image.height);
-        const width = image.width * scale;
-        const height = image.height * scale;
-        context.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
-        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality));
-        if (blob && blob.size <= 8_000) {
-          return await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Foto inválida.'));
-            reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
-            reader.readAsDataURL(blob);
-          });
-        }
-      }
-    } finally {
-      image.close();
-    }
-    throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
   }
 
   saveSettings(): void {
