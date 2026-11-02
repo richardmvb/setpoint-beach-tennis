@@ -3,10 +3,10 @@ export type TournamentMode = 'super' | 'groups';
 export type GroupFormat = 'fixed' | 'rotating';
 export type MatchPhase = 'super' | 'groups' | 'final';
 export type FinalMatchKind = 'championship' | 'third-place';
-export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed';
+export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
 export type TournamentHostingMode = 'local' | 'shared';
 export type ThemeMode = 'light' | 'dark';
-export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'settings' | 'shared';
+export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'settings' | 'shared' | 'dashboard';
 
 export interface Player {
   id: string;

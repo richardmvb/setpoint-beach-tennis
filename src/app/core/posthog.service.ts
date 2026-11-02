@@ -18,7 +18,7 @@ export class PostHogService {
   }
   get isInitialized(): boolean { return this.initialized; }
 
-  displayApiSurveyByName(name: string): Promise<boolean> {
+  displayApiSurveyByName(name: string, centered = false): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId) || !this.initialized) return Promise.resolve(false);
 
     return new Promise(resolve => {
@@ -39,8 +39,8 @@ export class PostHogService {
             displayType: 'popover',
             ignoreConditions: true,
             ignoreDelay: true,
-            position: 'next_to_trigger',
-            selector: '.feedback-trigger'
+            position: centered ? 'center' : 'next_to_trigger',
+            ...(centered ? {} : { selector: '.footer-feedback' })
           });
           resolve(true);
         } catch {

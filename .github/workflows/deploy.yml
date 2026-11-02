@@ -44,6 +44,9 @@ jobs:
       - name: Build Angular app
         run: npm run build -- --base-href /setpoint-beach-tennis/
 
+      - name: Enable Angular route fallback on Pages
+        run: cp dist/setpoint/browser/index.html dist/setpoint/browser/404.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

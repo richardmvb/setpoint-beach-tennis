@@ -9,7 +9,18 @@
   </form>
 </main>
 
-<div *ngIf="!isLocked" class="app-shell" [class.ranking-view]="page === 'ranking'">
+<main *ngIf="isDashboardRoute && dashboardLocked" class="lock-screen">
+  <form class="lock-panel" (ngSubmit)="unlockDashboard()">
+    <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></div>
+    <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Dashboard</h1><p>Informe a senha para ver as métricas.</p></div>
+    <label for="dashboardPassword">Senha</label>
+    <input id="dashboardPassword" name="dashboardPassword" type="password" [(ngModel)]="dashboardPassword" autocomplete="current-password" autofocus required [attr.aria-invalid]="!!dashboardError" aria-describedby="dashboardFeedback">
+    <p id="dashboardFeedback" class="lock-feedback" [class.visible]="!!dashboardError" aria-live="polite">{{ dashboardError }}</p>
+    <button class="button primary" type="submit" [disabled]="!dashboardPassword">Desbloquear</button>
+  </form>
+</main>
+
+<div *ngIf="!isLocked && !isDashboardRoute" class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isGuestView">
   <header *ngIf="!isGuestView" class="topbar">
     <button class="brand brand-button" type="button" (click)="navigate('overview')" aria-label="SETPOINT início">
       <span class="brand-mark">SP</span>
@@ -96,12 +107,12 @@
         <article *ngIf="!sharedLoading && !sharedSnapshot && !sharedError" class="surface-card shared-loading">Carregando torneio…</article>
         <ng-container *ngIf="sharedSnapshot">
           <ng-template #matchRow let-match><div class="shared-match-row"><span class="shared-team"><b><span [class.me]="isMe(match.teamA[0])">{{ playerName(match.teamA[0]) }}</span> + <span [class.me]="isMe(match.teamA[1])">{{ playerName(match.teamA[1]) }}</span></b><strong>{{ match.scoreA ?? '–' }}</strong></span><span class="versus">VS</span><span class="shared-team shared-team-right"><strong>{{ match.scoreB ?? '–' }}</strong><b><span [class.me]="isMe(match.teamB[0])">{{ playerName(match.teamB[0]) }}</span> + <span [class.me]="isMe(match.teamB[1])">{{ playerName(match.teamB[1]) }}</span></b></span></div></ng-template>
-          <article *ngIf="state.players.length" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><span class="player-avatar">{{ initials(player.name) }}</span><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
+          <article *ngIf="state.players.length" id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><span class="player-avatar">{{ initials(player.name) }}</span><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
           <article *ngIf="sharedSnapshot.status === 'registration'" class="surface-card shared-waiting"><b>Inscrições abertas</b><span>As partidas aparecem quando o torneio começar.</span></article>
-          <section *ngIf="state.rounds.length" class="shared-round-list"><article *ngFor="let round of state.rounds" class="surface-card shared-round"><div class="card-title-row"><div><span class="card-kicker">RODADA {{ round.number }}</span><h2>{{ round.matches.length }} partidas</h2></div></div><div *ngFor="let match of round.matches"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container></div></article></section>
+          <section *ngIf="state.rounds.length" id="guest-rounds" class="shared-round-list"><article *ngFor="let round of state.rounds" class="surface-card shared-round"><div class="card-title-row"><div><span class="card-kicker">RODADA {{ round.number }}</span><h2>{{ round.matches.length }} partidas</h2></div></div><div *ngFor="let match of round.matches"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container></div></article></section>
           <app-qualification-stats *ngIf="qualificationEnabled && guestPlayerId" [rows]="qualificationRows" [highlightId]="guestPlayerId"></app-qualification-stats>
-          <app-ranking-view *ngIf="state.rounds.length" [groupTables]="groupTables" [standings]="standings" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId"></app-ranking-view>
-          <article *ngIf="state.finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2><div *ngFor="let match of state.finals.matches" class="shared-final-match"><span class="card-kicker">{{ match.finalKind === 'championship' ? 'FINAL' : 'DISPUTA DE 3º LUGAR' }}</span><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container><small *ngIf="match.tieBreakA != null && match.tieBreakB != null" class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small></div><ng-container *ngIf="state.finals.complete"><app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId"></app-podium><div *ngIf="guestPlayerId" class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button><small *ngIf="shareMessage" class="muted">{{ shareMessage }}</small></div></ng-container></article>
+          <app-ranking-view *ngIf="state.rounds.length" id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId"></app-ranking-view>
+          <article *ngIf="state.finals" id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2><div *ngFor="let match of state.finals.matches" class="shared-final-match"><span class="card-kicker">{{ match.finalKind === 'championship' ? 'FINAL' : 'DISPUTA DE 3º LUGAR' }}</span><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container><small *ngIf="match.tieBreakA != null && match.tieBreakB != null" class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small></div><ng-container *ngIf="state.finals.complete"><app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId"></app-podium><div *ngIf="guestPlayerId" class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button><small *ngIf="shareMessage" class="muted">{{ shareMessage }}</small></div></ng-container></article>
         </ng-container>
       </section>
 
@@ -148,7 +159,7 @@
               <div *ngIf="isScored(match)" class="score-foot"><span>Placar salvo</span><button type="button" (click)="clearScore(match)" [disabled]="!canEditRoundScores">Limpar</button></div>
             </article>
           </div>
-          <aside class="surface-card rest-card"><span class="card-kicker">PAUSA</span><h3>Em descanso</h3><div *ngIf="!round.restingPlayerIds.length" class="no-rest">Todos jogam nesta rodada.</div><div *ngFor="let id of round.restingPlayerIds" class="rest-player"><span class="rest-icon">Ⅱ</span><b>{{ playerName(id) }}</b><small>Descanso</small></div><div class="round-switch"><button class="button secondary" type="button" (click)="selectRound(selectedRound - 1)" [disabled]="selectedRound === 0">← Anterior</button><button class="button primary" type="button" (click)="selectRound(selectedRound + 1)" [disabled]="selectedRound === state.rounds.length - 1">Próxima →</button></div></aside></div>
+          <aside class="surface-card rest-card"><span class="card-kicker">PAUSA</span><h3>Em descanso</h3><div *ngIf="!round.restingPlayerIds.length" class="no-rest">Todos jogam nesta rodada.</div><div *ngFor="let id of round.restingPlayerIds" class="rest-player"><span class="rest-icon">Ⅱ</span><b>{{ playerName(id) }}</b><small>Descanso</small></div><div class="round-switch"><button class="button secondary" type="button" (click)="selectRound(selectedRound - 1)" [disabled]="selectedRound === 0">← Anterior</button><button *ngIf="completedRounds === state.rounds.length && !state.finals" class="button primary" type="button" (click)="navigate('ranking')">Ranking e finais →</button><button *ngIf="completedRounds !== state.rounds.length || state.finals" class="button primary" type="button" (click)="selectRound(selectedRound + 1)" [disabled]="selectedRound === state.rounds.length - 1">Próxima →</button></div></aside></div>
         </ng-container>
       </section>
 
@@ -179,9 +190,11 @@
         <article class="surface-card settings-info"><span class="card-kicker">REGRAS AUTOMÁTICAS</span><h3>Como a tabela é montada</h3><ul *ngIf="!isGroupTournament"><li>Super 8: 7 rodadas; Super 10: 10 rodadas.</li><li>Super 12: 11 rodadas com 3 quadras ou 12 com 2 quadras.</li><li>Nenhuma dupla de parceiros se repete.</li><li>Todos os atletas enfrentam cada outro ao menos uma vez.</li><li>Todos jogam a mesma quantidade de partidas.</li></ul><ul *ngIf="isGroupTournament"><li>Grupos rotativos: grupos de quatro atletas e três rodadas.</li><li>Duplas fixas: todos contra todos, com 3 ou 5 rodadas.</li><li>Todos jogam a mesma quantidade de partidas.</li><li>A classificação é calculada dentro de cada grupo.</li></ul></article>
         <article class="surface-card full-card data-card"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Dados salvos neste navegador. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><label class="button secondary file-button">↑ Importar backup JSON<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden></label><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
       </section>
+      <section *ngSwitchCase="'dashboard'" class="dashboard-page"></section>
     </ng-container>
   </main>
-  <footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do build">{{ buildId }}</span></footer>
+  <nav *ngIf="isGuestView && state.rounds.length" class="guest-mobile-nav" aria-label="Navegação do torneio"><button type="button" (click)="scrollGuestTo('guest-rounds')">Partidas</button><button type="button" (click)="scrollGuestTo('guest-ranking')">Ranking</button><button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
+  <footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do build">{{ buildId }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
 
   <div *ngIf="tieDrawModalOpen" class="tie-draw-backdrop" role="presentation">
     <section class="tie-draw-modal" role="dialog" aria-modal="true" aria-labelledby="tieDrawTitle">
@@ -195,10 +208,22 @@
   </div>
 </div>
 
-<div *ngIf="posthogFeedbackEnabled" class="feedback-float">
-  <span *ngIf="feedbackMessage" class="feedback-message" role="status">{{ feedbackMessage }}</span>
-  <button class="feedback-trigger" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading" aria-label="Responder pesquisa NPS" title="Enviar feedback">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>
-    <span>{{ feedbackLoading ? 'Abrindo…' : 'Feedback' }}</span>
-  </button>
+<div *ngIf="isDashboardRoute && !dashboardLocked" class="dashboard-shell">
+  <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></a><h1>Métricas</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>
+  <div class="dashboard-toolbar"><p class="muted">Dados agregados dos torneios compartilhados.</p><button class="button secondary" type="button" (click)="loadDashboardMetrics()" [disabled]="dashboardLoading">{{ dashboardLoading ? 'Atualizando…' : 'Atualizar' }}</button></div>
+  <p *ngIf="dashboardError" class="shared-error" role="alert">{{ dashboardError }}</p>
+  <p *ngIf="dashboardLoading && !dashboardMetrics" class="surface-card">Carregando métricas…</p>
+  <section *ngIf="dashboardMetrics as metrics" class="dashboard-metrics-grid">
+    <article class="dashboard-metric"><span>TORNEIOS</span><strong>{{ metrics.tournaments_total }}</strong></article>
+    <article class="dashboard-metric"><span>INICIADOS</span><strong>{{ metrics.tournaments_started }}</strong></article>
+    <article class="dashboard-metric"><span>FINALIZADOS</span><strong>{{ metrics.tournaments_completed }}</strong></article>
+    <article class="dashboard-metric"><span>EM ANDAMENTO</span><strong>{{ metrics.tournaments_active }}</strong></article>
+    <article class="dashboard-metric"><span>ARQUIVADOS</span><strong>{{ metrics.tournaments_archived }}</strong></article>
+    <article class="dashboard-metric"><span>PARTICIPANTES POR LINK</span><strong>{{ metrics.participants_invited }}</strong></article>
+    <article class="dashboard-metric"><span>ADICIONADOS MANUALMENTE</span><strong>{{ metrics.participants_manual }}</strong></article>
+    <article class="dashboard-metric"><span>MODERADORES RECORRENTES</span><strong>{{ metrics.moderators_returned }} <small>/ {{ metrics.moderators_total }}</small></strong></article>
+    <article class="dashboard-metric"><span>TAXA DE CONCLUSÃO</span><strong>{{ formatCompletionRate(metrics.completion_rate) }}</strong></article>
+    <article class="dashboard-metric"><span>DURAÇÃO MÉDIA</span><strong>{{ formatDashboardDuration(metrics.average_duration_seconds) }}</strong></article>
+  </section>
+  <footer class="dashboard-footer"><span>SETPOINT · {{ buildId }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
 </div>

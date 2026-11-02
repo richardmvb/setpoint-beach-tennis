@@ -2,6 +2,21 @@ import { Injectable } from '@angular/core';
 import { createClient, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
 import { SharedTournamentSnapshot, TournamentState } from './models';
 
+export interface DashboardMetrics {
+  tournaments_total: number;
+  tournaments_started: number;
+  tournaments_completed: number;
+  tournaments_active: number;
+  tournaments_archived: number;
+  participants_total: number;
+  participants_invited: number;
+  participants_manual: number;
+  moderators_total: number;
+  moderators_returned: number;
+  completion_rate: number;
+  average_duration_seconds: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
   private readonly client: SupabaseClient | null;
@@ -102,6 +117,12 @@ export class SupabaseService {
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
+  }
+
+  async getDashboardMetrics(): Promise<DashboardMetrics> {
+    const { data, error } = await this.requireClient().rpc('get_dashboard_metrics');
+    if (error) throw error;
+    return data as DashboardMetrics;
   }
 
   async addSharedParticipant(id: string, displayName: string): Promise<SharedTournamentSnapshot> {

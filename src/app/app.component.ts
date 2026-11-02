@@ -6,7 +6,7 @@ import { StorageService } from './core/storage.service';
 import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
-import { SupabaseService } from './core/supabase.service';
+import { DashboardMetrics, SupabaseService } from './core/supabase.service';
 import type { User } from '@supabase/supabase-js';
 import { ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
@@ -28,7 +28,9 @@ interface GroupStandingEntry {
 }
 
 const ACCESS_PASSWORD = 'bt2026';
+const DASHBOARD_PASSWORD = 'dashbt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
+const DASHBOARD_UNLOCK_SESSION_KEY = 'setpoint.dashboard.unlocked';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
@@ -81,6 +83,14 @@ export class AppComponent implements OnInit, OnDestroy {
   guestJoined = false;
   feedbackLoading = false;
   feedbackMessage = '';
+  isDashboardRoute = false;
+  dashboardLocked = false;
+  dashboardPassword = '';
+  dashboardError = '';
+  dashboardLoading = false;
+  dashboardMetrics: DashboardMetrics | null = null;
+  appBasePath = '';
+  private readonly onPopState = (): void => this.restorePageFromPath();
 
   private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
 
@@ -96,10 +106,19 @@ export class AppComponent implements OnInit, OnDestroy {
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
     const authCallback = new URLSearchParams(window.location.search).has('code')
       || window.location.hash.includes('access_token=');
+    this.appBasePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
+    this.isDashboardRoute = this.isDashboardPath(window.location.pathname);
     this.isGuestView = !!inviteToken;
     this.sharedInviteToken = inviteToken;
-    try { this.isLocked = !this.isGuestView && !authCallback && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true'; }
-    catch { this.isLocked = true; }
+    try {
+      this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback
+        && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
+      this.dashboardLocked = this.isDashboardRoute
+        && sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true';
+    } catch {
+      this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback;
+      this.dashboardLocked = this.isDashboardRoute;
+    }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
       roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
@@ -112,7 +131,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state.fixedPairs ??= [];
     this.state.finals ??= null;
     this.state.tieBreakDraws ??= [];
-    this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
+    this.page = this.isDashboardRoute ? 'dashboard' : this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
     if (!this.state.rounds.length) {
       if (!this.availableCourts.includes(this.state.courts)) this.state.courts = Math.floor(this.state.size / 4);
       this.state.roundCount = this.requiredRounds;
@@ -122,6 +141,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    window.addEventListener('popstate', this.onPopState);
     this.posthogService.init(environment.posthogKey, {
       api_host: environment.posthogHost,
       capture_exceptions: true,
@@ -151,12 +171,14 @@ export class AppComponent implements OnInit, OnDestroy {
     });
     void this.identifyCurrentUser();
     this.applyTheme();
+    if (this.isDashboardRoute && !this.dashboardLocked) void this.loadDashboardMetrics();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('popstate', this.onPopState);
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
     if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
     this.authStateUnsubscribe?.();
@@ -225,12 +247,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.persist();
   }
 
-  async openNpsFeedback(): Promise<void> {
+  async openNpsFeedback(centered = false): Promise<void> {
     if (this.feedbackLoading) return;
     this.feedbackLoading = true;
     this.feedbackMessage = '';
     try {
-      const opened = await this.posthogService.displayApiSurveyByName(this.npsSurveyName);
+      const opened = await this.posthogService.displayApiSurveyByName(this.npsSurveyName, centered);
       if (!opened) {
         this.feedbackMessage = 'Pesquisa indisponível no momento.';
         return;
@@ -261,6 +283,7 @@ export class AppComponent implements OnInit, OnDestroy {
       case 'ready': return 'Vagas preenchidas · aguardando início';
       case 'active': return 'Torneio em andamento';
       case 'completed': return 'Torneio concluído';
+      case 'archived': return 'Torneio arquivado';
       default: return 'Carregando torneio';
     }
   }
@@ -275,6 +298,58 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isLocked = false;
     this.sitePassword = '';
     this.lockError = '';
+  }
+
+  unlockDashboard(): void {
+    if (this.dashboardPassword !== DASHBOARD_PASSWORD) {
+      this.dashboardPassword = '';
+      this.dashboardError = 'Senha incorreta.';
+      return;
+    }
+    try { sessionStorage.setItem(DASHBOARD_UNLOCK_SESSION_KEY, 'true'); } catch { /* desbloqueio vale até recarregar */ }
+    this.dashboardLocked = false;
+    this.dashboardPassword = '';
+    this.dashboardError = '';
+    void this.loadDashboardMetrics();
+  }
+
+  async loadDashboardMetrics(): Promise<void> {
+    this.dashboardLoading = true;
+    this.dashboardError = '';
+    try {
+      this.dashboardMetrics = await this.supabase.getDashboardMetrics();
+    } catch {
+      this.dashboardError = 'Acesso não autorizado ou métricas indisponíveis. Entre com uma conta moderadora autorizada.';
+    } finally {
+      this.dashboardLoading = false;
+    }
+  }
+
+  formatDashboardDuration(seconds: number | null): string {
+    if (seconds === null) return '—';
+    const totalMinutes = Math.round(Math.max(0, seconds) / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return hours ? `${hours}h ${minutes}min` : `${minutes}min`;
+  }
+
+  formatCompletionRate(rate: number | null): string { return `${(rate ?? 0).toFixed(1)}%`; }
+
+  scrollGuestTo(id: string): void {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  private scrollGuestToLatestUpdate(): void {
+    const targetId = this.state.finals ? 'guest-finals'
+      : this.state.rounds.length ? 'guest-ranking' : 'guest-participants';
+    window.setTimeout(() => {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'end'
+      });
+    }, 100);
   }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
@@ -455,9 +530,35 @@ export class AppComponent implements OnInit, OnDestroy {
   navigate(page: Page): void { this.setPage(page); this.clearNotice(); }
 
   private setPage(page: Page): void {
-    if (this.page === page) return;
+    if (this.page === page && (page !== 'dashboard' || this.isDashboardRoute)) return;
+    if (page === 'dashboard') {
+      this.isDashboardRoute = true;
+      try { this.dashboardLocked = sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true'; }
+      catch { this.dashboardLocked = true; }
+      window.history.pushState({}, '', `${this.appBasePath}/dashboard`);
+      if (!this.dashboardLocked) void this.loadDashboardMetrics();
+    } else if (this.isDashboardRoute) {
+      this.isDashboardRoute = false;
+      window.history.pushState({}, '', `${this.appBasePath}/`);
+    }
     this.page = page;
     this.trackFeatureViewed(page);
+  }
+
+  private isDashboardPath(path: string): boolean { return path.replace(/\/+$/, '').endsWith('/dashboard'); }
+
+  private restorePageFromPath(): void {
+    const dashboard = this.isDashboardPath(window.location.pathname);
+    if (dashboard === this.isDashboardRoute) return;
+    this.isDashboardRoute = dashboard;
+    if (dashboard) {
+      this.page = 'dashboard';
+      try { this.dashboardLocked = sessionStorage.getItem(DASHBOARD_UNLOCK_SESSION_KEY) !== 'true'; }
+      catch { this.dashboardLocked = true; }
+      if (!this.dashboardLocked) void this.loadDashboardMetrics();
+    } else {
+      this.page = this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
+    }
   }
 
   private trackFeatureViewed(page: Page): void {
@@ -711,6 +812,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isSharedModerator = false;
       this.applySharedSnapshot(snapshot);
       this.subscribeToShared(snapshot.id, false);
+      this.scrollGuestToLatestUpdate();
       this.posthogService.posthog.capture('shared_tournament_joined', {
         tournament_mode: this.state.tournamentMode,
         tournament_size: this.state.size,
@@ -864,6 +966,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private applySharedSnapshot(snapshot: SharedTournamentSnapshot, keepView = false): void {
+    const hadPreviousSnapshot = this.sharedSnapshot !== null;
+    const wasFinished = !!this.sharedSnapshot?.state.finishedAt;
     this.sharedSnapshot = snapshot;
     this.sharedSignature = JSON.stringify([snapshot.status, snapshot.state]);
     this.state = {
@@ -883,6 +987,9 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state.roundCount = snapshot.state.roundCount;
     if (!keepView) this.setPage(this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup');
     this.initializeScoreDrafts();
+    if (this.isGuestView && hadPreviousSnapshot && !wasFinished && snapshot.state.finishedAt) {
+      window.setTimeout(() => { void this.openNpsFeedback(true); }, 0);
+    }
   }
 
   private subscribeToShared(id: string, owner: boolean): void {
@@ -897,6 +1004,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (JSON.stringify([snapshot.status, snapshot.state]) === this.sharedSignature) return;
       if (owner && this.state.rounds.length) return;
       this.applySharedSnapshot(snapshot, true);
+      if (!owner) this.scrollGuestToLatestUpdate();
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     }
@@ -906,7 +1014,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private pollShared(): void {
     if (document.hidden || this.sharedLoading) return;
     if (this.isGuestView) {
-      if (this.sharedSnapshot && this.sharedSnapshot.status !== 'completed') void this.refreshSharedState(this.sharedSnapshot.id, false);
+      if (this.sharedSnapshot && this.sharedSnapshot.status !== 'completed' && this.sharedSnapshot.status !== 'archived') {
+        void this.refreshSharedState(this.sharedSnapshot.id, false);
+      }
     } else if (this.isSharedModerator && this.state.sharedTournamentId && !this.state.rounds.length) {
       void this.refreshSharedState(this.state.sharedTournamentId, true);
     }
@@ -1165,6 +1275,7 @@ export class AppComponent implements OnInit, OnDestroy {
       participant_count: this.state.players.length,
       has_started_at: !!this.state.startedAt,
     });
+    void this.openNpsFeedback(true);
   }
 
   finalScoreStatus(match: Match): string {
@@ -1205,7 +1316,7 @@ export class AppComponent implements OnInit, OnDestroy {
   async cancelSharedTournament(): Promise<void> {
     const id = this.state.sharedTournamentId;
     if (!this.isSharedModerator || !id) return;
-    if (!confirm('Cancelar o torneio compartilhado? O link será invalidado e todos os dados serão apagados do servidor e deste navegador.')) return;
+    if (!confirm('Arquivar este torneio e recomeçar? O convite será invalidado. O histórico e os participantes serão preservados no dashboard.')) return;
     this.sharedLoading = true;
     this.sharedError = '';
     try {
