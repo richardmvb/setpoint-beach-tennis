@@ -33,6 +33,7 @@ interface GroupStandingEntry {
 
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
+const LANDING_SEEN_KEY = 'setpoint.landing.seen';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
@@ -46,6 +47,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly posthogService = inject(PostHogService);
 
   isLocked = false;
+  showLanding = false;
   sitePassword = '';
   lockError = '';
   page: Page = 'setup';
@@ -137,6 +139,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch {
       this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback;
     }
+    try { this.showLanding = !this.isDashboardRoute && !this.isGuestView && !authCallback && localStorage.getItem(LANDING_SEEN_KEY) !== 'true'; } catch { this.showLanding = false; }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
       roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
@@ -338,6 +341,18 @@ export class AppComponent implements OnInit, OnDestroy {
       case 'archived': return 'Torneio arquivado';
       default: return 'Carregando torneio';
     }
+  }
+
+  enterApp(): void {
+    try { localStorage.setItem(LANDING_SEEN_KEY, 'true'); } catch { /* landing volta na próxima visita */ }
+    this.showLanding = false;
+    window.scrollTo({ top: 0 });
+    this.posthogService.posthog.capture('landing_cta_clicked');
+  }
+
+  openLanding(): void {
+    this.showLanding = true;
+    window.scrollTo({ top: 0 });
   }
 
   unlock(): void {

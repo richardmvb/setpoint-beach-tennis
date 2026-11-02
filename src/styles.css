@@ -552,3 +552,24 @@ app-player-avatar>span:not(.has-photo){color:inherit}
 .avatar-menu-item.danger{color:#d64545}
 .avatar-error{position:absolute;top:60px;left:0;width:max-content;max-width:240px;color:#d64545;font-size:12px}
 .form-field app-avatar-picker{display:block}
+
+/* Landing */
+.landing{min-height:100svh;padding:20px 20px 56px;background:radial-gradient(900px 500px at 50% -10%,rgba(185,138,62,.14),transparent 60%),var(--bg);color:var(--text)}
+.landing>*{max-width:980px;margin-inline:auto}
+.landing-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.landing-nav .lock-brand{margin-bottom:0}
+.landing-hero{padding:56px 0 40px;display:grid;gap:16px;justify-items:start}
+.landing-hero h1{margin:0;max-width:16ch;font:800 clamp(32px,7vw,56px)/1.05 var(--font-display),sans-serif}
+.landing-hero p{margin:0;max-width:56ch;color:var(--muted);font-size:17px;line-height:1.55}
+.landing-cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.landing-cta .button,.landing-steps .button{min-height:48px;padding-inline:24px}
+.landing-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.landing-features article{padding:18px;border:1px solid var(--border);border-radius:18px;background:var(--surface)}
+.landing-features b{display:block;margin-bottom:6px;font-size:15px}
+.landing-features p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+.landing-steps{padding-top:48px;display:grid;gap:18px;justify-items:start}
+.landing-steps h2{margin:0;font:800 26px var(--font-display),sans-serif}
+.landing-steps ol{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;width:100%;margin:0;padding:0;list-style:none;counter-reset:step}
+.landing-steps li{display:grid;gap:4px;padding:16px;border-radius:16px;background:var(--surface-soft);counter-increment:step}
+.landing-steps li::before{content:counter(step);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--green-2);color:#fff;font-weight:800;font-size:13px}
+.landing-steps li span{color:var(--muted);font-size:13px}
