@@ -207,7 +207,23 @@
   </div>
 </div>
 
-<button *ngIf="!isLocked && !isDashboardRoute && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab" type="button" (click)="openQualificationStats()" aria-haspopup="dialog"><span aria-hidden="true">◎</span>{{ isGuestView ? 'Meu objetivo' : 'Projeção' }}</button>
+<div *ngIf="sharePreviewOpen" class="share-preview-backdrop" role="presentation" (click)="closeSharePreview()">
+  <section class="share-preview-modal" role="dialog" aria-modal="true" aria-labelledby="sharePreviewTitle" (click)="$event.stopPropagation()">
+    <header class="share-preview-header"><div><span class="card-kicker">CARD PARA INSTAGRAM</span><h2 id="sharePreviewTitle">Personalize e confira</h2></div><button class="share-preview-close" type="button" (click)="closeSharePreview()" aria-label="Fechar prévia">×</button></header>
+    <div class="share-preview-controls">
+      <div class="share-layout-control"><span>LAYOUT</span><div class="share-layout-options" role="group" aria-label="Escolher layout do card"><button type="button" [class.active]="shareLayout === 'podium'" [attr.aria-pressed]="shareLayout === 'podium'" (click)="chooseShareLayout('podium')">Pódio</button><button type="button" [class.active]="shareLayout === 'editorial'" [attr.aria-pressed]="shareLayout === 'editorial'" (click)="chooseShareLayout('editorial')">Editorial</button><button type="button" [class.active]="shareLayout === 'scoreboard'" [attr.aria-pressed]="shareLayout === 'scoreboard'" (click)="chooseShareLayout('scoreboard')">Placar</button></div></div>
+      <div class="share-background-control"><label class="button secondary share-upload-button">{{ shareBackgroundUrl ? 'Trocar foto' : 'Adicionar foto de fundo' }}<input type="file" accept="image/*" (change)="selectShareBackground($event)" hidden></label><button *ngIf="shareBackgroundUrl" class="button secondary" type="button" (click)="clearShareBackground()">Sem foto</button><small *ngIf="shareBackgroundName" class="muted">{{ shareBackgroundName }}</small><small *ngIf="!shareBackgroundUrl" class="muted">Opcional · a foto fica neste dispositivo.</small></div>
+    </div>
+    <div class="share-preview-frame" aria-live="polite">
+      <div *ngIf="sharePreviewLoading || !sharePreviewUrl" class="share-preview-skeleton" aria-label="Prévia sendo preparada"><div class="skeleton-brand"></div><div class="skeleton-title"></div><div class="skeleton-name"></div><div class="skeleton-podium"><i></i><i></i><i></i></div><div class="skeleton-row"></div><div class="skeleton-row short"></div><span>{{ sharePreviewLoading ? 'Montando sua imagem…' : 'Sua prévia aparecerá aqui.' }}</span></div>
+      <img *ngIf="sharePreviewUrl && !sharePreviewLoading" [src]="sharePreviewUrl" alt="Prévia do card de resultados">
+    </div>
+    <p *ngIf="shareMessage" class="share-preview-message" role="status">{{ shareMessage }}</p>
+    <footer class="share-preview-actions"><button class="button secondary" type="button" (click)="closeSharePreview()">Voltar</button><button class="button secondary" type="button" (click)="sharePreviewImage()" [disabled]="!sharePreviewBlob || sharePreviewLoading">Compartilhar</button><button class="button primary" type="button" (click)="downloadSharePreview()" [disabled]="!sharePreviewBlob || sharePreviewLoading">Baixar imagem</button></footer>
+  </section>
+</div>
+
+<button *ngIf="!isLocked && !isDashboardRoute && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab qual-fab-icon" type="button" (click)="openQualificationStats()" aria-haspopup="dialog" [attr.aria-label]="isGuestView ? 'Abrir meu objetivo' : 'Abrir projeção'" [title]="isGuestView ? 'Meu objetivo' : 'Projeção'"><span aria-hidden="true">◎</span></button>
 <button *ngIf="!isLocked && isGuestView && guestUpdateCount > 0" class="guest-update-button" type="button" (click)="openFirstGuestUpdate()"><span aria-hidden="true">↓</span>{{ guestUpdateCount }} {{ guestUpdateCount === 1 ? 'nova atualização' : 'novas atualizações' }}</button>
 @defer (when qualificationModalOpen) {
   <app-qualification-stats [rows]="qualificationRows" [projection]="qualificationProjection" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (close)="closeQualificationStats()"></app-qualification-stats>

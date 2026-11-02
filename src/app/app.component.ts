@@ -8,7 +8,7 @@ import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
 import { DashboardMetrics, SupabaseService } from './core/supabase.service';
 import type { User } from '@supabase/supabase-js';
-import { ShareCardService, formatElapsed } from './core/share-card.service';
+import { ShareCardLayout, ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { PodiumComponent } from './features/podium.component';
@@ -77,6 +77,13 @@ export class AppComponent implements OnInit, OnDestroy {
   sharePlayerId = '';
   sharingResults = false;
   shareMessage = '';
+  sharePreviewOpen = false;
+  sharePreviewLoading = false;
+  sharePreviewUrl = '';
+  sharePreviewBlob: Blob | null = null;
+  shareLayout: ShareCardLayout = 'podium';
+  shareBackgroundUrl = '';
+  shareBackgroundName = '';
   private syncTimeout: number | null = null;
   private sharedPollTimer: number | null = null;
   private authStateUnsubscribe: (() => void) | null = null;
@@ -188,6 +195,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
     if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
     this.authStateUnsubscribe?.();
+    if (this.sharePreviewUrl) URL.revokeObjectURL(this.sharePreviewUrl);
+    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
   }
 
   private async identifyCurrentUser(): Promise<void> {
@@ -890,21 +899,104 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async shareResults(): Promise<void> {
     if (!this.state.finals?.complete || !this.sharePlayerId) return;
+    this.sharePreviewOpen = true;
+    await this.refreshSharePreview();
+  }
+
+  async refreshSharePreview(): Promise<void> {
+    if (!this.state.finals?.complete || !this.sharePlayerId) return;
     this.sharingResults = true;
+    this.sharePreviewLoading = true;
     this.shareMessage = '';
+    this.sharePreviewBlob = null;
+    if (this.sharePreviewUrl) URL.revokeObjectURL(this.sharePreviewUrl);
+    this.sharePreviewUrl = '';
     try {
-      const result = await this.shareCard.sharePlayerResults(this.state, this.standings, this.sharePlayerId);
-      this.shareMessage = result === 'shared' ? 'Compartilhe a imagem no Instagram ou em outra rede.' : 'Imagem dos resultados baixada.';
+      this.sharePreviewBlob = await this.shareCard.generatePlayerResultsImage(
+        this.state,
+        this.standings,
+        this.sharePlayerId,
+        { layout: this.shareLayout, backgroundImageUrl: this.shareBackgroundUrl || undefined }
+      );
+      this.sharePreviewUrl = URL.createObjectURL(this.sharePreviewBlob);
+    } catch (error) {
+      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível gerar a prévia.';
+    } finally {
+      this.sharingResults = false;
+      this.sharePreviewLoading = false;
+    }
+  }
+
+  async chooseShareLayout(layout: ShareCardLayout): Promise<void> {
+    if (this.shareLayout === layout) return;
+    this.shareLayout = layout;
+    if (this.sharePreviewOpen) await this.refreshSharePreview();
+  }
+
+  async selectShareBackground(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.shareMessage = 'Escolha um arquivo de imagem.';
+      return;
+    }
+    if (file.size > 8_000_000) {
+      this.shareMessage = 'A imagem deve ter até 8 MB.';
+      return;
+    }
+    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
+    this.shareBackgroundUrl = URL.createObjectURL(file);
+    this.shareBackgroundName = file.name;
+    if (this.sharePreviewOpen) await this.refreshSharePreview();
+  }
+
+  async clearShareBackground(): Promise<void> {
+    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
+    this.shareBackgroundUrl = '';
+    this.shareBackgroundName = '';
+    if (this.sharePreviewOpen) await this.refreshSharePreview();
+  }
+
+  closeSharePreview(): void { this.sharePreviewOpen = false; }
+
+  downloadSharePreview(): void {
+    if (!this.sharePreviewBlob || !this.sharePlayerId) return;
+    const player = this.state.players.find(item => item.id === this.sharePlayerId);
+    if (!player) return;
+    this.shareCard.downloadImage(this.sharePreviewBlob, player.name);
+    this.shareMessage = 'Imagem baixada.';
+    this.posthogService.posthog.capture('results_shared', {
+      share_method: 'downloaded',
+      share_layout: this.shareLayout,
+      has_custom_background: !!this.shareBackgroundUrl,
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+    });
+  }
+
+  async sharePreviewImage(): Promise<void> {
+    if (!this.sharePreviewBlob || !this.sharePlayerId) return;
+    const player = this.state.players.find(item => item.id === this.sharePlayerId);
+    if (!player) return;
+    try {
+      const shared = await this.shareCard.shareImage(this.sharePreviewBlob, player.name, this.state.name);
+      if (!shared) {
+        this.downloadSharePreview();
+        return;
+      }
+      this.shareMessage = 'Imagem compartilhada.';
       this.posthogService.posthog.capture('results_shared', {
-        share_method: result,
+        share_method: 'shared',
+        share_layout: this.shareLayout,
+        has_custom_background: !!this.shareBackgroundUrl,
         tournament_mode: this.state.tournamentMode,
         tournament_size: this.state.size,
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
-      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível compartilhar os resultados.';
-    } finally {
-      this.sharingResults = false;
+      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível compartilhar a imagem.';
     }
   }
 

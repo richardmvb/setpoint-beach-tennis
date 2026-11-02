@@ -9,6 +9,13 @@ type PlayerMatchResult = {
   won: boolean | null;
 };
 
+export type ShareCardLayout = 'podium' | 'editorial' | 'scoreboard';
+
+export interface ShareCardOptions {
+  layout: ShareCardLayout;
+  backgroundImageUrl?: string;
+}
+
 export function formatElapsed(milliseconds: number): string {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -29,11 +36,12 @@ export class ShareCardService {
       : standings.findIndex(row => row.playerId === playerId) + 1;
   }
 
-  async sharePlayerResults(
+  async generatePlayerResultsImage(
     state: TournamentState,
     standings: PlayerStanding[],
-    playerId: string
-  ): Promise<'shared' | 'downloaded'> {
+    playerId: string,
+    options: ShareCardOptions
+  ): Promise<Blob> {
     const standing = standings.find(row => row.playerId === playerId);
     const player = state.players.find(item => item.id === playerId);
     if (!standing || !player || !state.finals?.complete) {
@@ -44,8 +52,9 @@ export class ShareCardService {
     const podium = this.finals.podium(state.finals);
     const fourth = podium.find(place => place.place === 4);
     const width = 1080;
-    const podiumTop = 430;
-    const baseY = podiumTop + 90 + 210;
+    const layout = options.layout;
+    const podiumTop = layout === 'editorial' ? 400 : layout === 'scoreboard' ? 470 : 430;
+    const baseY = layout === 'editorial' ? 570 : podiumTop + 90 + 210;
     const fourthHeight = fourth ? 100 : 0;
     const resultsLabelY = baseY + 40 + fourthHeight + 30;
     const rowsTop = resultsLabelY + 56;
@@ -58,12 +67,22 @@ export class ShareCardService {
     if (!context) throw new Error('Não foi possível gerar a imagem dos resultados.');
 
     const gold = '#e6c36a';
-    const background = context.createLinearGradient(0, 0, width * 0.6, height);
-    background.addColorStop(0, '#0a1f19');
-    background.addColorStop(0.5, '#123b30');
-    background.addColorStop(1, '#07140f');
-    context.fillStyle = background;
-    context.fillRect(0, 0, width, height);
+    if (options.backgroundImageUrl) {
+      const image = await this.loadImage(options.backgroundImageUrl);
+      const scale = Math.max(width / image.width, height / image.height);
+      const imageWidth = image.width * scale;
+      const imageHeight = image.height * scale;
+      context.drawImage(image, (width - imageWidth) / 2, (height - imageHeight) / 2, imageWidth, imageHeight);
+      context.fillStyle = 'rgba(3, 12, 9, 0.62)';
+      context.fillRect(0, 0, width, height);
+    } else {
+      const background = context.createLinearGradient(0, 0, width * 0.6, height);
+      background.addColorStop(0, '#0a1f19');
+      background.addColorStop(0.5, '#123b30');
+      background.addColorStop(1, '#07140f');
+      context.fillStyle = background;
+      context.fillRect(0, 0, width, height);
+    }
     const glow = context.createRadialGradient(width - 120, 140, 10, width - 120, 140, 620);
     glow.addColorStop(0, 'rgba(230,195,106,0.30)');
     glow.addColorStop(1, 'rgba(230,195,106,0)');
@@ -75,31 +94,63 @@ export class ShareCardService {
     context.fillStyle = glowBottom;
     context.fillRect(0, 0, width, height);
 
-    context.textBaseline = 'top';
-    context.fillStyle = gold;
-    context.fillRect(80, 84, 56, 4);
-    context.font = '800 28px Manrope, sans-serif';
-    context.fillText('SETPOINT', 80, 106);
-    context.fillStyle = 'rgba(255,255,255,0.62)';
-    context.font = '600 17px "DM Sans", sans-serif';
     const duration = state.startedAt && state.finishedAt
       ? `  ·  ${formatElapsed(Date.parse(state.finishedAt) - Date.parse(state.startedAt))}` : '';
-    context.fillText(`${state.name.toLocaleUpperCase()}${duration}`, 80, 148, 920);
-    context.fillStyle = '#ffffff';
-    context.font = '800 60px Manrope, sans-serif';
-    context.fillText(player.name, 80, 196, 920);
     const place = this.placementOf(state, standings, playerId);
+    context.textBaseline = 'top';
     context.fillStyle = gold;
-    context.font = '800 30px Manrope, sans-serif';
-    context.fillText(`${this.medal(place)} ${this.ordinal(place)} LUGAR`.trim(), 80, 282);
-    context.fillStyle = 'rgba(255,255,255,0.62)';
-    context.font = '600 19px "DM Sans", sans-serif';
-    context.fillText(`${standing.setsWon} vitórias · ${standing.matchesPlayed} jogos · saldo ${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}`, 80, 332, 920);
-
-    context.fillStyle = gold;
-    context.font = '800 15px "DM Sans", sans-serif';
-    context.fillText('PÓDIO', 80, podiumTop - 8);
-    this.drawPodium(context, state, podium, playerId, podiumTop, baseY, gold);
+    context.font = '800 28px Manrope, sans-serif';
+    if (layout === 'editorial') {
+      context.textAlign = 'center';
+      context.fillText('SETPOINT', width / 2, 84);
+      context.fillStyle = 'rgba(255,255,255,0.65)';
+      context.font = '600 17px "DM Sans", sans-serif';
+      context.fillText(`${state.name.toLocaleUpperCase()}${duration}`, width / 2, 128, 920);
+      context.fillStyle = '#ffffff';
+      context.font = '800 68px Manrope, sans-serif';
+      context.fillText(player.name, width / 2, 176, 920);
+      context.fillStyle = gold;
+      context.font = '800 34px Manrope, sans-serif';
+      context.fillText(`${this.medal(place)} ${this.ordinal(place)} LUGAR`.trim(), width / 2, 274);
+      context.fillStyle = 'rgba(255,255,255,0.65)';
+      context.font = '600 18px "DM Sans", sans-serif';
+      context.fillText(`${standing.setsWon} vitórias · ${standing.matchesPlayed} jogos · saldo ${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}`, width / 2, 330, 920);
+      this.drawEditorialPodium(context, state, podium, playerId, podiumTop, gold);
+      context.textAlign = 'left';
+    } else if (layout === 'scoreboard') {
+      context.fillText('SETPOINT', 80, 84);
+      context.fillStyle = 'rgba(255,255,255,0.62)';
+      context.font = '600 17px "DM Sans", sans-serif';
+      context.fillText(`${state.name.toLocaleUpperCase()}${duration}`, 80, 128, 920);
+      context.fillStyle = '#ffffff';
+      context.font = '800 56px Manrope, sans-serif';
+      context.fillText(player.name, 80, 176, 920);
+      this.drawStatStrip(context, standing, place, gold, 252);
+      context.fillStyle = gold;
+      context.font = '800 15px "DM Sans", sans-serif';
+      context.fillText('PÓDIO FINAL', 80, podiumTop - 8);
+      this.drawPodium(context, state, podium, playerId, podiumTop, baseY, gold);
+    } else {
+      context.fillRect(80, 84, 56, 4);
+      context.font = '800 28px Manrope, sans-serif';
+      context.fillText('SETPOINT', 80, 106);
+      context.fillStyle = 'rgba(255,255,255,0.62)';
+      context.font = '600 17px "DM Sans", sans-serif';
+      context.fillText(`${state.name.toLocaleUpperCase()}${duration}`, 80, 148, 920);
+      context.fillStyle = '#ffffff';
+      context.font = '800 60px Manrope, sans-serif';
+      context.fillText(player.name, 80, 196, 920);
+      context.fillStyle = gold;
+      context.font = '800 30px Manrope, sans-serif';
+      context.fillText(`${this.medal(place)} ${this.ordinal(place)} LUGAR`.trim(), 80, 282);
+      context.fillStyle = 'rgba(255,255,255,0.62)';
+      context.font = '600 19px "DM Sans", sans-serif';
+      context.fillText(`${standing.setsWon} vitórias · ${standing.matchesPlayed} jogos · saldo ${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}`, 80, 332, 920);
+      context.fillStyle = gold;
+      context.font = '800 15px "DM Sans", sans-serif';
+      context.fillText('PÓDIO', 80, podiumTop - 8);
+      this.drawPodium(context, state, podium, playerId, podiumTop, baseY, gold);
+    }
     if (fourth) {
       const y = baseY + 40;
       this.roundRect(context, 80, y, 920, 76, 18);
@@ -152,19 +203,24 @@ export class ShareCardService {
       value => value ? resolve(value) : reject(new Error('Não foi possível preparar a imagem.')),
       'image/png'
     ));
-    const file = new File([blob], `setpoint-${this.fileName(player.name)}.png`, { type: 'image/png' });
-    if (navigator.share && navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ title: `${player.name} · ${state.name}`, files: [file] });
-      return 'shared';
-    }
+    return blob;
+  }
 
+  async shareImage(blob: Blob, playerName: string, tournamentName: string): Promise<boolean> {
+    const file = new File([blob], this.fileName(playerName), { type: 'image/png' });
+    if (!navigator.share || !navigator.canShare?.({ files: [file] })) return false;
+    await navigator.share({ title: `${playerName} · ${tournamentName}`, files: [file] });
+    return true;
+  }
+
+  downloadImage(blob: Blob, playerName: string): void {
+    const fileName = this.fileName(playerName);
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = file.name;
+    anchor.download = fileName;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    return 'downloaded';
   }
 
   private drawPodium(
@@ -206,6 +262,74 @@ export class ShareCardService {
         context.fillText(item.name, x + columnWidth / 2, stepTop - 12 - (names.length - nameIndex) * 30, columnWidth - 12);
       });
       context.textAlign = 'left';
+    });
+  }
+
+  private drawEditorialPodium(
+    context: CanvasRenderingContext2D, state: TournamentState, podium: PodiumPlace[],
+    playerId: string, top: number, gold: string
+  ): void {
+    const slots = [1, 2, 3, 4];
+    const gap = 14;
+    const width = (920 - gap * (slots.length - 1)) / slots.length;
+    slots.forEach((place, index) => {
+      const x = 80 + index * (width + gap);
+      const item = podium.find(value => value.place === place);
+      this.roundRect(context, x, top, width, 150, 18);
+      context.fillStyle = item?.playerIds.includes(playerId) ? 'rgba(230,195,106,0.2)' : 'rgba(255,255,255,0.08)';
+      context.fill();
+      context.strokeStyle = item?.playerIds.includes(playerId) ? gold : 'rgba(255,255,255,0.15)';
+      context.stroke();
+      context.textAlign = 'center';
+      context.fillStyle = gold;
+      context.font = '42px sans-serif';
+      context.fillText(this.medal(place), x + width / 2, top + 18);
+      context.fillStyle = 'rgba(255,255,255,0.8)';
+      context.font = '800 18px Manrope, sans-serif';
+      context.fillText(this.ordinal(place), x + width / 2, top + 70);
+      const entry = podium.find(value => value.place === place);
+      context.fillStyle = entry?.playerIds.includes(playerId) ? gold : '#ffffff';
+      context.font = '700 13px Manrope, sans-serif';
+      (entry?.playerIds ?? []).forEach((id, nameIndex) => {
+        context.fillText(this.playerName(state, id), x + width / 2, top + 103 + nameIndex * 20, width - 12);
+      });
+    });
+    context.textAlign = 'left';
+  }
+
+  private drawStatStrip(
+    context: CanvasRenderingContext2D, standing: PlayerStanding, place: number, gold: string, y: number
+  ): void {
+    const stats = [
+      { label: 'POSIÇÃO', value: this.ordinal(place) },
+      { label: 'VITÓRIAS', value: String(standing.setsWon) },
+      { label: 'JOGOS', value: String(standing.matchesPlayed) },
+      { label: 'SALDO', value: `${standing.gameBalance > 0 ? '+' : ''}${standing.gameBalance}` }
+    ];
+    const gap = 12;
+    const width = (920 - gap * (stats.length - 1)) / stats.length;
+    stats.forEach((stat, index) => {
+      const x = 80 + index * (width + gap);
+      this.roundRect(context, x, y, width, 98, 16);
+      context.fillStyle = 'rgba(255,255,255,0.08)';
+      context.fill();
+      context.strokeStyle = 'rgba(255,255,255,0.15)';
+      context.stroke();
+      context.fillStyle = 'rgba(255,255,255,0.58)';
+      context.font = '700 12px "DM Sans", sans-serif';
+      context.fillText(stat.label, x + 14, y + 15, width - 28);
+      context.fillStyle = gold;
+      context.font = '800 27px Manrope, sans-serif';
+      context.fillText(stat.value, x + 14, y + 45, width - 28);
+    });
+  }
+
+  private loadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Não foi possível carregar a imagem de fundo.'));
+      image.src = src;
     });
   }
 
@@ -266,6 +390,6 @@ export class ShareCardService {
 
   private ordinal(position: number): string { return `${position}º`; }
   private fileName(name: string): string {
-    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+    return `setpoint-${name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase()}.png`;
   }
 }
