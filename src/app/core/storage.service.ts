@@ -63,6 +63,7 @@ export class StorageService {
       || (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat))
       || (candidate.startedAt !== undefined && Number.isNaN(Date.parse(candidate.startedAt)))
       || (candidate.finishedAt !== undefined && Number.isNaN(Date.parse(candidate.finishedAt)))
+      || (candidate.analyticsId !== undefined && typeof candidate.analyticsId !== 'string')
       || (candidate.qualificationStats !== undefined && typeof candidate.qualificationStats !== 'boolean')
       || typeof candidate.name !== 'string' || candidate.name.length > 60
       || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 3

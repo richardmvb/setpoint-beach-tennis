@@ -66,6 +66,7 @@ export interface TournamentState {
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;
+  analyticsId?: string;
   tournamentMode?: TournamentMode;
   hostingMode?: TournamentHostingMode;
   qualificationStats?: boolean;

@@ -385,3 +385,19 @@ tr.me-row td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
 	.dashboard-metric{padding:14px;gap:9px;border-radius:14px}
 	.dashboard-metric>strong{font-size:24px}
 }
+.inline-score{width:48px;height:46px;font-size:18px;border-radius:12px;touch-action:manipulation}
+.tiebreak-row input{width:56px;min-height:44px;font-size:17px}
+@media(max-width:600px){
+	.inline-score{width:44px;height:44px;padding:2px;font-size:17px}
+	.tiebreak-row input{width:52px;min-height:44px}
+}
+.round-nav{display:flex;align-items:center;gap:12px;margin:12px 0 6px;min-height:48px}
+.round-nav-arrow{width:44px;height:44px;flex:none;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font-size:22px;line-height:1;box-shadow:var(--shadow)}
+.round-nav-arrow:hover:not(:disabled){border-color:var(--orange);color:var(--green-2)}
+.round-nav-current{display:grid;gap:2px;text-align:center;margin:0 auto}
+.round-nav-current small{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--muted)}
+.round-nav-current b{font-size:15px;font-variant-numeric:tabular-nums}
+.round-nav-ranking{margin-left:auto;white-space:nowrap}
+.round-tabs{scrollbar-width:thin;scrollbar-color:var(--border) transparent;scroll-snap-type:x proximity;padding-bottom:8px;overscroll-behavior-x:contain}
+.round-tabs button{scroll-snap-align:center;min-width:72px;min-height:52px}
+@media(max-width:600px){.round-nav{gap:8px}.round-nav-arrow{width:44px;height:44px}.round-nav-ranking{padding:10px 12px;font-size:11px}}

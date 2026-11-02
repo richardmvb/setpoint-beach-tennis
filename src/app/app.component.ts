@@ -172,6 +172,7 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.identifyCurrentUser();
     this.applyTheme();
     if (this.isDashboardRoute && !this.dashboardLocked) void this.loadDashboardMetrics();
+    if (!this.isLocked && !this.isDashboardRoute && !this.isGuestView) this.backfillLocalTournamentMetrics();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
@@ -298,6 +299,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isLocked = false;
     this.sitePassword = '';
     this.lockError = '';
+    this.backfillLocalTournamentMetrics();
+  }
+
+  private backfillLocalTournamentMetrics(): void {
+    if (this.state.hostingMode === 'shared' || !this.state.startedAt || !this.state.rounds.length) return;
+    this.state.analyticsId ??= this.id();
+    try { this.storage.saveTournament(this.state); } catch { return; }
+    this.syncLocalTournamentMetrics();
   }
 
   unlockDashboard(): void {
@@ -1077,8 +1086,10 @@ export class AppComponent implements OnInit, OnDestroy {
         this.applySharedSnapshot(snapshot);
       }
       this.state.startedAt ??= new Date().toISOString();
+      if (!this.isSharedMode) this.state.analyticsId ??= this.id();
       this.now = Date.now();
       this.selectedRound = 0; this.initializeScoreDrafts(); this.persist('Todas as rodadas foram geradas e salvas.'); this.setPage('rounds');
+      if (!this.isSharedMode) this.syncLocalTournamentMetrics();
       this.trackSetupStepCompleted(3);
       if (!this.isSharedMode) {
         this.posthogService.posthog.capture('tournament_created', {
@@ -1259,6 +1270,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const finishedAt = new Date().toISOString();
     this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
+    if (!this.isSharedMode) this.syncLocalTournamentMetrics();
     this.posthogService.posthog.capture('tournament_finalized', {
       tournament_mode: this.state.tournamentMode,
       hosting_mode: this.state.hostingMode,
@@ -1298,7 +1310,17 @@ export class AppComponent implements OnInit, OnDestroy {
     this.persist('Placar removido.');
   }
 
-  selectRound(index: number): void { this.selectedRound = index; }
+  selectRound(index: number): void {
+    if (index < 0 || index >= this.state.rounds.length) return;
+    this.selectedRound = index;
+    window.setTimeout(() => {
+      document.getElementById(`round-tab-${index}`)?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }, 0);
+  }
   playerName(id: string): string { return this.state.players.find(p => p.id === id)?.name ?? 'Jogador removido'; }
   groupName(groupId: string): string { return this.state.groups?.find(group => group.id === groupId)?.name ?? groupId; }
   initials(name: string): string { return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase(); }
@@ -1310,7 +1332,15 @@ export class AppComponent implements OnInit, OnDestroy {
   resetTournament(): void {
     if (this.isSharedModerator && this.state.sharedTournamentId) { void this.cancelSharedTournament(); return; }
     if (!confirm('Isso apagará a tabela, os placares e os participantes salvos neste navegador. Deseja continuar?')) return;
+    if (!this.isSharedMode) this.syncLocalTournamentMetrics(true);
     this.clearLocalTournament();
+  }
+
+  private syncLocalTournamentMetrics(abandoned = false): void {
+    if (this.state.hostingMode === 'shared' || !this.state.startedAt) return;
+    this.state.analyticsId ??= this.id();
+    const snapshot = { ...this.state };
+    void this.supabase.recordLocalTournamentMetrics(snapshot, abandoned).catch(() => undefined);
   }
 
   async cancelSharedTournament(): Promise<void> {
@@ -1353,6 +1383,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state = {
       ...imported,
       hostingMode: 'local',
+      analyticsId: imported.analyticsId ?? (imported.rounds.length ? this.id() : undefined),
       groups: imported.groups ?? [],
       fixedPairs: imported.fixedPairs ?? [],
       finals: imported.finals ?? null,
@@ -1364,6 +1395,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initializeScoreDrafts();
     this.persist();
     this.setPage(this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup');
+    if (this.state.startedAt) this.syncLocalTournamentMetrics();
     this.message(this.state.finals?.complete
       ? 'Torneio finalizado carregado. Os dados estão em modo somente leitura.'
       : 'Backup carregado.');

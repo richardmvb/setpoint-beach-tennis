@@ -8,12 +8,15 @@ export interface DashboardMetrics {
   tournaments_completed: number;
   tournaments_active: number;
   tournaments_archived: number;
+  tournaments_abandoned: number;
+  super_tournaments: number;
+  group_tournaments: number;
   participants_total: number;
   participants_invited: number;
   participants_manual: number;
   moderators_total: number;
   moderators_returned: number;
-  completion_rate: number;
+  completion_rate: number | null;
   average_duration_seconds: number | null;
 }
 
@@ -123,6 +126,24 @@ export class SupabaseService {
     const { data, error } = await this.requireClient().rpc('get_dashboard_metrics');
     if (error) throw error;
     return data as DashboardMetrics;
+  }
+
+  async recordLocalTournamentMetrics(state: TournamentState, abandoned = false): Promise<void> {
+    if (!this.client || state.hostingMode === 'shared' || !state.analyticsId || !state.startedAt) return;
+    if (!await this.currentUser()) await this.signInAnonymously();
+    const { error } = await this.requireClient().rpc('record_local_tournament_metrics', {
+      p_tournament_id: state.analyticsId,
+      p_tournament_mode: state.tournamentMode ?? 'super',
+      p_tournament_size: state.size,
+      p_court_count: state.courts,
+      p_games_to_win: state.gamesToWin,
+      p_round_count: state.rounds.length,
+      p_participant_count: state.players.length,
+      p_started_at: state.startedAt,
+      p_finished_at: state.finishedAt ?? null,
+      p_abandoned: abandoned,
+    });
+    if (error) throw error;
   }
 
   async addSharedParticipant(id: string, displayName: string): Promise<SharedTournamentSnapshot> {
