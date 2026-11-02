@@ -12,13 +12,13 @@ interface RoundOption {
 
 @Injectable({ providedIn: 'root' })
 export class ScheduleService {
-  generate(players: Player[], size: TournamentSize, courts: number, roundCount: number): Round[] {
+  generate(players: Player[], size: TournamentSize, courts: number, roundCount: number, mixed = false): Round[] {
     if (players.length !== size) throw new Error(`O Super ${size} exige exatamente ${size} jogadores.`);
     if (new Set(players.map(player => player.id)).size !== players.length) {
       throw new Error('Cada jogador precisa ter um identificador único.');
     }
     const expectedRounds = this.expectedRounds(size, courts);
-    const allowedCourts = size === 12 ? [2, 3] : [2];
+    const allowedCourts = size === 24 ? [6] : size === 12 ? [2, 3] : [2];
     if (roundCount !== expectedRounds) {
       throw new Error(`O Super ${size} precisa de exatamente ${expectedRounds} rodadas.`);
     }
@@ -26,13 +26,19 @@ export class ScheduleService {
       throw new Error(`O Super ${size} permite ${allowedCourts.join(' ou ')} quadras sem comprometer o equilíbrio dos jogos.`);
     }
 
-    const partnerRounds = this.createPartnerRounds(players);
+    if (size === 24) return this.generateSuper24(players, mixed);
+
+    const partnerRounds = mixed
+      ? this.createMixedPartnerRounds(players, expectedRounds)
+      : this.createPartnerRounds(players);
     const searchRoundCount = partnerRounds.length;
     const courtPlan = Array(searchRoundCount).fill(courts);
     const optionsByRound = partnerRounds.map((teams, index) => this.createRoundOptions(teams, index, courtPlan[index]));
     const totalPairs = size * (size - 1) / 2;
-    const equalizingRoundNeeded = size === 10 || (size === 12 && courts === 2);
-    const maxRestCount = equalizingRoundNeeded ? size - courts * 4 : 0;
+    const equalizingRoundNeeded = !mixed && (size === 10 || (size === 12 && courts === 2));
+    const restsPerRound = size - courts * 4;
+    const maxRestCount = equalizingRoundNeeded ? restsPerRound
+      : mixed && restsPerRound > 0 ? Math.ceil(searchRoundCount * restsPerRound / size) : 0;
 
     for (let attempt = 0; attempt < 1000; attempt++) {
       const opponentCounts = new Map<string, number>();
@@ -68,7 +74,7 @@ export class ScheduleService {
             if (equalizingRoundNeeded && !finalRound) continue;
             const rounds = finalRound ? [...baseRounds, finalRound] : baseRounds;
             try {
-              this.validateSchedule(players, size, courts, rounds);
+              this.validateSchedule(players, size, courts, rounds, mixed);
               return rounds;
             } catch {
               continue;
@@ -85,7 +91,7 @@ export class ScheduleService {
         const finalRound = this.createEqualizingRound(players, baseRounds, courts);
         if (finalRound) {
           try {
-            this.validateSchedule(players, size, courts, [...baseRounds, finalRound]);
+              this.validateSchedule(players, size, courts, [...baseRounds, finalRound], mixed);
             return [...baseRounds, finalRound];
           } catch {
             continue;
@@ -95,6 +101,101 @@ export class ScheduleService {
     }
 
     throw new Error('Não foi possível montar uma tabela sem repetir parceiros e com todos os confrontos. Tente gerar novamente.');
+  }
+
+  private generateSuper24(players: Player[], mixed = false): Round[] {
+    const partnerRounds = mixed
+      ? this.createMixedPartnerRounds(players, 23)
+      : this.createPartnerRounds(players);
+    const playerIds = players.map(player => player.id);
+    const rounds = partnerRounds.length;
+
+    for (let attempt = 0; attempt < 16; attempt++) {
+      const selected = partnerRounds.map(teams => this.randomTeamMatches(teams));
+      const opponents = new Map<string, number>();
+      selected.forEach(matches => this.adjustOpponentCounts(this.opponentKeysForMatches(matches), 1, opponents));
+      const steps = 24 * 2500;
+
+      for (let step = 0; step < steps; step++) {
+        const roundIndex = Math.floor(Math.random() * rounds);
+        const previous = selected[roundIndex];
+        const candidate = this.randomTeamMatches(partnerRounds[roundIndex]);
+        const previousKeys = this.opponentKeysForMatches(previous);
+        const candidateKeys = this.opponentKeysForMatches(candidate);
+        if (previousKeys.every(key => candidateKeys.includes(key))) continue;
+
+        const affected = new Set([...previousKeys, ...candidateKeys]);
+        const oldCost = this.affectedOpponentCost(opponents, affected);
+        this.adjustOpponentCounts(previousKeys, -1, opponents);
+        this.adjustOpponentCounts(candidateKeys, 1, opponents);
+        const newCost = this.affectedOpponentCost(opponents, affected);
+        const temperature = 8 * (1 - step / steps) + 0.15;
+
+        if (newCost <= oldCost || Math.random() < Math.exp((oldCost - newCost) / temperature)) {
+          selected[roundIndex] = candidate;
+          if (opponents.size === playerIds.length * (playerIds.length - 1) / 2) {
+            const result = selected.map((matches, roundIndex): Round => ({
+              number: roundIndex + 1,
+              matches: matches.map((match, matchIndex): Match => ({
+                id: `r${roundIndex + 1}-m${matchIndex + 1}`,
+                court: matchIndex + 1,
+                teamA: match[0],
+                teamB: match[1],
+                scoreA: null,
+                scoreB: null
+              })),
+              restingPlayerIds: []
+            }));
+            this.validateSchedule(players, 24, 6, result, mixed);
+            return result;
+          }
+        } else {
+          this.adjustOpponentCounts(candidateKeys, -1, opponents);
+          this.adjustOpponentCounts(previousKeys, 1, opponents);
+        }
+      }
+    }
+
+    throw new Error('Não foi possível distribuir os confrontos do Super 24. Gere a tabela novamente.');
+  }
+
+  private randomTeamMatches(teams: PartnerTeam[]): TeamMatch[] {
+    const shuffled = this.shuffle(teams);
+    return Array.from({ length: shuffled.length / 2 }, (_, index) => [
+      shuffled[index * 2], shuffled[index * 2 + 1]
+    ] as TeamMatch);
+  }
+
+  private opponentKeysForMatches(matches: TeamMatch[]): string[] {
+    return matches.flatMap(([teamA, teamB]) => teamA.flatMap(a => teamB.map(b => this.pairKey(a, b))));
+  }
+
+  private adjustOpponentCounts(keys: string[], amount: 1 | -1, counts: Map<string, number>): void {
+    keys.forEach(key => {
+      const next = (counts.get(key) ?? 0) + amount;
+      if (next === 0) counts.delete(key);
+      else counts.set(key, next);
+    });
+  }
+
+  private affectedOpponentCost(counts: Map<string, number>, keys: Set<string>): number {
+    return [...keys].reduce((sum, key) => sum + this.opponentCountCost(counts.get(key) ?? 0), 0);
+  }
+
+  private opponentDeviationCost(counts: Map<string, number>, playerIds: string[]): number {
+    let total = 0;
+    for (let first = 0; first < playerIds.length; first++) {
+      for (let second = first + 1; second < playerIds.length; second++) {
+        total += this.opponentCountCost(counts.get(this.pairKey(playerIds[first], playerIds[second])) ?? 0);
+      }
+    }
+    return total;
+  }
+
+  private opponentCountCost(count: number): number {
+    if (count === 0) return 16;
+    if (count === 1) return 1.5;
+    return (count - 2) ** 2;
   }
 
   private createPartnerRounds(players: Player[]): PartnerTeam[][] {
@@ -107,6 +208,17 @@ export class ScheduleService {
       rotating.splice(1, 0, rotating.pop()!);
     }
     return rounds;
+  }
+
+  private createMixedPartnerRounds(players: Player[], roundCount: number): PartnerTeam[][] {
+    const men = players.filter(player => player.gender === 'male');
+    const women = players.filter(player => player.gender === 'female');
+    if (men.length !== women.length || men.length * 2 !== players.length) {
+      throw new Error('Duplas mistas exigem a mesma quantidade de atletas masculinos e femininos.');
+    }
+    return Array.from({ length: roundCount }, (_, roundIndex) => men.map((player, index) => [
+      player.id, women[(index + roundIndex) % women.length].id
+    ] as PartnerTeam));
   }
 
   private createRoundOptions(teams: PartnerTeam[], roundIndex: number, courtCount: number): RoundOption[] {
@@ -276,7 +388,7 @@ export class ScheduleService {
     return result;
   }
 
-  private validateSchedule(players: Player[], size: TournamentSize, courts: number, rounds: Round[]): void {
+  private validateSchedule(players: Player[], size: TournamentSize, courts: number, rounds: Round[], mixed = false): void {
     const playerIds = players.map(player => player.id);
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
@@ -292,6 +404,10 @@ export class ScheduleService {
       const seen = new Set<string>();
       for (const match of round.matches) {
         if (match.teamA.length !== 2 || match.teamB.length !== 2) throw new Error('Partida inválida.');
+        if (mixed && [match.teamA, match.teamB].some(team =>
+          players.find(player => player.id === team[0])?.gender === players.find(player => player.id === team[1])?.gender)) {
+          throw new Error('Cada dupla mista precisa ter um atleta masculino e um feminino.');
+        }
         for (const id of [...match.teamA, ...match.teamB]) {
           if (!restCounts.has(id) || seen.has(id)) throw new Error('Jogador duplicado na rodada.');
           seen.add(id);
@@ -310,7 +426,7 @@ export class ScheduleService {
       if (seen.size !== size) throw new Error('Nem todos os jogadores foram alocados na rodada.');
     }
 
-    if ([...partnerCounts.values()].some(count => count > 1)) {
+    if ([...partnerCounts.values()].some(count => count > (mixed ? 2 : 1))) {
       throw new Error('Há uma dupla repetida.');
     }
     for (let first = 0; first < playerIds.length; first++) {

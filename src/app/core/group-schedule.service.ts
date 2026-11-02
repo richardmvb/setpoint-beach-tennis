@@ -8,16 +8,49 @@ export interface GroupSchedule {
 
 @Injectable({ providedIn: 'root' })
 export class GroupScheduleService {
-  generate(players: Player[], format: GroupFormat, fixedPairs: [string, string][] = []): GroupSchedule {
-    if (![8, 12].includes(players.length)) {
-      throw new Error('O formato de grupos aceita 8 ou 12 jogadores.');
+  generate(players: Player[], format: GroupFormat, fixedPairs: [string, string][] = [], mixed = false): GroupSchedule {
+    if (![8, 12, 24].includes(players.length)) {
+      throw new Error('O formato de grupos aceita 8, 12 ou 24 jogadores.');
     }
     if (new Set(players.map(player => player.id)).size !== players.length) {
       throw new Error('Cada jogador precisa ter um identificador único.');
     }
-    return format === 'fixed'
-      ? this.generateFixedGroups(players, fixedPairs)
-      : this.generateRotatingGroups(players);
+    if (mixed && players.filter(player => player.gender === 'male').length !== players.length / 2) {
+      throw new Error('Duplas mistas exigem a mesma quantidade de atletas masculinos e femininos.');
+    }
+    if (format === 'fixed') return this.generateFixedGroups(players, fixedPairs, mixed);
+    return mixed ? this.generateMixedRotatingGroups(players) : this.generateRotatingGroups(players);
+  }
+
+  private generateMixedRotatingGroups(players: Player[]): GroupSchedule {
+    const men = players.filter(player => player.gender === 'male');
+    const women = players.filter(player => player.gender === 'female');
+    if (men.length !== women.length || men.length * 2 !== players.length || players.length % 4 !== 0) {
+      throw new Error('Grupos mistos exigem grupos de quatro com dois atletas de cada categoria.');
+    }
+    const groups = Array.from({ length: players.length / 4 }, (_, index): TournamentGroup => ({
+      id: `group-${index + 1}`,
+      name: `Grupo ${String.fromCharCode(65 + index)}`,
+      playerIds: [men[index * 2].id, women[index * 2].id, men[index * 2 + 1].id, women[index * 2 + 1].id]
+    }));
+    const rounds: Round[] = Array.from({ length: 2 }, (_, index) => ({
+      number: index + 1,
+      matches: [],
+      restingPlayerIds: [],
+      phase: 'groups'
+    }));
+    groups.forEach((group, groupIndex) => {
+      const [manA, womanA, manB, womanB] = group.playerIds;
+      const rotations: Array<[[string, string], [string, string]]> = [
+        [[manA, womanA], [manB, womanB]],
+        [[manA, womanB], [manB, womanA]]
+      ];
+      rotations.forEach(([teamA, teamB], roundIndex) => {
+        rounds[roundIndex].matches.push(this.createMatch(roundIndex, groupIndex + 1, teamA, teamB, group.id));
+      });
+    });
+    this.validate(players, groups, rounds, 'rotating', true);
+    return { groups, rounds };
   }
 
   private generateRotatingGroups(players: Player[]): GroupSchedule {
@@ -55,8 +88,8 @@ export class GroupScheduleService {
     return { groups, rounds };
   }
 
-  private generateFixedGroups(players: Player[], fixedPairs: [string, string][]): GroupSchedule {
-    this.validateFixedPairs(players, fixedPairs);
+  private generateFixedGroups(players: Player[], fixedPairs: [string, string][], mixed = false): GroupSchedule {
+    this.validateFixedPairs(players, fixedPairs, mixed);
     const group: TournamentGroup = {
       id: 'group-1',
       name: 'Grupo A',
@@ -78,11 +111,11 @@ export class GroupScheduleService {
       rotating.splice(1, 0, rotating.pop()!);
     }
 
-    this.validate(players, [group], rounds, 'fixed');
+    this.validate(players, [group], rounds, 'fixed', mixed);
     return { groups: [group], rounds };
   }
 
-  private validateFixedPairs(players: Player[], fixedPairs: [string, string][]): void {
+  private validateFixedPairs(players: Player[], fixedPairs: [string, string][], mixed = false): void {
     if (fixedPairs.length !== players.length / 2) {
       throw new Error(`O formato exige exatamente ${players.length / 2} duplas fixas.`);
     }
@@ -92,10 +125,14 @@ export class GroupScheduleService {
       || new Set(assigned).size !== players.length) {
       throw new Error('Cada jogador deve aparecer em uma única dupla fixa.');
     }
+    if (mixed && fixedPairs.some(([first, second]) =>
+      players.find(player => player.id === first)?.gender === players.find(player => player.id === second)?.gender)) {
+      throw new Error('Cada dupla fixa mista precisa ter um atleta masculino e um feminino.');
+    }
   }
 
   private validate(
-    players: Player[], groups: TournamentGroup[], rounds: Round[], format: GroupFormat
+    players: Player[], groups: TournamentGroup[], rounds: Round[], format: GroupFormat, mixed = false
   ): void {
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
@@ -117,7 +154,7 @@ export class GroupScheduleService {
       }
     }
 
-    const expectedGames = format === 'rotating' ? 3 : groups[0].fixedPairs!.length - 1;
+    const expectedGames = format === 'rotating' ? (mixed ? 2 : 3) : groups[0].fixedPairs!.length - 1;
     if ([...gamesPlayed.values()].some(count => count !== expectedGames)) {
       throw new Error('Os jogos não foram distribuídos igualmente nos grupos.');
     }

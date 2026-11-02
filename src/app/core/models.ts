@@ -1,6 +1,8 @@
-export type TournamentSize = 8 | 10 | 12;
+export type TournamentSize = 8 | 10 | 12 | 24;
 export type TournamentMode = 'super' | 'groups';
 export type GroupFormat = 'fixed' | 'rotating';
+export type DoublesFormat = 'open' | 'mixed';
+export type PlayerGender = 'male' | 'female';
 export type MatchPhase = 'super' | 'groups' | 'final';
 export type FinalMatchKind = 'championship' | 'third-place';
 export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
@@ -11,6 +13,8 @@ export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'se
 export interface Player {
   id: string;
   name: string;
+  gender?: PlayerGender;
+  photoDataUrl?: string;
   manual?: boolean;
 }
 
@@ -68,6 +72,7 @@ export interface TournamentState {
   finishedAt?: string;
   analyticsId?: string;
   tournamentMode?: TournamentMode;
+  doublesFormat?: DoublesFormat;
   hostingMode?: TournamentHostingMode;
   qualificationStats?: boolean;
   sharedTournamentId?: string;

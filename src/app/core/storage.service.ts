@@ -53,43 +53,53 @@ export class StorageService {
 
   clearTournament(): void {
     localStorage.removeItem(STATE_KEY);
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (key?.startsWith('setpoint.shared.')) localStorage.removeItem(key);
+    }
+    try { sessionStorage.removeItem('setpoint.shared.setup'); } catch { /* sessão indisponível */ }
   }
 
   private isTournamentState(value: unknown): value is TournamentState {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as Partial<TournamentState>;
-    if (candidate.version !== 1 || (candidate.size !== 8 && candidate.size !== 10 && candidate.size !== 12)
+    if (candidate.version !== 1 || (candidate.size !== 8 && candidate.size !== 10 && candidate.size !== 12 && candidate.size !== 24)
       || (candidate.tournamentMode !== undefined && !['super', 'groups'].includes(candidate.tournamentMode))
       || (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat))
+      || (candidate.doublesFormat !== undefined && !['open', 'mixed'].includes(candidate.doublesFormat))
       || (candidate.startedAt !== undefined && Number.isNaN(Date.parse(candidate.startedAt)))
       || (candidate.finishedAt !== undefined && Number.isNaN(Date.parse(candidate.finishedAt)))
       || (candidate.analyticsId !== undefined && typeof candidate.analyticsId !== 'string')
       || (candidate.qualificationStats !== undefined && typeof candidate.qualificationStats !== 'boolean')
       || typeof candidate.name !== 'string' || candidate.name.length > 60
-      || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 3
+      || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 6
       || ![3, 4, 5, 6].includes(candidate.gamesToWin ?? 0)
-      || !Number.isInteger(candidate.roundCount) || (candidate.roundCount ?? 0) < 3 || (candidate.roundCount ?? 0) > 12
-      || !Array.isArray(candidate.players) || candidate.players.length > 12
-      || !Array.isArray(candidate.rounds) || candidate.rounds.length > 12) return false;
+      || !Number.isInteger(candidate.roundCount) || (candidate.roundCount ?? 0) < 2 || (candidate.roundCount ?? 0) > 23
+      || !Array.isArray(candidate.players) || candidate.players.length > 24
+      || !Array.isArray(candidate.rounds) || candidate.rounds.length > 23) return false;
 
-    if (candidate.groups !== undefined && (!Array.isArray(candidate.groups) || candidate.groups.length > 3
+    if (candidate.groups !== undefined && (!Array.isArray(candidate.groups) || candidate.groups.length > 6
       || !candidate.groups.every(group => !!group && typeof group.id === 'string'
         && typeof group.name === 'string' && Array.isArray(group.playerIds)
         && group.playerIds.every(id => typeof id === 'string')))) return false;
     if (candidate.fixedPairs !== undefined && (!Array.isArray(candidate.fixedPairs)
-      || candidate.fixedPairs.length > 6 || !candidate.fixedPairs.every(pair => Array.isArray(pair)
+      || candidate.fixedPairs.length > 12 || !candidate.fixedPairs.every(pair => Array.isArray(pair)
         && pair.length === 2 && pair.every(id => typeof id === 'string') && pair[0] !== pair[1]))) return false;
     if (candidate.tieBreakDraws !== undefined && (!Array.isArray(candidate.tieBreakDraws)
-      || candidate.tieBreakDraws.length > 12 || !candidate.tieBreakDraws.every(draw => !!draw
-        && Array.isArray(draw.playerIds) && draw.playerIds.length >= 2 && draw.playerIds.length <= 12
+      || candidate.tieBreakDraws.length > 24 || !candidate.tieBreakDraws.every(draw => !!draw
+        && Array.isArray(draw.playerIds) && draw.playerIds.length >= 2 && draw.playerIds.length <= 24
         && draw.playerIds.every(id => typeof id === 'string') && new Set(draw.playerIds).size === draw.playerIds.length
         && Array.isArray(draw.order) && draw.order.length === draw.playerIds.length
         && draw.order.every(id => typeof id === 'string') && new Set(draw.order).size === draw.order.length
         && typeof draw.createdAt === 'string'))) return false;
 
     const validPlayers = candidate.players.every(player => !!player && typeof player.id === 'string'
-      && typeof player.name === 'string' && player.name.length > 0 && player.name.length <= 40);
+      && typeof player.name === 'string' && player.name.length > 0 && player.name.length <= 40
+      && (player.photoDataUrl === undefined || (typeof player.photoDataUrl === 'string'
+        && player.photoDataUrl.length <= 12_000 && player.photoDataUrl.startsWith('data:image/webp;base64,')))
+      && (player.gender === undefined || player.gender === 'male' || player.gender === 'female'));
     if (!validPlayers) return false;
+    if (candidate.doublesFormat === 'mixed' && candidate.players.some(player => !player.gender)) return false;
     const playerIds = new Set(candidate.players.map(player => player.id));
     if (candidate.tieBreakDraws?.some(draw => draw.playerIds.some(id => !playerIds.has(id))
       || draw.order.some(id => !playerIds.has(id))
@@ -97,7 +107,7 @@ export class StorageService {
 
     const validRounds = candidate.rounds.every(round => !!round && Number.isInteger(round.number)
       && Array.isArray(round.restingPlayerIds) && round.restingPlayerIds.every(id => typeof id === 'string')
-      && Array.isArray(round.matches) && round.matches.length <= 3
+      && Array.isArray(round.matches) && round.matches.length <= 6
       && round.matches.every(match => !!match && typeof match.id === 'string'
         && Number.isInteger(match.court) && Array.isArray(match.teamA) && match.teamA.length === 2
         && Array.isArray(match.teamB) && match.teamB.length === 2

@@ -218,7 +218,6 @@
 body{background:radial-gradient(1200px 520px at 85% -10%,rgba(185,138,62,.10),transparent 60%),radial-gradient(900px 480px at -10% 0,rgba(29,90,73,.10),transparent 55%),var(--bg);background-attachment:fixed;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
 .app-shell{max-width:1180px}
 .topbar{position:sticky;top:0;z-index:20;height:68px;margin:0 -28px;padding:0 28px;background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent)}
-.brand-mark{background:linear-gradient(145deg,var(--green-2),var(--green));border-radius:13px;box-shadow:0 6px 16px -6px rgba(15,47,39,.55),inset 0 1px 0 rgba(255,255,255,.18)}
 .brand strong{letter-spacing:2px}
 .brand small{letter-spacing:2px}
 .icon-button{border-radius:12px;transition:transform .2s var(--ease),border-color .2s}
@@ -292,6 +291,18 @@ table th{letter-spacing:1.2px}
 .podium-fourth{display:flex;align-items:center;gap:12px;margin-top:6px;padding:12px 16px;border:1px dashed var(--border);border-radius:14px;background:var(--surface-soft)}
 .podium-fourth span{font-weight:800;color:var(--muted);font-size:13px}
 .podium-fourth strong{font-size:13px;overflow-wrap:anywhere}
+app-player-avatar{display:inline-flex;flex:none;vertical-align:middle}
+.player-avatar,.team-avatar,.share-chip-avatar,.podium-avatar{overflow:hidden;padding:0;object-fit:cover}
+.player-avatar img,.team-avatar img,.share-chip-avatar img,.podium-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.team-names b{display:flex;align-items:center;gap:4px;min-width:0}
+.team-names b app-player-avatar{width:24px;height:24px}
+.avatar-picker{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 11px;border:1px dashed var(--border);border-radius:10px;color:var(--green-2);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.avatar-picker:hover{border-color:var(--green-2);background:var(--green-soft)}
+.avatar-preview{display:block;width:40px;height:40px;object-fit:cover;border-radius:50%;border:1px solid var(--border)}
+.podium-names strong{display:flex;align-items:center;justify-content:center;gap:5px}
+.podium-names app-player-avatar{width:28px;height:28px}
+.podium-fourth-player{display:inline-flex;align-items:center;gap:5px}
+.podium-fourth-player app-player-avatar{width:26px;height:26px}
 @media(max-width:420px){.podium-names{font-size:11px}.podium-emoji{font-size:30px}.podium-col.place-1 .podium-emoji{font-size:38px}}
 .shared-guest-page{grid-template-columns:minmax(0,1fr)}
 .shared-guest-page>*{min-width:0}
@@ -489,3 +500,42 @@ tr.me-row td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
 	.share-preview-actions .button.primary{grid-column:1/-1;grid-row:1}
 }
 @media(prefers-reduced-motion:reduce){.share-preview-skeleton>div{animation:none}}
+app-player-avatar{display:inline-flex;flex:none;vertical-align:middle;overflow:hidden;border-radius:50%;line-height:1}
+app-player-avatar .player-avatar,app-player-avatar .team-avatar,app-player-avatar .share-chip-avatar,app-player-avatar .podium-avatar{width:100%;height:100%;flex:none;box-sizing:border-box}
+.team-names{min-width:0}
+.team-names b{display:flex;align-items:center;gap:4px;min-width:0;max-width:100%;overflow:hidden;white-space:normal}
+.team-names b app-player-avatar{width:24px;height:24px;flex:0 0 24px}
+.team-player-name,.podium-player-name{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shared-team b{display:flex;align-items:center;gap:3px;flex:1;min-width:0;white-space:normal}
+.shared-team b app-player-avatar{width:22px;height:22px;flex:0 0 22px}
+.shared-team .team-player-name{max-width:56px}
+.podium-names strong{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;max-width:100%;overflow:hidden}
+.podium-names app-player-avatar{width:26px;height:26px;flex:0 0 26px}
+.podium-names .podium-player-name{max-width:calc(100% - 32px)}
+.podium-fourth strong{display:flex;align-items:center;gap:5px;min-width:0}
+.podium-fourth-player{display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%}
+.podium-fourth-player app-player-avatar{width:24px;height:24px;flex:0 0 24px}
+.ranking-player-cell{display:flex;align-items:center;gap:8px;min-width:0}
+.ranking-player-cell>app-player-avatar{width:30px;height:30px;flex:0 0 30px}
+.ranking-player-name{display:grid;min-width:0}
+.ranking-player-name>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rest-player{display:flex;align-items:center;gap:9px;min-width:0}
+.rest-player>app-player-avatar{width:30px;height:30px;flex:0 0 30px}
+.tie-draw-participants>span,.tie-draw-result li{display:flex;align-items:center;gap:9px}
+.tie-draw-participants app-player-avatar,.tie-draw-result app-player-avatar{width:30px;height:30px;flex:0 0 30px}
+.team-player-name{max-width:100%}
+.team-names b app-player-avatar{min-width:24px;max-width:24px;overflow:hidden}
+.team-names b .team-player-name{flex:1 1 0;max-width:calc(100% - 28px)}
+.shared-team{min-width:0}
+.shared-team b{overflow:hidden;max-width:100%}
+.shared-team .team-player-name{flex:1 1 0;max-width:62px}
+.shared-team b app-player-avatar{min-width:22px;max-width:22px;overflow:hidden}
+.podium-names .podium-player-name,.podium-fourth-player .podium-player-name{max-width:calc(100% - 31px)}
+.avatar-picker{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-soft);color:var(--text);font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
+.avatar-picker:hover{border-color:var(--green-2)}
+.avatar-preview{width:44px;height:44px;flex:none;object-fit:cover;border:1px solid var(--border);border-radius:50%;vertical-align:middle}
+.shared-moderator-fields .avatar-picker{margin-top:4px}
+.shared-moderator-fields .avatar-preview{display:block}
+app-player-avatar{min-width:0}
+app-player-avatar>span{display:grid;place-items:center;overflow:hidden;border-radius:50%;line-height:1}
+app-player-avatar>span:not(.has-photo){color:inherit}

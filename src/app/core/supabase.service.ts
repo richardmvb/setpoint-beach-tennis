@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createClient, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
-import { SharedTournamentSnapshot, TournamentState } from './models';
+import { PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
 
 export interface DashboardMetrics {
   tournaments_total: number;
@@ -9,8 +9,11 @@ export interface DashboardMetrics {
   tournaments_active: number;
   tournaments_archived: number;
   tournaments_abandoned: number;
+  tournaments_size_24: number;
   super_tournaments: number;
   group_tournaments: number;
+  mixed_tournaments: number;
+  open_tournaments: number;
   participants_total: number;
   participants_invited: number;
   participants_manual: number;
@@ -73,24 +76,27 @@ export class SupabaseService {
   }
 
   async createSharedTournament(
-    state: TournamentState, moderatorName: string
+    state: TournamentState, moderatorName: string, moderatorGender: PlayerGender = 'male', moderatorPhoto?: string
   ): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('create_shared_tournament', {
       p_name: state.name,
       p_capacity: state.size,
       p_moderator_name: moderatorName,
-      p_initial_state: state
+      p_moderator_gender: moderatorGender,
+      p_initial_state: { ...state, moderatorAvatarDataUrl: moderatorPhoto ?? null }
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
   }
 
-  async joinSharedTournament(inviteToken: string, displayName: string): Promise<SharedTournamentSnapshot> {
+  async joinSharedTournament(inviteToken: string, displayName: string, gender: PlayerGender = 'male', photoDataUrl?: string): Promise<SharedTournamentSnapshot> {
     const joinId = await this.getOrCreateJoinId(inviteToken);
     const { data, error } = await this.requireClient().rpc('join_shared_tournament', {
       p_invite_token: inviteToken,
       p_display_name: displayName,
-      p_join_id: joinId
+      p_gender: gender,
+      p_join_id: joinId,
+      p_avatar_data: photoDataUrl ?? null
     });
     if (error) throw error;
     await this.saveGuestName(inviteToken, displayName);
@@ -134,6 +140,7 @@ export class SupabaseService {
     const { error } = await this.requireClient().rpc('record_local_tournament_metrics', {
       p_tournament_id: state.analyticsId,
       p_tournament_mode: state.tournamentMode ?? 'super',
+      p_doubles_format: state.doublesFormat ?? 'open',
       p_tournament_size: state.size,
       p_court_count: state.courts,
       p_games_to_win: state.gamesToWin,
@@ -146,10 +153,12 @@ export class SupabaseService {
     if (error) throw error;
   }
 
-  async addSharedParticipant(id: string, displayName: string): Promise<SharedTournamentSnapshot> {
+  async addSharedParticipant(id: string, displayName: string, gender: PlayerGender = 'male', photoDataUrl?: string): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('add_shared_participant', {
       p_tournament_id: id,
-      p_display_name: displayName
+      p_display_name: displayName,
+      p_gender: gender,
+      p_avatar_data: photoDataUrl ?? null
     });
     if (error) throw error;
     await this.broadcastRefresh(id);

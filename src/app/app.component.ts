@@ -1,7 +1,7 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Match, Page, Player, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
+import { DoublesFormat, Match, Page, Player, PlayerGender, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
 import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
@@ -11,6 +11,8 @@ import type { User } from '@supabase/supabase-js';
 import { ShareCardLayout, ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
+import { RoundNavigationComponent } from './features/round-navigation.component';
+import { PlayerAvatarComponent } from './features/player-avatar.component';
 import { PodiumComponent } from './features/podium.component';
 import { GoalProjection, QualificationRow, QualificationService } from './core/qualification.service';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
@@ -35,7 +37,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RankingViewComponent, PodiumComponent, QualificationStatsComponent],
+  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, PodiumComponent, QualificationStatsComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -50,6 +52,8 @@ export class AppComponent implements OnInit, OnDestroy {
   selectedRound = 0;
   setupStep = 1;
   newPlayerName = '';
+  newPlayerGender: PlayerGender | '' = '';
+  newPlayerAvatar = '';
   notice = '';
   noticeType: 'success' | 'error' = 'success';
   scoreDrafts: Record<string, { a: number | null; b: number | null; tieBreakA?: number | null; tieBreakB?: number | null }> = {};
@@ -57,10 +61,18 @@ export class AppComponent implements OnInit, OnDestroy {
   activeTiePlayerIds: string[] = [];
   activeTieDrawResult: string[] = [];
   moderatorName = '';
+  moderatorGender: PlayerGender | '' = '';
+  moderatorAvatar = '';
   manualParticipantName = '';
+  manualParticipantGender: PlayerGender | '' = '';
+  manualParticipantAvatar = '';
   now = Date.now();
   private clockTimer: number | null = null;
   guestName = '';
+  guestGender: PlayerGender | '' = '';
+  guestAvatar = '';
+  avatarProcessing = false;
+  avatarError = '';
   sharedLoading = false;
   sharedError = '';
   sharedNotice = '';
@@ -131,6 +143,8 @@ export class AppComponent implements OnInit, OnDestroy {
       tournamentMode: 'super', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null
     };
     this.state.tournamentMode ??= 'super';
+    this.state.doublesFormat ??= 'open';
+    this.state.doublesFormat ??= 'open';
     this.state.hostingMode ??= 'local';
     this.state.groupFormat ??= 'rotating';
     this.state.groups ??= [];
@@ -248,6 +262,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.state.players.find(player => player.name.trim().toLowerCase() === name)?.id ?? '';
   }
   get guestPlace(): number { return this.guestPlayerId ? this.placeOf(this.guestPlayerId) : 0; }
+  playerPhoto(playerId: string): string { return this.state.players.find(player => player.id === playerId)?.photoDataUrl ?? ''; }
   isMe(playerId: string): boolean { return this.isGuestView && !!this.guestPlayerId && playerId === this.guestPlayerId; }
   shareMyResults(): void {
     this.sharePlayerId = this.guestPlayerId;
@@ -436,17 +451,19 @@ export class AppComponent implements OnInit, OnDestroy {
     return positions.length ? positions.map(position => `${position}º`).join(' e ') : '';
   }
   get isGroupTournament(): boolean { return this.state.tournamentMode === 'groups'; }
+  get isMixedDoubles(): boolean { return this.state.doublesFormat === 'mixed'; }
   get fixedPairsMode(): boolean { return this.isGroupTournament && this.state.groupFormat === 'fixed'; }
   get availableGamesToWin(): number[] {
     return this.isGroupTournament ? [4, 5, 6] : [3, 4, 5, 6];
   }
-  get availableSizes(): TournamentSize[] { return this.isGroupTournament ? [8, 12] : [8, 10, 12]; }
+  get availableSizes(): TournamentSize[] { return this.isGroupTournament ? [8, 12, 24] : [8, 10, 12, 24]; }
   get availableCourts(): number[] {
     if (this.isGroupTournament) return [this.state.size / 4];
+    if (this.state.size === 24) return [6];
     return this.state.size === 12 ? [2, 3] : [2];
   }
   get requiredRounds(): number {
-    if (this.isGroupTournament) return this.fixedPairsMode ? this.state.size / 2 - 1 : 3;
+    if (this.isGroupTournament) return this.fixedPairsMode ? this.state.size / 2 - 1 : this.isMixedDoubles ? 2 : 3;
     if (this.state.size === 10) return 10;
     if (this.state.size === 12 && this.state.courts === 2) return 12;
     return this.state.size - 1;
@@ -627,6 +644,7 @@ export class AppComponent implements OnInit, OnDestroy {
       step,
       hosting_mode: this.state.hostingMode,
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       tournament_size: this.state.size,
     });
   }
@@ -636,6 +654,7 @@ export class AppComponent implements OnInit, OnDestroy {
       step,
       hosting_mode: this.state.hostingMode,
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       tournament_size: this.state.size,
     });
   }
@@ -648,15 +667,21 @@ export class AppComponent implements OnInit, OnDestroy {
   addPlayer(): void {
     const name = this.newPlayerName.trim();
     if (!name) return;
+    if (this.isMixedDoubles && !this.newPlayerGender) return this.message('Selecione a categoria do atleta para formar as duplas mistas.', 'error');
     if (this.hasSchedule) return this.message('A lista está bloqueada porque a tabela já foi gerada.', 'error');
     if (this.isSharedMode) return this.message('No torneio compartilhado, os participantes entram pelo link de convite.', 'error');
     if (this.state.players.length >= this.state.size) return this.message(`O Super ${this.state.size} permite ${this.state.size} jogadores.`, 'error');
     if (this.state.players.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return this.message('Já existe um participante com esse nome.', 'error');
-    this.state.players.push({ id: this.id(), name });
+    this.state.players.push({
+      id: this.id(), name,
+      ...(this.isMixedDoubles && this.newPlayerGender ? { gender: this.newPlayerGender } : {}),
+      ...(this.newPlayerAvatar ? { photoDataUrl: this.newPlayerAvatar } : {})
+    });
     this.syncDefaultFixedPairs();
-    this.newPlayerName = ''; this.persist();
+    this.newPlayerName = ''; this.newPlayerGender = ''; this.newPlayerAvatar = ''; this.persist();
     this.posthogService.posthog.capture('player_added', {
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       tournament_size: this.state.size,
       participant_count: this.state.players.length,
     });
@@ -670,6 +695,73 @@ export class AppComponent implements OnInit, OnDestroy {
     this.persist();
   }
 
+  updatePlayerGender(playerId: string, gender: PlayerGender | ''): void {
+    if (this.hasSchedule || !this.isMixedDoubles) return;
+    const player = this.state.players.find(item => item.id === playerId);
+    if (!player) return;
+    if (gender) player.gender = gender;
+    else delete player.gender;
+    this.syncDefaultFixedPairs();
+    this.persist();
+  }
+
+  async selectAvatar(event: Event, target: 'newPlayer' | 'moderator' | 'manual' | 'guest'): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.avatarError = '';
+    if (!file.type.startsWith('image/')) {
+      this.avatarError = 'Selecione uma imagem.';
+      return;
+    }
+    if (file.size > 5_000_000) {
+      this.avatarError = 'A imagem original deve ter até 5 MB.';
+      return;
+    }
+    this.avatarProcessing = true;
+    try {
+      const photoDataUrl = await this.compressAvatar(file);
+      if (target === 'newPlayer') this.newPlayerAvatar = photoDataUrl;
+      else if (target === 'moderator') this.moderatorAvatar = photoDataUrl;
+      else if (target === 'manual') this.manualParticipantAvatar = photoDataUrl;
+      else this.guestAvatar = photoDataUrl;
+    } catch (error) {
+      this.avatarError = error instanceof Error ? error.message : 'Não foi possível processar a foto.';
+    } finally {
+      this.avatarProcessing = false;
+    }
+  }
+
+  private async compressAvatar(file: File): Promise<string> {
+    const image = await createImageBitmap(file);
+    try {
+      for (const [size, quality] of [[96, 0.68], [80, 0.56], [64, 0.48]] as const) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Não foi possível processar a foto.');
+        const scale = Math.max(size / image.width, size / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        context.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality));
+        if (blob && blob.size <= 8_000) {
+          return await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Foto inválida.'));
+            reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } finally {
+      image.close();
+    }
+    throw new Error('A foto ficou grande demais. Escolha uma imagem mais simples.');
+  }
+
   saveSettings(): void {
     if (this.hasSchedule) return this.message('As configurações ficam bloqueadas depois da geração da tabela.', 'error');
     this.state.name = this.state.name.trim() || 'Meu torneio';
@@ -679,6 +771,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.persist('Configurações salvas.');
     this.posthogService.posthog.capture('tournament_settings_saved', {
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       hosting_mode: this.state.hostingMode,
       tournament_size: this.state.size,
       court_count: this.state.courts,
@@ -708,6 +801,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.normalizeGamesToWin();
     this.state.roundCount = this.requiredRounds;
     this.syncDefaultFixedPairs();
+  }
+
+  changeDoublesFormat(format: DoublesFormat): void {
+    if (this.hasSchedule) return;
+    this.state.doublesFormat = format;
+    this.syncDefaultFixedPairs();
+    this.persist();
   }
 
   changeHostingMode(mode: TournamentHostingMode): void {
@@ -740,6 +840,14 @@ export class AppComponent implements OnInit, OnDestroy {
       pairs[otherPairIndex][otherSide] = previousPlayerId;
     }
     pairs[pairIndex][side] = playerId;
+    if (this.isMixedDoubles && pairs.some(pair => {
+      const firstGender = this.state.players.find(player => player.id === pair[0])?.gender;
+      const secondGender = this.state.players.find(player => player.id === pair[1])?.gender;
+      return !firstGender || !secondGender || firstGender === secondGender;
+    })) {
+      this.message('Cada dupla precisa ter um atleta masculino e um feminino.', 'error');
+      return;
+    }
     this.state.fixedPairs = pairs;
     this.persist();
   }
@@ -771,6 +879,8 @@ export class AppComponent implements OnInit, OnDestroy {
   async requestSharedTournamentLogin(): Promise<void> {
     if (!this.sharedConfigured) return this.message('O modo compartilhado ainda não está configurado neste deploy.', 'error');
     if (!this.moderatorName.trim()) return this.message('Informe seu nome para entrar como moderador.', 'error');
+    if (this.isMixedDoubles && !this.moderatorGender) return this.message('Selecione sua categoria para entrar no torneio misto.', 'error');
+    if (this.isMixedDoubles && !this.moderatorGender) return this.message('Selecione sua categoria para entrar no torneio misto.', 'error');
     if (this.state.players.length || this.state.rounds.length) {
       return this.message('Para compartilhar, comece com um torneio sem lista local. Os participantes entrarão pelo convite.', 'error');
     }
@@ -807,13 +917,20 @@ export class AppComponent implements OnInit, OnDestroy {
   async addManualParticipant(): Promise<void> {
     const name = this.manualParticipantName.trim();
     if (!name || !this.canManageParticipants || !this.state.sharedTournamentId) return;
+    if (this.isMixedDoubles && !this.manualParticipantGender) {
+      this.sharedError = 'Selecione a categoria do atleta para formar as duplas mistas.';
+      return;
+    }
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      this.applySharedSnapshot(await this.supabase.addSharedParticipant(this.state.sharedTournamentId, name), true);
+      this.applySharedSnapshot(await this.supabase.addSharedParticipant(this.state.sharedTournamentId, name, this.manualParticipantGender || 'male', this.manualParticipantAvatar || undefined), true);
       this.manualParticipantName = '';
+      this.manualParticipantGender = '';
+      this.manualParticipantAvatar = '';
       this.posthogService.posthog.capture('shared_participant_added_manually', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
         participant_count: this.state.players.length,
       });
@@ -840,10 +957,14 @@ export class AppComponent implements OnInit, OnDestroy {
   async joinSharedTournament(): Promise<void> {
     const name = this.guestName.trim();
     if (!this.sharedInviteToken || !name) return;
+    if (this.isMixedDoubles && !this.guestGender) {
+      this.sharedError = 'Selecione sua categoria para entrar no torneio misto.';
+      return;
+    }
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      const snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, name);
+      const snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, name, this.guestGender || 'male', this.guestAvatar || undefined);
       this.guestName = name;
       this.guestJoined = true;
       this.isGuestView = true;
@@ -852,6 +973,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.subscribeToShared(snapshot.id, false);
       this.posthogService.posthog.capture('shared_tournament_joined', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
         participant_count: this.state.players.length,
       });
@@ -869,6 +991,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.sharedNotice = 'Link copiado.';
       this.posthogService.posthog.capture('shared_invite_copied', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
       });
     } catch {
@@ -970,6 +1093,7 @@ export class AppComponent implements OnInit, OnDestroy {
       share_layout: this.shareLayout,
       has_custom_background: !!this.shareBackgroundUrl,
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       tournament_size: this.state.size,
     });
   }
@@ -990,6 +1114,7 @@ export class AppComponent implements OnInit, OnDestroy {
         share_layout: this.shareLayout,
         has_custom_background: !!this.shareBackgroundUrl,
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
       });
     } catch (error) {
@@ -1044,7 +1169,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async createSharedTournamentOnServer(): Promise<void> {
     try {
       const draft = { ...this.state, hostingMode: 'shared' as const, players: [], rounds: [], groups: [], fixedPairs: [], finals: null };
-      const snapshot = await this.supabase.createSharedTournament(draft, this.moderatorName.trim());
+      const snapshot = await this.supabase.createSharedTournament(draft, this.moderatorName.trim(), this.moderatorGender || 'male', this.moderatorAvatar || undefined);
       localStorage.removeItem(SHARED_SETUP_KEY);
       sessionStorage.removeItem(SHARED_SETUP_KEY);
       this.isSharedModerator = true;
@@ -1061,10 +1186,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.posthogService.posthog.capture('tournament_created', {
         hosting_mode: 'shared',
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
       });
       this.posthogService.posthog.capture('shared_tournament_created', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
         moderator_auth_mode: 'anonymous',
       });
@@ -1175,13 +1302,14 @@ export class AppComponent implements OnInit, OnDestroy {
         const schedule = this.groupScheduler.generate(
           this.state.players,
           this.state.groupFormat ?? 'rotating',
-          this.state.fixedPairs ?? []
+          this.state.fixedPairs ?? [],
+          this.isMixedDoubles
         );
         this.state.groups = schedule.groups;
         this.state.rounds = schedule.rounds;
       } else {
         this.state.groups = [];
-        this.state.rounds = this.scheduler.generate(this.state.players, this.state.size, this.state.courts, this.state.roundCount);
+        this.state.rounds = this.scheduler.generate(this.state.players, this.state.size, this.state.courts, this.state.roundCount, this.isMixedDoubles);
       }
       if (this.isSharedMode && this.state.sharedTournamentId) {
         this.state.startedAt = new Date().toISOString();
@@ -1198,17 +1326,20 @@ export class AppComponent implements OnInit, OnDestroy {
         this.posthogService.posthog.capture('tournament_created', {
           hosting_mode: this.state.hostingMode,
           tournament_mode: this.state.tournamentMode,
+          doubles_format: this.state.doublesFormat ?? 'open',
           tournament_size: this.state.size,
         });
       }
       this.posthogService.posthog.capture('tournament_started', {
         hosting_mode: this.state.hostingMode,
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
         round_count: this.state.rounds.length,
       });
       this.posthogService.posthog.capture('schedule_generated', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         hosting_mode: this.state.hostingMode,
         tournament_size: this.state.size,
         round_count: this.state.rounds.length,
@@ -1216,6 +1347,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       this.posthogService.logInfo('tournament schedule generated', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         hosting_mode: this.state.hostingMode,
         tournament_size: this.state.size,
         round_count: this.state.rounds.length,
@@ -1287,6 +1419,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.persist('Finais geradas com base nos oito primeiros do ranking.');
       this.posthogService.posthog.capture('finals_generated', {
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
         tournament_size: this.state.size,
       });
     } catch (error) {
@@ -1319,6 +1452,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.persist();
     this.posthogService.posthog.capture('match_score_recorded', {
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       round_number: this.selectedRound + 1,
       match_phase: match.phase ?? (this.isGroupTournament ? 'groups' : 'super'),
     });
@@ -1363,6 +1497,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.posthogService.posthog.capture('final_score_recorded', {
         final_kind: match.finalKind,
         tournament_mode: this.state.tournamentMode,
+        doubles_format: this.state.doublesFormat ?? 'open',
       });
     }
   }
@@ -1376,6 +1511,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!this.isSharedMode) this.syncLocalTournamentMetrics();
     this.posthogService.posthog.capture('tournament_finalized', {
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       hosting_mode: this.state.hostingMode,
       tournament_size: this.state.size,
       participant_count: this.state.players.length,
@@ -1385,6 +1521,7 @@ export class AppComponent implements OnInit, OnDestroy {
     });
     this.posthogService.logInfo('tournament finalized', {
       tournament_mode: this.state.tournamentMode,
+      doubles_format: this.state.doublesFormat ?? 'open',
       hosting_mode: this.state.hostingMode,
       tournament_size: this.state.size,
       participant_count: this.state.players.length,
@@ -1417,10 +1554,14 @@ export class AppComponent implements OnInit, OnDestroy {
     if (index < 0 || index >= this.state.rounds.length) return;
     this.selectedRound = index;
     window.setTimeout(() => {
-      document.getElementById(`round-tab-${index}`)?.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'nearest',
-        inline: 'center'
+      const tabs = document.querySelector<HTMLElement>('.round-tabs');
+      const tab = document.getElementById(`round-tab-${index}`);
+      if (!tabs || !tab) return;
+      const offset = tab.getBoundingClientRect().left - tabs.getBoundingClientRect().left
+        - (tabs.clientWidth - tab.clientWidth) / 2;
+      tabs.scrollTo({
+        left: tabs.scrollLeft + offset,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
       });
     }, 0);
   }
@@ -1546,6 +1687,16 @@ export class AppComponent implements OnInit, OnDestroy {
   private syncDefaultFixedPairs(): void {
     if (!this.fixedPairsMode || this.state.players.length !== this.state.size) {
       this.state.fixedPairs = [];
+      return;
+    }
+    if (this.isMixedDoubles) {
+      const men = this.state.players.filter(player => player.gender === 'male');
+      const women = this.state.players.filter(player => player.gender === 'female');
+      if (men.length !== this.state.size / 2 || women.length !== this.state.size / 2) {
+        this.state.fixedPairs = [];
+        return;
+      }
+      this.state.fixedPairs = Array.from({ length: this.state.size / 2 }, (_, index) => [men[index]?.id ?? '', women[index]?.id ?? '']);
       return;
     }
     this.state.fixedPairs = Array.from({ length: this.state.size / 2 }, (_, index) => [
