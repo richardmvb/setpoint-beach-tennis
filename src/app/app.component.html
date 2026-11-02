@@ -92,6 +92,7 @@
 
         <article *ngIf="setupStep === 1" class="surface-card wizard-panel">
           <span class="card-kicker">ETAPA 1 DE 3</span><h2>Configure a competição</h2>
+          <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar tutorial' : 'Ligar tutorial' }}</button></div>
           <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado"></div>
           <div class="form-field"><label for="hostingMode">Onde será gerenciado?</label><select id="hostingMode" name="hostingMode" [ngModel]="state.hostingMode" (ngModelChange)="changeHostingMode($event)"><option [ngValue]="'local'">Neste dispositivo · sem compartilhar</option><option *ngIf="sharedConfigured" [ngValue]="'shared'">Compartilhado · convite e acompanhamento ao vivo</option></select></div>
           <label *ngIf="isSharedMode && !isGroupTournament" class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Projeção do top 3</b><small>A partir da 2ª rodada, mostra o que falta para chegar ao top 3.</small></span></label>
@@ -102,7 +103,7 @@
           <div class="form-two"><div class="form-field"><label for="setupGames">Games para vencer</label><select id="setupGames" name="setupGames" [(ngModel)]="state.gamesToWin"><option *ngFor="let games of availableGamesToWin" [ngValue]="games">{{ games === 3 ? '3 games · rápido' : games + ' games' }}</option></select></div><div class="form-field"><label>Rodadas do formato</label><input [value]="requiredRounds" readonly></div></div>
           <p *ngIf="state.gamesToWin === 3" class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
           <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p><p *ngIf="sharedNotice" class="shared-success" role="status">{{ sharedNotice }}</p>
-          <div class="wizard-actions"><span></span><button class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? 'Criar torneio compartilhado' : 'Adicionar jogadores' }} <span *ngIf="!sharedLoading">→</span></button></div>
+          <div class="wizard-actions"><span></span><button id="setupNext" class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? 'Criar torneio compartilhado' : 'Adicionar jogadores' }} <span *ngIf="!sharedLoading">→</span></button></div>
         </article>
 
         <article *ngIf="setupStep === 2" class="surface-card wizard-panel">

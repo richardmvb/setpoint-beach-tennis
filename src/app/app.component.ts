@@ -34,6 +34,7 @@ interface GroupStandingEntry {
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
 const LANDING_SEEN_KEY = 'setpoint.landing.seen';
+const TUTORIAL_KEY = 'setpoint.tutorial.setup';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
@@ -48,6 +49,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isLocked = false;
   showLanding = false;
+  tutorialEnabled = true;
   sitePassword = '';
   lockError = '';
   page: Page = 'setup';
@@ -140,6 +142,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback;
     }
     try { this.showLanding = !this.isDashboardRoute && !this.isGuestView && !authCallback && localStorage.getItem(LANDING_SEEN_KEY) !== 'true'; } catch { this.showLanding = false; }
+    this.tutorialInit();
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
       roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
@@ -185,6 +188,7 @@ export class AppComponent implements OnInit, OnDestroy {
     });
     this.trackFeatureViewed(this.page);
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
+    window.setTimeout(() => this.maybeStartSetupTour(), 600);
     this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
       if (event === 'SIGNED_IN' && user) {
         this.identifyUser(user);
@@ -348,6 +352,68 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showLanding = false;
     window.scrollTo({ top: 0 });
     this.posthogService.posthog.capture('landing_cta_clicked');
+    window.setTimeout(() => this.maybeStartSetupTour(), 400);
+  }
+
+  private maybeStartSetupTour(): void {
+    if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute) return;
+    if (this.page !== 'setup' || this.setupStep !== 1) return;
+    try { if (localStorage.getItem(TUTORIAL_KEY)) return; } catch { return; }
+    void this.startSetupTour();
+  }
+
+  toggleTutorial(): void {
+    this.tutorialEnabled = !this.tutorialEnabled;
+    try {
+      if (this.tutorialEnabled) localStorage.removeItem(TUTORIAL_KEY);
+      else localStorage.setItem(TUTORIAL_KEY, 'off');
+    } catch { /* sem persistência */ }
+    this.posthogService.posthog.capture(this.tutorialEnabled ? 'tutorial_enabled' : 'tutorial_disabled');
+  }
+
+  async startSetupTour(): Promise<void> {
+    if (this.page !== 'setup' || this.setupStep !== 1) return;
+    const { driver } = await import('driver.js');
+    const mark = (value: string) => { try { localStorage.setItem(TUTORIAL_KEY, value); } catch { /* sem persistência */ } };
+    const steps = [
+      { element: '#setupName', popover: { title: 'Nome do torneio', description: 'Dê um nome para identificar este torneio.' } },
+      { element: '#hostingMode', popover: { title: 'Onde gerenciar', description: 'Local usa apenas este dispositivo. Compartilhado gera um link de convite com acompanhamento ao vivo.' } },
+      { element: '#doublesFormat', popover: { title: 'Tipo de dupla', description: 'Abertas ou mistas (1 masculino + 1 feminino).' } },
+      { element: '#tournamentMode', popover: { title: 'Formato', description: 'Super (duplas rotativas) ou Grupos.' } },
+      { element: '#setupSize', popover: { title: 'Participantes', description: 'Escolha o número de jogadores; rodadas e quadras são calculadas automaticamente.' } },
+      { element: '#setupNext', popover: { title: 'Próximo passo', description: 'Avance para inscrever os participantes e gerar a tabela.' } }
+    ].filter(step => document.querySelector(step.element));
+    if (!steps.length) return;
+    let finished = false;
+    const tour = driver({
+      showProgress: true,
+      allowClose: true,
+      nextBtnText: 'Próximo',
+      prevBtnText: 'Voltar',
+      doneBtnText: 'Concluir',
+      progressText: '{{current}} de {{total}}',
+      steps,
+      onPopoverRender: popover => {
+        const off = document.createElement('button');
+        off.type = 'button';
+        off.textContent = 'Desligar tutorial';
+        off.className = 'tour-off';
+        off.onclick = () => { finished = true; this.tutorialEnabled = false; mark('off'); this.posthogService.posthog.capture('tutorial_disabled'); tour.destroy(); };
+        popover.footer.appendChild(off);
+      },
+      onDestroyed: () => {
+        if (finished) return;
+        finished = true;
+        mark('done');
+        this.posthogService.posthog.capture('tutorial_finished');
+      }
+    });
+    this.posthogService.posthog.capture('tutorial_started');
+    tour.drive();
+  }
+
+  private tutorialInit(): void {
+    try { this.tutorialEnabled = localStorage.getItem(TUTORIAL_KEY) !== 'off'; } catch { /* mantém ligado */ }
   }
 
   openLanding(): void {
