@@ -43,7 +43,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 export class AppComponent implements OnInit, OnDestroy {
   private readonly posthogService = inject(PostHogService);
 
-  isLocked = true;
+  isLocked = false;
   sitePassword = '';
   lockError = '';
   page: Page = 'setup';
@@ -132,10 +132,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isGuestView = !!inviteToken;
     this.sharedInviteToken = inviteToken;
     try {
-      this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback
+      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback
         && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
     } catch {
-      this.isLocked = !this.isDashboardRoute && !this.isGuestView && !authCallback;
+      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback;
     }
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,

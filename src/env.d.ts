@@ -3,6 +3,7 @@ interface SetpointRuntimeConfig {
   publishableKey?: string;
   buildId?: string;
   production?: boolean;
+  lockScreenEnabled?: boolean;
   posthogKey?: string;
   posthogHost?: string;
 }

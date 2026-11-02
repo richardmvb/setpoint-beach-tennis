@@ -96,6 +96,7 @@ Em **GitHub → Settings → Secrets and variables → Actions → Variables**, 
 - `SUPABASE_PUBLISHABLE_KEY`: chave publicável do projeto.
 - `NG_APP_POSTHOG_PROJECT_TOKEN`: project token do PostHog.
 - `NG_APP_POSTHOG_HOST`: host PostHog da região do projeto.
+- `NG_APP_LOCK_SCREEN_ENABLED`: opcional; use `true` para ativar a tela de desbloqueio do torneio. Ausente ou `false`, a tela fica desativada.
 
 O workflow gera `runtime-config.js`, compila o Angular e publica no GitHub Pages. O fallback do Pages permite carregar `/dashboard` diretamente. Use apenas chaves publicáveis no frontend; nunca coloque `service_role` no código ou nas variáveis do build.
 
