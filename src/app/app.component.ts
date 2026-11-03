@@ -169,6 +169,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     window.addEventListener('popstate', this.onPopState);
+    this.applyTheme();
     // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
     if (this.authCallback) await this.supabase.finishUrlSignIn();
     this.posthogService.init(environment.posthogKey, {
@@ -211,7 +212,6 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
     void this.identifyCurrentUser();
-    this.applyTheme();
     if (!this.isLocked && !this.isDashboardRoute && !this.isGuestView) this.backfillLocalTournamentMetrics();
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
