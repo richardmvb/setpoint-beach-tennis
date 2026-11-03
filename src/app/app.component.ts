@@ -46,6 +46,7 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 })
 export class AppComponent implements OnInit, OnDestroy {
   private readonly posthogService = inject(PostHogService);
+  private readonly authCallback: boolean;
 
   isLocked = false;
   showLanding = false;
@@ -129,19 +130,19 @@ export class AppComponent implements OnInit, OnDestroy {
     private qualification: QualificationService
   ) {
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
-    const authCallback = new URLSearchParams(window.location.search).has('code')
+    this.authCallback = new URLSearchParams(window.location.search).has('code')
       || window.location.hash.includes('access_token=');
     this.appBasePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
     this.isDashboardRoute = this.isDashboardPath(window.location.pathname);
     this.isGuestView = !!inviteToken;
     this.sharedInviteToken = inviteToken;
     try {
-      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback
+      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback
         && sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
     } catch {
-      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !authCallback;
+      this.isLocked = environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
     }
-    try { this.showLanding = !this.isDashboardRoute && !this.isGuestView && !authCallback && localStorage.getItem(LANDING_SEEN_KEY) !== 'true'; } catch { this.showLanding = false; }
+    try { this.showLanding = !this.isDashboardRoute && !this.isGuestView && !this.authCallback && localStorage.getItem(LANDING_SEEN_KEY) !== 'true'; } catch { this.showLanding = false; }
     this.tutorialInit();
     this.state = this.storage.loadTournament() ?? {
       version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
@@ -166,11 +167,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.initializeScoreDrafts();
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     window.addEventListener('popstate', this.onPopState);
+    // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
+    if (this.authCallback) await this.supabase.finishUrlSignIn();
     this.posthogService.init(environment.posthogKey, {
       api_host: environment.posthogHost,
       capture_exceptions: true,
+      disable_capture_url_hashes: true,
       logs: {
         serviceName: 'setpoint-web',
         environment: environment.production ? 'production' : 'development',
