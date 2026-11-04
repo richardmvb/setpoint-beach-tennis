@@ -43,6 +43,14 @@ export class SupabaseService {
 
   get isConfigured(): boolean { return this.client !== null; }
 
+  async finishUrlSignIn(): Promise<void> {
+    try {
+      await this.client?.auth.initialize();
+    } finally {
+      if (window.location.hash) history.replaceState(history.state, '', window.location.pathname + window.location.search);
+    }
+  }
+
   async currentUser(): Promise<User | null> {
     if (!this.client) return null;
     const { data, error } = await this.client.auth.getUser();
