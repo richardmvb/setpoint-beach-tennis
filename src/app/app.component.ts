@@ -176,6 +176,9 @@ export class AppComponent implements OnInit, OnDestroy {
       api_host: environment.posthogHost,
       capture_exceptions: true,
       disable_capture_url_hashes: true,
+      // O token do convite fica em ?invite= na URL; o PostHog envia <masked> no lugar dele.
+      mask_personal_data_properties: true,
+      custom_personal_data_properties: ['invite'],
       logs: {
         serviceName: 'setpoint-web',
         environment: environment.production ? 'production' : 'development',
