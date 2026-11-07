@@ -98,6 +98,12 @@ export interface SharedTournamentSnapshot {
   canJoin?: boolean;
 }
 
+export interface LocalLiveTournamentSnapshot {
+  id: string;
+  status: 'active' | 'completed';
+  state: TournamentState;
+}
+
 export interface PlayerStanding {
   playerId: string;
   name: string;

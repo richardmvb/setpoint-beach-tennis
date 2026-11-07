@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createClient, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
-import { PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
+import { LocalLiveTournamentSnapshot, PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
 
 export interface DashboardMetrics {
   tournaments_total: number;
@@ -134,6 +134,79 @@ export class SupabaseService {
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
+  }
+
+  async createLocalLiveTournament(state: TournamentState): Promise<{ id: string; readToken: string; writeToken: string }> {
+    const client = this.requireClient();
+    if (!(await this.currentUser())) {
+      const { error: authError } = await client.auth.signInAnonymously();
+      if (authError) throw authError;
+    }
+    const publicState = this.publicTournamentState(state);
+    const { data, error } = await client.rpc('create_local_live_tournament', { p_state: publicState });
+    if (error) throw error;
+    return data as { id: string; readToken: string; writeToken: string };
+  }
+
+  async updateLocalLiveTournament(writeToken: string, state: TournamentState): Promise<LocalLiveTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('update_local_live_tournament', {
+      p_write_token: writeToken,
+      p_state: this.publicTournamentState(state)
+    });
+    if (error) throw error;
+    return data as LocalLiveTournamentSnapshot;
+  }
+
+  async getLocalLiveTournament(readToken: string): Promise<LocalLiveTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('get_local_live_tournament', { p_read_token: readToken });
+    if (error) throw error;
+    return data as LocalLiveTournamentSnapshot;
+  }
+
+  subscribeToLocalLiveTournament(id: string, onChange: () => void): void {
+    const client = this.requireClient();
+    const key = `local-live:${id}`;
+    const previous = this.channels.get(key);
+    if (previous) void client.removeChannel(previous);
+    const channel = client.channel(key)
+      .on('broadcast', { event: 'refresh' }, onChange)
+      .subscribe();
+    this.channels.set(key, channel);
+  }
+
+  async notifyLocalLiveTournament(id: string): Promise<void> {
+    const key = `local-live:${id}`;
+    const subscribed = this.channels.get(key);
+    if (subscribed) {
+      await subscribed.send({ type: 'broadcast', event: 'refresh', payload: {} });
+      return;
+    }
+    const client = this.requireClient();
+    const channel = client.channel(key);
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => { void client.removeChannel(channel); reject(new Error('Live update timeout.')); }, 5000);
+      channel.subscribe(async status => {
+        if (status === 'SUBSCRIBED') {
+          const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
+          clearTimeout(timeout);
+          await client.removeChannel(channel);
+          if (result === 'ok') resolve();
+          else reject(new Error('Live update failed.'));
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          clearTimeout(timeout);
+          await client.removeChannel(channel);
+          reject(new Error('Live channel unavailable.'));
+        }
+      });
+    });
+  }
+
+  private publicTournamentState(state: TournamentState): TournamentState {
+    return {
+      ...state,
+      analyticsId: undefined,
+      players: state.players.map(({ photoDataUrl: _photoDataUrl, ...player }) => player)
+    };
   }
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {

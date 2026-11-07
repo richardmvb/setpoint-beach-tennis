@@ -71,7 +71,7 @@ Os arquivos de produção são gerados em `dist/setpoint/browser`. O repositóri
 
 ## Modo local
 
-O torneio completo fica no `localStorage` do navegador. Não é necessário Supabase para montar tabelas, lançar resultados, gerar finais ou usar os backups.
+O torneio completo fica no `localStorage` do navegador. Não é necessário Supabase para montar tabelas, lançar resultados, gerar finais ou usar os backups. Com o Supabase configurado, a tela Ajustes também permite gerar um link público de acompanhamento para torneios locais, inclusive em andamento. Esse link só permite visualizar participantes, partidas e placares; não permite entrar nem editar. As fotos dos participantes não são publicadas nesse espelho.
 
 Quando o Supabase estiver configurado e o login anônimo habilitado, o SETPOINT pode enviar métricas agregadas dos torneios locais. Nomes, fotos e placares individuais não fazem parte dessa tabela de métricas. Se a conexão ou autenticação não estiver disponível, o uso local continua funcionando.
 
@@ -90,11 +90,12 @@ O Supabase guarda o estado do torneio e sincroniza participantes, rodadas e resu
 	- `202611010005_super24_mixed_doubles.sql`
 	- `202611010006_shared_player_avatars.sql`
 	- `202611070001_local_metrics_super24_three_courts.sql`
+	- `202611070002_local_live_spectator_links.sql`
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
 	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
 	- `http://localhost:4200/dashboard`
 	- `http://localhost:4201/dashboard`, se usar essa porta local.
-3. Habilite **Allow anonymous sign-ins** para o moderador sem e-mail e os torneios locais que sincronizam métricas.
+3. Habilite **Allow anonymous sign-ins** para o moderador sem e-mail, métricas locais e publicação de links de acompanhamento.
 4. Para o dashboard, use o magic link com uma conta autorizada em `public.setpoint_dashboard_admins`. A RPC verifica a sessão e a allowlist no banco.
 
 O dashboard lê dados agregados via RPC; não expõe nomes ou placares. Fotos compartilhadas são thumbnails WebP em Base64, limitadas pelo app e validadas no servidor. Elas ficam no estado privado do torneio compartilhado, sem bucket público.

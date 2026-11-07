@@ -578,6 +578,9 @@ app-player-avatar>span:not(.has-photo){color:inherit}
 .tour-bar{display:flex;flex-wrap:wrap;gap:14px;margin:4px 0 8px}
 .tour-bar button{padding:6px 0;border:0;background:none;color:var(--green-2);font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer}
 .driver-popover .tour-off{margin-right:auto;padding:4px 0;border:0;background:none;color:#8a8a8a;font-size:12px;text-decoration:underline;cursor:pointer}
+.live-link-field{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.live-link-field input{flex:1 1 260px;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px}
+.live-link-field .button{min-height:44px}
 
 /* Gender controls and mixed finals */
 .gender-icon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}.gender-icon.male{color:#2476d5}.gender-icon.female{color:#d64e8d}.gender-toggle button{display:inline-flex;align-items:center;justify-content:center;gap:7px}.gender-toggle button.male.active{background:#2476d5}.gender-toggle button.female.active{background:#d64e8d}.participant-form{grid-template-columns:minmax(0,1fr) auto auto;align-items:center}.participant-form-main{min-width:220px}.participant-form .gender-toggle.compact{display:flex;width:112px;padding:3px;gap:3px}.gender-toggle.compact button{min-width:50px;min-height:42px;padding:0}.gender-toggle.compact .gender-icon{width:21px;height:21px}.gender-toggle.compact span{display:none}.participant-form .button{width:auto;white-space:nowrap}.player-row>app-gender-icon{margin-left:auto}.player-row select{margin-left:0}.gender-ranking-grid{grid-column:span 12;display:grid;grid-template-columns:1fr 1fr;gap:13px}.gender-ranking-card{min-width:0}.gender-cut td{border-bottom:2px solid var(--orange)}.ranking-player-cell>app-gender-icon{width:16px;height:16px;flex:0 0 16px}
