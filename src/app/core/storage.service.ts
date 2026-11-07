@@ -3,6 +3,7 @@ import { TournamentState, ThemeMode } from './models';
 
 const STATE_KEY = 'setpoint.tournament.v1';
 const THEME_KEY = 'setpoint.theme.v1';
+const BUILD_KEY = 'setpoint.build.v1';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
@@ -42,6 +43,17 @@ export class StorageService {
     }
   }
 
+  clearCompletedTournamentOnVersionChange(buildId: string, state: TournamentState | null): boolean {
+    try {
+      const previousBuild = localStorage.getItem(BUILD_KEY);
+      if (!previousBuild) { localStorage.setItem(BUILD_KEY, buildId); return false; }
+      if (previousBuild === buildId || (state && !state.finishedAt)) return false;
+      this.clearTournament();
+      localStorage.setItem(BUILD_KEY, buildId);
+      return true;
+    } catch { return false; }
+  }
+
   loadTheme(): ThemeMode {
     try { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; }
     catch { return 'light'; }
@@ -75,9 +87,9 @@ export class StorageService {
       || typeof candidate.name !== 'string' || candidate.name.length > 60
       || !Number.isInteger(candidate.courts) || (candidate.courts ?? 0) < 1 || (candidate.courts ?? 0) > 6
       || ![3, 4, 5, 6].includes(candidate.gamesToWin ?? 0)
-      || !Number.isInteger(candidate.roundCount) || (candidate.roundCount ?? 0) < 2 || (candidate.roundCount ?? 0) > 23
+      || !Number.isInteger(candidate.roundCount) || (candidate.roundCount ?? 0) < 2 || (candidate.roundCount ?? 0) > 46
       || !Array.isArray(candidate.players) || candidate.players.length > 24
-      || !Array.isArray(candidate.rounds) || candidate.rounds.length > 23) return false;
+      || !Array.isArray(candidate.rounds) || candidate.rounds.length > 46) return false;
 
     if (candidate.groups !== undefined && (!Array.isArray(candidate.groups) || candidate.groups.length > 6
       || !candidate.groups.every(group => !!group && typeof group.id === 'string'
@@ -122,9 +134,9 @@ export class StorageService {
     return !!finals && typeof finals.complete === 'boolean'
       && Array.isArray(finals.podiumPlayerIds) && finals.podiumPlayerIds.length <= 8
       && finals.podiumPlayerIds.every(id => typeof id === 'string')
-      && Array.isArray(finals.matches) && finals.matches.length === 2
+      && Array.isArray(finals.matches) && finals.matches.length >= 2 && finals.matches.length <= 8
       && finals.matches.every(match => !!match && typeof match.id === 'string'
-        && (match.finalKind === 'championship' || match.finalKind === 'third-place')
+        && (match.finalKind === 'quarterfinal' || match.finalKind === 'semifinal' || match.finalKind === 'championship' || match.finalKind === 'third-place')
         && Number.isInteger(match.court) && Array.isArray(match.teamA) && match.teamA.length === 2
         && Array.isArray(match.teamB) && match.teamB.length === 2
         && [...match.teamA, ...match.teamB].every(id => typeof id === 'string')

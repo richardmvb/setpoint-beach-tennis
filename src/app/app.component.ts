@@ -65,6 +65,11 @@ export class AppComponent implements OnInit, OnDestroy {
   newPlayerName = '';
   newPlayerGender: PlayerGender | '' = '';
   newPlayerAvatar = '';
+  private standingsCacheSignature = '';
+  private standingsCache: PlayerStanding[] = [];
+  private standingsGroupCache: PlayerStanding[][] = [];
+  private maleStandingsCache: PlayerStanding[] = [];
+  private femaleStandingsCache: PlayerStanding[] = [];
   batchModalOpen = false;
   batchText = '';
   batchPlayers: BatchPlayerDraft[] = [];
@@ -156,6 +161,13 @@ export class AppComponent implements OnInit, OnDestroy {
       roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
       tournamentMode: 'super', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null
     };
+    if (this.storage.clearCompletedTournamentOnVersionChange(this.buildId, this.state)) {
+      this.state = {
+        version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
+        roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
+        tournamentMode: 'super', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null
+      };
+    }
     this.state.tournamentMode ??= 'super';
     this.state.doublesFormat ??= 'open';
     this.state.doublesFormat ??= 'open';
@@ -529,8 +541,8 @@ export class AppComponent implements OnInit, OnDestroy {
   get usesMixedFinals(): boolean { return this.isEarlyFinalsOptionAvailable && !!this.state.earlyFinalsEnabled; }
   get usesMixedFinalBracket(): boolean { return this.usesMixedFinals && (this.state.mixedFinalFormat ?? 'knockout') === 'knockout'; }
   get mixedFinalistCount(): number { return this.usesMixedFinalBracket ? 8 : 4; }
-  get maleStandings(): PlayerStanding[] { return this.standings.filter(row => this.state.players.find(player => player.id === row.playerId)?.gender === 'male'); }
-  get femaleStandings(): PlayerStanding[] { return this.standings.filter(row => this.state.players.find(player => player.id === row.playerId)?.gender === 'female'); }
+  get maleStandings(): PlayerStanding[] { this.refreshStandingsCache(); return this.maleStandingsCache; }
+  get femaleStandings(): PlayerStanding[] { this.refreshStandingsCache(); return this.femaleStandingsCache; }
   get isEarlyFinalsOptionAvailable(): boolean {
     return !this.isGroupTournament && this.state.size === 24 && this.isMixedDoubles && this.state.courts === 3;
   }
@@ -620,7 +632,22 @@ export class AppComponent implements OnInit, OnDestroy {
       matchesPlayed: standing.matchesPlayed
     };
   }
-  get standings(): PlayerStanding[] { return this.rankedStandingGroups().flat(); }
+  get standings(): PlayerStanding[] { this.refreshStandingsCache(); return this.standingsCache; }
+
+  private refreshStandingsCache(): void {
+    const signature = [
+      this.state.players.map(player => player.id + ':' + player.name + ':' + (player.gender ?? '')).join('|'),
+      this.state.rounds.map(round => round.matches.map(match => match.id + ':' + match.scoreA + ':' + match.scoreB).join(',')).join('|'),
+      (this.state.tieBreakDraws ?? []).map(draw => draw.playerIds.join(',') + ':' + draw.order.join(',')).join('|')
+    ].join('~');
+    if (signature === this.standingsCacheSignature) return;
+    this.standingsGroupCache = this.computeRankedStandingGroups();
+    this.standingsCache = this.standingsGroupCache.flat();
+    const genderByPlayerId = new Map(this.state.players.map(player => [player.id, player.gender]));
+    this.maleStandingsCache = this.standingsCache.filter(row => genderByPlayerId.get(row.playerId) === 'male');
+    this.femaleStandingsCache = this.standingsCache.filter(row => genderByPlayerId.get(row.playerId) === 'female');
+    this.standingsCacheSignature = signature;
+  }
 
   private buildStandings(): PlayerStanding[] {
     const rows = this.state.players.map(player => ({
@@ -647,7 +674,9 @@ export class AppComponent implements OnInit, OnDestroy {
     return rows.map(row => ({ ...row, gameBalance: row.gamesFor - row.gamesAgainst }));
   }
 
-  private rankedStandingGroups(): PlayerStanding[][] {
+  private rankedStandingGroups(): PlayerStanding[][] { this.refreshStandingsCache(); return this.standingsGroupCache; }
+
+  private computeRankedStandingGroups(): PlayerStanding[][] {
     const rows = this.buildStandings().sort((a, b) => this.compareStandingCriteria(a, b) || a.name.localeCompare(b.name));
     const criteriaGroups: PlayerStanding[][] = [];
     for (const row of rows) {

@@ -104,9 +104,11 @@ export class ScheduleService {
   }
 
   private generateSuper24(players: Player[], mixed = false, courts = 6): Round[] {
-    const partnerRounds = mixed
+    // A cobertura de parceiros é a mesma, mas a ordem é sorteada em cada tabela gerada.
+    // Isso evita que os mesmos atletas iniciem sempre nas mesmas duplas.
+    const partnerRounds = this.shuffle(mixed
       ? this.createMixedPartnerRounds(players, 23)
-      : this.createPartnerRounds(players);
+      : this.createPartnerRounds(players));
     const playerIds = players.map(player => player.id);
     const rounds = partnerRounds.length;
 
