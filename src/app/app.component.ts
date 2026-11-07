@@ -1202,6 +1202,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createOrCopyLocalLiveLink(): Promise<void> {
+    if (this.state.finishedAt) return;
     if (this.localLiveReadToken) return this.copyLocalLiveLink();
     if (!this.supabase.isConfigured) {
       this.localLiveError = 'A publicação ao vivo não está configurada neste deploy.';
