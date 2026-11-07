@@ -466,6 +466,14 @@ export class AppComponent implements OnInit, OnDestroy {
     try { this.tutorialEnabled = localStorage.getItem(TUTORIAL_KEY) !== 'off'; } catch { /* mantém ligado */ }
   }
 
+  handleBrandClick(): void {
+    if (!this.state.startedAt) {
+      this.openLanding();
+      return;
+    }
+    this.navigate('overview');
+  }
+
   openLanding(): void {
     this.showLanding = true;
     window.scrollTo({ top: 0 });

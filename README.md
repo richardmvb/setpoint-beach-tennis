@@ -89,6 +89,7 @@ O Supabase guarda o estado do torneio e sincroniza participantes, rodadas e resu
 	- `202611010004_local_tournament_metrics.sql`
 	- `202611010005_super24_mixed_doubles.sql`
 	- `202611010006_shared_player_avatars.sql`
+	- `202611070001_local_metrics_super24_three_courts.sql`
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
 	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
 	- `http://localhost:4200/dashboard`

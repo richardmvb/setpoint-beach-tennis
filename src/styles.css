@@ -623,7 +623,7 @@ app-player-avatar>span:not(.has-photo){color:inherit}
 @media(max-width:620px){.player-matches-backdrop{place-items:end;padding:0}.player-matches-modal{width:100%;max-height:92dvh;padding:18px 14px calc(18px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;border-bottom:0}.player-match-detail{padding:10px}.ranking-page th:nth-child(3),.ranking-page td:nth-child(3){width:25px}.ranking-page th:nth-child(4),.ranking-page td:nth-child(4),.ranking-page th:nth-child(5),.ranking-page td:nth-child(5),.ranking-page th:nth-child(6),.ranking-page td:nth-child(6),.ranking-page th:nth-child(7),.ranking-page td:nth-child(7){width:29px}.ranking-page th:nth-child(8),.ranking-page td:nth-child(8){width:24px}}
 
 /* Completion actions and resilient player-history modal. */
-.settings-page>.data-card:first-of-type{order:-1}.player-matches-modal{padding-bottom:96px}.player-matches-modal .batch-modal-header{position:sticky;top:-22px;z-index:2;margin:-22px -22px 0;padding:22px 22px 12px;background:var(--surface);border-bottom:1px solid var(--border)}.player-matches-modal .player-match-list{padding-bottom:12px}
+.settings-page>.data-card-primary{order:-1}.player-matches-modal{padding-bottom:96px}.player-matches-modal .batch-modal-header{position:sticky;top:-22px;z-index:2;margin:-22px -22px 0;padding:22px 22px 12px;background:var(--surface);border-bottom:1px solid var(--border)}.player-matches-modal .player-match-list{padding-bottom:12px}
 @media(max-width:620px){.player-matches-modal{padding-bottom:calc(96px + env(safe-area-inset-bottom))}.player-matches-modal .batch-modal-header{top:-18px;margin:-18px -14px 0;padding:18px 14px 12px}}
 
 /* Without a gender picker, the name field takes the freed column. */
