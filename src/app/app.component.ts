@@ -1685,6 +1685,8 @@ export class AppComponent implements OnInit, OnDestroy {
     const finishedAt = new Date().toISOString();
     this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
+    this.setPage('settings');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (!this.isSharedMode) this.syncLocalTournamentMetrics();
     this.posthogService.posthog.capture('tournament_finalized', {
       tournament_mode: this.state.tournamentMode,
@@ -1752,10 +1754,10 @@ export class AppComponent implements OnInit, OnDestroy {
   matchPending(match: Match): boolean { return !this.isScored(match); }
 
   resetTournament(): void {
-    if (this.isSharedModerator && this.state.sharedTournamentId) { void this.cancelSharedTournament(); return; }
+    if (this.isSharedModerator && this.state.sharedTournamentId) { void this.cancelSharedTournament(true); return; }
     if (!confirm('Isso apagará a tabela, os placares e os participantes salvos neste navegador. Deseja continuar?')) return;
     if (!this.isSharedMode) this.syncLocalTournamentMetrics(true);
-    this.clearLocalTournament();
+    this.clearLocalTournament(true);
   }
 
   private syncLocalTournamentMetrics(abandoned = false): void {
@@ -1765,7 +1767,7 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.supabase.recordLocalTournamentMetrics(snapshot, abandoned).catch(() => undefined);
   }
 
-  async cancelSharedTournament(): Promise<void> {
+  async cancelSharedTournament(returnToLanding = false): Promise<void> {
     const id = this.state.sharedTournamentId;
     if (!this.isSharedModerator || !id) return;
     if (!confirm('Arquivar este torneio e recomeçar? O convite será invalidado. O histórico e os participantes serão preservados no dashboard.')) return;
@@ -1773,7 +1775,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedError = '';
     try {
       await this.supabase.cancelSharedTournament(id);
-      this.clearLocalTournament();
+      this.clearLocalTournament(returnToLanding);
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
     } finally {
@@ -1781,11 +1783,13 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  private clearLocalTournament(): void {
+  private clearLocalTournament(returnToLanding = false): void {
     this.storage.clearTournament();
     this.leaveSharedTournament();
     this.state = { version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4, roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(), tournamentMode: 'super', hostingMode: 'local', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null };
-    this.selectedRound = 0; this.setupStep = 1; this.setPage('setup'); this.trackSetupStepViewed(1); this.message('Novo torneio iniciado.');
+    this.selectedRound = 0; this.setupStep = 1; this.selectedRankingPlayerId = ''; this.setPage('setup');
+    if (returnToLanding) this.openLanding();
+    this.trackSetupStepViewed(1); this.message('Novo torneio iniciado.');
   }
 
   async importBackup(event: Event): Promise<void> {
