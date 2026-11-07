@@ -306,6 +306,13 @@ export class AppComponent implements OnInit, OnDestroy {
   openPlayerMatches(playerId: string): void { this.selectedRankingPlayerId = playerId; }
   closePlayerMatches(): void { this.selectedRankingPlayerId = ''; }
   get selectedRankingPlayer(): Player | undefined { return this.state.players.find(player => player.id === this.selectedRankingPlayerId); }
+  get selectedPlayerQualifyingPlayed(): number {
+    return this.standings.find(row => row.playerId === this.selectedRankingPlayerId)?.matchesPlayed ?? 0;
+  }
+  get selectedPlayerQualifyingTotal(): number {
+    return this.state.rounds.reduce((total, round) => total + round.matches.filter(match =>
+      match.teamA.includes(this.selectedRankingPlayerId) || match.teamB.includes(this.selectedRankingPlayerId)).length, 0);
+  }
   get selectedPlayerMatches(): PlayerMatchDetail[] {
     const playerId = this.selectedRankingPlayerId;
     if (!playerId) return [];
@@ -638,6 +645,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   get requiredRounds(): number {
     if (this.isGroupTournament) return this.fixedPairsMode ? this.state.size / 2 - 1 : this.isMixedDoubles ? 2 : 3;
+    if (this.state.size === 24 && this.isMixedDoubles) {
+      return this.state.rounds.length || (this.state.courts === 3 ? 24 : 12);
+    }
     if (this.state.size === 24 && this.state.courts === 3) return 46;
     if (this.state.size === 10) return 10;
     if (this.state.size === 12 && this.state.courts === 2) return 12;

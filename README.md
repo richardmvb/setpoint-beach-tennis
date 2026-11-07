@@ -30,13 +30,14 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 | Super 10 | 10 | 2 | Descansos distribuídos para equilibrar partidas. |
 | Super 12 | 11 | 3 | Todos jogam 8 partidas. |
 | Super 12 | 12 | 2 | Rodada de equalização de jogos e descansos. |
-| Super 24 | 23 | 6 | Todos jogam em cada rodada; parceiros alternam entre as categorias no misto. |
-| Super 24 misto | 46 | 3 | Cada dupla de rodadas equaliza o número de jogos; permite encerrar a classificatória antecipadamente. |
+| Super 24 aberto | 23 | 6 | Todos jogam em cada rodada. |
+| Super 24 misto | 12 | 6 | Cada atleta joga 12 partidas, uma com cada parceiro da outra categoria. |
+| Super 24 misto | 24 | 3 | Cada dupla de rodadas equaliza os jogos; permite encerrar a classificatória antecipadamente. |
 | Grupos rotativos abertos | 3 | 1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três. |
 | Grupos rotativos mistos | 2 | 1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria. |
 | Grupos fixos | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar. |
 
-No modo misto com 24 atletas, algumas parcerias voltam a acontecer porque existem menos parceiros possíveis que rodadas. O gerador valida a composição das duplas e a cobertura dos confrontos.
+No Super 24 misto, as novas tabelas garantem 12 jogos por atleta, sem repetir parceiros nem o mesmo grupo de quatro jogadores. O gerador busca diversificar os confrontos, mas não garante que todos os atletas se enfrentem. Tabelas já geradas permanecem inalteradas.
 
 ### Finais antecipadas no Super 24 misto
 
