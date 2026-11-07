@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,7 +42,8 @@ jobs:
           NG_APP_LOCK_SCREEN_ENABLED: ${{ vars.NG_APP_LOCK_SCREEN_ENABLED }}
           BUILD_ID: ${{ github.sha }}
         run: |
-          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '', buildId: (process.env.BUILD_ID || '').slice(0, 7), production: true, lockScreenEnabled: process.env.NG_APP_LOCK_SCREEN_ENABLED === 'true', ...(process.env.NG_APP_POSTHOG_PROJECT_TOKEN ? { posthogKey: process.env.NG_APP_POSTHOG_PROJECT_TOKEN } : {}), ...(process.env.NG_APP_POSTHOG_HOST ? { posthogHost: process.env.NG_APP_POSTHOG_HOST } : {}) }) + ';\\n');"
+          export BUILD_VERSION="$(git rev-list --count HEAD)"
+          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '', buildId: (process.env.BUILD_ID || '').slice(0, 7), buildVersion: Number(process.env.BUILD_VERSION), production: true, lockScreenEnabled: process.env.NG_APP_LOCK_SCREEN_ENABLED === 'true', ...(process.env.NG_APP_POSTHOG_PROJECT_TOKEN ? { posthogKey: process.env.NG_APP_POSTHOG_PROJECT_TOKEN } : {}), ...(process.env.NG_APP_POSTHOG_HOST ? { posthogHost: process.env.NG_APP_POSTHOG_HOST } : {}) }) + ';\\n');"
 
       - name: Build Angular app
         run: npm run build -- --base-href /setpoint-beach-tennis/

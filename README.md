@@ -20,7 +20,7 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Card para Instagram:** prévia antes de exportar, três layouts e foto de fundo opcional processada no navegador.
 - **NPS:** pesquisa configurada no PostHog, disponível no footer e em momentos de conclusão do torneio.
 - **Dashboard:** totais agregados de torneios, participantes, modos, formatos e conclusão em `/dashboard`.
-- **Modo claro e escuro**, backups JSON e registro de build no rodapé.
+- **Modo claro e escuro**, backups JSON e versão no cabeçalho e rodapé.
 
 ## Formatos
 
@@ -111,7 +111,7 @@ Em **GitHub → Settings → Secrets and variables → Actions → Variables**, 
 - `NG_APP_POSTHOG_HOST`: host PostHog da região do projeto.
 - `NG_APP_LOCK_SCREEN_ENABLED`: opcional; use `true` para ativar a tela de desbloqueio do torneio. Ausente ou `false`, a tela fica desativada.
 
-O workflow gera `runtime-config.js`, compila o Angular e publica no GitHub Pages. O fallback do Pages permite carregar `/dashboard` diretamente. Use apenas chaves publicáveis no frontend; nunca coloque `service_role` no código ou nas variáveis do build.
+O workflow gera `runtime-config.js`, compila o Angular e publica no GitHub Pages. A versão exibida é a quantidade de commits alcançáveis a partir do commit publicado; em desenvolvimento, sem essa configuração, aparece `dev`. O fallback do Pages permite carregar `/dashboard` diretamente. Use apenas chaves publicáveis no frontend; nunca coloque `service_role` no código ou nas variáveis do build.
 
 ## Métricas
 

@@ -21,7 +21,7 @@
 </main>
 
 <main *ngIf="showLanding && !isLocked && !isDashboardRoute" class="landing">
-  <header class="landing-nav"><div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span></div><button class="button secondary" type="button" (click)="enterApp()">Entrar no app</button></header>
+  <header class="landing-nav"><div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS · {{ versionLabel }}</small></span></div><button class="button secondary" type="button" (click)="enterApp()">Entrar no app</button></header>
   <section class="landing-hero">
     <span class="card-kicker">GESTÃO DE TORNEIOS DE BEACH TENNIS</span>
     <h1>Organize seu torneio sem planilha, sem confusão.</h1>
@@ -52,6 +52,7 @@
       <span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span>
     </button>
     <div class="top-actions">
+      <span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span>
       <span class="local-indicator"><i></i> Salvo</span>
       <button class="icon-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'" [title]="theme === 'light' ? 'Tema escuro' : 'Tema claro'">
         <svg *ngIf="theme === 'light'" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>
@@ -128,7 +129,7 @@
       </section>
 
       <section *ngSwitchCase="'shared'" class="shared-guest-page">
-        <article class="surface-card shared-guest-header"><div><span class="card-kicker">{{ isLiveViewer ? 'ACOMPANHAMENTO AO VIVO' : 'TORNEIO COMPARTILHADO' }}</span><h1>{{ state.name }}</h1><p class="muted">{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ sharedStatusLabel }}</p></div><div class="shared-guest-tags"><span class="mini-tag">{{ state.players.length }} / {{ state.size }} atletas</span><span *ngIf="state.startedAt" class="mini-tag">⏱ {{ elapsedLabel }}</span></div></article>
+        <article class="surface-card shared-guest-header"><div><span class="card-kicker">{{ isLiveViewer ? 'ACOMPANHAMENTO AO VIVO' : 'TORNEIO COMPARTILHADO' }}</span><h1>{{ state.name }}</h1><p class="muted">{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ sharedStatusLabel }}</p></div><div class="shared-guest-tags"><span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span><span class="mini-tag">{{ state.players.length }} / {{ state.size }} atletas</span><span *ngIf="state.startedAt" class="mini-tag">⏱ {{ elapsedLabel }}</span></div></article>
         <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p>
           <article *ngIf="canJoinSharedTournament" class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar"></app-avatar-picker><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria"></app-gender-toggle><button class="button primary" type="submit" [disabled]="!guestName.trim() || sharedLoading || (isMixedDoubles && !guestGender)">{{ sharedLoading ? 'Entrando…' : 'Participar' }}</button></form></article>
         <article *ngIf="!sharedLoading && !sharedSnapshot && !sharedError" class="surface-card shared-loading">Carregando torneio…</article>
@@ -224,7 +225,7 @@
     </ng-container>
   </main>
   <nav *ngIf="isGuestView && state.rounds.length" class="guest-mobile-nav" aria-label="Navegação do torneio"><button type="button" (click)="scrollGuestTo('guest-rounds')">Partidas</button><button type="button" (click)="scrollGuestTo('guest-ranking')">Ranking</button><button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
-  <footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do build">{{ buildId }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
+  <footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
 
 
 
@@ -274,7 +275,7 @@
 }
 
 <div *ngIf="isDashboardRoute && dashboardAuthenticated" class="dashboard-shell">
-  <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></a><h1>Métricas</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>
+  <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD · {{ versionLabel }}</small></span></a><h1>Métricas</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>
   <div class="dashboard-toolbar"><p class="muted">Dados agregados dos torneios compartilhados.</p><button class="button secondary" type="button" (click)="loadDashboardMetrics()" [disabled]="dashboardLoading">{{ dashboardLoading ? 'Atualizando…' : 'Atualizar' }}</button></div>
   <p *ngIf="dashboardError" class="shared-error" role="alert">{{ dashboardError }}</p>
   <p *ngIf="dashboardLoading && !dashboardMetrics" class="surface-card">Carregando métricas…</p>
@@ -297,5 +298,5 @@
     <article class="dashboard-metric"><span>TAXA DE CONCLUSÃO</span><strong>{{ formatCompletionRate(metrics.completion_rate) }}</strong></article>
     <article class="dashboard-metric"><span>DURAÇÃO MÉDIA</span><strong>{{ formatDashboardDuration(metrics.average_duration_seconds) }}</strong></article>
   </section>
-  <footer class="dashboard-footer"><span>SETPOINT · {{ buildId }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
+  <footer class="dashboard-footer"><span>SETPOINT · {{ versionLabel }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
 </div>

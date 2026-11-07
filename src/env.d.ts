@@ -2,6 +2,7 @@ interface SetpointRuntimeConfig {
   supabaseUrl?: string;
   publishableKey?: string;
   buildId?: string;
+  buildVersion?: number;
   production?: boolean;
   lockScreenEnabled?: boolean;
   posthogKey?: string;

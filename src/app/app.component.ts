@@ -353,6 +353,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get sharedConfigured(): boolean { return this.supabase.isConfigured; }
   get posthogFeedbackEnabled(): boolean { return this.posthogService.isInitialized; }
   readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
+  readonly versionLabel = window.__SETPOINT_CONFIG__?.buildVersion ? `v${window.__SETPOINT_CONFIG__.buildVersion}` : 'dev';
   get isSharedMode(): boolean { return this.state.hostingMode === 'shared'; }
   get qualificationEnabled(): boolean {
     return !!this.state.qualificationStats && this.isSharedMode && !this.isGroupTournament
