@@ -104,11 +104,9 @@ export class ScheduleService {
   }
 
   private generateSuper24(players: Player[], mixed = false, courts = 6): Round[] {
-    // A cobertura de parceiros é a mesma, mas a ordem é sorteada em cada tabela gerada.
-    // Isso evita que os mesmos atletas iniciem sempre nas mesmas duplas.
-    const partnerRounds = this.shuffle(mixed
+    const partnerRounds = mixed
       ? this.createMixedPartnerRounds(players, 23)
-      : this.createPartnerRounds(players));
+      : this.createPartnerRounds(players);
     const playerIds = players.map(player => player.id);
     const rounds = partnerRounds.length;
 
@@ -152,9 +150,8 @@ export class ScheduleService {
 
   private toSuper24Rounds(selected: TeamMatch[][], courts: number, playerIds: string[]): Round[] {
     const rounds: Round[] = [];
-    const roundMatches = courts === 3 ? this.orderThreeCourtBatches(selected) : selected;
-    roundMatches.forEach(matches => {
-      const batches = [matches];
+    selected.forEach(matches => {
+      const batches = courts === 3 ? [matches.slice(0, 3), matches.slice(3)] : [matches];
       batches.forEach(batch => {
         const activePlayerIds = new Set(batch.flatMap(([teamA, teamB]) => [...teamA, ...teamB]));
         const number = rounds.length + 1;
@@ -173,32 +170,6 @@ export class ScheduleService {
       });
     });
     return rounds;
-  }
-
-  private orderThreeCourtBatches(selected: TeamMatch[][]): TeamMatch[][] {
-    type BatchBlock = { first: TeamMatch[]; second: TeamMatch[] };
-    const remaining: BatchBlock[] = selected.map(matches => ({ first: matches.slice(0, 3), second: matches.slice(3) }));
-    const ordered: TeamMatch[][] = [];
-    let previousActive = new Set<string>();
-    while (remaining.length) {
-      let bestIndex = 0; let reverse = false; let bestOverlap = Number.POSITIVE_INFINITY;
-      for (let index = 0; index < remaining.length; index++) {
-        for (const candidateReverse of [false, true]) {
-          const first = candidateReverse ? remaining[index].second : remaining[index].first;
-          const active = new Set(first.flatMap(([teamA, teamB]) => [...teamA, ...teamB]));
-          let overlap = 0; active.forEach(playerId => { if (previousActive.has(playerId)) overlap++; });
-          if (overlap < bestOverlap || (overlap === bestOverlap && Math.random() < .5)) {
-            bestOverlap = overlap; bestIndex = index; reverse = candidateReverse;
-          }
-        }
-      }
-      const [block] = remaining.splice(bestIndex, 1);
-      const first = reverse ? block.second : block.first;
-      const second = reverse ? block.first : block.second;
-      ordered.push(first, second);
-      previousActive = new Set(second.flatMap(([teamA, teamB]) => [...teamA, ...teamB]));
-    }
-    return ordered;
   }
 
   private randomTeamMatches(teams: PartnerTeam[]): TeamMatch[] {
