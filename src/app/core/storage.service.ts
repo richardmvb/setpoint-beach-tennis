@@ -67,6 +67,7 @@ export class StorageService {
       || (candidate.tournamentMode !== undefined && !['super', 'groups'].includes(candidate.tournamentMode))
       || (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat))
       || (candidate.doublesFormat !== undefined && !['open', 'mixed'].includes(candidate.doublesFormat))
+      || (candidate.mixedFinalFormat !== undefined && !['knockout', 'direct'].includes(candidate.mixedFinalFormat))
       || (candidate.startedAt !== undefined && Number.isNaN(Date.parse(candidate.startedAt)))
       || (candidate.finishedAt !== undefined && Number.isNaN(Date.parse(candidate.finishedAt)))
       || (candidate.analyticsId !== undefined && typeof candidate.analyticsId !== 'string')

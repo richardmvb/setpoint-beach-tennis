@@ -9,9 +9,11 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Super:** 8, 10, 12 ou 24 atletas, com parceiros rotativos.
 - **Grupos:** 8, 12 ou 24 atletas, com parceiros rotativos ou duplas fixas.
 - **Duplas abertas ou mistas:** no modo misto, cada dupla tem um atleta masculino e um feminino.
-- **Tabela completa antes do início:** configuração de quadras, games e rodadas conforme o formato.
+- **Configuração por faixas:** participantes, quadras e games usam controles de faixa que se adaptam ao formato escolhido.
+- **Cadastro em lote:** cole uma lista de atletas, revise nomes e categorias antes de confirmar; o fluxo individual continua disponível.
 - **Lançamento de placares por rodada:** navegação entre rodadas, campos numéricos maiores e atualização automática do ranking.
 - **Classificação e finais:** critérios individuais, desempates, final, disputa de 3º lugar e pódio.
+- **Super 24 misto em 3 quadras:** 12 homens e 12 mulheres em baterias equilibradas, com ranking separado por categoria e encerramento antecipado opcional.
 - **Projeção de objetivo:** em torneios compartilhados Super, atletas acompanham cenários para chegar ao 1º lugar, top 2 ou top 3.
 - **Convites compartilhados:** guests entram pelo link; o moderador pode incluir participantes sem celular.
 - **Fotos opcionais:** avatars WebP são reduzidos localmente para até 8 kB e mantêm as iniciais como fallback.
@@ -29,11 +31,19 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 | Super 12 | 11 | 3 | Todos jogam 8 partidas. |
 | Super 12 | 12 | 2 | Rodada de equalização de jogos e descansos. |
 | Super 24 | 23 | 6 | Todos jogam em cada rodada; parceiros alternam entre as categorias no misto. |
+| Super 24 misto | 46 | 3 | Cada dupla de rodadas equaliza o número de jogos; permite encerrar a classificatória antecipadamente. |
 | Grupos rotativos abertos | 3 | 1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três. |
 | Grupos rotativos mistos | 2 | 1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria. |
 | Grupos fixos | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar. |
 
 No modo misto com 24 atletas, algumas parcerias voltam a acontecer porque existem menos parceiros possíveis que rodadas. O gerador valida a composição das duplas e a cobertura dos confrontos.
+
+### Finais antecipadas no Super 24 misto
+
+Ao escolher **Super 24**, **duplas mistas**, **3 quadras** e ativar a opção de finais antecipadas, o moderador pode gerar a fase final quando todos tiverem a mesma quantidade de partidas registradas. O ranking passa a exibir tabelas masculina e feminina. É possível escolher entre:
+
+- **Chave completa:** os oito melhores homens e as oito melhores mulheres formam oito duplas fixas para quartas, semifinais, final e disputa de 3º.
+- **Final direta:** os quatro melhores de cada categoria formam quatro duplas para final e disputa de 3º.
 
 ## Começar localmente
 

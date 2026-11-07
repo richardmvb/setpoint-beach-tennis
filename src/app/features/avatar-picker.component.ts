@@ -11,7 +11,7 @@ import { AvatarService } from '../core/avatar.service';
   template: `
     <button class="avatar-trigger" type="button" (click)="menuOpen = !menuOpen" [attr.aria-expanded]="menuOpen" aria-haspopup="menu" [attr.aria-label]="value ? 'Alterar foto' : 'Adicionar foto'">
       <img *ngIf="value; else placeholder" [src]="value" alt="">
-      <ng-template #placeholder><span class="avatar-trigger-icon" aria-hidden="true">{{ processing ? '…' : '+' }}</span></ng-template>
+      <ng-template #placeholder><span *ngIf="processing; else camera" class="avatar-trigger-icon" aria-hidden="true">…</span><ng-template #camera><svg class="avatar-camera-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.4-2h7.2L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"></path><circle cx="12" cy="13" r="3.5"></circle></svg></ng-template></ng-template>
     </button>
     <div *ngIf="menuOpen" class="avatar-menu" role="menu">
       <label class="avatar-menu-item" role="menuitem">Tirar foto<input type="file" accept="image/*" capture="user" hidden (change)="pick($event)"></label>

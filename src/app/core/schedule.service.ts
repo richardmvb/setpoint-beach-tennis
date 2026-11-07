@@ -18,7 +18,7 @@ export class ScheduleService {
       throw new Error('Cada jogador precisa ter um identificador único.');
     }
     const expectedRounds = this.expectedRounds(size, courts);
-    const allowedCourts = size === 24 ? [6] : size === 12 ? [2, 3] : [2];
+    const allowedCourts = size === 24 ? [3, 6] : size === 12 ? [2, 3] : [2];
     if (roundCount !== expectedRounds) {
       throw new Error(`O Super ${size} precisa de exatamente ${expectedRounds} rodadas.`);
     }
@@ -26,7 +26,7 @@ export class ScheduleService {
       throw new Error(`O Super ${size} permite ${allowedCourts.join(' ou ')} quadras sem comprometer o equilíbrio dos jogos.`);
     }
 
-    if (size === 24) return this.generateSuper24(players, mixed);
+    if (size === 24) return this.generateSuper24(players, mixed, courts);
 
     const partnerRounds = mixed
       ? this.createMixedPartnerRounds(players, expectedRounds)
@@ -103,7 +103,7 @@ export class ScheduleService {
     throw new Error('Não foi possível montar uma tabela sem repetir parceiros e com todos os confrontos. Tente gerar novamente.');
   }
 
-  private generateSuper24(players: Player[], mixed = false): Round[] {
+  private generateSuper24(players: Player[], mixed = false, courts = 6): Round[] {
     const partnerRounds = mixed
       ? this.createMixedPartnerRounds(players, 23)
       : this.createPartnerRounds(players);
@@ -134,19 +134,8 @@ export class ScheduleService {
         if (newCost <= oldCost || Math.random() < Math.exp((oldCost - newCost) / temperature)) {
           selected[roundIndex] = candidate;
           if (opponents.size === playerIds.length * (playerIds.length - 1) / 2) {
-            const result = selected.map((matches, roundIndex): Round => ({
-              number: roundIndex + 1,
-              matches: matches.map((match, matchIndex): Match => ({
-                id: `r${roundIndex + 1}-m${matchIndex + 1}`,
-                court: matchIndex + 1,
-                teamA: match[0],
-                teamB: match[1],
-                scoreA: null,
-                scoreB: null
-              })),
-              restingPlayerIds: []
-            }));
-            this.validateSchedule(players, 24, 6, result, mixed);
+            const result = this.toSuper24Rounds(selected, courts, playerIds);
+            this.validateSchedule(players, 24, courts, result, mixed);
             return result;
           }
         } else {
@@ -157,6 +146,30 @@ export class ScheduleService {
     }
 
     throw new Error('Não foi possível distribuir os confrontos do Super 24. Gere a tabela novamente.');
+  }
+
+  private toSuper24Rounds(selected: TeamMatch[][], courts: number, playerIds: string[]): Round[] {
+    const rounds: Round[] = [];
+    selected.forEach(matches => {
+      const batches = courts === 3 ? [matches.slice(0, 3), matches.slice(3)] : [matches];
+      batches.forEach(batch => {
+        const activePlayerIds = new Set(batch.flatMap(([teamA, teamB]) => [...teamA, ...teamB]));
+        const number = rounds.length + 1;
+        rounds.push({
+          number,
+          matches: batch.map((match, matchIndex): Match => ({
+            id: `r${number}-m${matchIndex + 1}`,
+            court: matchIndex + 1,
+            teamA: match[0],
+            teamB: match[1],
+            scoreA: null,
+            scoreB: null
+          })),
+          restingPlayerIds: playerIds.filter(id => !activePlayerIds.has(id))
+        });
+      });
+    });
+    return rounds;
   }
 
   private randomTeamMatches(teams: PartnerTeam[]): TeamMatch[] {
@@ -451,6 +464,7 @@ export class ScheduleService {
   }
 
   private expectedRounds(size: TournamentSize, courts: number): number {
+    if (size === 24 && courts === 3) return 46;
     if (size === 10) return 10;
     if (size === 12 && courts === 2) return 12;
     return size - 1;

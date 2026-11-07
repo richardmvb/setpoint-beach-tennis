@@ -3,8 +3,9 @@ export type TournamentMode = 'super' | 'groups';
 export type GroupFormat = 'fixed' | 'rotating';
 export type DoublesFormat = 'open' | 'mixed';
 export type PlayerGender = 'male' | 'female';
+export type MixedFinalFormat = 'knockout' | 'direct';
 export type MatchPhase = 'super' | 'groups' | 'final';
-export type FinalMatchKind = 'championship' | 'third-place';
+export type FinalMatchKind = 'quarterfinal' | 'semifinal' | 'championship' | 'third-place';
 export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
 export type TournamentHostingMode = 'local' | 'shared';
 export type ThemeMode = 'light' | 'dark';
@@ -47,7 +48,7 @@ export interface TournamentGroup {
 }
 
 export interface FinalStage {
-  matches: [Match, Match];
+  matches: Match[];
   complete: boolean;
   podiumPlayerIds: string[];
 }
@@ -75,6 +76,8 @@ export interface TournamentState {
   doublesFormat?: DoublesFormat;
   hostingMode?: TournamentHostingMode;
   qualificationStats?: boolean;
+  earlyFinalsEnabled?: boolean;
+  mixedFinalFormat?: MixedFinalFormat;
   sharedTournamentId?: string;
   sharedStatus?: SharedTournamentStatus;
   groupFormat?: GroupFormat;
