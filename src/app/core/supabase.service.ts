@@ -142,8 +142,9 @@ export class SupabaseService {
       const { error: authError } = await client.auth.signInAnonymously();
       if (authError) throw authError;
     }
-    const publicState = this.publicTournamentState(state);
-    const { data, error } = await client.rpc('create_local_live_tournament', { p_state: publicState });
+    const { data, error } = await client.rpc('create_local_live_tournament', {
+      p_state: this.publicTournamentState(state)
+    });
     if (error) throw error;
     return data as { id: string; readToken: string; writeToken: string };
   }
