@@ -25,6 +25,8 @@ import { environment } from '../environments/environment';
 
 interface BatchPlayerDraft { name: string; gender: PlayerGender | ''; error?: string; }
 
+interface PlayerMatchDetail { phase: string; opponent: string; partner: string; score: string; result: string; }
+
 interface GroupStandingEntry {
   label: string;
   playerIds: string[];
@@ -73,6 +75,7 @@ export class AppComponent implements OnInit, OnDestroy {
   batchModalOpen = false;
   batchText = '';
   batchPlayers: BatchPlayerDraft[] = [];
+  selectedRankingPlayerId = '';
   notice = '';
   noticeType: 'success' | 'error' = 'success';
   scoreDrafts: Record<string, { a: number | null; b: number | null; tieBreakA?: number | null; tieBreakB?: number | null }> = {};
@@ -283,6 +286,26 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.isSharedMode && this.isSharedModerator
       && (this.state.sharedStatus === 'registration' || this.state.sharedStatus === 'ready');
   }
+  openPlayerMatches(playerId: string): void { this.selectedRankingPlayerId = playerId; }
+  closePlayerMatches(): void { this.selectedRankingPlayerId = ''; }
+  get selectedRankingPlayer(): Player | undefined { return this.state.players.find(player => player.id === this.selectedRankingPlayerId); }
+  get selectedPlayerMatches(): PlayerMatchDetail[] {
+    const playerId = this.selectedRankingPlayerId;
+    if (!playerId) return [];
+    const details: PlayerMatchDetail[] = [];
+    const addMatch = (match: Match, phase: string) => {
+      const onA = match.teamA.includes(playerId);
+      const team = onA ? match.teamA : match.teamB;
+      const opponents = onA ? match.teamB : match.teamA;
+      const scoreFor = onA ? match.scoreA : match.scoreB;
+      const scoreAgainst = onA ? match.scoreB : match.scoreA;
+      details.push({ phase, partner: this.playerName(team.find(id => id !== playerId) ?? ''), opponent: opponents.map(id => this.playerName(id)).join(' + '), score: scoreFor === null || scoreAgainst === null ? 'Pendente' : scoreFor + '–' + scoreAgainst, result: scoreFor === null || scoreAgainst === null ? '' : scoreFor > scoreAgainst ? 'Vitória' : 'Derrota' });
+    };
+    this.state.rounds.forEach(round => round.matches.filter(match => match.teamA.includes(playerId) || match.teamB.includes(playerId)).forEach(match => addMatch(match, 'Rodada ' + round.number)));
+    (this.state.finals?.matches ?? []).filter(match => match.teamA.includes(playerId) || match.teamB.includes(playerId)).forEach(match => addMatch(match, this.finalKindLabel(match)));
+    return details;
+  }
+
   placeOf(playerId: string): number { return this.shareCard.placementOf(this.state, this.standings, playerId); }
   get shareCandidates(): { playerId: string; name: string; place: number }[] {
     return this.state.players
