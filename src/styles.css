@@ -277,7 +277,7 @@ table th{letter-spacing:1.2px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .build-id{font-size:9px;opacity:.55;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-transform:none}
 .local-indicator.sync-warning i{background:var(--orange)}
-@media(max-width:420px){.topbar .local-indicator{max-width:100px;font-size:10px;line-height:1.2;white-space:normal}.topbar .top-actions{gap:7px}}
+@media(max-width:420px){.topbar .brand{gap:8px}.topbar .brand-mark{width:34px;height:34px;font-size:14px;letter-spacing:0}.topbar .local-indicator{max-width:76px;font-size:10px;line-height:1.2;white-space:normal}.topbar .top-actions{gap:7px}}
 .final-live-toggle{min-height:40px;margin-top:12px;padding:8px 12px;font-size:11px}
 .podium-stage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:8px;margin:18px 0 10px}
 .podium-col{display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:8px;min-width:0}

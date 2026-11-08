@@ -20,6 +20,7 @@ import { GenderToggleComponent } from './features/gender-toggle.component';
 import { GenderIconComponent } from './features/gender-icon.component';
 import { NumberRangeComponent } from './features/number-range.component';
 import { FinalLiveScoreComponent } from './features/final-live-score.component';
+import { TournamentReportComponent } from './features/tournament-report.component';
 import { PodiumComponent } from './features/podium.component';
 import { GoalProjection, QualificationRow, QualificationService } from './core/qualification.service';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
@@ -52,7 +53,7 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, AvatarPickerComponent, GenderToggleComponent, PodiumComponent, QualificationStatsComponent, GenderIconComponent, NumberRangeComponent, FinalLiveScoreComponent],
+  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, AvatarPickerComponent, GenderToggleComponent, PodiumComponent, QualificationStatsComponent, GenderIconComponent, NumberRangeComponent, FinalLiveScoreComponent, TournamentReportComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
@@ -760,6 +761,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
+  get guestVisibleRounds() {
+    if (!this.state.finishedAt || !this.state.earlyFinalsEnabled) return this.state.rounds;
+    return this.state.rounds.map(round => ({ ...round, matches: round.matches.filter(match => this.isScored(match)) }))
+      .filter(round => round.matches.length > 0);
+  }
   get canEditScores(): boolean {
     return !this.isGuestView && (!this.isSharedMode
       || (this.isSharedModerator && this.state.sharedStatus === 'active'));

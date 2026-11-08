@@ -19,6 +19,7 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Convites compartilhados:** guests entram pelo link; o moderador pode incluir participantes sem celular.
 - **Fotos opcionais:** avatars WebP são reduzidos localmente para até 8 kB e mantêm as iniciais como fallback.
 - **Card para Instagram:** prévia antes de exportar, três layouts e foto de fundo opcional processada no navegador.
+- **Relatório final:** em Ajustes após finalizar, gere uma imagem PNG, compartilhe ou copie o texto e crie um link de resultado somente leitura.
 - **NPS:** pesquisa configurada no PostHog, disponível no footer e em momentos de conclusão do torneio.
 - **Dashboard:** totais agregados de torneios, participantes, modos, formatos e conclusão em `/dashboard`.
 - **Modo claro e escuro**, backups JSON e versão no cabeçalho e rodapé.
@@ -41,6 +42,8 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 No Super 24 misto, as novas tabelas garantem 12 jogos por atleta, sem repetir parceiros nem o mesmo grupo de quatro jogadores. O gerador busca diversificar os confrontos, mas não garante que todos os atletas se enfrentem. Tabelas já geradas permanecem inalteradas.
 
 A final é disputada em um único set. No modo ponto a ponto, os espectadores acompanham games e pontos pelo link compartilhado ou ao vivo; alterações feitas offline aparecem após a sincronização.
+
+Em finais antecipadas, o relatório final e a visualização final pelo link incluem apenas partidas com placar registrado. A imagem pode ser baixada ou compartilhada; o texto pode ser enviado pelo seletor de compartilhamento ou copiado para o WhatsApp. O link final mostra um snapshot sem atualização em tempo real: um link local existente é reutilizado quando já contém o resultado final; caso contrário, um novo snapshot é publicado. Gerar o link requer conexão e Supabase configurado.
 
 ### Finais antecipadas no Super 24 misto
 
