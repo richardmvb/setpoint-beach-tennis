@@ -101,7 +101,7 @@ export interface SharedTournamentSnapshot {
 
 export interface LocalLiveTournamentSnapshot {
   id: string;
-  status: 'active' | 'completed';
+  status: 'active' | 'completed' | 'archived';
   state: TournamentState;
 }
 

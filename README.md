@@ -81,11 +81,11 @@ Quando o Supabase estiver configurado e o login anônimo habilitado, o SETPOINT 
 
 ## Modo compartilhado
 
-O Supabase guarda o estado do torneio e sincroniza participantes, rodadas e resultados entre moderador e guests. O moderador entra sem e-mail por autenticação anônima; guests usam o convite e não precisam criar conta. O moderador ocupa uma vaga, inicia o torneio e registra os placares. Convites incompletos expiram em 15 minutos; torneios iniciados expiram conforme a política configurada no banco.
+O Supabase guarda o estado do torneio e sincroniza participantes, rodadas e resultados entre moderador e guests. O moderador entra sem e-mail por autenticação anônima; guests usam o convite e não precisam criar conta. O moderador ocupa uma vaga, inicia o torneio e registra os placares. Convites incompletos expiram em 15 minutos. Um job no Supabase verifica a cada cinco minutos os torneios compartilhados e lives locais e arquiva os que estão há pelo menos 24 horas sem atualização no servidor. Nos compartilhados ativos, cada atualização renova o prazo de expiração.
 
 Depois que um torneio compartilhado é iniciado e carregado no dispositivo do moderador, os placares podem ser registrados sem conexão. As alterações ficam no navegador e são enviadas em ordem ao reconectar. Em Ajustes é possível pausar a sincronização automática ou enviar manualmente; o status no cabeçalho indica a situação. O mesmo vale para a atualização do link ao vivo de um torneio local. Os espectadores só recebem os novos resultados depois da sincronização.
 
-Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e inscrever convidados exige conexão. O carregamento da página após fechá-la ou recarregá-la sem internet depende do cache do navegador; não há garantia de acesso offline completo. Use uma única aba e dispositivo para moderar cada torneio. Se o servidor tiver sido alterado por outro dispositivo, ou o torneio tiver expirado ou sido arquivado, a sincronização é bloqueada para preservar os dados locais; os dados não são mesclados automaticamente. Exporte um backup antes de reiniciar ou substituir o torneio. Não limpe os dados do navegador enquanto houver alterações pendentes.
+Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e inscrever convidados exige conexão. O carregamento da página após fechá-la ou recarregá-la sem internet depende do cache do navegador; não há garantia de acesso offline completo. Use uma única aba e dispositivo para moderar cada torneio. O worker não consegue detectar alterações ainda não sincronizadas: após 24 horas sem atualização no servidor, ele pode arquivar o torneio mesmo que existam placares offline no dispositivo. Se o servidor tiver sido alterado por outro dispositivo, ou o torneio tiver expirado ou sido arquivado, a sincronização é bloqueada para preservar os dados locais; os dados não são mesclados automaticamente. Exporte um backup antes de reiniciar ou substituir o torneio. Não limpe os dados do navegador enquanto houver alterações pendentes.
 
 ### Configuração do Supabase
 
@@ -101,6 +101,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 	- `202611070002_local_live_spectator_links.sql`
 	- `202611080001_dashboard_activity.sql`
 	- `202611080002_offline_sync.sql`
+	- `202611080003_archive_inactive_tournaments.sql`
    Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
 	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
@@ -129,7 +130,7 @@ O PostHog acompanha eventos de criação e início de torneios, etapas do assist
 
 O Dashboard agrega torneios locais e compartilhados, incluindo Super 24, grupos, duplas mistas, abandonos, participantes e taxa de conclusão. A tabela `setpoint_dashboard_admins` controla quem pode consultar os dados. A lista em andamento inclui torneios compartilhados e locais com link ao vivo; a data indica a última atualização recebida e não garante que o organizador ainda esteja conectado. Torneios locais sem link ao vivo não têm estado disponível no servidor.
 
-Torneios compartilhados arquivados podem ser consultados em uma nova aba e exportados em JSON para importação como torneio local. O arquivo não reativa o torneio ou convite original. O detalhamento de abandono agrupa compartilhados arquivados sem finalizar pela etapa atingida e contabiliza locais reiniciados como etapa desconhecida. Fechar a página sem reiniciar ou arquivar não é detectado como abandono.
+Torneios compartilhados e lives locais arquivados podem ser consultados em uma nova aba e exportados em JSON para importação como torneio local. O arquivo não reativa o torneio ou convite original. O arquivamento por inatividade fecha o registro sem inventar placares, pódio ou conclusão esportiva. O detalhamento de abandono agrupa compartilhados arquivados sem finalizar pela etapa atingida e contabiliza locais reiniciados como etapa desconhecida. Torneios locais nunca publicados não têm estado no servidor e não são arquivados pelo job. Fechar a página sem reiniciar ou arquivar não é detectado como abandono.
 
 ## Ranking e integridade
 

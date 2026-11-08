@@ -39,6 +39,7 @@ export interface DashboardActiveTournament {
 export interface DashboardActivity {
   active_tournaments: DashboardActiveTournament[];
   archived_tournaments: DashboardActiveTournament[];
+  local_archives_available?: boolean;
   abandoned_registration: number;
   abandoned_no_scores: number;
   abandoned_under_half: number;
@@ -254,9 +255,20 @@ export class SupabaseService {
   }
 
   async getDashboardActivity(): Promise<DashboardActivity> {
-    const { data, error } = await this.requireClient().rpc('get_dashboard_activity');
-    if (error) throw error;
-    return data as DashboardActivity;
+    const client = this.requireClient();
+    const [activityResult, localResult] = await Promise.all([
+      client.rpc('get_dashboard_activity'),
+      client.rpc('get_dashboard_archived_local_tournaments')
+    ]);
+    if (activityResult.error) throw activityResult.error;
+    if (localResult.error && localResult.error.code !== 'PGRST202') throw localResult.error;
+    const activity = activityResult.data as DashboardActivity;
+    return {
+      ...activity,
+      archived_tournaments: [...activity.archived_tournaments, ...((localResult.data ?? []) as DashboardActiveTournament[])]
+        .sort((first, second) => Date.parse(second.updated_at) - Date.parse(first.updated_at)),
+      local_archives_available: !localResult.error
+    };
   }
 
   async getDashboardTournament(source: DashboardTournamentSource, id: string): Promise<Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>> {

@@ -462,8 +462,8 @@ export class AppComponent implements OnInit, OnDestroy {
       const detail = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
       this.syncError = detail.includes('sync_conflict')
         ? 'O torneio mudou em outro dispositivo. As alterações locais estão preservadas; exporte um backup antes de resolver o conflito.'
-        : detail.includes('expired') || detail.includes('tournament_completed')
-          ? 'O torneio no servidor expirou ou já foi finalizado. Exporte um backup dos dados locais.'
+        : detail.includes('expired') || detail.includes('tournament_completed') || detail.includes('tournament_archived')
+          ? 'O torneio no servidor expirou, foi arquivado ou já foi finalizado. Exporte um backup dos dados locais.'
           : 'Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente.';
       this.syncRetryAfter = Date.now() + 15000;
     } finally {
@@ -531,7 +531,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return !this.isLiveViewer && this.isGuestView && !!this.sharedSnapshot?.canJoin && !this.guestJoined;
   }
   get sharedStatusLabel(): string {
-    if (this.isDashboardViewer && this.sharedSnapshot?.status === 'archived') return 'Torneio arquivado';
+    if (this.sharedSnapshot?.status === 'archived') return 'Torneio arquivado';
     if (this.isLiveViewer) {
       if (this.state.finishedAt) return 'Torneio finalizado';
       return this.state.rounds.length ? 'Acompanhando ao vivo' : 'Aguardando início';
@@ -541,7 +541,6 @@ export class AppComponent implements OnInit, OnDestroy {
       case 'ready': return 'Vagas preenchidas · aguardando início';
       case 'active': return 'Torneio em andamento';
       case 'completed': return 'Torneio concluído';
-      case 'archived': return 'Torneio arquivado';
       default: return 'Carregando torneio';
     }
   }
@@ -1727,8 +1726,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private applyLocalLiveSnapshot(snapshot: LocalLiveTournamentSnapshot): void {
-    const sharedStatus: SharedTournamentSnapshot['status'] = snapshot.status === 'completed'
-      ? 'completed'
+    const sharedStatus: SharedTournamentSnapshot['status'] = snapshot.status === 'completed' || snapshot.status === 'archived'
+      ? snapshot.status
       : snapshot.state.rounds.length ? 'active' : 'registration';
     const viewSnapshot: SharedTournamentSnapshot = {
       id: snapshot.id,
@@ -1820,7 +1819,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.isLiveViewer) {
-      if (this.sharedSnapshot?.status !== 'completed') void this.refreshLocalLiveState();
+      if (this.sharedSnapshot?.status !== 'completed' && this.sharedSnapshot?.status !== 'archived') void this.refreshLocalLiveState();
       return;
     }
     if (this.isGuestView) {
