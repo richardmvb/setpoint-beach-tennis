@@ -5,6 +5,7 @@
   "scripts": {
     "start": "ng serve --host 0.0.0.0",
     "build": "ng build",
+    "postbuild": "node scripts/upload-posthog-sourcemaps.cjs",
     "watch": "ng build --watch --configuration development"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
     "@angular/forms": "^20.3.0",
     "@angular/platform-browser": "^20.3.0",
     "@supabase/supabase-js": "^2.118.0",
+    "@zhuravlev-biz/padel-score-engine": "^1.2.0",
     "driver.js": "^1.10.2",
     "posthog-js": "^1.444.0",
     "rxjs": "~7.8.2",
@@ -24,6 +26,9 @@
     "@angular/build": "^20.3.0",
     "@angular/cli": "^20.3.0",
     "@angular/compiler-cli": "^20.3.0",
+    "@electric-sql/pglite": "^0.5.15",
+    "@posthog/cli": "^0.19.0",
+    "dotenv": "^18.0.9",
     "typescript": "~5.9.2"
   }
 }

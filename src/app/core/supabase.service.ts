@@ -23,6 +23,31 @@ export interface DashboardMetrics {
   average_duration_seconds: number | null;
 }
 
+export type DashboardTournamentSource = 'shared' | 'local';
+
+export interface DashboardActiveTournament {
+  id: string;
+  source: DashboardTournamentSource;
+  name: string;
+  size: number;
+  mode: string;
+  updated_at: string;
+  matches_completed: number;
+  matches_total: number;
+}
+
+export interface DashboardActivity {
+  active_tournaments: DashboardActiveTournament[];
+  archived_tournaments: DashboardActiveTournament[];
+  abandoned_registration: number;
+  abandoned_no_scores: number;
+  abandoned_under_half: number;
+  abandoned_over_half: number;
+  abandoned_rounds_complete: number;
+  abandoned_finals: number;
+  abandoned_unknown: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
   private readonly client: SupabaseClient | null;
@@ -164,6 +189,18 @@ export class SupabaseService {
     return data as LocalLiveTournamentSnapshot;
   }
 
+  async syncLocalLiveTournament(writeToken: string, base: TournamentState, state: TournamentState): Promise<LocalLiveTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('sync_local_live_tournament', {
+      p_write_token: writeToken,
+      p_base_state: base,
+      p_state: this.publicTournamentState(state)
+    });
+    if (error) throw error;
+    const snapshot = data as LocalLiveTournamentSnapshot;
+    void this.notifyLocalLiveTournament(snapshot.id).catch(() => undefined);
+    return snapshot;
+  }
+
   subscribeToLocalLiveTournament(id: string, onChange: () => void): void {
     const client = this.requireClient();
     const key = `local-live:${id}`;
@@ -202,7 +239,7 @@ export class SupabaseService {
     });
   }
 
-  private publicTournamentState(state: TournamentState): TournamentState {
+  publicTournamentState(state: TournamentState): TournamentState {
     return {
       ...state,
       analyticsId: undefined,
@@ -214,6 +251,21 @@ export class SupabaseService {
     const { data, error } = await this.requireClient().rpc('get_dashboard_metrics');
     if (error) throw error;
     return data as DashboardMetrics;
+  }
+
+  async getDashboardActivity(): Promise<DashboardActivity> {
+    const { data, error } = await this.requireClient().rpc('get_dashboard_activity');
+    if (error) throw error;
+    return data as DashboardActivity;
+  }
+
+  async getDashboardTournament(source: DashboardTournamentSource, id: string): Promise<Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>> {
+    const { data, error } = await this.requireClient().rpc('get_dashboard_tournament', {
+      p_source: source,
+      p_tournament_id: id
+    });
+    if (error) throw error;
+    return data as Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>;
   }
 
   async recordLocalTournamentMetrics(state: TournamentState, abandoned = false): Promise<void> {
@@ -277,7 +329,7 @@ export class SupabaseService {
       p_state: state
     });
     if (error) throw error;
-    await this.broadcastRefresh(id);
+    void this.broadcastRefresh(id).catch(() => undefined);
     return data as SharedTournamentSnapshot;
   }
 
@@ -288,6 +340,17 @@ export class SupabaseService {
     });
     if (error) throw error;
     await this.broadcastRefresh(id);
+    return data as SharedTournamentSnapshot;
+  }
+
+  async syncSharedTournament(id: string, base: TournamentState, state: TournamentState): Promise<SharedTournamentSnapshot> {
+    const { data, error } = await this.requireClient().rpc('sync_shared_tournament', {
+      p_tournament_id: id,
+      p_base_state: base,
+      p_state: state
+    });
+    if (error) throw error;
+    void this.broadcastRefresh(id).catch(() => undefined);
     return data as SharedTournamentSnapshot;
   }
 

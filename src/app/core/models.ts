@@ -31,6 +31,7 @@ export interface Match {
   finalKind?: FinalMatchKind;
   tieBreakA?: number | null;
   tieBreakB?: number | null;
+  livePoints?: ('A' | 'B')[];
 }
 
 export interface Round {

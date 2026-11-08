@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { TournamentState, ThemeMode } from './models';
+import { Match, TournamentState, ThemeMode } from './models';
+import { calculateFinalLiveScore, finalLiveMatchScore, MAX_FINAL_LIVE_POINTS } from './final-live-score';
 
 const STATE_KEY = 'setpoint.tournament.v1';
 const THEME_KEY = 'setpoint.theme.v1';
@@ -72,6 +73,18 @@ export class StorageService {
     try { sessionStorage.removeItem('setpoint.shared.setup'); } catch { /* sessão indisponível */ }
   }
 
+  private validFinalLiveScore(match: Match): boolean {
+    if (match.livePoints === undefined) return true;
+    if (match.finalKind !== 'championship' || !Array.isArray(match.livePoints)
+      || match.livePoints.length > MAX_FINAL_LIVE_POINTS
+      || match.livePoints.some(point => point !== 'A' && point !== 'B')) return false;
+    try {
+      const score = finalLiveMatchScore(calculateFinalLiveScore(match.livePoints));
+      return match.scoreA === score.scoreA && match.scoreB === score.scoreB
+        && (match.tieBreakA ?? null) === score.tieBreakA && (match.tieBreakB ?? null) === score.tieBreakB;
+    } catch { return false; }
+  }
+
   private isTournamentState(value: unknown): value is TournamentState {
     if (!value || typeof value !== 'object') return false;
     const candidate = value as Partial<TournamentState>;
@@ -122,6 +135,7 @@ export class StorageService {
       && Array.isArray(round.restingPlayerIds) && round.restingPlayerIds.every(id => typeof id === 'string')
       && Array.isArray(round.matches) && round.matches.length <= 6
       && round.matches.every(match => !!match && typeof match.id === 'string'
+        && match.livePoints === undefined
         && Number.isInteger(match.court) && Array.isArray(match.teamA) && match.teamA.length === 2
         && Array.isArray(match.teamB) && match.teamB.length === 2
         && [...match.teamA, ...match.teamB].every(id => typeof id === 'string')
@@ -137,12 +151,13 @@ export class StorageService {
       && Array.isArray(finals.matches) && finals.matches.length >= 2 && finals.matches.length <= 8
       && finals.matches.every(match => !!match && typeof match.id === 'string'
         && (match.finalKind === 'quarterfinal' || match.finalKind === 'semifinal' || match.finalKind === 'championship' || match.finalKind === 'third-place')
+        && this.validFinalLiveScore(match)
         && Number.isInteger(match.court) && Array.isArray(match.teamA) && match.teamA.length === 2
         && Array.isArray(match.teamB) && match.teamB.length === 2
         && [...match.teamA, ...match.teamB].every(id => typeof id === 'string')
         && [match.scoreA, match.scoreB].every(score => score === null
           || (Number.isInteger(score) && score >= 0 && score <= 7))
         && [match.tieBreakA, match.tieBreakB].every(score => score === null || score === undefined
-          || (Number.isInteger(score) && score >= 0 && score <= 99)));
+          || (Number.isInteger(score) && score >= 0 && score <= (match.livePoints === undefined ? 99 : MAX_FINAL_LIVE_POINTS))));
   }
 }
