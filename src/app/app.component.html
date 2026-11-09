@@ -21,28 +21,120 @@
 </main>
 
 <main *ngIf="showLanding && !isLocked && !isDashboardRoute" class="landing">
-  <header class="landing-nav"><div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS · {{ versionLabel }}</small></span></div><button class="button secondary" type="button" (click)="enterApp()">Entrar no app</button></header>
+  <header class="landing-nav">
+    <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS · {{ versionLabel }}</small></span></div>
+    <nav class="landing-links" aria-label="Seções"><button type="button" (click)="scrollGuestTo('landing-formats')">Formatos</button><button type="button" (click)="scrollGuestTo('landing-live')">Ao vivo</button><button type="button" (click)="scrollGuestTo('landing-path')">Seu caminho</button><button type="button" (click)="scrollGuestTo('landing-steps')">Como funciona</button></nav>
+    <div class="landing-nav-actions"><button *ngIf="libraryEntries.length" class="button secondary" type="button" (click)="continueFromLanding()">Meus torneios <b class="landing-count">{{ libraryEntries.length }}</b></button><button class="button primary" type="button" (click)="enterApp()">Abrir o app</button></div>
+  </header>
+
   <section class="landing-hero">
-    <span class="card-kicker">GESTÃO DE TORNEIOS DE BEACH TENNIS</span>
-    <h1>Organize seu torneio sem planilha, sem confusão.</h1>
-    <p>Monte duplas, gere a tabela, lance os resultados e acompanhe o ranking em tempo real. Tudo no celular, direto do navegador.</p>
-    <div class="landing-cta"><button class="button primary" type="button" (click)="enterApp()">Começar agora →</button><span class="muted">Grátis, sem cadastro.</span></div>
+    <div class="landing-hero-copy">
+      <span class="landing-pill"><i></i> Grátis · sem cadastro · direto no celular</span>
+      <h1>Do sorteio ao pódio, seu torneio roda sozinho.</h1>
+      <p>Monte as duplas, gere a tabela, lance os placares e deixe o ranking, as finais e o card do campeão por conta do SETPOINT. Menos planilha, mais jogo.</p>
+      <div class="landing-cta">
+        <button class="button primary landing-primary" type="button" (click)="enterApp()">Criar meu torneio <span aria-hidden="true">→</span></button>
+        <button *ngIf="libraryEntries.length" class="button secondary landing-primary" type="button" (click)="continueFromLanding()">Retomar um torneio</button>
+        <button *ngIf="!libraryEntries.length" class="button ghost landing-primary" type="button" (click)="scrollGuestTo('landing-steps')">Ver como funciona</button>
+      </div>
+      <ul class="landing-proof"><li><b>8 a 24</b><span>atletas</span></li><li><b>até 6</b><span>quadras</span></li><li><b>0</b><span>planilhas</span></li></ul>
+    </div>
+    <div class="landing-device" aria-hidden="true">
+      <div class="device-card device-main">
+        <div class="device-head"><div><small>SUPER 8 · RODADA 3 DE 7</small><b>Super de sábado</b></div><span class="device-live"><i></i> AO VIVO</span></div>
+        <div class="device-bar"><span style="width:43%"></span></div>
+        <div class="device-match"><div><small>QUADRA 1</small><b>Ana · Bia</b></div><strong>4<em>×</em>2</strong><div class="right"><small>FINALIZADA</small><b>Caio · Duda</b></div></div>
+        <div class="device-match pending"><div><small>QUADRA 2</small><b>Edu · Fabi</b></div><strong>3<em>×</em>3</strong><div class="right"><small>EM JOGO</small><b>Gui · Hana</b></div></div>
+      </div>
+      <div class="device-card device-rank">
+        <small>RANKING</small>
+        <ol><li><b>1</b><span>Ana</span><em>9 sets · +7</em></li><li><b>2</b><span>Caio</span><em>8 sets · +5</em></li><li><b>3</b><span>Bia</span><em>8 sets · +3</em></li></ol>
+      </div>
+      <div class="device-card device-podium"><span>🏆</span><div><small>CAMPEÃO</small><b>Ana &amp; Caio</b></div></div>
+    </div>
   </section>
-  <section class="landing-features" aria-label="Funcionalidades">
-    <article><b>Super 8, 10, 12 e 24</b><p>Duplas rotativas: todos jogam com todos e a mesma quantidade de partidas.</p></article>
-    <article><b>Grupos</b><p>Grupos de 4 com parceiros rotativos ou duplas fixas, todos contra todos.</p></article>
-    <article><b>Duplas mistas</b><p>Cada dupla com um atleta masculino e uma feminina, formadas automaticamente.</p></article><article><b>Super 24 em 3 quadras</b><p>Jogos equilibrados, ranking por categoria e finais antecipadas quando o tempo apertar.</p></article>
-    <article><b>Modo compartilhado</b><p>Convide os atletas por link: eles entram com nome e foto e acompanham tudo no próprio celular.</p></article>
-    <article><b>Ranking e finais</b><p>Classificação automática, final, disputa de 3º lugar e pódio ao final.</p></article>
-    <article><b>Projeção de classificação</b><p>Veja o que cada atleta precisa para chegar às finais.</p></article>
-    <article><b>Cadastro em lote</b><p>Cole a lista de atletas, revise nomes e categorias e confirme todos de uma vez.</p></article><article><b>Fotos dos atletas</b><p>Tire uma foto ou escolha da galeria, com remoção e troca quando quiser.</p></article>
-    <article><b>Card para compartilhar</b><p>Gere a imagem do resultado para postar nas redes sociais.</p></article>
+
+  <section class="landing-section" id="landing-formats">
+    <div class="landing-heading"><span class="card-kicker">FORMATOS</span><h2>O formato certo para o tamanho do seu grupo.</h2><p>Tabelas equilibradas, sem repetir parceiros e com todo mundo jogando a mesma quantidade de partidas.</p></div>
+    <div class="landing-bento">
+      <article class="bento-lg"><span class="bento-tag">SUPER</span><h3>Super 8, 10, 12 e 24</h3><p>Duplas rotativas: cada atleta joga com vários parceiros e o ranking individual mostra quem foi melhor no dia inteiro.</p><div class="bento-chips"><span>8</span><span>10</span><span>12</span><span>24</span></div></article>
+      <article><span class="bento-tag">GRUPOS</span><h3>Grupos de 4</h3><p>Parceiros rotativos ou duplas fixas, todos contra todos.</p></article>
+      <article><span class="bento-tag">MISTO</span><h3>Duplas mistas</h3><p>Um atleta masculino e uma feminina em cada dupla, formadas automaticamente.</p></article>
+      <article class="bento-wide"><span class="bento-tag">SUPER 24 · 3 QUADRAS</span><h3>Ranking por categoria e finais antecipadas</h3><p>Baterias equilibradas com 12 homens e 12 mulheres. Quando o tempo apertar, gere a chave completa ou a final direta.</p></article>
+    </div>
   </section>
-  <section class="landing-steps">
-    <h2>Como funciona</h2>
-    <ol><li><b>Configure</b><span>Escolha formato, participantes, quadras e games com controles simples.</span></li><li><b>Inscreva</b><span>Cadastre individualmente, em lote ou envie o link de convite.</span></li><li><b>Jogue</b><span>Lance os placares rodada a rodada.</span></li><li><b>Celebre</b><span>Acompanhe rankings, finais, pódio e card de resultado.</span></li></ol>
-    <button class="button primary" type="button" (click)="enterApp()">Criar meu torneio →</button>
+
+  <section class="landing-section landing-split" id="landing-live">
+    <div class="landing-heading"><span class="card-kicker">AO VIVO</span><h2>Todo mundo acompanha, sem perguntar &ldquo;quem joga agora?&rdquo;</h2><p>Convide os atletas por link ou compartilhe um painel de acompanhamento. Eles veem partidas, placares e ranking no próprio celular.</p></div>
+    <ul class="landing-list">
+      <li><b>Modo compartilhado</b><span>Os atletas entram com nome e foto pelo convite; você modera e registra os placares.</span></li>
+      <li><b>Final ponto a ponto</b><span>Ponto decisivo em 40–40, tie-break em 6–6 e desfazer o último ponto. A torcida vê cada game.</span></li>
+      <li><b>Placares sem sinal</b><span>Sem internet na quadra? Lance os resultados e eles sincronizam quando a conexão voltar.</span></li>
+    </ul>
   </section>
+
+  <section class="landing-section landing-path" id="landing-path">
+    <div class="path-copy">
+      <div class="path-tags"><span class="card-kicker">SEU CAMINHO</span><span class="landing-badge">Torneios compartilhados</span></div>
+      <h2>Cada atleta sabe exatamente o que precisa.</h2>
+      <p>A chance de ser campeão, chegar ao top 2 ou ao top 3, calculada sobre todos os cenários dos jogos que faltam. Atualiza a cada placar lançado.</p>
+      <ul class="path-points">
+        <li><b>Chance de verdade</b><span>Considera parceiros e adversários de cada jogo restante. “Garantido” e “fora da disputa” só aparecem quando são certos.</span></li>
+        <li><b>E se?</b><span>Toque em um jogo, assuma o resultado e veja a chance mudar na hora.</span></li>
+        <li><b>Aviso ao vivo</b><span>Quando um placar muda a sua chance, você é avisado. E se o objetivo for garantido, tem confete.</span></li>
+      </ul>
+      <p class="path-note">Premissa: jogos restantes equilibrados. Empates em vitórias seguem o saldo de games e o confronto direto.</p>
+    </div>
+    <div class="path-demo" aria-hidden="true">
+      <div class="path-card">
+        <div class="path-card-head"><div><small>SEU CAMINHO</small><b>Duda</b></div><span class="path-status">NA BRIGA</span></div>
+        <div class="path-goals"><span>Campeão <b>9%</b></span><span>Top 2 <b>27%</b></span><span class="on">Top 3 <b>61%</b></span></div>
+        <div class="path-gauge-row">
+          <svg viewBox="0 0 120 120" class="path-gauge"><circle class="gt" cx="60" cy="60" r="52"></circle><circle class="gf" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="127.4" transform="rotate(-90 60 60)"></circle><text x="60" y="64" class="gv">61%</text><text x="60" y="82" class="gl">DE CHANCE</text></svg>
+          <div class="path-bars"><div class="in"><i style="height:30%"></i><b>1º</b></div><div class="in"><i style="height:62%"></i><b>2º</b></div><div class="in"><i style="height:100%"></i><b>3º</b></div><div><i style="height:58%"></i><b>4º</b></div><div><i style="height:44%"></i><b>5º</b></div><div><i style="height:24%"></i><b>6º</b></div></div>
+        </div>
+        <div class="path-whatif"><span>E se eu vencer o próximo jogo?</span><b>→ 74%</b></div>
+      </div>
+      <div class="path-toast"><span>▲</span>Sua chance de chegar ao top 3 subiu de 38% para 61%</div>
+    </div>
+  </section>
+
+  <section class="landing-section landing-keep">
+    <div class="landing-keep-card">
+      <div class="landing-heading"><span class="card-kicker">MEUS TORNEIOS</span><h2>Nenhum torneio se perde.</h2><p>Todo torneio iniciado fica salvo no seu aparelho. Volte quando quiser para rever a tabela, os placares, o ranking e o pódio &mdash; mesmo depois de começar outro.</p></div>
+      <div class="landing-keep-list" aria-hidden="true">
+        <div><b>Super de sábado</b><small>Finalizado · 28/28 partidas · 8 jogadores</small></div>
+        <div><b>Grupos da firma</b><small>Em andamento · 9/12 partidas · 12 jogadores</small></div>
+        <div><b>Super 24 misto</b><small>Finalizado · 72/72 partidas · 24 jogadores</small></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-section">
+    <div class="landing-heading"><span class="card-kicker">DO INÍCIO AO FIM</span><h2>Tudo o que um dia de torneio precisa.</h2></div>
+    <div class="landing-features" aria-label="Funcionalidades">
+      <article><b>Cadastro em lote</b><p>Cole a lista, revise nomes e categorias e confirme todos de uma vez.</p></article>
+      <article><b>Fotos dos atletas</b><p>Foto da câmera ou da galeria, reduzida no próprio aparelho.</p></article>
+      <article><b>Ranking e desempates</b><p>Classificação automática, critérios claros e sorteio quando persiste o empate.</p></article>
+      <article><b>Finais e pódio</b><p>Final, disputa de 3º lugar e pódio, em qualquer formato.</p></article>
+      <article><b>Card para Instagram</b><p>Três layouts, prévia antes de exportar e foto de fundo opcional.</p></article>
+      <article><b>Relatório final</b><p>Imagem PNG, texto para o WhatsApp e link de resultado somente leitura.</p></article>
+      <article><b>Backup em JSON</b><p>Exporte e importe seu torneio quando quiser.</p></article>
+      <article><b>Claro e escuro</b><p>Leitura confortável sob o sol da quadra ou à noite.</p></article>
+    </div>
+  </section>
+
+  <section class="landing-section landing-steps" id="landing-steps">
+    <div class="landing-heading"><span class="card-kicker">COMO FUNCIONA</span><h2>Quatro passos e a bola está rolando.</h2></div>
+    <ol><li><b>Configure</b><span>Escolha formato, participantes, quadras e games com controles simples.</span></li><li><b>Inscreva</b><span>Cadastre um a um, em lote ou envie o link de convite.</span></li><li><b>Jogue</b><span>Lance os placares rodada a rodada e veja o ranking mudar.</span></li><li><b>Celebre</b><span>Finais, pódio e o card do campeão prontos para compartilhar.</span></li></ol>
+  </section>
+
+  <section class="landing-final">
+    <h2>Seu próximo torneio começa em um minuto.</h2>
+    <p>Sem instalar, sem criar conta. Abra, configure e jogue.</p>
+    <div class="landing-cta"><button class="button landing-light" type="button" (click)="enterApp()">Criar meu torneio <span aria-hidden="true">→</span></button><button *ngIf="libraryEntries.length" class="button landing-outline" type="button" (click)="continueFromLanding()">Retomar um torneio</button></div>
+  </section>
+  <footer class="landing-footer"><span>SETPOINT · BEACH TENNIS</span><span>{{ versionLabel }}</span></footer>
 </main>
 
 <div *ngIf="!isLocked && !isDashboardRoute && !showLanding" class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isGuestView">
@@ -52,6 +144,7 @@
       <span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span>
     </button>
     <div class="top-actions">
+      <button *ngIf="libraryEntries.length" class="icon-button" type="button" (click)="openLibrary()" aria-haspopup="dialog" [attr.aria-label]="'Meus torneios (' + libraryEntries.length + ')'" [title]="'Meus torneios (' + libraryEntries.length + ')'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></button>
       <span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span>
       <span class="local-indicator" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel" role="status"><i></i> {{ syncLabel }}</span>
       <button class="icon-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'" [title]="theme === 'light' ? 'Tema escuro' : 'Tema claro'">
@@ -84,25 +177,26 @@
   <main [class.ranking-mode]="page === 'ranking'">
     <ng-container [ngSwitch]="page">
       <section *ngSwitchCase="'setup'" class="setup-wizard">
-        <div class="wizard-progress" aria-label="Etapas da configuração">
-          <div [class.current]="setupStep === 1" [class.complete]="setupStep > 1"><b>01</b><span>Configuração</span></div>
+        <nav class="wizard-progress" aria-label="Etapas da configuração">
+          <button type="button" class="wizard-step" [class.current]="setupStep === 1" [class.complete]="setupStep > 1" [disabled]="!canGoToSetupStep(1)" (click)="goToSetupStep(1)" [attr.aria-current]="setupStep === 1 ? 'step' : null"><b>{{ setupStep > 1 ? '✓' : '01' }}</b><span>Configuração</span></button>
           <i></i>
-          <div [class.current]="setupStep === 2" [class.complete]="setupStep > 2"><b>02</b><span>Jogadores</span></div>
+          <button type="button" class="wizard-step" [class.current]="setupStep === 2" [class.complete]="setupStep > 2" [disabled]="!canGoToSetupStep(2)" (click)="goToSetupStep(2)" [attr.aria-current]="setupStep === 2 ? 'step' : null"><b>{{ setupStep > 2 ? '✓' : '02' }}</b><span>Jogadores</span></button>
           <i></i>
-          <div [class.current]="setupStep === 3"><b>03</b><span>Início</span></div>
-        </div>
+          <button type="button" class="wizard-step" [class.current]="setupStep === 3" disabled [attr.aria-current]="setupStep === 3 ? 'step' : null"><b>03</b><span>Início</span></button>
+        </nav>
 
         <article *ngIf="setupStep === 1" class="surface-card wizard-panel">
           <span class="card-kicker">ETAPA 1 DE 3</span><h2>Configure a competição</h2>
-          <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar tutorial' : 'Ligar tutorial' }}</button></div>
-          <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado"></div>
-          <div class="form-field"><label for="hostingMode">Onde será gerenciado?</label><select id="hostingMode" name="hostingMode" [ngModel]="state.hostingMode" (ngModelChange)="changeHostingMode($event)"><option [ngValue]="'local'">Neste dispositivo · sem compartilhar</option><option *ngIf="sharedConfigured" [ngValue]="'shared'">Compartilhado · convite e acompanhamento ao vivo</option></select></div>
-          <label *ngIf="isSharedMode && !isGroupTournament" class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Projeção do top 3</b><small>A partir da 2ª rodada, mostra o que falta para chegar ao top 3.</small></span></label>
-          <div class="form-field"><label for="doublesFormat">Tipo de dupla</label><select id="doublesFormat" name="doublesFormat" [ngModel]="state.doublesFormat ?? 'open'" (ngModelChange)="changeDoublesFormat($event)"><option [ngValue]="'open'">Duplas abertas</option><option [ngValue]="'mixed'">Duplas mistas · 1 masculino + 1 feminino</option></select></div>
+          <div class="tour-bar"><button *ngIf="libraryEntries.length" type="button" (click)="openLibrary()">Torneios salvos ({{ libraryEntries.length }})</button><button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar dicas' : 'Ligar dicas' }}</button></div>
+          <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado" enterkeyhint="next" (keydown.enter)="!isSharedMode && nextSetupStep()"></div>
+          <div *ngIf="sharedConfigured" id="hostingMode" class="form-field"><span class="form-label" id="hostingLabel">Onde será gerenciado?</span><app-choice-cards labelledBy="hostingLabel" [options]="hostingOptions" [value]="state.hostingMode ?? 'local'" (valueChange)="changeHostingMode($event)"></app-choice-cards></div>
+          <label *ngIf="isSharedMode && !isGroupTournament" class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Seu caminho (projeção)</b><small>A partir da 1ª rodada concluída, cada atleta vê a chance de ser campeão, top 2 ou top 3.</small></span></label>
+          <div id="doublesFormat" class="form-field"><span class="form-label" id="doublesLabel">Tipo de dupla</span><app-choice-cards labelledBy="doublesLabel" [options]="doublesOptions" [value]="state.doublesFormat ?? 'open'" (valueChange)="changeDoublesFormat($event)"></app-choice-cards></div>
           <div *ngIf="isSharedMode" class="shared-moderator-fields"><div class="form-field"><label for="moderatorName">Seu nome no torneio</label><input id="moderatorName" name="moderatorName" [(ngModel)]="moderatorName" maxlength="40" placeholder="Nome do moderador"></div><div *ngIf="isMixedDoubles" class="form-field"><label>Sua categoria</label><app-gender-toggle [value]="moderatorGender" (valueChange)="moderatorGender = $event" label="Sua categoria"></app-gender-toggle></div><div class="form-field"><label>Foto (opcional)</label><app-avatar-picker [(value)]="moderatorAvatar"></app-avatar-picker></div><p class="muted helper-text">Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga.</p></div>
-          <div class="form-field"><label for="tournamentMode">Formato do torneio</label><select id="tournamentMode" name="tournamentMode" [ngModel]="state.tournamentMode" (ngModelChange)="changeTournamentMode($event)"><option [ngValue]="'super'">Super · duplas rotativas</option><option [ngValue]="'groups'">Grupos</option></select></div>
-          <div class="setup-ranges"><app-number-range inputId="setupSize" label="Participantes" [values]="availableSizes" [value]="state.size" suffix="jogadores" (valueChange)="changeSize($event)"></app-number-range><div *ngIf="isGroupTournament" class="form-field"><label for="groupFormat">Formato dos grupos</label><select id="groupFormat" name="groupFormat" [ngModel]="state.groupFormat" (ngModelChange)="changeGroupFormat($event)"><option [ngValue]="'rotating'">Grupos de 4 · parceiros rotativos</option><option [ngValue]="'fixed'">Duplas fixas · todos contra todos</option></select></div><app-number-range *ngIf="!isGroupTournament" inputId="setupCourts" label="Quadras por rodada" [values]="availableCourts" [value]="state.courts" suffix="quadras" (valueChange)="changeCourts($event)"></app-number-range><div *ngIf="isGroupTournament" class="form-field"><label>Quadras necessárias</label><input [value]="requiredCourts + ' quadras'" readonly></div></div><label *ngIf="isEarlyFinalsOptionAvailable" class="toggle-field"><input type="checkbox" name="earlyFinals" [ngModel]="!!state.earlyFinalsEnabled" (ngModelChange)="setEarlyFinals($event)"><span><b>Permitir finais antecipadas</b><small>O moderador poderá encerrar a classificatória quando todos tiverem o mesmo número de partidas.</small></span></label><div *ngIf="isEarlyFinalsOptionAvailable && state.earlyFinalsEnabled" class="form-field"><label for="mixedFinalFormat">Fase final mista</label><select id="mixedFinalFormat" name="mixedFinalFormat" [ngModel]="state.mixedFinalFormat ?? 'knockout'" (ngModelChange)="setMixedFinalFormat($event)"><option [ngValue]="'knockout'">Chave completa · top 8 de cada categoria</option><option [ngValue]="'direct'">Final e 3º lugar · top 4 de cada categoria</option></select><small class="muted">{{ (state.mixedFinalFormat ?? 'knockout') === 'knockout' ? 'Quartas, semifinais, final e disputa de 3º.' : 'Quatro duplas disputam diretamente final e 3º lugar.' }}</small></div>
-          <div class="setup-ranges"><app-number-range inputId="setupGames" label="Games para vencer" [values]="availableGamesToWin" [value]="state.gamesToWin" suffix="games" (valueChange)="state.gamesToWin = $event"></app-number-range><div class="form-field"><label>Rodadas do formato</label><input [value]="requiredRounds" readonly></div></div>
+          <div id="tournamentMode" class="form-field"><span class="form-label" id="modeLabel">Formato do torneio</span><app-choice-cards labelledBy="modeLabel" [options]="modeOptions" [value]="state.tournamentMode ?? 'super'" (valueChange)="changeTournamentMode($event)"></app-choice-cards></div><div *ngIf="isGroupTournament" class="form-field"><span class="form-label" id="groupFormatLabel">Formato dos grupos</span><app-choice-cards labelledBy="groupFormatLabel" [options]="groupFormatOptions" [value]="state.groupFormat ?? 'rotating'" (valueChange)="changeGroupFormat($event)"></app-choice-cards></div>
+          <div class="setup-ranges" [class.single]="isGroupTournament"><app-number-range inputId="setupSize" label="Participantes" [values]="availableSizes" [value]="state.size" suffix="jogadores" (valueChange)="changeSize($event)"></app-number-range><app-number-range *ngIf="!isGroupTournament" inputId="setupCourts" label="Quadras por rodada" [values]="availableCourts" [value]="state.courts" suffix="quadras" (valueChange)="changeCourts($event)"></app-number-range></div><label *ngIf="isEarlyFinalsOptionAvailable" class="toggle-field"><input type="checkbox" name="earlyFinals" [ngModel]="!!state.earlyFinalsEnabled" (ngModelChange)="setEarlyFinals($event)"><span><b>Permitir finais antecipadas</b><small>O moderador poderá encerrar a classificatória quando todos tiverem o mesmo número de partidas.</small></span></label><div *ngIf="isEarlyFinalsOptionAvailable && state.earlyFinalsEnabled" class="form-field"><label for="mixedFinalFormat">Fase final mista</label><select id="mixedFinalFormat" name="mixedFinalFormat" [ngModel]="state.mixedFinalFormat ?? 'knockout'" (ngModelChange)="setMixedFinalFormat($event)"><option [ngValue]="'knockout'">Chave completa · top 8 de cada categoria</option><option [ngValue]="'direct'">Final e 3º lugar · top 4 de cada categoria</option></select><small class="muted">{{ (state.mixedFinalFormat ?? 'knockout') === 'knockout' ? 'Quartas, semifinais, final e disputa de 3º.' : 'Quatro duplas disputam diretamente final e 3º lugar.' }}</small></div>
+          <div class="setup-ranges single"><app-number-range inputId="setupGames" label="Games para vencer" [values]="availableGamesToWin" [value]="state.gamesToWin" suffix="games" (valueChange)="state.gamesToWin = $event"></app-number-range></div>
+          <div id="setupSummary" class="setup-summary" role="status" aria-live="polite"><div><b>{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }}</b><small>formato</small></div><div><b>{{ requiredRounds }}</b><small>rodadas</small></div><div><b>{{ requiredCourts }}</b><small>{{ requiredCourts === 1 ? 'quadra' : 'quadras' }}</small></div><div><b>{{ state.gamesToWin }}</b><small>games p/ vencer</small></div></div>
           <p *ngIf="state.gamesToWin === 3" class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
           <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p><p *ngIf="sharedNotice" class="shared-success" role="status">{{ sharedNotice }}</p>
           <div class="wizard-actions"><span></span><button id="setupNext" class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? 'Criar torneio compartilhado' : 'Adicionar jogadores' }} <span *ngIf="!sharedLoading">→</span></button></div>
@@ -110,36 +204,54 @@
 
         <article *ngIf="setupStep === 2" class="surface-card wizard-panel">
           <span class="card-kicker">ETAPA 2 DE 3</span><h2>Inscreva os participantes</h2>
-          <p class="muted helper-text">{{ isSharedMode ? 'Convidados entram pelo link.' : state.players.length + ' de ' + state.size + ' inscritos.' }}</p>
-          <form *ngIf="!isSharedMode" class="participant-form" [class.open-doubles]="!isMixedDoubles" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [(value)]="newPlayerAvatar"></app-avatar-picker><input name="wizardPlayerName" [(ngModel)]="newPlayerName" maxlength="40" placeholder="Nome do jogador" aria-label="Nome do jogador"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="newPlayerGender" (valueChange)="newPlayerGender = $event" label="Categoria do jogador"></app-gender-toggle><button class="button primary" type="submit" [disabled]="state.players.length >= state.size || !newPlayerName.trim() || (isMixedDoubles && !newPlayerGender)">Adicionar jogador</button></form><button *ngIf="!isSharedMode" class="batch-entry-button" type="button" (click)="openBatchModal()">＋ Adicionar em lote</button>
+          <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
+          <div id="enrollProgress" class="enroll-progress" role="status" aria-live="polite"><div class="enroll-head"><span>{{ isSharedMode ? 'Convidados entram pelo link' : 'Atletas inscritos' }}</span><b>{{ state.players.length }} / {{ state.size }}</b></div><div class="enroll-bar"><span [style.width.%]="state.players.length / state.size * 100"></span></div><small>{{ enrollHint }}</small></div>
+          <form *ngIf="!isSharedMode" class="participant-form" [class.open-doubles]="!isMixedDoubles" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [(value)]="newPlayerAvatar"></app-avatar-picker><input id="wizardPlayerName" name="wizardPlayerName" [ngModel]="newPlayerName" (ngModelChange)="newPlayerName = $event; playerFormError = ''" maxlength="40" placeholder="Nome do jogador" aria-label="Nome do jogador" enterkeyhint="done" autocomplete="off" [attr.aria-invalid]="playerFormError ? 'true' : null"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="newPlayerGender" (valueChange)="newPlayerGender = $event" label="Categoria do jogador"></app-gender-toggle><button class="button primary" type="submit" [disabled]="state.players.length >= state.size || !newPlayerName.trim() || (isMixedDoubles && !newPlayerGender)">Adicionar jogador</button></form><p *ngIf="playerFormError" class="shared-error player-form-error" role="alert">{{ playerFormError }}</p><button *ngIf="!isSharedMode" class="batch-entry-button" type="button" (click)="openBatchModal()">＋ Adicionar em lote</button>
           <div class="wizard-player-list"><div *ngFor="let player of state.players; let i = index" class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><app-gender-icon *ngIf="isMixedDoubles && player.gender" [gender]="player.gender"></app-gender-icon><select *ngIf="isMixedDoubles && !hasSchedule" [name]="'playerGender' + i" [ngModel]="player.gender ?? ''" (ngModelChange)="updatePlayerGender(player.id, $event)" aria-label="Categoria de {{ player.name }}"><option [ngValue]="''" disabled>Categoria</option><option [ngValue]="'male'">Masculino</option><option [ngValue]="'female'">Feminino</option></select><button *ngIf="!isSharedMode" class="remove-button" type="button" (click)="removePlayer(player.id)" aria-label="Remover jogador">×</button><button *ngIf="canManageParticipants && player.manual" class="remove-button" type="button" (click)="removeManualParticipant(player.id)" [disabled]="sharedLoading" aria-label="Remover participante adicionado manualmente">×</button></div></div>
           <form *ngIf="canManageParticipants && !sharedCapacityReached" class="participant-form manual-participant" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="addManualParticipant()"><span class="card-kicker">ADICIONAR QUEM ESTÁ SEM CELULAR</span><div class="participant-form-main"><app-avatar-picker [(value)]="manualParticipantAvatar"></app-avatar-picker><input name="manualParticipantName" [(ngModel)]="manualParticipantName" maxlength="40" placeholder="Nome do participante" aria-label="Nome do participante sem celular"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="manualParticipantGender" (valueChange)="manualParticipantGender = $event" label="Categoria do participante"></app-gender-toggle><button class="button secondary" type="submit" [disabled]="!manualParticipantName.trim() || sharedLoading || (isMixedDoubles && !manualParticipantGender)">Adicionar participante</button></form>
           <article *ngIf="isSharedMode" class="shared-invite-panel"><div><span class="card-kicker">CONVITE · EXPIRA EM 15 MIN SE INCOMPLETO</span><p class="muted">{{ state.players.length }} de {{ state.size }} participantes.</p><p *ngIf="sharedSnapshot?.expiresAt" class="muted">Disponível até {{ sharedSnapshot?.expiresAt | date:'short' }}.</p></div><div *ngIf="sharedInviteUrl" class="shared-invite-copy"><input aria-label="Link de convite" readonly [value]="sharedInviteUrl"><button class="button secondary" type="button" (click)="copySharedInvite()">Copiar link</button><button class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">Novo link</button></div><button *ngIf="!sharedInviteUrl && isSharedModerator" class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">{{ sharedLoading ? 'Gerando…' : 'Gerar link de convite' }}</button></article>
           <p *ngIf="isSharedMode && sharedSnapshot?.status === 'ready'" class="shared-success" role="status">Vagas preenchidas. Pode iniciar.</p>
           <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p><p *ngIf="sharedNotice" class="shared-success" role="status">{{ sharedNotice }}</p>
           <div *ngIf="fixedPairsMode && state.players.length === state.size" class="fixed-pair-list"><span class="card-kicker">FORME AS DUPLAS FIXAS</span><div *ngFor="let pair of state.fixedPairs; let i = index" class="fixed-pair-row"><b>Dupla {{ i + 1 }}</b><select [name]="'fixedPairA' + i" [ngModel]="pair[0]" (ngModelChange)="updateFixedPair(i, 0, $event)"><option *ngFor="let player of fixedPairOptions(i)" [ngValue]="player.id">{{ player.name }}</option></select><span>+</span><select [name]="'fixedPairB' + i" [ngModel]="pair[1]" (ngModelChange)="updateFixedPair(i, 1, $event)"><option *ngFor="let player of fixedPairOptions(i)" [ngValue]="player.id">{{ player.name }}</option></select></div></div>
-          <div class="wizard-actions"><button *ngIf="!isSharedMode" class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button *ngIf="isSharedModerator" class="button danger" type="button" (click)="cancelSharedTournament()" [disabled]="sharedLoading">Cancelar e recomeçar</button><button class="button primary" type="button" (click)="nextSetupStep()" [disabled]="state.players.length !== state.size">Revisar torneio <span>→</span></button></div>
+          <div class="wizard-actions"><button *ngIf="!isSharedMode" class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button *ngIf="isSharedModerator" class="button danger" type="button" (click)="cancelSharedTournament()" [disabled]="sharedLoading">Cancelar e recomeçar</button><button id="setupNext2" class="button primary" type="button" (click)="nextSetupStep()" [disabled]="state.players.length !== state.size">{{ state.players.length === state.size ? 'Revisar torneio' : 'Faltam ' + (state.size - state.players.length) }} <span *ngIf="state.players.length === state.size">→</span></button></div>
         </article>
 
         <article *ngIf="setupStep === 3" class="surface-card wizard-panel">
           <span class="card-kicker">ETAPA 3 DE 3</span><h2>Revisar e iniciar</h2>
-          <div class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
-          <div class="callout"><b>{{ state.name }}</b><span>{{ isGroupTournament ? 'Revise duplas e confrontos antes de iniciar.' : 'Confira confrontos e descansos antes de iniciar.' }}</span></div>
-          <div class="wizard-actions"><button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button class="button primary" type="button" (click)="generateSchedule()" [disabled]="isSharedMode && (!isSharedModerator || state.sharedStatus !== 'ready')">{{ isSharedMode ? 'Iniciar torneio compartilhado' : 'Gerar tabela e iniciar' }} <span>→</span></button></div>
+          <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
+          <div id="reviewSummary" class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
+          <div class="callout"><b>{{ state.name }}</b><span>{{ reviewDescription }}</span></div>
+          <div class="wizard-roster"><span class="card-kicker">JOGADORES</span><div class="roster-chips"><span *ngFor="let player of state.players" class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar"></app-player-avatar>{{ player.name }}<app-gender-icon *ngIf="isMixedDoubles && player.gender" [gender]="player.gender"></app-gender-icon></span></div></div>
+          <p class="muted helper-text">Ao gerar a tabela, a lista de jogadores fica bloqueada e o cronômetro do torneio começa.</p>
+          <div class="wizard-actions"><button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button id="generateBtn" class="button primary" type="button" (click)="generateSchedule()" [disabled]="isSharedMode && (!isSharedModerator || state.sharedStatus !== 'ready')">{{ isSharedMode ? 'Iniciar torneio compartilhado' : 'Gerar tabela e iniciar' }} <span>→</span></button></div>
         </article>
       </section>
 
       <section *ngSwitchCase="'shared'" class="shared-guest-page">
-        <article *ngIf="!isDashboardViewer || sharedSnapshot" class="surface-card shared-guest-header"><div><span class="card-kicker">{{ sharedSnapshot?.status === 'archived' ? (isDashboardViewer ? 'ARQUIVO ADMINISTRATIVO' : 'TORNEIO ARQUIVADO') : isLiveViewer ? 'ACOMPANHAMENTO AO VIVO' : 'TORNEIO COMPARTILHADO' }}</span><h1>{{ state.name }}</h1><p class="muted">{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ sharedStatusLabel }}</p></div><div class="shared-guest-tags"><span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span><span class="mini-tag">{{ state.players.length }} / {{ state.size }} atletas</span><span *ngIf="state.startedAt && sharedSnapshot?.status !== 'archived'" class="mini-tag">⏱ {{ elapsedLabel }}</span></div></article>
+        <article *ngIf="!isDashboardViewer || sharedSnapshot" class="arena-hero" [class.is-live]="arenaLive">
+          <div class="arena-top"><span class="arena-badge" [class.live]="arenaLive"><i *ngIf="arenaLive"></i>{{ arenaBadge }}</span><span class="arena-kicker">{{ sharedSnapshot?.status === 'archived' ? (isDashboardViewer ? 'ARQUIVO ADMINISTRATIVO' : 'TORNEIO ARQUIVADO') : isLiveViewer ? 'ACOMPANHAMENTO AO VIVO' : 'TORNEIO COMPARTILHADO' }}</span><span class="arena-version" title="Versão do aplicativo">{{ versionLabel }}</span></div>
+          <h1>{{ state.name }}</h1>
+          <p>{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ sharedStatusLabel }}</p>
+          <div class="arena-stats">
+            <div><b>{{ completedMatches }}<small>/{{ totalMatches }}</small></b><span>PARTIDAS</span></div>
+            <div><b>{{ state.players.length }}<small>/{{ state.size }}</small></b><span>ATLETAS</span></div>
+            <div *ngIf="state.startedAt && sharedSnapshot?.status !== 'archived'"><b>{{ elapsedLabel }}</b><span>TEMPO</span></div>
+            <div><b class="arena-phase">{{ arenaPhaseLabel }}</b><span>FASE</span></div>
+          </div>
+          <div *ngIf="totalMatches" class="arena-progress" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso do torneio"><span [style.width.%]="progress"></span></div>
+        </article>
         <p *ngIf="sharedError" class="shared-error" role="alert">{{ sharedError }}</p>
         <article *ngIf="isDashboardViewer && sharedSnapshot?.status === 'archived'" class="surface-card data-card"><div><span class="card-kicker">ARQUIVO ADMINISTRATIVO</span><h2>Backup do torneio</h2><p class="muted">O backup pode ser importado como torneio local, sem reabrir o convite original.</p></div><button class="button secondary" type="button" (click)="exportBackup()">Exportar backup JSON</button></article>
           <article *ngIf="canJoinSharedTournament" class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar"></app-avatar-picker><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria"></app-gender-toggle><button class="button primary" type="submit" [disabled]="!guestName.trim() || sharedLoading || (isMixedDoubles && !guestGender)">{{ sharedLoading ? 'Entrando…' : 'Participar' }}</button></form></article>
         <article *ngIf="!sharedLoading && !sharedSnapshot && !sharedError" class="surface-card shared-loading">Carregando torneio…</article>
         <ng-container *ngIf="sharedSnapshot">
-          <ng-template #matchRow let-match><div class="shared-match-row"><span class="shared-team"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar"></app-player-avatar><span class="team-player-name" [class.me]="isMe(match.teamA[0])">{{ playerName(match.teamA[0]) }}</span> + <app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar"></app-player-avatar><span class="team-player-name" [class.me]="isMe(match.teamA[1])">{{ playerName(match.teamA[1]) }}</span></b><strong>{{ match.scoreA ?? '–' }}</strong></span><span class="versus">VS</span><span class="shared-team shared-team-right"><strong>{{ match.scoreB ?? '–' }}</strong><b><span class="team-player-name" [class.me]="isMe(match.teamB[0])">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar"></app-player-avatar> + <span class="team-player-name" [class.me]="isMe(match.teamB[1])">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar"></app-player-avatar></b></span></div></ng-template>
-          <article *ngIf="state.players.length" id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
+          <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live"></app-battle-card></ng-template>
+          <article *ngIf="state.players.length && !state.rounds.length" id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
           <article *ngIf="sharedSnapshot.status === 'registration'" class="surface-card shared-waiting"><b>{{ isLiveViewer ? 'Aguardando início' : 'Inscrições abertas' }}</b><span>{{ isLiveViewer ? 'A tabela e os placares aparecerão aqui assim que o torneio começar.' : 'As partidas aparecem quando o torneio começar.' }}</span></article>
-          <section *ngIf="guestVisibleRounds.length" id="guest-rounds" class="shared-round-list"><article *ngFor="let round of guestVisibleRounds" class="surface-card shared-round"><div class="card-title-row"><div><span class="card-kicker">RODADA {{ round.number }}</span><h2>{{ round.matches.length }} partidas</h2></div></div><div *ngFor="let match of round.matches"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container></div></article></section>
+          <section *ngIf="guestVisibleRounds.length" id="guest-rounds" class="shared-round-list">
+            <article *ngIf="spotlightRound as round" class="arena-spotlight"><div class="card-title-row"><div><span class="card-kicker"><i class="spot-dot"></i> EM QUADRA AGORA</span><h2>Rodada {{ round.number }}</h2></div><span class="mini-tag">{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</span></div><div class="battle-list"><ng-container *ngFor="let match of round.matches; trackBy: trackMatch"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match, live: true }"></ng-container></ng-container></div></article>
+            <details *ngFor="let round of historyRounds; trackBy: trackRound" class="surface-card shared-round arena-history"><summary><span class="card-kicker">RODADA {{ round.number }}</span><b>{{ round.matches.length }} partidas</b><em>{{ roundDone(round.number - 1) ? 'ENCERRADA' : 'A SEGUIR' }}</em></summary><div class="battle-list"><ng-container *ngFor="let match of round.matches; trackBy: trackMatch"><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container></ng-container></div></details>
+          </section>
           <app-ranking-view *ngIf="state.rounds.length" id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId" (playerSelected)="openPlayerMatches($event)"></app-ranking-view>
           <article *ngIf="state.finals" id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2><div *ngFor="let match of state.finals.matches" class="shared-final-match"><span class="card-kicker">{{ finalKindLabel(match) }}</span><app-final-live-score *ngIf="match.finalKind === 'championship' && match.livePoints !== undefined; else guestManualFinal" [match]="match" [players]="state.players"></app-final-live-score><ng-template #guestManualFinal><ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container><small *ngIf="match.tieBreakA != null && match.tieBreakB != null" class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small></ng-template></div><ng-container *ngIf="state.finals.complete"><app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId"></app-podium><div *ngIf="guestPlayerId" class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button><small *ngIf="shareMessage" class="muted">{{ shareMessage }}</small></div></ng-container></article>
         </ng-container>
@@ -224,7 +336,7 @@
         <app-tournament-report *ngIf="state.finishedAt" [state]="state" [existingLiveUrl]="!isSharedMode ? localLiveUrl : ''" [sharedConfigured]="sharedConfigured"></app-tournament-report>
         <article *ngIf="!isSharedMode && !state.finishedAt" class="surface-card full-card data-card"><div><span class="card-kicker">ACOMPANHAMENTO PÚBLICO</span><h2>Link para acompanhar ao vivo</h2><p class="muted">Qualquer pessoa com o link pode ver participantes, partidas, placares e ranking. O link não permite entrar nem alterar o torneio.</p><p *ngIf="localLiveUrl" class="live-link-field"><input aria-label="Link público de acompanhamento" readonly [value]="localLiveUrl"><button class="button secondary" type="button" (click)="copyLocalLiveLink()">Copiar link</button></p><p *ngIf="localLiveNotice" class="shared-success" role="status">{{ localLiveNotice }}</p><p *ngIf="localLiveError" class="shared-error" role="alert">{{ localLiveError }}</p><p *ngIf="!sharedConfigured" class="muted helper-text">A publicação ao vivo não está configurada neste deploy.</p></div><div class="button-row"><button class="button primary" type="button" (click)="createOrCopyLocalLiveLink()" [disabled]="localLiveLoading || !sharedConfigured">{{ localLiveLoading ? 'Gerando…' : localLiveUrl ? 'Copiar link ao vivo' : 'Gerar e copiar link' }}</button></div></article>
         <article *ngIf="syncAvailable" class="surface-card full-card data-card"><div><span class="card-kicker">SINCRONIZAÇÃO</span><h2>Online e offline</h2><p class="muted">{{ syncLabel }}{{ hasPendingSync ? ' · Há alterações aguardando envio.' : '' }}</p><label class="toggle-field"><input type="checkbox" [ngModel]="!syncPaused" (ngModelChange)="setSyncPaused(!$event)" [ngModelOptions]="{standalone: true}"><span><b>Sincronização automática</b><small>Desative para manter os placares apenas neste dispositivo até sincronizar.</small></span></label><p *ngIf="syncError" class="shared-error" role="alert">{{ syncError }}</p></div><div class="button-row"><button class="button secondary" type="button" (click)="syncNow()" [disabled]="!connectionOnline || !hasPendingSync || syncing">{{ syncing ? 'Sincronizando…' : 'Sincronizar agora' }}</button></div></article>
-        <article class="surface-card full-card data-card data-card-primary"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Dados salvos neste navegador. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><label class="button secondary file-button">↑ Importar backup JSON<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden></label><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
+        <article class="surface-card full-card data-card data-card-primary"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Todo torneio iniciado fica salvo neste navegador em Meus torneios. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row"><button *ngIf="libraryEntries.length" class="button secondary" type="button" (click)="openLibrary()">Meus torneios ({{ libraryEntries.length }})</button><button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><label class="button secondary file-button">↑ Importar backup JSON<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden></label><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
         <article class="surface-card full-card data-card"><div><span class="card-kicker">SOBRE O SETPOINT</span><h2>Página inicial</h2><p class="muted">Rever a apresentação do produto e suas funcionalidades.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="openLanding()">Voltar para a página inicial</button></div></article>
       </section>
       <section *ngSwitchCase="'dashboard'" class="dashboard-page"></section>
@@ -236,6 +348,19 @@
 
 
   <div *ngIf="selectedRankingPlayer" class="player-matches-backdrop" (click)="closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle" (click)="$event.stopPropagation()"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl"></app-player-avatar><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list"><article *ngFor="let item of selectedPlayerMatches" class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article></div></section></div>
+  <div *ngIf="libraryModalOpen" class="batch-backdrop" (click)="libraryModalOpen = false">
+    <section class="batch-modal library-modal" role="dialog" aria-modal="true" aria-labelledby="libraryTitle" (click)="$event.stopPropagation()">
+      <div class="batch-modal-header"><div><span class="card-kicker">NESTE DISPOSITIVO</span><h2 id="libraryTitle">Meus torneios</h2></div><button type="button" class="modal-close" (click)="libraryModalOpen = false" aria-label="Fechar">×</button></div>
+      <p class="muted">Todo torneio iniciado fica salvo aqui. Abra qualquer um para rever tabela, placares e ranking.</p>
+      <p *ngIf="!libraryEntries.length" class="muted">Nenhum torneio salvo ainda. Ele aparece aqui assim que a tabela for gerada.</p>
+      <ul class="library-list">
+        <li *ngFor="let entry of libraryEntries" class="library-item" [class.current]="isCurrentLibraryEntry(entry)">
+          <div class="library-info"><b>{{ entry.name }}</b><small>{{ libraryPhaseLabel(entry) }} · {{ entry.matchesCompleted }}/{{ entry.matchesTotal }} partidas · {{ entry.playerCount }} jogadores · {{ entry.updatedAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
+          <div class="library-actions"><button class="button secondary" type="button" (click)="openLibraryTournament(entry.id)">{{ isCurrentLibraryEntry(entry) ? 'Em uso' : 'Abrir' }}</button><button class="button danger" type="button" (click)="deleteLibraryTournament(entry)" [attr.aria-label]="'Excluir ' + entry.name">Excluir</button></div>
+        </li>
+      </ul>
+    </section>
+  </div>
   <div *ngIf="batchModalOpen" class="batch-backdrop" (click)="batchModalOpen = false">
     <section class="batch-modal" role="dialog" aria-modal="true" aria-labelledby="batchTitle" (click)="$event.stopPropagation()">
       <div class="batch-modal-header"><div><span class="card-kicker">CADASTRO RÁPIDO</span><h2 id="batchTitle">Adicionar participantes em lote</h2></div><button type="button" class="modal-close" (click)="batchModalOpen = false" aria-label="Fechar">×</button></div>
@@ -274,10 +399,12 @@
   </section>
 </div>
 
-<button *ngIf="!isLocked && !isDashboardRoute && !showLanding && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab qual-fab-icon" type="button" (click)="openQualificationStats()" aria-haspopup="dialog" [attr.aria-label]="isGuestView ? 'Abrir meu objetivo' : 'Abrir projeção'" [title]="isGuestView ? 'Meu objetivo' : 'Projeção'"><span aria-hidden="true">◎</span></button>
+<button *ngIf="!isLocked && !isDashboardRoute && !showLanding && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab qual-fab-icon" [class.has-chance]="!!qualificationChanceLabel" type="button" (click)="openQualificationStats()" aria-haspopup="dialog" [attr.aria-label]="isGuestView ? 'Abrir meu caminho' + (qualificationChanceLabel ? ' (chance ' + qualificationChanceLabel + ')' : '') : 'Abrir projeção'" [title]="isGuestView ? 'Meu caminho' : 'Projeção'"><span aria-hidden="true">◎</span><b *ngIf="qualificationChanceLabel" class="qual-fab-chance">{{ qualificationChanceLabel }}</b></button>
+<button *ngIf="chanceToast && !qualificationModalOpen" type="button" class="chance-toast" [ngClass]="'tone-' + chanceToast.tone" role="status" (click)="openFromChanceToast()"><span aria-hidden="true">{{ chanceToast.tone === 'up' ? '▲' : chanceToast.tone === 'down' ? '▼' : chanceToast.tone === 'clinched' ? '🏆' : '•' }}</span><span>{{ chanceToast.text }}</span><em>Ver caminho</em></button>
+<div *ngIf="showConfetti" class="confetti" aria-hidden="true"><i *ngFor="let piece of confettiPieces" [style.left.%]="piece.left" [style.animation-delay.s]="piece.delay" [style.width.px]="piece.size" [style.height.px]="piece.size * 1.6" [style.background]="'hsl(' + piece.hue + ' 85% 60%)'"></i></div>
 <button *ngIf="!isLocked && isGuestView && guestUpdateCount > 0" class="guest-update-button" type="button" (click)="openFirstGuestUpdate()"><span aria-hidden="true">↓</span>{{ guestUpdateCount }} {{ guestUpdateCount === 1 ? 'nova atualização' : 'novas atualizações' }}</button>
 @defer (when qualificationModalOpen) {
-  <app-qualification-stats [rows]="qualificationRows" [projection]="qualificationProjection" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (close)="closeQualificationStats()"></app-qualification-stats>
+<app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()" (close)="closeQualificationStats()"></app-qualification-stats>
 }
 
 <div *ngIf="isDashboardRoute && dashboardAuthenticated" class="dashboard-shell">

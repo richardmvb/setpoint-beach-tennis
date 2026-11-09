@@ -36,6 +36,8 @@ export interface DashboardActiveTournament {
   matches_total: number;
 }
 
+interface DashboardLocalArchive extends DashboardActiveTournament { live_id: string | null; }
+
 export interface DashboardActivity {
   active_tournaments: DashboardActiveTournament[];
   archived_tournaments: DashboardActiveTournament[];
@@ -256,17 +258,33 @@ export class SupabaseService {
 
   async getDashboardActivity(): Promise<DashboardActivity> {
     const client = this.requireClient();
-    const [activityResult, localResult] = await Promise.all([
+    const [activityResult, localResult, archiveResult] = await Promise.all([
       client.rpc('get_dashboard_activity'),
-      client.rpc('get_dashboard_archived_local_tournaments')
+      client.rpc('get_dashboard_archived_local_tournaments'),
+      client.rpc('get_dashboard_local_archives')
     ]);
     if (activityResult.error) throw activityResult.error;
     if (localResult.error && localResult.error.code !== 'PGRST202') throw localResult.error;
+    // The archive RPC is newer than the rest: a deploy without its migration must keep working.
+    if (archiveResult.error && archiveResult.error.code !== 'PGRST202') throw archiveResult.error;
     const activity = activityResult.data as DashboardActivity;
+    const archives = ((archiveResult.data ?? []) as (DashboardLocalArchive & { status?: string })[]);
+    // A tournament published live and archived appears once, as the archive (it has every detail).
+    const supersededLiveIds = new Set(archives.map(archive => archive.live_id).filter((id): id is string => !!id));
+    const keep = (item: DashboardActiveTournament): boolean => !(item.source === 'local' && supersededLiveIds.has(item.id));
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const isLive = (archive: DashboardLocalArchive & { status?: string }): boolean =>
+      archive.status === 'active' && Date.parse(archive.updated_at) > dayAgo;
+    const byRecent = (first: DashboardActiveTournament, second: DashboardActiveTournament): number =>
+      Date.parse(second.updated_at) - Date.parse(first.updated_at);
     return {
       ...activity,
-      archived_tournaments: [...activity.archived_tournaments, ...((localResult.data ?? []) as DashboardActiveTournament[])]
-        .sort((first, second) => Date.parse(second.updated_at) - Date.parse(first.updated_at)),
+      active_tournaments: [...activity.active_tournaments.filter(keep), ...archives.filter(isLive)].sort(byRecent),
+      archived_tournaments: [
+        ...activity.archived_tournaments.filter(keep),
+        ...((localResult.data ?? []) as DashboardActiveTournament[]).filter(keep),
+        ...archives.filter(archive => !isLive(archive))
+      ].sort(byRecent),
       local_archives_available: !localResult.error
     };
   }
@@ -295,6 +313,18 @@ export class SupabaseService {
       p_started_at: state.startedAt,
       p_finished_at: state.finishedAt ?? null,
       p_abandoned: abandoned,
+    });
+    if (error) throw error;
+  }
+
+  /** Uploads the full tournament (no photos) so the dashboard can reopen it. */
+  async saveLocalTournamentArchive(tournamentId: string, state: TournamentState, liveTournamentId?: string): Promise<void> {
+    const client = this.requireClient();
+    if (!await this.currentUser()) await this.signInAnonymously();
+    const { error } = await client.rpc('save_local_tournament_archive', {
+      p_tournament_id: tournamentId,
+      p_state: this.publicTournamentState(state),
+      p_live_tournament_id: liveTournamentId ?? null
     });
     if (error) throw error;
   }

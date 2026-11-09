@@ -7,7 +7,11 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="number-range">
+    <div *ngIf="values.length < 2" class="number-range static">
+      <div class="number-range-head"><span class="range-label">{{ label }}</span><strong>{{ displayValue }}</strong></div>
+      <small class="muted">Definido pelo formato escolhido.</small>
+    </div>
+    <div *ngIf="values.length > 1" class="number-range">
       <div class="number-range-head"><label [attr.for]="inputId">{{ label }}</label><strong>{{ displayValue }}</strong></div>
       <input [id]="inputId" type="range" [min]="0" [max]="values.length - 1" step="1" [value]="selectedIndex" [disabled]="values.length < 2" (input)="select($event)" [attr.aria-valuetext]="displayValue">
       <div class="number-range-ticks" [style.--range-count]="values.length"><span *ngFor="let item of values; let i = index" [class.active]="item === value">{{ item }}</span></div>

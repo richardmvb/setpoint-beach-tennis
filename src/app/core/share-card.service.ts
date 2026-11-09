@@ -223,6 +223,34 @@ export class ShareCardService {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  /** Same medal-card look as the in-app podium: tinted card, medal on the top edge, avatars, names, place label. */
+  private placePalette(place: number): { top: string; border: string } {
+    return place === 1 ? { top: 'rgba(249,231,174,0.30)', border: '#d9a93a' }
+      : place === 2 ? { top: 'rgba(226,232,238,0.22)', border: '#aab3bc' }
+        : place === 3 ? { top: 'rgba(241,211,180,0.22)', border: '#bf7f46' }
+          : { top: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.22)' };
+  }
+
+  private initialsOf(name: string): string {
+    return name.trim().split(/\s+/).slice(0, 2).map(part => part[0] ?? '').join('').toLocaleUpperCase();
+  }
+
+  private drawAvatar(context: CanvasRenderingContext2D, cx: number, cy: number, radius: number, name: string): void {
+    context.beginPath();
+    context.arc(cx, cy, radius, 0, Math.PI * 2);
+    context.fillStyle = '#e9ad7e';
+    context.fill();
+    context.lineWidth = 5;
+    context.strokeStyle = '#0d2a22';
+    context.stroke();
+    context.fillStyle = '#34251c';
+    context.textAlign = 'center';
+    context.font = `800 ${Math.round(radius * 0.7)}px Manrope, sans-serif`;
+    context.textBaseline = 'middle';
+    context.fillText(this.initialsOf(name), cx, cy + 1);
+    context.textBaseline = 'top';
+  }
+
   private drawPodium(
     context: CanvasRenderingContext2D, state: TournamentState, podium: PodiumPlace[],
     playerId: string, top: number, baseY: number, gold: string
@@ -230,37 +258,52 @@ export class ShareCardService {
     const columnWidth = 290;
     const gap = 25;
     const slots = [
-      { place: 2, height: 150, from: '#f2f4f6', to: '#aab3bc' },
-      { place: 1, height: 210, from: '#f9e7ae', to: '#d9a93a' },
-      { place: 3, height: 110, from: '#f1d3b4', to: '#bf7f46' }
+      { place: 2, height: 256, radius: 38, medal: 52 },
+      { place: 1, height: 290, radius: 44, medal: 64 },
+      { place: 3, height: 240, radius: 36, medal: 52 }
     ];
     slots.forEach((slot, index) => {
       const x = 80 + index * (columnWidth + gap);
       const entry = podium.find(item => item.place === slot.place);
-      const stepTop = baseY - slot.height;
+      const cardTop = baseY - slot.height;
       const mine = !!entry?.playerIds.includes(playerId);
-      const fill = context.createLinearGradient(0, stepTop, 0, baseY);
-      fill.addColorStop(0, slot.from);
-      fill.addColorStop(1, slot.to);
+      const palette = this.placePalette(slot.place);
+      const fill = context.createLinearGradient(0, cardTop, 0, baseY);
+      fill.addColorStop(0, palette.top);
+      fill.addColorStop(1, 'rgba(255,255,255,0.04)');
       context.save();
       if (mine) { context.shadowColor = gold; context.shadowBlur = 40; }
-      this.roundRect(context, x, stepTop, columnWidth, slot.height, 20, true);
+      this.roundRect(context, x, cardTop, columnWidth, slot.height, 30);
       context.fillStyle = fill;
       context.fill();
       context.restore();
+      context.lineWidth = mine ? 4 : 2;
+      context.strokeStyle = mine ? gold : palette.border;
+      this.roundRect(context, x, cardTop, columnWidth, slot.height, 30);
+      context.stroke();
       context.textAlign = 'center';
-      context.fillStyle = '#1d1a10';
-      context.font = `${slot.place === 1 ? 64 : 52}px sans-serif`;
-      context.fillText(this.medal(slot.place), x + columnWidth / 2, stepTop + 16);
-      context.font = '800 24px Manrope, sans-serif';
-      context.fillText(this.ordinal(slot.place), x + columnWidth / 2, stepTop + (slot.place === 1 ? 96 : 78));
-      const names = (entry?.playerIds ?? []).map(id => ({ id, name: this.playerName(state, id) }));
-      names.forEach((item, nameIndex) => {
-        const own = item.id === playerId;
-        context.fillStyle = own ? gold : '#ffffff';
-        context.font = `${own ? 800 : 700} 22px Manrope, sans-serif`;
-        context.fillText(item.name, x + columnWidth / 2, stepTop - 12 - (names.length - nameIndex) * 30, columnWidth - 12);
+      context.fillStyle = '#ffffff';
+      context.font = `${slot.medal}px sans-serif`;
+      context.fillText(this.medal(slot.place), x + columnWidth / 2, cardTop - slot.medal * 0.55);
+      const ids = entry?.playerIds ?? [];
+      const overlap = slot.radius * 0.45;
+      const facesWidth = ids.length * slot.radius * 2 - Math.max(0, ids.length - 1) * overlap;
+      const facesY = cardTop + slot.medal * 0.55 + slot.radius + 18;
+      ids.forEach((id, faceIndex) => {
+        const cx = x + columnWidth / 2 - facesWidth / 2 + slot.radius + faceIndex * (slot.radius * 2 - overlap);
+        this.drawAvatar(context, cx, facesY, slot.radius, this.playerName(state, id));
       });
+      context.textAlign = 'center';
+      const namesTop = facesY + slot.radius + 16;
+      ids.forEach((id, nameIndex) => {
+        const own = id === playerId;
+        context.fillStyle = own ? gold : '#ffffff';
+        context.font = `${own ? 800 : 700} 24px Manrope, sans-serif`;
+        context.fillText(this.playerName(state, id), x + columnWidth / 2, namesTop + nameIndex * 31, columnWidth - 28);
+      });
+      context.fillStyle = 'rgba(255,255,255,0.62)';
+      context.font = '800 17px "DM Sans", sans-serif';
+      context.fillText(`${this.ordinal(slot.place)} LUGAR`, x + columnWidth / 2, baseY - 34);
       context.textAlign = 'left';
     });
   }
@@ -275,10 +318,16 @@ export class ShareCardService {
     slots.forEach((place, index) => {
       const x = 80 + index * (width + gap);
       const item = podium.find(value => value.place === place);
-      this.roundRect(context, x, top, width, 150, 18);
-      context.fillStyle = item?.playerIds.includes(playerId) ? 'rgba(230,195,106,0.2)' : 'rgba(255,255,255,0.08)';
+      const mine = !!item?.playerIds.includes(playerId);
+      const palette = this.placePalette(place);
+      const fill = context.createLinearGradient(0, top, 0, top + 150);
+      fill.addColorStop(0, mine ? 'rgba(230,195,106,0.30)' : palette.top);
+      fill.addColorStop(1, 'rgba(255,255,255,0.04)');
+      this.roundRect(context, x, top, width, 150, 20);
+      context.fillStyle = fill;
       context.fill();
-      context.strokeStyle = item?.playerIds.includes(playerId) ? gold : 'rgba(255,255,255,0.15)';
+      context.lineWidth = mine ? 3 : 2;
+      context.strokeStyle = mine ? gold : palette.border;
       context.stroke();
       context.textAlign = 'center';
       context.fillStyle = gold;
@@ -287,10 +336,9 @@ export class ShareCardService {
       context.fillStyle = 'rgba(255,255,255,0.8)';
       context.font = '800 18px Manrope, sans-serif';
       context.fillText(this.ordinal(place), x + width / 2, top + 70);
-      const entry = podium.find(value => value.place === place);
-      context.fillStyle = entry?.playerIds.includes(playerId) ? gold : '#ffffff';
+      context.fillStyle = mine ? gold : '#ffffff';
       context.font = '700 13px Manrope, sans-serif';
-      (entry?.playerIds ?? []).forEach((id, nameIndex) => {
+      (item?.playerIds ?? []).forEach((id, nameIndex) => {
         context.fillText(this.playerName(state, id), x + width / 2, top + 103 + nameIndex * 20, width - 12);
       });
     });

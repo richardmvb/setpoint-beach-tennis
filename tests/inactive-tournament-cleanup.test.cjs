@@ -132,6 +132,7 @@ test('o dashboard mescla arquivos locais e mantém compatibilidade antes da migr
   let migrationInstalled = true;
   service.client = {
     rpc: async name => name === 'get_dashboard_activity' ? { data: base, error: null }
+      : name === 'get_dashboard_local_archives' ? { data: [], error: null }
       : migrationInstalled
         ? { data: [{ id: 'local', updated_at: '2026-11-08T10:00:00Z' }], error: null }
         : { data: null, error: { code: 'PGRST202' } }

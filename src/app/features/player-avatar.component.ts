@@ -16,7 +16,7 @@ import { CommonModule } from '@angular/common';
 export class PlayerAvatarComponent {
   @Input() name = '';
   @Input() photoDataUrl?: string;
-  @Input() variant: 'player-avatar' | 'team-avatar' | 'share-chip-avatar' | 'podium-avatar' = 'player-avatar';
+  @Input() variant: 'player-avatar' | 'team-avatar' | 'share-chip-avatar' | 'podium-avatar' | 'battle-avatar' = 'player-avatar';
 
   get avatarClass(): string { return this.variant; }
   get size(): number {
@@ -24,6 +24,7 @@ export class PlayerAvatarComponent {
       case 'team-avatar': return 24;
       case 'share-chip-avatar': return 34;
       case 'podium-avatar': return 26;
+      case 'battle-avatar': return 40;
       default: return 32;
     }
   }

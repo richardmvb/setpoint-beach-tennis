@@ -15,13 +15,24 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Classificação e finais:** critérios individuais, desempates, final, disputa de 3º lugar e pódio.
 - **Final ponto a ponto:** opcional em qualquer formato, com ponto decisivo em 40–40, tie-break em 6–6 e opção de desfazer o último ponto. A disputa de 3º continua com placar manual.
 - **Super 24 misto em 3 quadras:** 12 homens e 12 mulheres em baterias equilibradas, com ranking separado por categoria e encerramento antecipado opcional.
-- **Projeção de objetivo:** em torneios compartilhados Super, atletas acompanham cenários para chegar ao 1º lugar, top 2 ou top 3.
+- **Seu caminho (projeção):** em torneios compartilhados Super, cada atleta vê a chance real de ser campeão, chegar ao top 2 ou ao top 3, calculada sobre todos os cenários possíveis dos jogos que faltam (parceiros e adversários acoplados, como na tabela real).
+  - Mostra a chance por objetivo, onde o atleta pode terminar, a evolução da chance rodada a rodada e quanto vale cada vitória.
+  - Destaca os jogos que mais mexem na chance (os dele e os dos outros) e os rivais a acompanhar, com o ganho em pontos percentuais.
+  - **E se?:** toque em um jogo para assumir o resultado e ver a chance se recalcular.
+  - Diz "garantido" ou "fora da disputa" somente quando é matematicamente certo. Até 18 jogos em aberto o cálculo é exato; acima disso é uma simulação reproduzível.
+  - Avisa o atleta quando um resultado muda sua chance em 5 pontos ou mais (com confete ao garantir o objetivo) e gera uma imagem para compartilhar.
+  - Premissas exibidas na tela: jogos restantes equilibrados (50/50) e empates em vitórias decididos pelo saldo de games e depois pelo confronto direto. Disponível apenas em torneios compartilhados Super.
 - **Convites compartilhados:** guests entram pelo link; o moderador pode incluir participantes sem celular.
 - **Fotos opcionais:** avatars WebP são reduzidos localmente para até 8 kB e mantêm as iniciais como fallback.
 - **Card para Instagram:** prévia antes de exportar, três layouts e foto de fundo opcional processada no navegador.
 - **Relatório final:** em Ajustes após finalizar, gere uma imagem PNG, compartilhe ou copie o texto e crie um link de resultado somente leitura.
 - **NPS:** pesquisa configurada no PostHog, disponível no footer e em momentos de conclusão do torneio.
 - **Dashboard:** totais agregados de torneios, participantes, modos, formatos e conclusão em `/dashboard`.
+- **Meus torneios:** todo torneio iniciado fica salvo no dispositivo (até 30). Reabra qualquer um para rever tabela, placares, ranking e pódio, mesmo depois de iniciar outro ou de uma nova versão do app.
+- **Cópia completa na nuvem:** com o Supabase configurado, cada torneio local iniciado é arquivado com todos os detalhes (participantes, rodadas, placares e finais) para ser recuperado e revisitado no dashboard.
+- **Configuração guiada:** assistente em três etapas com opções em cartões, resumo ao vivo do formato, barra de vagas, etapas clicáveis e tutorial interativo (driver.js) para cada etapa.
+- **Confirmações elegantes:** diálogos com SweetAlert2 no mesmo visual do app (folha inferior no celular). Finalizar o torneio exige digitar `finalizar`.
+- **Landing page:** apresentação do produto, formatos, acompanhamento ao vivo, uma seção dedicada ao "Seu caminho" (com a ressalva de que vale para torneios compartilhados) e atalho para retomar torneios salvos.
 - **Modo claro e escuro**, backups JSON e versão no cabeçalho e rodapé.
 
 ## Formatos
@@ -74,13 +85,13 @@ Para validar a publicação:
 npm run build -- --base-href /setpoint-beach-tennis/
 ```
 
-Os arquivos de produção são gerados em `dist/setpoint/browser`. O repositório não define um script de testes automatizados.
+Os arquivos de produção são gerados em `dist/setpoint/browser`. Rode os testes com `npm test`. O mapa das máquinas de estado do app está em [`docs/state-machines.md`](docs/state-machines.md).
 
 ## Modo local
 
-O torneio completo fica no `localStorage` do navegador. Não é necessário Supabase para montar tabelas, lançar resultados, gerar finais ou usar os backups. Com o Supabase configurado, a tela Ajustes também permite gerar um link público de acompanhamento para torneios locais, inclusive em andamento. Esse link só permite visualizar participantes, partidas e placares; não permite entrar nem editar. As fotos dos participantes não são publicadas nesse espelho.
+O torneio completo fica no `localStorage` do navegador. Todo torneio iniciado também é guardado em **Meus torneios** (botão no cabeçalho, na configuração e em Ajustes): até 30 torneios, mesmo depois de iniciar outro ou de uma nova versão do app. Abra qualquer um para rever tabela, placares e ranking; torneios finalizados abrem somente para leitura. As fotos não são guardadas no histórico. Não é necessário Supabase para montar tabelas, lançar resultados, gerar finais ou usar os backups. Com o Supabase configurado, a tela Ajustes também permite gerar um link público de acompanhamento para torneios locais, inclusive em andamento. Esse link só permite visualizar participantes, partidas e placares; não permite entrar nem editar. As fotos dos participantes não são publicadas nesse espelho.
 
-Quando o Supabase estiver configurado e o login anônimo habilitado, o SETPOINT pode enviar métricas agregadas dos torneios locais. Nomes, fotos e placares individuais não fazem parte dessa tabela de métricas. Se a conexão ou autenticação não estiver disponível, o uso local continua funcionando.
+Quando o Supabase estiver configurado e o login anônimo habilitado, o SETPOINT envia métricas agregadas dos torneios locais (sem nomes, fotos ou placares) e uma cópia completa de cada torneio iniciado — participantes, rodadas, placares e finais, sem fotos — para que administradores possam recuperá-lo e revisitá-lo no dashboard. Se a conexão ou autenticação não estiver disponível, o uso local continua funcionando: o envio fica pendente e é repetido ao reconectar, ao abrir o app e a cada alteração.
 
 ## Modo compartilhado
 
@@ -105,6 +116,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 	- `202611080001_dashboard_activity.sql`
 	- `202611080002_offline_sync.sql`
 	- `202611080003_archive_inactive_tournaments.sql`
+	- `202611090001_local_tournament_archives.sql`
    Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
 	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
@@ -113,7 +125,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 3. Habilite **Allow anonymous sign-ins** para o moderador sem e-mail, métricas locais e publicação de links de acompanhamento.
 4. Para o dashboard, use o magic link com uma conta autorizada em `public.setpoint_dashboard_admins`. A RPC verifica a sessão e a allowlist no banco.
 
-O dashboard lê métricas e, somente para administradores autorizados, estados de torneios compartilhados ou locais publicados ao vivo. Fotos compartilhadas são thumbnails WebP em Base64, limitadas pelo app e validadas no servidor. Elas ficam no estado privado do torneio compartilhado, sem bucket público.
+O dashboard lê métricas e, somente para administradores autorizados, estados de torneios compartilhados, locais publicados ao vivo e cópias completas de torneios locais (arquivadas em `local_tournament_archives`, sem expiração). Fotos compartilhadas são thumbnails WebP em Base64, limitadas pelo app e validadas no servidor. Elas ficam no estado privado do torneio compartilhado, sem bucket público.
 
 ### Configuração do deploy
 
@@ -143,7 +155,8 @@ O gerador combina validações com busca heurística e aleatoriedade para distri
 
 ## Privacidade e segurança
 
-- Torneios locais permanecem no dispositivo; o reset remove o estado e os caches locais do SETPOINT.
+- Dados coletados: apenas nomes digitados, categorias (em duplas mistas), partidas e placares. Não há coleta de telefone, e-mail, documento ou outros dados pessoais dos atletas; o e-mail só é usado por administradores para entrar no dashboard.
+- Torneios locais ficam no dispositivo e em **Meus torneios**; iniciar outro torneio remove o estado ativo e os caches de sincronização, mas mantém o histórico (exclua pelo próprio Meus torneios). A cópia enviada à nuvem não inclui fotos.
 - Torneios compartilhados e participantes cancelados/expirados são arquivados para preservar métricas e histórico.
 - Os tokens de convite são armazenados como hash no banco.
 - As RPCs e políticas do Supabase são a autoridade de acesso. Não use `service_role` no navegador.

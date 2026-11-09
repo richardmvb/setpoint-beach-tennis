@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { DoublesFormat, LocalLiveTournamentSnapshot, Match, MixedFinalFormat, Page, Player, PlayerGender, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
 import { OfflineSyncQueue, SyncKind } from './core/offline-sync-queue';
+import { LibraryEntry, libraryId, TournamentLibrary } from './core/tournament-library';
+import { SYNC_STATUS_LABEL, syncStatus, TOURNAMENT_PHASE_LABEL, tournamentPhase } from './core/state-machines';
 import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
@@ -22,10 +24,17 @@ import { NumberRangeComponent } from './features/number-range.component';
 import { FinalLiveScoreComponent } from './features/final-live-score.component';
 import { TournamentReportComponent } from './features/tournament-report.component';
 import { PodiumComponent } from './features/podium.component';
-import { GoalProjection, QualificationRow, QualificationService } from './core/qualification.service';
+import { BattleCardComponent } from './features/battle-card.component';
+import { ChoiceCardsComponent, ChoiceOption } from './features/choice-cards.component';
+import { ForcedResults, PathProjection, QualificationRow, QualificationService, TrendPoint } from './core/qualification.service';
+import { PathCardService } from './core/path-card.service';
+import { GoalPlace } from './core/scenario-engine';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
 import { PostHogService } from './core/posthog.service';
+import { DialogService } from './core/dialog.service';
 import { environment } from '../environments/environment';
+
+interface TourStep { element: string; popover: { title: string; description: string; side?: 'top' | 'bottom' | 'left' | 'right' }; }
 
 interface BatchPlayerDraft { name: string; gender: PlayerGender | ''; error?: string; }
 
@@ -53,17 +62,50 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, AvatarPickerComponent, GenderToggleComponent, PodiumComponent, QualificationStatsComponent, GenderIconComponent, NumberRangeComponent, FinalLiveScoreComponent, TournamentReportComponent],
+  imports: [CommonModule, FormsModule, RankingViewComponent, RoundNavigationComponent, PlayerAvatarComponent, AvatarPickerComponent, GenderToggleComponent, PodiumComponent, QualificationStatsComponent, GenderIconComponent, NumberRangeComponent, FinalLiveScoreComponent, TournamentReportComponent, BattleCardComponent, ChoiceCardsComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit, OnDestroy {
   private readonly posthogService = inject(PostHogService);
+  private readonly dialog = inject(DialogService);
+  private readonly pathCard = inject(PathCardService);
   private readonly authCallback: boolean;
   private readonly syncQueue = new OfflineSyncQueue({
     getItem: key => localStorage.getItem(key),
     setItem: (key, value) => localStorage.setItem(key, value),
     removeItem: key => localStorage.removeItem(key)
   });
+
+  private readonly library = new TournamentLibrary(
+    {
+      getItem: key => localStorage.getItem(key),
+      setItem: (key, value) => localStorage.setItem(key, value),
+      removeItem: key => localStorage.removeItem(key)
+    },
+    raw => this.storage.parseTournament(raw)
+  );
+  private archiveInFlight = false;
+  private archiveRetryAfter = 0;
+  private versionResetKeptTournament = false;
+  libraryModalOpen = false;
+  playerFormError = '';
+  readonly hostingOptions: ChoiceOption[] = [
+    { value: 'local', label: 'Neste dispositivo', hint: 'Só você lança os placares. Nada é compartilhado.' },
+    { value: 'shared', label: 'Compartilhado', hint: 'Convite por link e acompanhamento ao vivo.' }
+  ];
+  readonly doublesOptions: ChoiceOption[] = [
+    { value: 'open', label: 'Duplas abertas', hint: 'Qualquer combinação de atletas.' },
+    { value: 'mixed', label: 'Duplas mistas', hint: '1 atleta masculino + 1 feminino.' }
+  ];
+  readonly modeOptions: ChoiceOption[] = [
+    { value: 'super', label: 'Super', hint: 'Duplas rotativas: todos jogam com todos.' },
+    { value: 'groups', label: 'Grupos', hint: 'Grupos pequenos, todos contra todos.' }
+  ];
+  readonly groupFormatOptions: ChoiceOption[] = [
+    { value: 'rotating', label: 'Parceiros rotativos', hint: 'Grupos de 4, cada atleta com todos os outros.' },
+    { value: 'fixed', label: 'Duplas fixas', hint: 'Você define as duplas; todas se enfrentam.' }
+  ];
+  libraryEntries: LibraryEntry[] = [];
 
   isLocked = false;
   showLanding = false;
@@ -141,6 +183,14 @@ export class AppComponent implements OnInit, OnDestroy {
   qualificationTargetPlace = 3;
   qualificationTargetPlayerId = '';
   qualificationModalOpen = false;
+  qualificationForced: Record<string, 'A' | 'B'> = {};
+  qualificationTrend: TrendPoint[] = [];
+  sharingPath = false;
+  pathShareError = '';
+  chanceToast: { text: string; tone: 'up' | 'down' | 'clinched' | 'eliminated' } | null = null;
+  confettiPieces = Array.from({ length: 30 }, (_, i) => ({ left: (i * 37 + 11) % 100, delay: (i % 8) * 0.07, size: 6 + (i % 4) * 3, hue: (i * 47) % 360 }));
+  showConfetti = false;
+  private chanceToastTimer: number | null = null;
   isDashboardRoute = false;
   dashboardAuthenticated = false;
   dashboardEmail = '';
@@ -168,7 +218,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly onPopState = (): void => this.restorePageFromPath();
   private readonly onConnectionChange = (): void => {
     this.connectionOnline = navigator.onLine;
-    if (this.connectionOnline) void this.syncPending();
+    if (this.connectionOnline) { void this.syncPending(); void this.flushArchives(); }
   };
 
   private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
@@ -219,7 +269,9 @@ export class AppComponent implements OnInit, OnDestroy {
         if (kind === 'shared' && record && this.state.sharedStatus === 'active' && this.state.rounds.length) this.isSharedModerator = true;
       }
     } catch { this.syncError = 'Não foi possível acessar a fila de sincronização local.'; }
+    if (!this.isGuestView && !this.isDashboardRoute) this.keepInLibrary(this.state);
     if (!this.isDashboardViewer && !this.hasPendingSync && this.storage.clearCompletedTournamentOnVersionChange(this.buildId, this.state)) {
+      this.versionResetKeptTournament = !!libraryId(this.state) && !!this.library.get(libraryId(this.state) ?? '');
       this.state = {
         version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4,
         roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(),
@@ -243,6 +295,8 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.theme = this.storage.loadTheme();
     this.initializeScoreDrafts();
+    this.refreshLibrary();
+    if (this.versionResetKeptTournament) this.message('Nova versão do SETPOINT. Seu torneio anterior continua salvo em Meus torneios.');
   }
 
   async ngOnInit(): Promise<void> {
@@ -296,7 +350,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
     void this.identifyCurrentUser();
-    if (!this.isLocked && !this.isDashboardRoute && !this.isGuestView) this.backfillLocalTournamentMetrics();
+    if (!this.isLocked && !this.isDashboardRoute && !this.isGuestView) { this.backfillLocalTournamentMetrics(); this.archiveCurrent(); }
     this.clockTimer = window.setInterval(() => { if (this.timerRunning) this.now = Date.now(); }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
@@ -421,14 +475,17 @@ export class AppComponent implements OnInit, OnDestroy {
       ((this.isSharedMode && this.isSharedModerator && !!this.state.sharedTournamentId && !!this.state.rounds.length)
         || (!this.isSharedMode && !!this.localLiveWriteToken));
   }
-  get syncLabel(): string {
-    if (!this.syncAvailable) return 'Salvo neste dispositivo';
-    if (this.syncError) return 'Sincronização pendente';
-    if (!this.connectionOnline) return 'Sem conexão';
-    if (this.syncPaused) return 'Modo offline';
-    if (this.syncInFlight) return 'Sincronizando';
-    return this.hasPendingSync ? 'Aguardando sincronização' : 'Sincronizado';
+  get syncStatus() {
+    return syncStatus({
+      available: this.syncAvailable,
+      error: !!this.syncError,
+      online: this.connectionOnline,
+      paused: this.syncPaused,
+      inFlight: this.syncInFlight,
+      hasPending: this.hasPendingSync
+    });
   }
+  get syncLabel(): string { return SYNC_STATUS_LABEL[this.syncStatus]; }
   setSyncPaused(paused: boolean): void {
     this.syncPaused = paused;
     try { localStorage.setItem(SYNC_PAUSED_KEY, String(paused)); }
@@ -486,15 +543,103 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.isGuestView ? this.guestPlayerId
       : this.qualificationTargetPlayerId || this.standings[0]?.playerId || '';
   }
-  get qualificationProjection(): GoalProjection | null {
+  /** Cached by the played results, so it is cheap to read from a template. */
+  get qualificationPath(): PathProjection | null {
     return this.qualificationEnabled && this.qualificationPlayerId
-      ? this.qualification.projectGoal(this.state, this.standings, this.qualificationPlayerId, this.qualificationTargetPlace)
+      ? this.qualification.projectPath(this.state, this.standings, this.qualificationPlayerId, this.qualificationForced as ForcedResults)
       : null;
   }
-  setQualificationTargetPlayer(playerId: string): void { this.qualificationTargetPlayerId = playerId; }
+  /** Guest's chance for the chosen goal, shown on the floating button. */
+  get qualificationChanceLabel(): string {
+    if (!this.isGuestView || !this.guestPlayerId || !this.qualificationEnabled) return '';
+    const goal = this.qualification.projectPath(this.state, this.standings, this.guestPlayerId)?.goals[this.qualificationTargetPlace as GoalPlace];
+    if (!goal) return '';
+    return goal.status === 'clinched' ? '✓' : goal.status === 'eliminated' ? '—' : this.qualification.formatChance(goal.probability);
+  }
+  setQualificationTargetPlayer(playerId: string): void {
+    this.qualificationTargetPlayerId = playerId;
+    this.qualificationForced = {};
+    this.refreshQualificationTrend();
+  }
   setQualificationTargetPlace(place: number): void { this.qualificationTargetPlace = place; }
-  openQualificationStats(): void { this.qualificationModalOpen = true; }
-  closeQualificationStats(): void { this.qualificationModalOpen = false; }
+  openQualificationStats(): void {
+    this.qualificationModalOpen = true;
+    this.chanceToast = null;
+    this.pathShareError = '';
+    this.refreshQualificationTrend();
+  }
+  closeQualificationStats(): void { this.qualificationModalOpen = false; this.qualificationForced = {}; }
+  toggleForcedResult(event: { matchId: string; side: 'A' | 'B' }): void {
+    const next = { ...this.qualificationForced };
+    if (next[event.matchId] === event.side) delete next[event.matchId];
+    else next[event.matchId] = event.side;
+    this.qualificationForced = next;
+  }
+  clearForcedResults(): void { this.qualificationForced = {}; }
+  /** The replay is the heavy part: it runs after the modal has painted. */
+  private refreshQualificationTrend(): void {
+    window.setTimeout(() => {
+      const id = this.qualificationPlayerId;
+      this.qualificationTrend = id && this.qualificationEnabled ? this.qualification.pathHistory(this.state, id) : [];
+    }, 40);
+  }
+
+  async shareQualificationPath(): Promise<void> {
+    const path = this.qualificationPath;
+    const goal = path?.goals[this.qualificationTargetPlace as GoalPlace];
+    if (!path || !goal || this.sharingPath) return;
+    this.sharingPath = true;
+    this.pathShareError = '';
+    try {
+      const blob = await this.pathCard.render(path, goal, this.state.name);
+      const file = new File([blob], 'meu-caminho-setpoint.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Meu caminho no SETPOINT' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url; anchor.download = file.name; anchor.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      this.posthogService.posthog.capture('qualification_path_shared', { goal: goal.goal, status: goal.status });
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) this.pathShareError = 'Não foi possível gerar a imagem. Tente novamente.';
+    } finally {
+      this.sharingPath = false;
+    }
+  }
+
+  /** Tells a watching guest when a result moved their chance (or settled it), without any server involved. */
+  private checkChanceChange(): void {
+    if (!this.isGuestView || !this.qualificationEnabled || !this.guestPlayerId) return;
+    const goal = this.qualification.projectPath(this.state, this.standings, this.guestPlayerId)?.goals[this.qualificationTargetPlace as GoalPlace];
+    if (!goal) return;
+    const key = `setpoint.chance.${this.state.sharedTournamentId ?? ''}.${this.guestPlayerId}.${goal.goal}`;
+    let previous: { p: number; s: string } | null = null;
+    try { previous = JSON.parse(localStorage.getItem(key) ?? 'null') as { p: number; s: string } | null; } catch { previous = null; }
+    try { localStorage.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status })); } catch { /* sem armazenamento */ }
+    if (!previous || this.qualificationModalOpen) return;
+    const label = goal.goal === 1 ? 'ser campeão' : `chegar ao top ${goal.goal}`;
+    if (goal.status === 'clinched' && previous.s !== 'clinched') {
+      this.showChanceToast(`${goal.headline}!`, 'clinched');
+      this.showConfetti = true;
+      window.setTimeout(() => { this.showConfetti = false; }, 3200);
+    } else if (goal.status === 'eliminated' && previous.s !== 'eliminated') {
+      this.showChanceToast(`${goal.headline}. ${goal.detail}`, 'eliminated');
+    } else {
+      const delta = goal.probability - previous.p;
+      if (Math.abs(delta) >= 0.05) {
+        this.showChanceToast(`Sua chance de ${label} ${delta > 0 ? 'subiu' : 'caiu'} de ${this.qualification.formatChance(previous.p)} para ${this.qualification.formatChance(goal.probability)}`, delta > 0 ? 'up' : 'down');
+      }
+    }
+  }
+  private showChanceToast(text: string, tone: 'up' | 'down' | 'clinched' | 'eliminated'): void {
+    this.chanceToast = { text, tone };
+    if (this.chanceToastTimer !== null) window.clearTimeout(this.chanceToastTimer);
+    this.chanceToastTimer = window.setTimeout(() => { this.chanceToast = null; }, 7000);
+  }
+  openFromChanceToast(): void { this.chanceToast = null; this.openQualificationStats(); }
+
   setQualificationStats(enabled: boolean): void {
     if (this.hasSchedule) return;
     this.state.qualificationStats = enabled;
@@ -554,39 +699,68 @@ export class AppComponent implements OnInit, OnDestroy {
     window.setTimeout(() => this.maybeStartSetupTour(), 400);
   }
 
+  private tourKey(step: number): string { return step === 1 ? TUTORIAL_KEY : `${TUTORIAL_KEY}.step${step}`; }
+
   private maybeStartSetupTour(): void {
     if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute) return;
-    if (this.page !== 'setup' || this.setupStep !== 1) return;
-    try { if (localStorage.getItem(TUTORIAL_KEY)) return; } catch { return; }
+    if (this.page !== 'setup' || this.setupStep < 1 || this.setupStep > 3) return;
+    try {
+      if (localStorage.getItem(TUTORIAL_KEY) === 'off') return;
+      if (localStorage.getItem(this.tourKey(this.setupStep))) return;
+    } catch { return; }
     void this.startSetupTour();
   }
 
   toggleTutorial(): void {
     this.tutorialEnabled = !this.tutorialEnabled;
     try {
-      if (this.tutorialEnabled) localStorage.removeItem(TUTORIAL_KEY);
+      if (this.tutorialEnabled) [1, 2, 3].forEach(step => localStorage.removeItem(this.tourKey(step)));
       else localStorage.setItem(TUTORIAL_KEY, 'off');
     } catch { /* sem persistência */ }
     this.posthogService.posthog.capture(this.tutorialEnabled ? 'tutorial_enabled' : 'tutorial_disabled');
   }
 
+  private setupTourSteps(step: number): TourStep[] {
+    const steps: TourStep[] = step === 1 ? [
+      { element: '#setupName', popover: { title: 'Nome do torneio', description: 'Escolha um nome fácil de reconhecer. Ele aparece no ranking, no relatório e em Meus torneios.' } },
+      { element: '#hostingMode', popover: { title: 'Onde gerenciar', description: 'Neste dispositivo: só você lança os placares. Compartilhado: os atletas entram por um link e acompanham ao vivo.' } },
+      { element: '#doublesFormat', popover: { title: 'Tipo de dupla', description: 'Abertas: qualquer combinação. Mistas: sempre 1 atleta masculino + 1 feminino.' } },
+      { element: '#tournamentMode', popover: { title: 'Formato', description: 'Super: as duplas rodam e todos jogam com todos. Grupos: grupos pequenos, todos contra todos.' } },
+      { element: '#setupSize', popover: { title: 'Participantes', description: 'Arraste para escolher quantos atletas jogam. Rodadas e quadras se ajustam sozinhas.' } },
+      { element: '#setupSummary', popover: { title: 'Resumo do formato', description: 'Acompanhe rodadas, quadras e games enquanto escolhe. Nada é definitivo até gerar a tabela.' } },
+      { element: '#setupNext', popover: { title: 'Próximo passo', description: 'Tudo certo? Avance para inscrever os participantes.', side: 'top' } }
+    ] : step === 2 ? [
+      { element: '[data-tour="add-player"]', popover: { title: 'Adicione os atletas', description: 'Digite o nome e pressione Enter: o campo já fica pronto para o próximo. A foto é opcional.' } },
+      { element: '.batch-entry-button', popover: { title: 'Cadastro em lote', description: 'Tem uma lista pronta? Cole todos os nomes de uma vez e revise antes de confirmar.' } },
+      { element: '.shared-invite-panel', popover: { title: 'Convite por link', description: 'Copie o link e envie aos atletas. Quem estiver sem celular pode ser adicionado por você.' } },
+      { element: '#enrollProgress', popover: { title: 'Acompanhe as vagas', description: 'Mostra quantos atletas faltam. Ao completar a lista, a revisão é liberada.' } },
+      { element: '#setupNext2', popover: { title: 'Revisar', description: 'Com a lista completa, avance para conferir tudo antes de começar.', side: 'top' } }
+    ] : [
+      { element: '#reviewSummary', popover: { title: 'Confira o formato', description: 'Formato, jogadores, rodadas e quadras do seu torneio.' } },
+      { element: '.wizard-roster', popover: { title: 'Confira os atletas', description: 'Depois de gerar a tabela, a lista fica bloqueada. Volte agora se precisar ajustar.' } },
+      { element: '#generateBtn', popover: { title: 'Hora de jogar', description: 'Gera todas as rodadas e abre as partidas. O cronômetro do torneio começa neste momento.', side: 'top' } }
+    ];
+    return steps.filter(item => document.querySelector(item.element));
+  }
+
   async startSetupTour(): Promise<void> {
-    if (this.page !== 'setup' || this.setupStep !== 1) return;
-    const { driver } = await import('driver.js');
-    const mark = (value: string) => { try { localStorage.setItem(TUTORIAL_KEY, value); } catch { /* sem persistência */ } };
-    const steps = [
-      { element: '#setupName', popover: { title: 'Nome do torneio', description: 'Dê um nome para identificar este torneio.' } },
-      { element: '#hostingMode', popover: { title: 'Onde gerenciar', description: 'Local usa apenas este dispositivo. Compartilhado gera um link de convite com acompanhamento ao vivo.' } },
-      { element: '#doublesFormat', popover: { title: 'Tipo de dupla', description: 'Abertas ou mistas (1 masculino + 1 feminino).' } },
-      { element: '#tournamentMode', popover: { title: 'Formato', description: 'Super (duplas rotativas) ou Grupos.' } },
-      { element: '#setupSize', popover: { title: 'Participantes', description: 'Escolha o número de jogadores; rodadas e quadras são calculadas automaticamente.' } },
-      { element: '#setupNext', popover: { title: 'Próximo passo', description: 'Avance para inscrever os participantes e gerar a tabela.' } }
-    ].filter(step => document.querySelector(step.element));
+    const setupStep = this.setupStep;
+    if (this.page !== 'setup' || setupStep < 1 || setupStep > 3) return;
+    const steps = this.setupTourSteps(setupStep);
     if (!steps.length) return;
+    const { driver } = await import('driver.js');
+    const mark = (value: string) => { try { localStorage.setItem(this.tourKey(setupStep), value); } catch { /* sem persistência */ } };
     let finished = false;
     const tour = driver({
       showProgress: true,
       allowClose: true,
+      allowKeyboardControl: true,
+      smoothScroll: true,
+      animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+      popoverClass: 'sp-tour',
+      overlayOpacity: 0.58,
+      stagePadding: 8,
+      stageRadius: 14,
       nextBtnText: 'Próximo',
       prevBtnText: 'Voltar',
       doneBtnText: 'Concluir',
@@ -595,19 +769,19 @@ export class AppComponent implements OnInit, OnDestroy {
       onPopoverRender: popover => {
         const off = document.createElement('button');
         off.type = 'button';
-        off.textContent = 'Desligar tutorial';
+        off.textContent = 'Desligar dicas';
         off.className = 'tour-off';
-        off.onclick = () => { finished = true; this.tutorialEnabled = false; mark('off'); this.posthogService.posthog.capture('tutorial_disabled'); tour.destroy(); };
+        off.onclick = () => { finished = true; this.tutorialEnabled = false; try { localStorage.setItem(TUTORIAL_KEY, 'off'); } catch { /* sem persistência */ } this.posthogService.posthog.capture('tutorial_disabled', { step: setupStep }); tour.destroy(); };
         popover.footer.appendChild(off);
       },
       onDestroyed: () => {
         if (finished) return;
         finished = true;
         mark('done');
-        this.posthogService.posthog.capture('tutorial_finished');
+        this.posthogService.posthog.capture('tutorial_finished', { step: setupStep });
       }
     });
-    this.posthogService.posthog.capture('tutorial_started');
+    this.posthogService.posthog.capture('tutorial_started', { step: setupStep });
     tour.drive();
   }
 
@@ -621,6 +795,15 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.navigate('overview');
+  }
+
+  /** Returning organizers go straight to their saved tournaments, skipping the first-visit tour. */
+  continueFromLanding(): void {
+    try { localStorage.setItem(LANDING_SEEN_KEY, 'true'); } catch { /* landing volta na próxima visita */ }
+    this.showLanding = false;
+    window.scrollTo({ top: 0 });
+    this.posthogService.posthog.capture('landing_library_clicked');
+    this.openLibrary();
   }
 
   openLanding(): void {
@@ -639,6 +822,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sitePassword = '';
     this.lockError = '';
     this.backfillLocalTournamentMetrics();
+    this.archiveCurrent();
   }
 
   private backfillLocalTournamentMetrics(): void {
@@ -755,12 +939,33 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private guestUpdateTarget(previous: TournamentState, next: TournamentState): string {
     if (JSON.stringify(previous.finals) !== JSON.stringify(next.finals) || (!previous.finishedAt && next.finishedAt)) return 'guest-finals';
-    if (JSON.stringify(previous.players) !== JSON.stringify(next.players)) return 'guest-participants';
+    if (JSON.stringify(previous.players) !== JSON.stringify(next.players)) return next.rounds.length ? 'guest-ranking' : 'guest-participants';
     if (JSON.stringify(previous.rounds) !== JSON.stringify(next.rounds)) return 'guest-rounds';
     return next.rounds.length ? 'guest-ranking' : 'guest-participants';
   }
 
   get hasSchedule(): boolean { return this.state.rounds.length > 0; }
+  /** The round on court: the first one with a pending match. Null once every round is played. */
+  get spotlightRound() {
+    return this.guestVisibleRounds.find(round => round.matches.some(match => !this.isScored(match))) ?? null;
+  }
+  get historyRounds() {
+    const spotlight = this.spotlightRound;
+    return this.guestVisibleRounds.filter(round => round !== spotlight);
+  }
+  get arenaLive(): boolean {
+    return !this.state.finishedAt && this.state.rounds.length > 0 && (this.isLiveViewer || this.sharedSnapshot?.status === 'active')
+      && this.sharedSnapshot?.status !== 'archived' && this.sharedSnapshot?.status !== 'completed';
+  }
+  get arenaBadge(): string {
+    if (this.sharedSnapshot?.status === 'archived') return 'ARQUIVADO';
+    if (this.state.finishedAt) return 'ENCERRADO';
+    if (this.arenaLive) return 'AO VIVO';
+    return this.state.rounds.length ? 'EM ANDAMENTO' : 'EM BREVE';
+  }
+  trackRound = (_: number, round: { number: number }): number => round.number;
+  trackMatch = (_: number, match: Match): string => match.id;
+  get arenaPhaseLabel(): string { return TOURNAMENT_PHASE_LABEL[tournamentPhase(this.state)]; }
   get guestVisibleRounds() {
     if (!this.state.finishedAt || !this.state.earlyFinalsEnabled) return this.state.rounds;
     return this.state.rounds.map(round => ({ ...round, matches: round.matches.filter(match => this.isScored(match)) }))
@@ -1040,21 +1245,25 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   private applyTheme(): void { document.documentElement.dataset['theme'] = this.theme; }
 
+  private playerError(text: string): void { this.playerFormError = text; }
+
   addPlayer(): void {
     const name = this.newPlayerName.trim();
     if (!name) return;
-    if (this.isMixedDoubles && !this.newPlayerGender) return this.message('Selecione a categoria do atleta para formar as duplas mistas.', 'error');
-    if (this.hasSchedule) return this.message('A lista está bloqueada porque a tabela já foi gerada.', 'error');
-    if (this.isSharedMode) return this.message('No torneio compartilhado, os participantes entram pelo link de convite.', 'error');
-    if (this.state.players.length >= this.state.size) return this.message(`O Super ${this.state.size} permite ${this.state.size} jogadores.`, 'error');
-    if (this.state.players.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return this.message('Já existe um participante com esse nome.', 'error');
+    if (this.isMixedDoubles && !this.newPlayerGender) return this.playerError('Selecione a categoria do atleta para formar as duplas mistas.');
+    if (this.hasSchedule) return this.playerError('A lista está bloqueada porque a tabela já foi gerada.');
+    if (this.isSharedMode) return this.playerError('No torneio compartilhado, os participantes entram pelo link de convite.');
+    if (this.state.players.length >= this.state.size) return this.playerError(`O Super ${this.state.size} permite ${this.state.size} jogadores.`);
+    if (this.state.players.some(p => p.name.toLocaleLowerCase() === name.toLocaleLowerCase())) return this.playerError('Já existe um participante com esse nome.');
     this.state.players.push({
       id: this.id(), name,
       ...(this.isMixedDoubles && this.newPlayerGender ? { gender: this.newPlayerGender } : {}),
       ...(this.newPlayerAvatar ? { photoDataUrl: this.newPlayerAvatar } : {})
     });
     this.syncDefaultFixedPairs();
-    this.newPlayerName = ''; this.newPlayerGender = ''; this.newPlayerAvatar = ''; this.persist();
+    this.newPlayerName = ''; this.newPlayerGender = ''; this.newPlayerAvatar = ''; this.playerFormError = ''; this.persist();
+    // Keep the field ready for the next name (keyboard stays open on phones).
+    if (this.state.players.length < this.state.size) window.setTimeout(() => document.getElementById('wizardPlayerName')?.focus());
     this.posthogService.posthog.capture('player_added', {
       tournament_mode: this.state.tournamentMode,
       doubles_format: this.state.doublesFormat ?? 'open',
@@ -1251,6 +1460,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.setupStep = 2;
       this.trackSetupStepCompleted(1);
       this.trackSetupStepViewed(2);
+      window.setTimeout(() => this.maybeStartSetupTour(), 450);
       return;
     }
     if (this.state.players.length !== this.state.size) {
@@ -1260,6 +1470,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.trackSetupStepCompleted(2);
     this.trackSetupStepViewed(3);
     this.clearNotice();
+    window.setTimeout(() => this.maybeStartSetupTour(), 450);
   }
 
   async requestSharedTournamentLogin(): Promise<void> {
@@ -1407,6 +1618,8 @@ export class AppComponent implements OnInit, OnDestroy {
       localStorage.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
       this.syncQueue.initialize('local', this.state.analyticsId, this.supabase.publicTournamentState(publishedState));
       this.persist();
+      this.library.requeue(this.state.analyticsId);
+      void this.flushArchives();
       this.posthogService.posthog.capture('local_live_link_created');
       await this.copyLocalLiveLink();
     } catch (error) {
@@ -1729,6 +1942,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isGuestView && !this.isLiveViewer && hadPreviousSnapshot && !wasFinished && snapshot.state.finishedAt) {
       window.setTimeout(() => { void this.openNpsFeedback(true); }, 0);
     }
+    if (this.isGuestView) this.checkChanceChange();
   }
 
   private applyLocalLiveSnapshot(snapshot: LocalLiveTournamentSnapshot): void {
@@ -1857,6 +2071,33 @@ export class AppComponent implements OnInit, OnDestroy {
     if (message.includes('rounds_locked')) return 'As rodadas ficam bloqueadas depois que as finais são geradas.';
     if (message.includes('invalid_invite')) return 'Este link de convite não é válido.';
     return message || 'Não foi possível acessar o torneio compartilhado.';
+  }
+
+  /** Completed steps can be revisited, except in shared mode (the server tournament already exists). */
+  canGoToSetupStep(step: number): boolean {
+    return step < this.setupStep && !this.isSharedMode && !this.hasSchedule;
+  }
+  goToSetupStep(step: number): void {
+    if (!this.canGoToSetupStep(step)) return;
+    this.setupStep = step;
+    this.clearNotice();
+    this.trackSetupStepViewed(step);
+  }
+  get enrollHint(): string {
+    const missing = this.state.size - this.state.players.length;
+    if (this.isSharedMode) return missing > 0 ? `Faltam ${missing} ${missing === 1 ? 'participante' : 'participantes'} entrarem pelo link.` : 'Todas as vagas foram preenchidas.';
+    if (this.isMixedDoubles) {
+      const men = this.state.players.filter(player => player.gender === 'male').length;
+      const women = this.state.players.filter(player => player.gender === 'female').length;
+      const half = this.state.size / 2;
+      const detail = `${men}/${half} masculino · ${women}/${half} feminino`;
+      return missing > 0 ? `Faltam ${missing}. ${detail}.` : `Lista completa. ${detail}.`;
+    }
+    return missing > 0 ? `Faltam ${missing} ${missing === 1 ? 'jogador' : 'jogadores'}.` : 'Lista completa. Pode revisar o torneio.';
+  }
+  get reviewDescription(): string {
+    if (this.fixedPairsMode) return 'Confira as duplas fixas e os jogadores antes de iniciar.';
+    return this.isGroupTournament ? 'Os grupos e confrontos são sorteados ao gerar a tabela.' : 'Confrontos e descansos são calculados ao gerar a tabela.';
   }
 
   previousSetupStep(): void {
@@ -2085,11 +2326,16 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleFinalLiveScore(match: Match): void {
+  async toggleFinalLiveScore(match: Match): Promise<void> {
     if (!this.canEditFinalScores || match.finalKind !== 'championship' || !match.teamA[0] || !match.teamB[0]) return;
     const active = match.livePoints !== undefined;
     if ((active ? !!match.livePoints?.length : match.scoreA !== null || match.scoreB !== null)
-      && !confirm('Alterar o modo de placar apagará o resultado desta final. Deseja continuar?')) return;
+      && !await this.dialog.confirm({
+        title: 'Alterar o modo de placar?',
+        text: 'Isso apagará o resultado atual desta final.',
+        confirmText: 'Alterar e apagar',
+        tone: 'danger'
+      })) return;
     if (active) {
       delete match.livePoints;
       match.scoreA = null;
@@ -2133,9 +2379,16 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  finalizeTournament(): void {
+  async finalizeTournament(): Promise<void> {
     if (!this.canFinalizeTournament) return;
-    if (!confirm('Finalizar o torneio? Depois disso nenhum resultado poderá ser alterado.')) return;
+    if (!await this.dialog.confirmTyped({
+      title: 'Finalizar o torneio?',
+      text: 'Depois disso nenhum resultado poderá ser alterado. Para confirmar, digite a palavra abaixo.',
+      phrase: 'finalizar',
+      confirmText: 'Finalizar torneio',
+      tone: 'primary'
+    })) return;
+    if (!this.canFinalizeTournament) return;
     const finishedAt = new Date().toISOString();
     this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
@@ -2175,9 +2428,14 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.finalsScheduler.winnerSide(match);
   }
 
-  clearScore(match: Match): void {
+  async clearScore(match: Match): Promise<void> {
     if (match.phase === 'final' ? !this.canEditFinalScores : !this.canEditRoundScores) return;
-    if (!confirm('Remover o placar desta partida? O ranking será recalculado.')) return;
+    if (!await this.dialog.confirm({
+      title: 'Remover o placar desta partida?',
+      text: 'O ranking será recalculado.',
+      confirmText: 'Remover placar',
+      tone: 'danger'
+    })) return;
     match.scoreA = null; match.scoreB = null; match.tieBreakA = null; match.tieBreakB = null;
     this.scoreDrafts[match.id] = { a: null, b: null, tieBreakA: null, tieBreakB: null };
     if (match.phase === 'final' && this.state.finals) this.state.finals = this.finalsScheduler.updatePodium(this.state.finals);
@@ -2207,11 +2465,14 @@ export class AppComponent implements OnInit, OnDestroy {
   roundMatchesDone(index: number): number { return this.state.rounds[index]?.matches.filter(m => this.isScored(m)).length ?? 0; }
   matchPending(match: Match): boolean { return !this.isScored(match); }
 
-  resetTournament(): void {
+  async resetTournament(): Promise<void> {
     if (this.isSharedModerator && this.state.sharedTournamentId) { void this.cancelSharedTournament(true); return; }
     if (this.syncInFlight) return this.message('Aguarde a sincronização terminar antes de iniciar outro torneio.', 'error');
-    if (this.hasPendingSync && !confirm('Há alterações ainda não sincronizadas. Exporte um backup antes de continuar. Deseja descartá-las?')) return;
-    if (!confirm('Isso apagará a tabela, os placares e os participantes salvos neste navegador. Deseja continuar?')) return;
+    if (!await this.confirmDiscardPendingSync()) return;
+    const kept = this.isSavedInLibrary();
+    if (!await this.dialog.confirm(kept
+      ? { title: 'Iniciar um novo torneio?', text: 'O torneio atual continuará salvo em Meus torneios.', confirmText: 'Novo torneio' }
+      : { title: 'Iniciar um novo torneio?', text: 'Isso apagará a tabela, os placares e os participantes salvos neste navegador.', confirmText: 'Apagar e começar', tone: 'danger' })) return;
     if (!this.isSharedMode) this.syncLocalTournamentMetrics(true);
     this.clearLocalTournament(true);
   }
@@ -2227,8 +2488,13 @@ export class AppComponent implements OnInit, OnDestroy {
     const id = this.state.sharedTournamentId;
     if (!this.isSharedModerator || !id) return;
     if (this.syncInFlight) return this.message('Aguarde a sincronização terminar antes de arquivar o torneio.', 'error');
-    if (this.hasPendingSync && !confirm('Há alterações ainda não sincronizadas. Exporte um backup antes de continuar. Deseja descartá-las?')) return;
-    if (!confirm('Arquivar este torneio e recomeçar? O convite será invalidado. O histórico e os participantes serão preservados no dashboard.')) return;
+    if (!await this.confirmDiscardPendingSync()) return;
+    if (!await this.dialog.confirm({
+      title: 'Arquivar este torneio e recomeçar?',
+      text: 'O convite será invalidado. O histórico e os participantes serão preservados no dashboard.',
+      confirmText: 'Arquivar e recomeçar',
+      tone: 'danger'
+    })) return;
     this.sharedLoading = true;
     this.sharedError = '';
     try {
@@ -2242,6 +2508,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearLocalTournament(returnToLanding = false): void {
+    this.keepInLibrary(this.state);
     const target = this.syncTarget;
     try { if (target) this.syncQueue.remove(target.kind, target.id); } catch { this.syncError = 'Não foi possível limpar a fila local.'; }
     this.storage.clearTournament();
@@ -2250,6 +2517,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncError = '';
     this.state = { version: 1, name: 'Super de sábado', size: 8, courts: 2, gamesToWin: 4, roundCount: 7, players: [], rounds: [], createdAt: new Date().toISOString(), tournamentMode: 'super', hostingMode: 'local', groupFormat: 'rotating', groups: [], fixedPairs: [], finals: null };
     this.selectedRound = 0; this.setupStep = 1; this.selectedRankingPlayerId = ''; this.setPage('setup');
+    this.refreshLibrary();
     if (returnToLanding) this.openLanding();
     this.trackSetupStepViewed(1); this.message('Novo torneio iniciado.');
   }
@@ -2262,14 +2530,29 @@ export class AppComponent implements OnInit, OnDestroy {
     if (file.size > 1_000_000) return this.message('O arquivo é grande demais para ser um backup do SETPOINT.', 'error');
     const imported = this.storage.parseTournament(await file.text());
     if (!imported) return this.message('Arquivo inválido: selecione um backup JSON exportado pelo SETPOINT.', 'error');
-    if (this.syncInFlight) return this.message('Aguarde a sincronização terminar antes de importar um backup.', 'error');
-    if (this.hasPendingSync && !confirm('Há alterações ainda não sincronizadas. Exporte um backup antes de continuar. Deseja descartá-las?')) return;
-    if ((this.state.players.length || this.state.rounds.length)
-      && !confirm('Importar este backup substitui o torneio atual neste navegador. Deseja continuar?')) return;
+    if (!await this.adoptTournament(imported, 'backup')) return;
+    this.posthogService.posthog.capture('backup_imported', {
+      tournament_mode: this.state.tournamentMode,
+      tournament_size: this.state.size,
+      has_schedule: this.hasSchedule,
+      is_finalized: !!this.state.finishedAt,
+    });
+  }
+
+  /** Replaces the tournament in the active slot with a backup file or a saved library entry. */
+  private async adoptTournament(imported: TournamentState, origin: 'backup' | 'library', fromShared = false): Promise<boolean> {
+    if (this.syncInFlight) { this.message('Aguarde a sincronização terminar antes de trocar de torneio.', 'error'); return false; }
+    if (!await this.confirmDiscardPendingSync()) return false;
+    const replacesWork = origin === 'backup'
+      ? !!(this.state.players.length || this.state.rounds.length)
+      : this.state.players.length > 0 && !this.isSavedInLibrary();
+    if (replacesWork && !await this.dialog.confirm(origin === 'backup'
+      ? { title: 'Importar este backup?', text: 'Ele substitui o torneio atual neste navegador.', confirmText: 'Importar backup', tone: 'danger' }
+      : { title: 'Abrir outro torneio?', text: 'O torneio atual ainda não foi iniciado e não está salvo. Abrir outro descarta essa configuração.', confirmText: 'Abrir e descartar', tone: 'danger' })) return false;
 
     const previousTarget = this.syncTarget;
     if (previousTarget && (this.hasPendingSync || previousTarget.kind !== 'local' || previousTarget.id !== imported.analyticsId)) {
-      try { this.syncQueue.remove(previousTarget.kind, previousTarget.id); } catch { return this.message('Não foi possível atualizar a fila de sincronização.', 'error'); }
+      try { this.syncQueue.remove(previousTarget.kind, previousTarget.id); } catch { this.message('Não foi possível atualizar a fila de sincronização.', 'error'); return false; }
     }
     this.syncError = '';
     this.leaveSharedTournament();
@@ -2290,18 +2573,113 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharePlayerId = '';
     this.shareMessage = '';
     this.initializeScoreDrafts();
-    this.persist();
+    // A local copy of a shared tournament is already stored on the server: do not archive or count it twice.
+    this.persist(undefined, !fromShared);
+    if (fromShared) this.keepInLibrary(this.state, true);
+    this.refreshLibrary();
     this.setPage(this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup');
-    if (this.state.startedAt) this.syncLocalTournamentMetrics();
+    if (origin === 'backup' && this.state.startedAt) this.syncLocalTournamentMetrics();
     this.message(this.state.finals?.complete
       ? 'Torneio finalizado carregado. Os dados estão em modo somente leitura.'
-      : 'Backup carregado.');
-    this.posthogService.posthog.capture('backup_imported', {
-      tournament_mode: this.state.tournamentMode,
-      tournament_size: this.state.size,
-      has_schedule: this.hasSchedule,
-      is_finalized: !!this.state.finishedAt,
+      : origin === 'backup' ? 'Backup carregado.' : 'Torneio salvo aberto.');
+    return true;
+  }
+
+  /** True when it is safe to go on: nothing pending, or the user chose to discard it. */
+  private async confirmDiscardPendingSync(): Promise<boolean> {
+    if (!this.hasPendingSync) return true;
+    return this.dialog.confirm({
+      title: 'Alterações ainda não sincronizadas',
+      text: 'Exporte um backup antes de continuar. Se seguir agora, essas alterações serão descartadas.',
+      confirmText: 'Descartar alterações',
+      cancelText: 'Voltar',
+      tone: 'danger'
     });
+  }
+
+  openLibrary(): void {
+    this.refreshLibrary();
+    this.libraryModalOpen = true;
+    this.posthogService.posthog.capture('tournament_library_opened', { entries: this.libraryEntries.length });
+  }
+
+  async openLibraryTournament(id: string): Promise<void> {
+    const entry = this.library.get(id);
+    const saved = this.library.load(id);
+    if (!entry || !saved) { this.message('Não foi possível abrir este torneio salvo.', 'error'); return; }
+    if (this.isCurrentLibraryEntry(entry)) {
+      this.libraryModalOpen = false;
+      this.setPage(this.hasSchedule ? 'overview' : 'setup');
+      return;
+    }
+    if (!await this.adoptTournament(saved, 'library', entry.hosting === 'shared')) return;
+    this.libraryModalOpen = false;
+    window.scrollTo({ top: 0 });
+    this.posthogService.posthog.capture('tournament_library_opened_item', { phase: entry.phase, hosting_mode: entry.hosting });
+  }
+
+  async deleteLibraryTournament(entry: LibraryEntry): Promise<void> {
+    if (this.isCurrentLibraryEntry(entry)) { this.message('Este é o torneio em uso. Inicie outro antes de excluí-lo.', 'error'); return; }
+    if (!await this.dialog.confirm({
+      title: 'Excluir este torneio salvo?',
+      text: `“${entry.name}” será removido deste dispositivo. A cópia já enviada à nuvem não é apagada.`,
+      confirmText: 'Excluir',
+      tone: 'danger'
+    })) return;
+    this.library.remove(entry.id);
+    this.refreshLibrary();
+  }
+
+  isCurrentLibraryEntry(entry: LibraryEntry): boolean { return libraryId(this.state) === entry.id; }
+  libraryPhaseLabel(entry: LibraryEntry): string { return TOURNAMENT_PHASE_LABEL[entry.phase]; }
+  private isSavedInLibrary(): boolean {
+    try { const id = libraryId(this.state); return !!id && !!this.library.get(id); } catch { return false; }
+  }
+  private refreshLibrary(): void {
+    try { this.libraryEntries = this.library.list(); } catch { this.libraryEntries = []; }
+  }
+
+  /** Best-effort: the library is a safety net and must never break scoring. */
+  private keepInLibrary(state: TournamentState, alreadyOnServer = false): void {
+    try {
+      if (state.hostingMode !== 'shared' && state.rounds.length && !state.analyticsId) state.analyticsId = this.id();
+      const entry = this.library.save(state);
+      if (entry && alreadyOnServer) this.library.markArchived(entry.id, entry.updatedAt);
+    } catch { /* histórico é opcional */ }
+  }
+
+  private archiveCurrent(): void {
+    if (this.isGuestView || this.isDashboardRoute) return;
+    this.keepInLibrary(this.state);
+    this.refreshLibrary();
+    void this.flushArchives();
+  }
+
+  /** Uploads every unsent local tournament, in order. Retried on reconnect, on change and on launch. */
+  private async flushArchives(): Promise<void> {
+    if (this.archiveInFlight || Date.now() < this.archiveRetryAfter || !this.connectionOnline || !this.supabase.isConfigured || this.isGuestView || this.isDashboardRoute) return;
+    this.archiveInFlight = true;
+    try {
+      for (let pending = this.library.pendingArchives(); pending.length; pending = this.library.pendingArchives()) {
+        const entry = pending[0];
+        const saved = this.library.load(entry.id);
+        if (saved) await this.supabase.saveLocalTournamentArchive(entry.id, saved, this.storedLiveId(saved.analyticsId));
+        // Keeps the flag when the entry changed mid-upload, so the next pass sends the newer copy.
+        this.library.markArchived(entry.id, entry.updatedAt);
+      }
+    } catch {
+      // Data stays on the device. Back off so a missing migration or an outage does not fire a request per score.
+      this.archiveRetryAfter = Date.now() + 60_000;
+    }
+    finally { this.archiveInFlight = false; }
+  }
+
+  private storedLiveId(analyticsId?: string): string | undefined {
+    if (!analyticsId) return undefined;
+    try {
+      const stored = localStorage.getItem(`${LOCAL_LIVE_KEY}.${analyticsId}`);
+      return stored ? (JSON.parse(stored) as { id?: string }).id : undefined;
+    } catch { return undefined; }
   }
 
   private leaveSharedTournament(): void {
@@ -2362,7 +2740,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!this.availableGamesToWin.includes(this.state.gamesToWin)) this.state.gamesToWin = 4;
   }
 
-  private persist(success?: string): void {
+  private persist(success?: string, archive = true): void {
     const target = this.syncTarget;
     let queued = false;
     if (target && this.syncAvailable && (target.kind !== 'shared' || this.state.sharedStatus === 'active')) {
@@ -2382,6 +2760,7 @@ export class AppComponent implements OnInit, OnDestroy {
         void this.syncPending();
       }, 250);
     }
+    if (archive) this.archiveCurrent();
   }
   private message(text: string, type: 'success' | 'error' = 'success'): void { this.notice = text; this.noticeType = type; }
   private clearNotice(): void { this.notice = ''; }
