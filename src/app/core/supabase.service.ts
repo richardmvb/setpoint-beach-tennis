@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createClient, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
+import { DashboardInsights } from './dashboard-insights';
 import { LocalLiveTournamentSnapshot, PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
 
 export interface DashboardMetrics {
@@ -254,6 +255,17 @@ export class SupabaseService {
     const { data, error } = await this.requireClient().rpc('get_dashboard_metrics');
     if (error) throw error;
     return data as DashboardMetrics;
+  }
+
+  /** Product insights for the last `days` days. Null when the migration is not applied yet (the rest of the dashboard keeps working). */
+  async getDashboardInsights(days: number): Promise<DashboardInsights | null> {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo';
+    const { data, error } = await this.requireClient().rpc('get_dashboard_insights', { p_days: days, p_tz: timezone });
+    if (error) {
+      if (error.code === 'PGRST202') return null;
+      throw error;
+    }
+    return data as DashboardInsights;
   }
 
   async getDashboardActivity(): Promise<DashboardActivity> {

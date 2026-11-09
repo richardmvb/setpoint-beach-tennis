@@ -28,6 +28,7 @@ import { BattleCardComponent } from './features/battle-card.component';
 import { ChoiceCardsComponent, ChoiceOption } from './features/choice-cards.component';
 import { ForcedResults, PathProjection, QualificationRow, QualificationService, TrendPoint } from './core/qualification.service';
 import { PathCardService } from './core/path-card.service';
+import { DashboardInsights, FunnelStep, funnelSteps, HeatmapGrid, heatmapGrid, Insight, buildInsights, KpiCard, kpiCards, trendChart, TrendChart, formatLabel, formatDuration, share as sharePercent } from './core/dashboard-insights';
 import { GoalPlace } from './core/scenario-engine';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
 import { PostHogService } from './core/posthog.service';
@@ -202,6 +203,19 @@ export class AppComponent implements OnInit, OnDestroy {
   dashboardListMode: 'active' | 'archived' = 'active';
   dashboardSearch = '';
   dashboardUpdatedAt: Date | null = null;
+  dashboardInsights: DashboardInsights | null = null;
+  dashboardInsightsMissing = false;
+  dashboardDays = 30;
+  dashboardTab: 'summary' | 'usage' | 'tournaments' = 'summary';
+  dashboardView: {
+    cards: KpiCard[]; insights: Insight[]; funnel: FunnelStep[]; chart: TrendChart; grid: HeatmapGrid;
+    formats: { label: string; started: number; finished: number; rate: number }[];
+    mixes: { title: string; rows: { label: string; count: number; percent: number }[] }[];
+    adoption: { label: string; hint: string; used: number; of: number; percent: number }[];
+    retention: { label: string; count: number; percent: number }[];
+  } | null = null;
+  readonly dashboardWeekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  readonly dashboardHours = Array.from({ length: 24 }, (_, hour) => hour);
   private dashboardViewerId = '';
   private dashboardViewerSource: DashboardTournamentSource | null = null;
   private dashboardViewerSignature = '';
@@ -561,8 +575,16 @@ export class AppComponent implements OnInit, OnDestroy {
     this.qualificationForced = {};
     this.refreshQualificationTrend();
   }
-  setQualificationTargetPlace(place: number): void { this.qualificationTargetPlace = place; }
+  setQualificationTargetPlace(place: number): void {
+    this.qualificationTargetPlace = place;
+    this.posthogService.posthog.capture('qualification_goal_changed', { goal: place });
+  }
   openQualificationStats(): void {
+    const goal = this.qualificationPath?.goals[this.qualificationTargetPlace as GoalPlace];
+    this.posthogService.posthog.capture('qualification_opened', {
+      is_guest: this.isGuestView, goal: this.qualificationTargetPlace, goal_status: goal?.status,
+      calc_mode: this.qualificationPath?.mode, open_matches: this.qualificationPath?.openMatches
+    });
     this.qualificationModalOpen = true;
     this.chanceToast = null;
     this.pathShareError = '';
@@ -571,11 +593,16 @@ export class AppComponent implements OnInit, OnDestroy {
   closeQualificationStats(): void { this.qualificationModalOpen = false; this.qualificationForced = {}; }
   toggleForcedResult(event: { matchId: string; side: 'A' | 'B' }): void {
     const next = { ...this.qualificationForced };
-    if (next[event.matchId] === event.side) delete next[event.matchId];
+    const removing = next[event.matchId] === event.side;
+    if (removing) delete next[event.matchId];
     else next[event.matchId] = event.side;
     this.qualificationForced = next;
+    this.posthogService.posthog.capture('qualification_whatif_used', { action: removing ? 'unset' : 'set', forced_count: Object.keys(next).length });
   }
-  clearForcedResults(): void { this.qualificationForced = {}; }
+  clearForcedResults(): void {
+    this.qualificationForced = {};
+    this.posthogService.posthog.capture('qualification_whatif_cleared');
+  }
   /** The replay is the heavy part: it runs after the modal has painted. */
   private refreshQualificationTrend(): void {
     window.setTimeout(() => {
@@ -635,10 +662,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   private showChanceToast(text: string, tone: 'up' | 'down' | 'clinched' | 'eliminated'): void {
     this.chanceToast = { text, tone };
+    this.posthogService.posthog.capture('chance_notification_shown', { tone });
     if (this.chanceToastTimer !== null) window.clearTimeout(this.chanceToastTimer);
     this.chanceToastTimer = window.setTimeout(() => { this.chanceToast = null; }, 7000);
   }
-  openFromChanceToast(): void { this.chanceToast = null; this.openQualificationStats(); }
+  openFromChanceToast(): void {
+    this.posthogService.posthog.capture('chance_notification_opened', { tone: this.chanceToast?.tone });
+    this.chanceToast = null;
+    this.openQualificationStats();
+  }
 
   setQualificationStats(enabled: boolean): void {
     if (this.hasSchedule) return;
@@ -863,6 +895,7 @@ export class AppComponent implements OnInit, OnDestroy {
       ]);
       this.dashboardMetrics = metrics;
       this.dashboardActivity = activity;
+      await this.loadDashboardInsights();
       this.dashboardUpdatedAt = new Date();
     } catch {
       this.dashboardError = 'Acesso não autorizado ou métricas indisponíveis. Entre com uma conta moderadora autorizada.';
@@ -870,6 +903,74 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboardLoading = false;
     }
   }
+
+  /** Insights are optional: an older database simply hides the new panels. */
+  private async loadDashboardInsights(): Promise<void> {
+    try {
+      const insights = await this.supabase.getDashboardInsights(this.dashboardDays);
+      this.dashboardInsightsMissing = insights === null;
+      this.dashboardInsights = insights;
+      this.dashboardView = insights ? this.buildDashboardView(insights) : null;
+    } catch {
+      this.dashboardInsights = null;
+      this.dashboardView = null;
+    }
+  }
+
+  async setDashboardDays(days: number): Promise<void> {
+    if (days === this.dashboardDays || this.dashboardLoading) return;
+    this.dashboardDays = days;
+    this.dashboardLoading = true;
+    try { await this.loadDashboardInsights(); this.dashboardUpdatedAt = new Date(); }
+    finally { this.dashboardLoading = false; }
+  }
+
+  setDashboardTab(tab: 'summary' | 'usage' | 'tournaments'): void { this.dashboardTab = tab; }
+
+  private buildDashboardView(data: DashboardInsights): NonNullable<AppComponent['dashboardView']> {
+    const mixRows = (record: Record<string, number>, label: (key: string) => string) => {
+      const total = Object.values(record).reduce((sum, count) => sum + count, 0);
+      return Object.entries(record).sort((a, b) => b[1] - a[1]).map(([key, count]) => ({ label: label(key), count, percent: sharePercent(count, total) }));
+    };
+    const adopt = (label: string, hint: string, value: { used: number; of: number }) => ({ label, hint, used: value.used, of: value.of, percent: sharePercent(value.used, value.of) });
+    const r = data.retention;
+    return {
+      cards: kpiCards(data),
+      insights: buildInsights(data, this.dashboardMainDropoff),
+      funnel: funnelSteps(data.funnel),
+      chart: trendChart(data.series),
+      grid: heatmapGrid(data.heatmap),
+      formats: data.formats.map(row => ({ label: formatLabel(row.mode, row.size, row.doubles), started: row.started, finished: row.finished, rate: sharePercent(row.finished, row.started) })),
+      mixes: [
+        { title: 'Formato', rows: mixRows(data.mix.mode, key => key === 'groups' ? 'Grupos' : 'Super') },
+        { title: 'Tamanho', rows: mixRows(data.mix.size, key => `${key} atletas`) },
+        { title: 'Duplas', rows: mixRows(data.mix.doubles, key => key === 'mixed' ? 'Mistas' : 'Abertas') },
+        { title: 'Onde é gerenciado', rows: mixRows(data.mix.hosting, key => key === 'shared' ? 'Compartilhado' : 'Neste dispositivo') }
+      ],
+      adoption: [
+        adopt('Acompanhamento ao vivo', 'Compartilhados e locais com link ao vivo', data.adoption.live_link),
+        adopt('Seu caminho', 'Torneios Super compartilhados', data.adoption.qualification),
+        adopt('Final ponto a ponto', 'Torneios que chegaram às finais', data.adoption.point_by_point),
+        adopt('Finais antecipadas', 'Super 24 misto', data.adoption.early_finals),
+        adopt('Duplas mistas', 'Todos os torneios', data.adoption.mixed_doubles),
+        adopt('Duplas fixas', 'Torneios de grupos', data.adoption.fixed_pairs)
+      ],
+      retention: [
+        { label: '1 torneio', count: r.one_time, percent: sharePercent(r.one_time, r.moderators_total) },
+        { label: '2 torneios', count: r.two, percent: sharePercent(r.two, r.moderators_total) },
+        { label: '3 ou mais', count: r.three_plus, percent: sharePercent(r.three_plus, r.moderators_total) }
+      ]
+    };
+  }
+
+  /** Points for a 100x26 sparkline. */
+  sparkPoints(values: number[]): string {
+    const max = Math.max(1, ...values);
+    const step = values.length > 1 ? 100 / (values.length - 1) : 100;
+    return values.map((value, index) => `${(index * step).toFixed(1)},${(24 - value / max * 22).toFixed(1)}`).join(' ');
+  }
+  dashboardCell(count: number): number { return this.dashboardView?.grid.max ? count / this.dashboardView.grid.max : 0; }
+  formatInsightDuration(seconds: number | null): string { return formatDuration(seconds); }
 
   formatDashboardDuration(seconds: number | null): string {
     if (seconds === null) return '—';
@@ -1729,6 +1830,7 @@ export class AppComponent implements OnInit, OnDestroy {
   async chooseShareLayout(layout: ShareCardLayout): Promise<void> {
     if (this.shareLayout === layout) return;
     this.shareLayout = layout;
+    this.posthogService.posthog.capture('share_layout_changed', { layout });
     if (this.sharePreviewOpen) await this.refreshSharePreview();
   }
 
@@ -2079,6 +2181,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   goToSetupStep(step: number): void {
     if (!this.canGoToSetupStep(step)) return;
+    this.posthogService.posthog.capture('tournament_setup_step_back', { from: this.setupStep, to: step });
     this.setupStep = step;
     this.clearNotice();
     this.trackSetupStepViewed(step);
@@ -2387,7 +2490,10 @@ export class AppComponent implements OnInit, OnDestroy {
       phrase: 'finalizar',
       confirmText: 'Finalizar torneio',
       tone: 'primary'
-    })) return;
+    })) {
+      this.posthogService.posthog.capture('tournament_finalize_cancelled', { tournament_mode: this.state.tournamentMode, hosting_mode: this.state.hostingMode });
+      return;
+    }
     if (!this.canFinalizeTournament) return;
     const finishedAt = new Date().toISOString();
     this.state.finishedAt = finishedAt;
@@ -2628,6 +2734,7 @@ export class AppComponent implements OnInit, OnDestroy {
     })) return;
     this.library.remove(entry.id);
     this.refreshLibrary();
+    this.posthogService.posthog.capture('tournament_library_deleted', { phase: entry.phase, hosting_mode: entry.hosting });
   }
 
   isCurrentLibraryEntry(entry: LibraryEntry): boolean { return libraryId(this.state) === entry.id; }

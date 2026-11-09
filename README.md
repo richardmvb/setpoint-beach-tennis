@@ -27,7 +27,11 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Card para Instagram:** prévia antes de exportar, três layouts e foto de fundo opcional processada no navegador.
 - **Relatório final:** em Ajustes após finalizar, gere uma imagem PNG, compartilhe ou copie o texto e crie um link de resultado somente leitura.
 - **NPS:** pesquisa configurada no PostHog, disponível no footer e em momentos de conclusão do torneio.
-- **Dashboard:** totais agregados de torneios, participantes, modos, formatos e conclusão em `/dashboard`.
+- **Dashboard de produto** (`/dashboard`, só administradores), em três abas:
+  - **Resumo:** indicadores do período (7, 30 ou 90 dias) comparados ao período anterior, com minigráficos; insights em linguagem simples ("Uso cresceu 35%", "Maior parada: antes do primeiro placar", "Pico de uso: sábados às 19h"); tendência diária e funil do início ao pódio.
+  - **Uso e recursos:** mix de formatos, conclusão por formato, mapa de calor de quando os torneios começam, adoção de recursos (ao vivo, Seu caminho, final ponto a ponto, finais antecipadas, duplas mistas e fixas), retenção de moderadores e funil de inscrição dos compartilhados.
+  - **Torneios:** listas em andamento e arquivados, onde os torneios pararam e os contadores brutos.
+  - O que é medido no banco e no PostHog está em [`docs/analytics.md`](docs/analytics.md), com o catálogo de eventos e sugestões de funis.
 - **Meus torneios:** todo torneio iniciado fica salvo no dispositivo (até 30). Reabra qualquer um para rever tabela, placares, ranking e pódio, mesmo depois de iniciar outro ou de uma nova versão do app.
 - **Cópia completa na nuvem:** com o Supabase configurado, cada torneio local iniciado é arquivado com todos os detalhes (participantes, rodadas, placares e finais) para ser recuperado e revisitado no dashboard.
 - **Configuração guiada:** assistente em três etapas com opções em cartões, resumo ao vivo do formato, barra de vagas, etapas clicáveis e tutorial interativo (driver.js) para cada etapa.
@@ -117,6 +121,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 	- `202611080002_offline_sync.sql`
 	- `202611080003_archive_inactive_tournaments.sql`
 	- `202611090001_local_tournament_archives.sql`
+	- `202611090002_dashboard_insights.sql`
    Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
 	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
@@ -143,7 +148,7 @@ O workflow gera `runtime-config.js`, compila o Angular e publica no GitHub Pages
 
 O PostHog acompanha eventos de criação e início de torneios, etapas do assistente, navegação, placares, finais, compartilhamentos e conclusão. O campo `doubles_format` diferencia torneios abertos e mistos; categorias e fotos individuais não são enviadas ao PostHog.
 
-O Dashboard agrega torneios locais e compartilhados, incluindo Super 24, grupos, duplas mistas, abandonos, participantes e taxa de conclusão. A tabela `setpoint_dashboard_admins` controla quem pode consultar os dados. A lista em andamento inclui torneios compartilhados e locais com link ao vivo; a data indica a última atualização recebida e não garante que o organizador ainda esteja conectado. Torneios locais sem link ao vivo não têm estado disponível no servidor.
+O Dashboard agrega torneios locais e compartilhados, incluindo Super 24, grupos, duplas mistas, abandonos, participantes, taxa de conclusão, funil, retenção e adoção de recursos (RPC `get_dashboard_insights`; sem a migration `202611090002`, as abas novas avisam e o restante continua funcionando). A tabela `setpoint_dashboard_admins` controla quem pode consultar os dados. A lista em andamento inclui torneios compartilhados e locais com link ao vivo; a data indica a última atualização recebida e não garante que o organizador ainda esteja conectado. Torneios locais sem link ao vivo não têm estado disponível no servidor.
 
 Torneios compartilhados e lives locais arquivados podem ser consultados em uma nova aba e exportados em JSON para importação como torneio local. O arquivo não reativa o torneio ou convite original. O arquivamento por inatividade fecha o registro sem inventar placares, pódio ou conclusão esportiva. O detalhamento de abandono agrupa compartilhados arquivados sem finalizar pela etapa atingida e contabiliza locais reiniciados como etapa desconhecida. Torneios locais nunca publicados não têm estado no servidor e não são arquivados pelo job. Fechar a página sem reiniciar ou arquivar não é detectado como abandono.
 
