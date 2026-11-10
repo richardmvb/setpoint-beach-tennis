@@ -6,10 +6,10 @@ const typescript = require('typescript');
 function loadCore(name, stubs = {}) {
   const file = path.join(__dirname, '../src/app/core', `${name}.ts`);
   const javascript = typescript.transpileModule(fs.readFileSync(file, 'utf8'), {
-    compilerOptions: { module: typescript.ModuleKind.CommonJS, target: typescript.ScriptTarget.ES2022 }
+    compilerOptions: { module: typescript.ModuleKind.CommonJS, target: typescript.ScriptTarget.ES2022, experimentalDecorators: true }
   }).outputText;
   const exported = {};
-  const localRequire = request => request in stubs ? stubs[request] : request.startsWith('./') ? loadCore(request.slice(2)) : require(request);
+  const localRequire = request => request in stubs ? stubs[request] : request.startsWith('./') ? loadCore(request.slice(2), stubs) : require(request);
   new Function('exports', 'require', javascript)(exported, localRequire);
   return exported;
 }

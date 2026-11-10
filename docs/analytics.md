@@ -57,6 +57,8 @@ Notes for reading the numbers:
 | `tournament_library_opened_item` | A saved tournament is reopened | `phase`, `hosting_mode` |
 | `tournament_library_deleted` | A saved tournament is removed from the device | `phase`, `hosting_mode` |
 | `profile_opened` | Profile panel opened from the navbar | `has_name`, `auto_join` |
+| `profile_welcome_shown` | First visit: the profile panel opens once after the landing page (only while the profile is empty) | — |
+| `profile_welcome_closed` | The first-visit profile panel was closed (saved or "Agora não") | `has_name`, `has_photo`, `has_gender`, `auto_join` |
 | `profile_auto_joined` | The device owner's profile is added as a player to a new local tournament | `tournament_mode`, `doubles_format` |
 
 ### Seu caminho (projection)

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { loadCore } = require('./helpers-ts.cjs');
 
-const { parseProfile, serializeProfile, profileAutoJoin } = loadCore('profile');
+const { parseProfile, serializeProfile, profileAutoJoin, shouldPromptProfile } = loadCore('profile');
 
 test('perfil vazio ou inválido volta ao padrão (entrar automaticamente ligado)', () => {
   assert.deepEqual(parseProfile(null), { name: '', autoJoin: true });
@@ -33,4 +33,11 @@ test('torneio misto exige categoria no perfil', () => {
   assert.deepEqual(profileAutoJoin({ name: 'Caio', autoJoin: true }, [], 8, true), { skipped: 'needs-gender' });
   assert.deepEqual(profileAutoJoin({ name: 'Caio', autoJoin: true, gender: 'male' }, [], 8, true), { player: { name: 'Caio', gender: 'male' } });
   assert.deepEqual(profileAutoJoin({ name: 'Caio', autoJoin: true, gender: 'male' }, [], 8, false), { player: { name: 'Caio' } });
+});
+
+test('o perfil é oferecido uma única vez, e só enquanto estiver vazio', () => {
+  assert.equal(shouldPromptProfile({ name: '', autoJoin: true }, false), true);
+  assert.equal(shouldPromptProfile({ name: '   ', autoJoin: true }, false), true);
+  assert.equal(shouldPromptProfile({ name: '', autoJoin: true }, true), false);
+  assert.equal(shouldPromptProfile({ name: 'Ana', autoJoin: true }, false), false);
 });

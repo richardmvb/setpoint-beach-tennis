@@ -9,6 +9,8 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 - **Super:** 8, 10, 12 ou 24 atletas, com parceiros rotativos.
 - **Grupos:** 8, 12 ou 24 atletas, com parceiros rotativos ou duplas fixas.
 - **Duplas abertas ou mistas:** no modo misto, cada dupla tem um atleta masculino e um feminino.
+- **Sorteio a cada tabela:** a ordem de cadastro não define nada. Duplas, grupos, ordem das rodadas e quadras são sorteados a cada geração; as quadras se alternam para ninguém ficar sempre na mesma, os descansos ficam espaçados (evitando descansar em rodadas seguidas) e as regras de cada formato continuam garantidas.
+- **Seu perfil:** nome, foto e categoria do organizador, guardados só no aparelho. No primeiro acesso, ao sair da landing page, o perfil abre uma única vez para ser preenchido (dá para pular com "Agora não"; depois fica no botão do cabeçalho). O perfil preenche os campos de nome nos convites e, se a opção estiver ligada, inclui você como jogador nos novos torneios locais.
 - **Configuração por faixas:** participantes, quadras e games usam controles de faixa que se adaptam ao formato escolhido.
 - **Cadastro em lote:** cole uma lista de atletas, revise nomes e categorias antes de confirmar; o fluxo individual continua disponível.
 - **Lançamento de placares por rodada:** navegação entre rodadas, campos numéricos maiores e atualização automática do ranking.
@@ -53,6 +55,8 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 | Grupos rotativos abertos | 3 | 1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três. |
 | Grupos rotativos mistos | 2 | 1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria. |
 | Grupos fixos | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar. |
+
+Em todos os formatos, a cada tabela gerada os atletas são sorteados (inclusive a composição dos grupos rotativos), a ordem das rodadas é embaralhada e as quadras são distribuídas para que cada atleta passe pelas diferentes quadras. No Super 24 misto em 3 quadras, as duas metades de cada rodada completa continuam juntas, preservando os pontos em que todos têm o mesmo número de partidas (necessários para as finais antecipadas). Nos grupos, o número de quadras continua sendo um por grupo, mas um grupo não fica preso à mesma quadra.
 
 No Super 24 misto, as novas tabelas garantem 12 jogos por atleta, sem repetir parceiros nem o mesmo grupo de quatro jogadores. O gerador busca diversificar os confrontos, mas não garante que todos os atletas se enfrentem. Tabelas já geradas permanecem inalteradas.
 
@@ -156,10 +160,11 @@ Torneios compartilhados e lives locais arquivados podem ser consultados em uma n
 
 O ranking considera sets ganhos, saldo de games e games pró. Empates podem exigir confronto direto ou sorteio antes da geração das finais. Descansos não concedem nem retiram pontos.
 
-O gerador combina validações com busca heurística e aleatoriedade para distribuir confrontos e descansos. Ele verifica os invariantes do formato, mas não garante uma otimização matemática global. Revise a tabela gerada antes do início.
+O gerador combina validações com busca heurística e aleatoriedade para distribuir confrontos e descansos. Depois de montar as rodadas, ele só reordena as rodadas e troca as quadras; os jogos de cada rodada não mudam, e a tabela final passa de novo pela validação completa. Ele verifica os invariantes do formato, mas não garante uma otimização matemática global (o equilíbrio de quadras e a separação de descansos são os melhores encontrados, não perfeitos). Revise a tabela gerada antes do início.
 
 ## Privacidade e segurança
 
+- O perfil (nome, foto, categoria) fica apenas no `localStorage` do aparelho e nunca é enviado sozinho. Ele só sai do aparelho quando você entra como jogador em um torneio, e então segue as mesmas regras dos demais participantes daquele torneio.
 - Dados coletados: apenas nomes digitados, categorias (em duplas mistas), partidas e placares. Não há coleta de telefone, e-mail, documento ou outros dados pessoais dos atletas; o e-mail só é usado por administradores para entrar no dashboard.
 - Torneios locais ficam no dispositivo e em **Meus torneios**; iniciar outro torneio remove o estado ativo e os caches de sincronização, mas mantém o histórico (exclua pelo próprio Meus torneios). A cópia enviada à nuvem não inclui fotos.
 - Torneios compartilhados e participantes cancelados/expirados são arquivados para preservar métricas e histórico.

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DoublesFormat, LocalLiveTournamentSnapshot, Match, MixedFinalFormat, Page, Player, PlayerGender, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
-import { LocalProfile, PROFILE_NAME_MAX, profileAutoJoin } from './core/profile';
+import { LocalProfile, PROFILE_NAME_MAX, PROFILE_PROMPTED_KEY, profileAutoJoin, shouldPromptProfile } from './core/profile';
 import { OfflineSyncQueue, SyncKind } from './core/offline-sync-queue';
 import { LibraryEntry, libraryId, TournamentLibrary } from './core/tournament-library';
 import { SYNC_STATUS_LABEL, syncStatus, TOURNAMENT_PHASE_LABEL, tournamentPhase } from './core/state-machines';
@@ -91,6 +91,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private versionResetKeptTournament = false;
   libraryModalOpen = false;
   profileOpen = false;
+  /** First-visit variant of the profile panel: intro text and explicit "save" / "not now" actions. */
+  profileWelcome = false;
+  private afterProfileWelcome: (() => void) | null = null;
   profile: LocalProfile = { name: '', autoJoin: true };
   readonly profileNameMax = PROFILE_NAME_MAX;
   playerFormError = '';
@@ -356,7 +359,7 @@ export class AppComponent implements OnInit, OnDestroy {
     });
     this.trackFeatureViewed(this.page);
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
-    window.setTimeout(() => this.maybeStartSetupTour(), 600);
+    window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 600);
     this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
       if (event === 'SIGNED_IN' && user) {
         this.identifyUser(user);
@@ -796,13 +799,31 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showLanding = false;
     window.scrollTo({ top: 0 });
     this.posthogService.posthog.capture('landing_cta_clicked');
-    window.setTimeout(() => this.maybeStartSetupTour(), 400);
+    window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 400);
+  }
+
+  /**
+   * On the first visit (after the landing page) the profile panel opens once so the organizer can say who they are.
+   * Whatever would open next (setup tour, saved tournaments) waits until the panel is closed, so overlays never stack.
+   */
+  private welcomeThen(next: () => void): void {
+    if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute || this.profileOpen) return next();
+    let prompted = true;
+    try { prompted = localStorage.getItem(PROFILE_PROMPTED_KEY) === 'true'; } catch { /* sem persistência: não insiste */ }
+    if (!shouldPromptProfile(this.profile, prompted)) return next();
+    try { localStorage.setItem(PROFILE_PROMPTED_KEY, 'true'); } catch { /* aparece de novo na próxima visita */ }
+    this.profileWelcome = true;
+    this.afterProfileWelcome = next;
+    this.profileOpen = true;
+    this.refreshLibrary();
+    window.setTimeout(() => document.getElementById('profileName')?.focus());
+    this.posthogService.posthog.capture('profile_welcome_shown');
   }
 
   private tourKey(step: number): string { return step === 1 ? TUTORIAL_KEY : `${TUTORIAL_KEY}.step${step}`; }
 
   private maybeStartSetupTour(): void {
-    if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute) return;
+    if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute || this.profileOpen) return;
     if (this.page !== 'setup' || this.setupStep < 1 || this.setupStep > 3) return;
     try {
       if (localStorage.getItem(TUTORIAL_KEY) === 'off') return;
@@ -903,7 +924,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showLanding = false;
     window.scrollTo({ top: 0 });
     this.posthogService.posthog.capture('landing_library_clicked');
-    this.openLibrary();
+    this.welcomeThen(() => this.openLibrary());
   }
 
   openLanding(): void {
@@ -923,6 +944,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.lockError = '';
     this.backfillLocalTournamentMetrics();
     this.archiveCurrent();
+    if (!this.showLanding) window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 300);
   }
 
   private backfillLocalTournamentMetrics(): void {
@@ -1421,14 +1443,25 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
   toggleProfile(): void {
-    this.profileOpen = !this.profileOpen;
-    if (this.profileOpen) { this.refreshLibrary(); window.setTimeout(() => document.getElementById('profilePanel')?.focus()); this.posthogService.posthog.capture('profile_opened', { has_name: !!this.profile.name, auto_join: this.profile.autoJoin }); }
+    if (this.profileOpen) return this.closeProfile();
+    this.profileOpen = true;
+    this.refreshLibrary();
+    window.setTimeout(() => document.getElementById('profilePanel')?.focus());
+    this.posthogService.posthog.capture('profile_opened', { has_name: !!this.profile.name, auto_join: this.profile.autoJoin });
   }
   @HostListener('document:keydown.escape')
   closeProfile(): void {
     if (!this.profileOpen) return;
     this.saveProfileName();
     this.profileOpen = false;
+    if (!this.profileWelcome) return;
+    this.profileWelcome = false;
+    this.posthogService.posthog.capture('profile_welcome_closed', {
+      has_name: !!this.profile.name, has_photo: !!this.profile.photoDataUrl, has_gender: !!this.profile.gender, auto_join: this.profile.autoJoin
+    });
+    const next = this.afterProfileWelcome;
+    this.afterProfileWelcome = null;
+    if (next) window.setTimeout(next, 250);
   }
   updateProfile(patch: Partial<LocalProfile>): void {
     this.profile = { ...this.profile, ...patch };

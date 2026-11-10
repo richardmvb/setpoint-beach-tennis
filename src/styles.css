@@ -1161,6 +1161,9 @@ app-player-avatar>span:not(.has-photo){color:inherit}
 .profile-sync.sync-warning i{background:var(--orange)}
 .profile-head .modal-close{align-self:flex-start}
 .profile-section{display:grid;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
+.profile-welcome-text{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.45}
+.profile-welcome-actions{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding-top:14px;border-top:1px solid var(--border)}
+.profile-welcome-actions .button{width:100%;justify-content:center}
 .profile-section .form-field{margin:0}
 .profile-section .form-field>span{font-size:10px;color:var(--muted);font-weight:800}
 .profile-section .gender-toggle{width:100%}

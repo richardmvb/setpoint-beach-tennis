@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { GroupFormat, Match, Player, Round, TournamentGroup } from './models';
+import { RandomSource, shuffleRoundsAndCourts, shuffled } from './schedule-shuffle';
 
 export interface GroupSchedule {
   groups: TournamentGroup[];
@@ -8,6 +9,9 @@ export interface GroupSchedule {
 
 @Injectable({ providedIn: 'root' })
 export class GroupScheduleService {
+  /** Source of randomness for every draw; replaceable by a seeded source in tests. */
+  random: RandomSource = Math.random;
+
   generate(players: Player[], format: GroupFormat, fixedPairs: [string, string][] = [], mixed = false): GroupSchedule {
     if (![8, 12, 24].includes(players.length)) {
       throw new Error('O formato de grupos aceita 8, 12 ou 24 jogadores.');
@@ -18,13 +22,21 @@ export class GroupScheduleService {
     if (mixed && players.filter(player => player.gender === 'male').length !== players.length / 2) {
       throw new Error('Duplas mistas exigem a mesma quantidade de atletas masculinos e femininos.');
     }
-    if (format === 'fixed') return this.generateFixedGroups(players, fixedPairs, mixed);
-    return mixed ? this.generateMixedRotatingGroups(players) : this.generateRotatingGroups(players);
+    const schedule = format === 'fixed'
+      ? this.generateFixedGroups(players, fixedPairs, mixed)
+      : mixed ? this.generateMixedRotatingGroups(players) : this.generateRotatingGroups(players);
+    // Groups are drawn above; here the round order and the courts are drawn too, so no group is pinned to a court.
+    const rounds = shuffleRoundsAndCourts(schedule.rounds, {
+      random: this.random,
+      matchId: (roundNumber, match) => `group-${match.groupId}-r${roundNumber}-c${match.court}`
+    });
+    this.validate(players, schedule.groups, rounds, format, mixed);
+    return { groups: schedule.groups, rounds };
   }
 
   private generateMixedRotatingGroups(players: Player[]): GroupSchedule {
-    const men = players.filter(player => player.gender === 'male');
-    const women = players.filter(player => player.gender === 'female');
+    const men = shuffled(players.filter(player => player.gender === 'male'), this.random);
+    const women = shuffled(players.filter(player => player.gender === 'female'), this.random);
     if (men.length !== women.length || men.length * 2 !== players.length || players.length % 4 !== 0) {
       throw new Error('Grupos mistos exigem grupos de quatro com dois atletas de cada categoria.');
     }
@@ -41,10 +53,10 @@ export class GroupScheduleService {
     }));
     groups.forEach((group, groupIndex) => {
       const [manA, womanA, manB, womanB] = group.playerIds;
-      const rotations: Array<[[string, string], [string, string]]> = [
+      const rotations = shuffled<[[string, string], [string, string]]>([
         [[manA, womanA], [manB, womanB]],
         [[manA, womanB], [manB, womanA]]
-      ];
+      ], this.random);
       rotations.forEach(([teamA, teamB], roundIndex) => {
         rounds[roundIndex].matches.push(this.createMatch(roundIndex, groupIndex + 1, teamA, teamB, group.id));
       });
@@ -54,10 +66,11 @@ export class GroupScheduleService {
   }
 
   private generateRotatingGroups(players: Player[]): GroupSchedule {
+    const drawnPlayers = shuffled(players, this.random);
     const groups = Array.from({ length: players.length / 4 }, (_, index): TournamentGroup => ({
       id: `group-${index + 1}`,
       name: `Grupo ${String.fromCharCode(65 + index)}`,
-      playerIds: players.slice(index * 4, index * 4 + 4).map(player => player.id)
+      playerIds: drawnPlayers.slice(index * 4, index * 4 + 4).map(player => player.id)
     }));
     const rounds: Round[] = Array.from({ length: 3 }, (_, index) => ({
       number: index + 1,
@@ -68,11 +81,11 @@ export class GroupScheduleService {
 
     for (const [groupIndex, group] of groups.entries()) {
       const [first, second, third, fourth] = group.playerIds;
-      const rotations: Array<[[string, string], [string, string]]> = [
+      const rotations = shuffled<[[string, string], [string, string]]>([
         [[first, second], [third, fourth]],
         [[first, third], [second, fourth]],
         [[first, fourth], [second, third]]
-      ];
+      ], this.random);
       rotations.forEach(([teamA, teamB], roundIndex) => {
         rounds[roundIndex].matches.push(this.createMatch(
           roundIndex,
@@ -96,7 +109,8 @@ export class GroupScheduleService {
       playerIds: players.map(player => player.id),
       fixedPairs: fixedPairs.map(pair => [...pair] as [string, string])
     };
-    const rotating = [...fixedPairs];
+    // The pairs keep their registered order in the group; only the draw of who faces whom, and when, is random.
+    const rotating = shuffled(fixedPairs, this.random);
     const rounds: Round[] = [];
 
     for (let roundIndex = 0; roundIndex < fixedPairs.length - 1; roundIndex++) {

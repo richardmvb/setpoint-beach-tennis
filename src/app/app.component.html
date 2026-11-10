@@ -114,6 +114,9 @@
     <div class="landing-heading"><span class="card-kicker">DO INÍCIO AO FIM</span><h2>Tudo o que um dia de torneio precisa.</h2></div>
     <div class="landing-features" aria-label="Funcionalidades">
       <article><b>Cadastro em lote</b><p>Cole a lista, revise nomes e categorias e confirme todos de uma vez.</p></article>
+      <article><b>Sorteio de verdade</b><p>A ordem de cadastro não decide nada: duplas, ordem dos jogos e quadras mudam a cada tabela, e os descansos ficam espaçados.</p></article>
+      <article><b>Seu perfil</b><p>Nome, foto e categoria salvos só no aparelho. Você entra nos seus torneios e nos convites com um toque, sem criar conta.</p></article>
+      <article><b>Configuração guiada</b><p>Três etapas com resumo ao vivo do formato e dicas interativas na primeira vez.</p></article>
       <article><b>Fotos dos atletas</b><p>Foto da câmera ou da galeria, reduzida no próprio aparelho.</p></article>
       <article><b>Ranking e desempates</b><p>Classificação automática, critérios claros e sorteio quando persiste o empate.</p></article>
       <article><b>Finais e pódio</b><p>Final, disputa de 3º lugar e pódio, em qualquer formato.</p></article>
@@ -358,15 +361,17 @@
 
   <div *ngIf="selectedRankingPlayer" class="player-matches-backdrop" (click)="closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle" (click)="$event.stopPropagation()"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl"></app-player-avatar><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list"><article *ngFor="let item of selectedPlayerMatches" class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article></div></section></div>
   <div *ngIf="profileOpen" class="profile-backdrop" (click)="$event.target === $event.currentTarget && closeProfile()">
-    <section id="profilePanel" class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="profileTitle" tabindex="-1">
+    <section id="profilePanel" class="profile-panel" [class.welcome]="profileWelcome" role="dialog" aria-modal="true" aria-labelledby="profileTitle" [attr.aria-describedby]="profileWelcome ? 'profileWelcomeText' : null" tabindex="-1">
       <div class="profile-head">
         <app-avatar-picker [value]="profile.photoDataUrl || ''" (valueChange)="updateProfile({ photoDataUrl: $event || undefined })"></app-avatar-picker>
-        <div class="profile-head-text"><span class="card-kicker">SEU PERFIL</span><h2 id="profileTitle">{{ profile.name || 'Quem é você?' }}</h2><small class="profile-sync" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel"><i aria-hidden="true"></i>{{ syncLabel }}</small></div>
+        <div class="profile-head-text"><span class="card-kicker">{{ profileWelcome ? 'BEM-VINDO AO SETPOINT' : 'SEU PERFIL' }}</span><h2 id="profileTitle">{{ profile.name || 'Quem é você?' }}</h2><small class="profile-sync" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel"><i aria-hidden="true"></i>{{ syncLabel }}</small></div>
         <button type="button" class="modal-close" (click)="closeProfile()" aria-label="Fechar">×</button>
       </div>
 
+      <p *ngIf="profileWelcome" id="profileWelcomeText" class="profile-welcome-text">Conte quem você é. Seu nome, foto e categoria entram nos seus torneios e preenchem os convites sozinhos. Fica salvo só neste aparelho.</p>
+
       <div class="profile-section">
-        <label class="form-field profile-name-field"><span>Seu nome</span><input name="profileName" [(ngModel)]="profile.name" (blur)="saveProfileName()" (keydown.enter)="saveProfileName()" [maxlength]="profileNameMax" placeholder="Como você aparece nos torneios" autocomplete="name"></label>
+        <label class="form-field profile-name-field"><span>Seu nome</span><input id="profileName" name="profileName" [(ngModel)]="profile.name" (blur)="saveProfileName()" (keydown.enter)="saveProfileName()" [maxlength]="profileNameMax" placeholder="Como você aparece nos torneios" autocomplete="name"></label>
         <div class="form-field"><span>Categoria <small class="muted">(para duplas mistas)</small></span><app-gender-toggle [compact]="true" [value]="profile.gender || ''" (valueChange)="updateProfile({ gender: $event })" label="Sua categoria"></app-gender-toggle></div>
         <label class="profile-switch" [class.disabled]="!profile.name.trim()">
           <input type="checkbox" role="switch" [checked]="profile.autoJoin" (change)="updateProfile({ autoJoin: $any($event.target).checked })" [disabled]="!profile.name.trim()">
@@ -375,7 +380,12 @@
         </label>
       </div>
 
-      <div class="profile-section">
+      <div *ngIf="profileWelcome" class="profile-welcome-actions">
+        <button class="button ghost" type="button" (click)="closeProfile()">Agora não</button>
+        <button class="button primary" type="button" (click)="closeProfile()">{{ profile.name.trim() ? 'Salvar e continuar' : 'Continuar' }}</button>
+      </div>
+
+      <div *ngIf="!profileWelcome" class="profile-section">
         <div class="profile-section-head"><span class="card-kicker">MEUS TORNEIOS</span><button *ngIf="libraryEntries.length" class="link-button" type="button" (click)="openLibraryFromProfile()">Ver todos ({{ libraryEntries.length }})</button></div>
         <p *ngIf="!libraryEntries.length" class="muted profile-empty">Nenhum torneio salvo ainda. Eles aparecem aqui assim que a tabela for gerada.</p>
         <ul *ngIf="libraryEntries.length" class="profile-recent">
@@ -387,7 +397,7 @@
         </ul>
       </div>
 
-      <div class="profile-section profile-prefs">
+      <div *ngIf="!profileWelcome" class="profile-section profile-prefs">
         <span class="card-kicker">TEMA</span>
         <div class="profile-theme" role="radiogroup" aria-label="Tema">
           <button type="button" role="radio" [class.active]="theme === 'light'" [attr.aria-checked]="theme === 'light'" (click)="theme !== 'light' && toggleTheme()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>Claro</button>

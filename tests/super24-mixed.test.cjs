@@ -1,22 +1,8 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const test = require('node:test');
-const typescript = require('typescript');
+const { loadCore } = require('./helpers-ts.cjs');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/app/core/schedule.service.ts'), 'utf8');
-const javascript = typescript.transpileModule(source, {
-  compilerOptions: {
-    module: typescript.ModuleKind.CommonJS,
-    target: typescript.ScriptTarget.ES2022,
-    experimentalDecorators: true
-  }
-}).outputText;
-const schedulerExports = {};
-new Function('require', 'exports', javascript)(
-  moduleName => moduleName === '@angular/core' ? { Injectable: () => target => target } : require(moduleName),
-  schedulerExports
-);
+const schedulerExports = loadCore('schedule.service', { '@angular/core': { Injectable: () => target => target } });
 
 const women = ['TATI', 'YASMIN', 'THAIS', 'GABI', 'SARA', 'RENATA', 'MISS', 'ANA THAIS', 'DÉBORA', 'BRENDA', 'MARCELA', 'ALINE'];
 const men = ['WILSON', 'DANIEL', 'SAMUEL', 'ERIQUE', 'GABRIEL', 'LUIZ GONZAGA', 'DOUGLAS', 'MP', 'MATHEUS', 'LUCAS', 'GUSTAVO', 'RICHARD'];

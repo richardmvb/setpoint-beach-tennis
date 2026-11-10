@@ -15,6 +15,14 @@ const PHOTO_MAX_CHARS = 400_000;
 
 export const EMPTY_PROFILE: LocalProfile = { name: '', autoJoin: true };
 
+/** Set once the welcome profile prompt was shown, so it never pops up again on this device. */
+export const PROFILE_PROMPTED_KEY = 'setpoint.profile.prompted';
+
+/** The profile is offered once, right after the landing page, and only while it is still empty. */
+export function shouldPromptProfile(profile: LocalProfile, alreadyPrompted: boolean): boolean {
+  return !alreadyPrompted && !profile.name.trim();
+}
+
 export function parseProfile(raw: string | null): LocalProfile {
   if (!raw || raw.length > PHOTO_MAX_CHARS + 2_000) return { ...EMPTY_PROFILE };
   try {
