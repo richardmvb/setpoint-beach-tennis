@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Match, TournamentState, ThemeMode } from './models';
+import { LocalProfile, parseProfile, PROFILE_KEY, serializeProfile } from './profile';
 import { calculateFinalLiveScore, finalLiveMatchScore, MAX_FINAL_LIVE_POINTS } from './final-live-score';
 
 const STATE_KEY = 'setpoint.tournament.v1';
@@ -62,6 +63,15 @@ export class StorageService {
 
   saveTheme(theme: ThemeMode): void {
     try { localStorage.setItem(THEME_KEY, theme); } catch { /* tema é uma preferência não crítica */ }
+  }
+
+  loadProfile(): LocalProfile {
+    try { return parseProfile(localStorage.getItem(PROFILE_KEY)); }
+    catch { return parseProfile(null); }
+  }
+
+  saveProfile(profile: LocalProfile): void {
+    try { localStorage.setItem(PROFILE_KEY, serializeProfile(profile)); } catch { /* perfil é uma preferência não crítica */ }
   }
 
   clearTournament(): void {

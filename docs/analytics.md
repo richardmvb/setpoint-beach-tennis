@@ -56,6 +56,8 @@ Notes for reading the numbers:
 | `tournament_library_opened` | List opened | `entries` |
 | `tournament_library_opened_item` | A saved tournament is reopened | `phase`, `hosting_mode` |
 | `tournament_library_deleted` | A saved tournament is removed from the device | `phase`, `hosting_mode` |
+| `profile_opened` | Profile panel opened from the navbar | `has_name`, `auto_join` |
+| `profile_auto_joined` | The device owner's profile is added as a player to a new local tournament | `tournament_mode`, `doubles_format` |
 
 ### Seu caminho (projection)
 | Event | When | Properties |

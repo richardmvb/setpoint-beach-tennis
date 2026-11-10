@@ -144,18 +144,20 @@
       <span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span>
     </button>
     <div class="top-actions">
-      <button *ngIf="libraryEntries.length" class="icon-button" type="button" (click)="openLibrary()" aria-haspopup="dialog" [attr.aria-label]="'Meus torneios (' + libraryEntries.length + ')'" [title]="'Meus torneios (' + libraryEntries.length + ')'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></button>
-      <span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span>
-      <span class="local-indicator" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel" role="status"><i></i> {{ syncLabel }}</span>
-      <button class="icon-button" type="button" (click)="toggleTheme()" [attr.aria-label]="theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'" [title]="theme === 'light' ? 'Tema escuro' : 'Tema claro'">
-        <svg *ngIf="theme === 'light'" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>
-        <svg *ngIf="theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+      <button class="profile-trigger" type="button" (click)="toggleProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profile.name ? 'Perfil de ' + profile.name : 'Configurar perfil') + ' · ' + syncLabel">
+        <span class="profile-trigger-avatar">
+          <app-player-avatar *ngIf="profile.name || profile.photoDataUrl; else profileIcon" [name]="profile.name" [photoDataUrl]="profile.photoDataUrl" variant="player-avatar"></app-player-avatar>
+          <ng-template #profileIcon><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></ng-template>
+          <i class="profile-status" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" aria-hidden="true"></i>
+        </span>
+        <span class="profile-trigger-name">{{ profileFirstName || 'Perfil' }}</span>
+        <svg class="profile-trigger-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </button>
     </div>
   </header>
 
   <section *ngIf="!isGuestView" class="page-heading">
-    <div><h1>{{ page === 'setup' ? 'Novo torneio' : page === 'overview' ? 'Visão geral' : page === 'players' ? 'Jogadores' : page === 'rounds' ? 'Partidas' : page === 'ranking' ? 'Ranking' : 'Ajustes' }}</h1>
+    <div><h1>{{ page === 'setup' ? 'Novo torneio' : page === 'overview' ? 'Visão geral' : page === 'players' ? 'Jogadores' : page === 'rounds' ? 'Partidas' : page === 'ranking' ? 'Ranking' : page === 'projection' ? 'Projeção' : 'Ajustes' }}</h1>
     </div>
     <div class="heading-tag">{{ isGroupTournament ? 'GRUPOS' : 'SUPER' }} {{ state.size }}</div>
   </section>
@@ -166,6 +168,7 @@
     <button type="button" [class.active]="page === 'players'" (click)="navigate('players')"><span>♙</span> Jogadores</button>
     <button type="button" [class.active]="page === 'rounds'" (click)="navigate('rounds')"><span>▦</span> Partidas</button>
     <button type="button" [class.active]="page === 'ranking'" (click)="navigate('ranking')"><span>↗</span> Ranking</button>
+    <button *ngIf="projectionConfigured" type="button" class="nav-projection" [class.active]="page === 'projection'" [class.locked]="!projectionAvailable" [attr.aria-disabled]="!projectionAvailable" (click)="openProjection()" [title]="projectionLockedHint || 'Projeção'" [attr.aria-label]="projectionAvailable ? 'Projeção' + (projectionHasNews ? ' (atualizada)' : '') : 'Projeção — ' + projectionLockedHint"><span><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Projeção<i *ngIf="projectionHasNews" class="nav-dot" aria-hidden="true"></i><em *ngIf="showProjectionTip || projectionHintVisible" class="nav-tip" [class.muted-tip]="projectionHintVisible" role="status">{{ projectionHintVisible ? 'Liberada quando a 1ª rodada terminar' : 'Projeção liberada!' }}<b (click)="$event.stopPropagation(); dismissProjectionTip()" aria-label="Dispensar aviso" role="button">×</b></em></button>
     <button type="button" [class.active]="page === 'settings'" (click)="navigate('settings')"><span>⚙</span> Ajustes</button>
   </nav>
 
@@ -244,7 +247,10 @@
         <article *ngIf="isDashboardViewer && sharedSnapshot?.status === 'archived'" class="surface-card data-card"><div><span class="card-kicker">ARQUIVO ADMINISTRATIVO</span><h2>Backup do torneio</h2><p class="muted">O backup pode ser importado como torneio local, sem reabrir o convite original.</p></div><button class="button secondary" type="button" (click)="exportBackup()">Exportar backup JSON</button></article>
           <article *ngIf="canJoinSharedTournament" class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar"></app-avatar-picker><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div><app-gender-toggle *ngIf="isMixedDoubles" [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria"></app-gender-toggle><button class="button primary" type="submit" [disabled]="!guestName.trim() || sharedLoading || (isMixedDoubles && !guestGender)">{{ sharedLoading ? 'Entrando…' : 'Participar' }}</button></form></article>
         <article *ngIf="!sharedLoading && !sharedSnapshot && !sharedError" class="surface-card shared-loading">Carregando torneio…</article>
-        <ng-container *ngIf="sharedSnapshot">
+        <section *ngIf="sharedSnapshot && guestTab === 'projection'" id="guest-projection" class="projection-page">
+          <ng-container *ngIf="projectionAvailable; else projectionLocked"><ng-container *ngTemplateOutlet="projectionPanel"></ng-container></ng-container>
+        </section>
+        <ng-container *ngIf="sharedSnapshot && guestTab !== 'projection'">
           <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live"></app-battle-card></ng-template>
           <article *ngIf="state.players.length && !state.rounds.length" id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span><div *ngFor="let player of state.players" class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small *ngIf="isMe(player.id)">você</small></span></div></article>
           <article *ngIf="sharedSnapshot.status === 'registration'" class="surface-card shared-waiting"><b>{{ isLiveViewer ? 'Aguardando início' : 'Inscrições abertas' }}</b><span>{{ isLiveViewer ? 'A tabela e os placares aparecerão aqui assim que o torneio começar.' : 'As partidas aparecem quando o torneio começar.' }}</span></article>
@@ -321,6 +327,9 @@
         <article class="surface-card full-card ranking-rules"><span class="card-kicker">DESEMPATE</span><div class="criteria"><b>01</b><span><strong>Vitórias</strong></span></div><div class="criteria"><b>02</b><span><strong>Saldo de games</strong></span></div><div class="criteria"><b>03</b><span><strong>Games pró</strong></span></div></article>
       </section>
 
+      <section *ngSwitchCase="'projection'" class="projection-page">
+        <ng-container *ngIf="projectionAvailable; else projectionLocked"><ng-container *ngTemplateOutlet="projectionPanel"></ng-container></ng-container>
+      </section>
       <section *ngSwitchCase="'settings'" class="content-grid settings-page">
         <article class="surface-card settings-form"><span class="card-kicker">CONFIGURAÇÃO DA COMPETIÇÃO</span><h2>Regras do torneio</h2>
           <div class="form-field"><label for="tournamentName">Nome do torneio</label><input id="tournamentName" name="tournamentName" [(ngModel)]="state.name" maxlength="60" [disabled]="hasSchedule"></div>
@@ -342,12 +351,52 @@
       <section *ngSwitchCase="'dashboard'" class="dashboard-page"></section>
     </ng-container>
   </main>
-  <nav *ngIf="isGuestView && state.rounds.length && (!isDashboardViewer || sharedSnapshot)" class="guest-mobile-nav" aria-label="Navegação do torneio"><button type="button" (click)="scrollGuestTo('guest-rounds')">Partidas</button><button type="button" (click)="scrollGuestTo('guest-ranking')">Ranking</button><button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
+  <nav *ngIf="isGuestView && state.rounds.length && (!isDashboardViewer || sharedSnapshot)" class="guest-mobile-nav" [class.has-projection]="projectionConfigured" aria-label="Navegação do torneio"><button type="button" [class.active]="guestTab === 'main'" (click)="scrollGuestTo('guest-rounds')">Partidas</button><button type="button" (click)="scrollGuestTo('guest-ranking')">Ranking</button><button *ngIf="projectionConfigured" type="button" class="nav-projection" [class.active]="guestTab === 'projection'" [class.locked]="!projectionAvailable" [attr.aria-disabled]="!projectionAvailable" (click)="openProjection()" [title]="projectionLockedHint || 'Meu caminho'" [attr.aria-label]="projectionAvailable ? 'Meu caminho' + (qualificationChanceLabel ? ' (chance ' + qualificationChanceLabel + ')' : '') + (projectionHasNews ? ', atualizado' : '') : 'Meu caminho — ' + projectionLockedHint"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg><span>Meu caminho</span><small *ngIf="qualificationChanceLabel" class="nav-chance">{{ qualificationChanceLabel }}</small><i *ngIf="projectionHasNews" class="nav-dot" aria-hidden="true"></i><em *ngIf="showProjectionTip || projectionHintVisible" class="nav-tip" [class.muted-tip]="projectionHintVisible" role="status">{{ projectionHintVisible ? 'Liberado quando a 1ª rodada terminar' : 'Seu caminho está liberado!' }}<b (click)="$event.stopPropagation(); dismissProjectionTip()" aria-label="Dispensar aviso" role="button">×</b></em></button><button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
   <footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span><button *ngIf="posthogFeedbackEnabled" class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button><span *ngIf="feedbackMessage" role="status">{{ feedbackMessage }}</span></footer>
 
 
 
   <div *ngIf="selectedRankingPlayer" class="player-matches-backdrop" (click)="closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle" (click)="$event.stopPropagation()"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl"></app-player-avatar><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list"><article *ngFor="let item of selectedPlayerMatches" class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article></div></section></div>
+  <div *ngIf="profileOpen" class="profile-backdrop" (click)="$event.target === $event.currentTarget && closeProfile()">
+    <section id="profilePanel" class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="profileTitle" tabindex="-1">
+      <div class="profile-head">
+        <app-avatar-picker [value]="profile.photoDataUrl || ''" (valueChange)="updateProfile({ photoDataUrl: $event || undefined })"></app-avatar-picker>
+        <div class="profile-head-text"><span class="card-kicker">SEU PERFIL</span><h2 id="profileTitle">{{ profile.name || 'Quem é você?' }}</h2><small class="profile-sync" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel"><i aria-hidden="true"></i>{{ syncLabel }}</small></div>
+        <button type="button" class="modal-close" (click)="closeProfile()" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="profile-section">
+        <label class="form-field profile-name-field"><span>Seu nome</span><input name="profileName" [(ngModel)]="profile.name" (blur)="saveProfileName()" (keydown.enter)="saveProfileName()" [maxlength]="profileNameMax" placeholder="Como você aparece nos torneios" autocomplete="name"></label>
+        <div class="form-field"><span>Categoria <small class="muted">(para duplas mistas)</small></span><app-gender-toggle [compact]="true" [value]="profile.gender || ''" (valueChange)="updateProfile({ gender: $event })" label="Sua categoria"></app-gender-toggle></div>
+        <label class="profile-switch" [class.disabled]="!profile.name.trim()">
+          <input type="checkbox" role="switch" [checked]="profile.autoJoin" (change)="updateProfile({ autoJoin: $any($event.target).checked })" [disabled]="!profile.name.trim()">
+          <span class="profile-switch-track" aria-hidden="true"><span></span></span>
+          <span class="profile-switch-text"><b>Entrar como jogador nos novos torneios</b><small class="muted">{{ profile.autoJoin ? 'Você será adicionado automaticamente à lista.' : 'Você só vai organizar, sem jogar.' }}</small></span>
+        </label>
+      </div>
+
+      <div class="profile-section">
+        <div class="profile-section-head"><span class="card-kicker">MEUS TORNEIOS</span><button *ngIf="libraryEntries.length" class="link-button" type="button" (click)="openLibraryFromProfile()">Ver todos ({{ libraryEntries.length }})</button></div>
+        <p *ngIf="!libraryEntries.length" class="muted profile-empty">Nenhum torneio salvo ainda. Eles aparecem aqui assim que a tabela for gerada.</p>
+        <ul *ngIf="libraryEntries.length" class="profile-recent">
+          <li *ngFor="let entry of recentLibraryEntries"><button type="button" class="profile-recent-item" [class.current]="isCurrentLibraryEntry(entry)" (click)="openLibraryTournamentFromProfile(entry.id)">
+            <span class="profile-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
+            <span class="profile-recent-text"><b>{{ entry.name }}</b><small>{{ isCurrentLibraryEntry(entry) ? 'Em uso' : libraryPhaseLabel(entry) }} · {{ entry.updatedAt | date:'dd/MM' }}</small></span>
+            <svg class="profile-recent-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+          </button></li>
+        </ul>
+      </div>
+
+      <div class="profile-section profile-prefs">
+        <span class="card-kicker">TEMA</span>
+        <div class="profile-theme" role="radiogroup" aria-label="Tema">
+          <button type="button" role="radio" [class.active]="theme === 'light'" [attr.aria-checked]="theme === 'light'" (click)="theme !== 'light' && toggleTheme()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>Claro</button>
+          <button type="button" role="radio" [class.active]="theme === 'dark'" [attr.aria-checked]="theme === 'dark'" (click)="theme !== 'dark' && toggleTheme()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>Escuro</button>
+        </div>
+      </div>
+      <p class="profile-foot"><span>SETPOINT · Beach Tennis</span><span>Versão {{ versionLabel }}</span></p>
+    </section>
+  </div>
   <div *ngIf="libraryModalOpen" class="batch-backdrop" (click)="libraryModalOpen = false">
     <section class="batch-modal library-modal" role="dialog" aria-modal="true" aria-labelledby="libraryTitle" (click)="$event.stopPropagation()">
       <div class="batch-modal-header"><div><span class="card-kicker">NESTE DISPOSITIVO</span><h2 id="libraryTitle">Meus torneios</h2></div><button type="button" class="modal-close" (click)="libraryModalOpen = false" aria-label="Fechar">×</button></div>
@@ -399,13 +448,19 @@
   </section>
 </div>
 
-<button *ngIf="!isLocked && !isDashboardRoute && !showLanding && qualificationEnabled && qualificationRows.length && (!isGuestView || guestPlayerId)" class="qual-fab qual-fab-icon" [class.has-chance]="!!qualificationChanceLabel" type="button" (click)="openQualificationStats()" aria-haspopup="dialog" [attr.aria-label]="isGuestView ? 'Abrir meu caminho' + (qualificationChanceLabel ? ' (chance ' + qualificationChanceLabel + ')' : '') : 'Abrir projeção'" [title]="isGuestView ? 'Meu caminho' : 'Projeção'"><span aria-hidden="true">◎</span><b *ngIf="qualificationChanceLabel" class="qual-fab-chance">{{ qualificationChanceLabel }}</b></button>
-<button *ngIf="chanceToast && !qualificationModalOpen" type="button" class="chance-toast" [ngClass]="'tone-' + chanceToast.tone" role="status" (click)="openFromChanceToast()"><span aria-hidden="true">{{ chanceToast.tone === 'up' ? '▲' : chanceToast.tone === 'down' ? '▼' : chanceToast.tone === 'clinched' ? '🏆' : '•' }}</span><span>{{ chanceToast.text }}</span><em>Ver caminho</em></button>
+<button *ngIf="chanceToast && !isViewingProjection" type="button" class="chance-toast" [ngClass]="'tone-' + chanceToast.tone" role="status" (click)="openFromChanceToast()"><span aria-hidden="true">{{ chanceToast.tone === 'up' ? '▲' : chanceToast.tone === 'down' ? '▼' : chanceToast.tone === 'clinched' ? '🏆' : '•' }}</span><span>{{ chanceToast.text }}</span><em>Ver caminho</em></button>
 <div *ngIf="showConfetti" class="confetti" aria-hidden="true"><i *ngFor="let piece of confettiPieces" [style.left.%]="piece.left" [style.animation-delay.s]="piece.delay" [style.width.px]="piece.size" [style.height.px]="piece.size * 1.6" [style.background]="'hsl(' + piece.hue + ' 85% 60%)'"></i></div>
 <button *ngIf="!isLocked && isGuestView && guestUpdateCount > 0" class="guest-update-button" type="button" (click)="openFirstGuestUpdate()"><span aria-hidden="true">↓</span>{{ guestUpdateCount }} {{ guestUpdateCount === 1 ? 'nova atualização' : 'novas atualizações' }}</button>
-@defer (when qualificationModalOpen) {
-<app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [open]="qualificationModalOpen" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()" (close)="closeQualificationStats()"></app-qualification-stats>
+<ng-template #projectionPanel>
+@defer {
+<app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()"></app-qualification-stats>
+} @loading (minimum 200ms) {
+<div class="surface-card projection-loading" role="status">Calculando projeção…</div>
 }
+</ng-template>
+<ng-template #projectionLocked>
+<div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>Projeção ainda bloqueada</h2><p class="muted">{{ state.finals ? 'A fase de grupos acabou — acompanhe as finais.' : 'Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.' }}</p></div>
+</ng-template>
 
 <div *ngIf="isDashboardRoute && dashboardAuthenticated" class="dashboard-shell">
   <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD · {{ versionLabel }}</small></span></a><h1>Visão do produto</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>

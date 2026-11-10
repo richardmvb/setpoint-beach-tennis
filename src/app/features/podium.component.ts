@@ -13,7 +13,7 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="podium-stage" role="list">
-      <div *ngFor="let slot of stage" class="podium-card" [ngClass]="'place-' + slot.place" [class.mine]="isMine(slot)" role="listitem">
+      <div *ngFor="let slot of stage; trackBy: trackByPlace" class="podium-card" [ngClass]="'place-' + slot.place" [class.mine]="isMine(slot)" role="listitem">
         <span class="podium-medal" aria-hidden="true">{{ medal(slot.place) }}</span>
         <div class="podium-faces"><app-player-avatar *ngFor="let id of slot.playerIds" [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar"></app-player-avatar></div>
         <div class="podium-who"><b *ngFor="let id of slot.playerIds" [class.me]="id === highlightId">{{ nameOf(id) }}</b></div>
@@ -34,6 +34,8 @@ export class PodiumComponent {
   get stage(): PodiumPlace[] {
     return [2, 1, 3].map(place => this.places.find(item => item.place === place)).filter((item): item is PodiumPlace => !!item);
   }
+
+  trackByPlace(_: number, slot: PodiumPlace): number { return slot.place; }
 
   isMine(slot: PodiumPlace): boolean { return !!this.highlightId && slot.playerIds.includes(this.highlightId); }
 

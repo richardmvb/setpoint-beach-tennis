@@ -14,11 +14,9 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
-    <div *ngIf="open" class="qual-backdrop" role="presentation" (click)="close.emit()">
-      <section class="qual-modal" role="dialog" aria-modal="true" aria-labelledby="qualTitle" (click)="$event.stopPropagation()">
-        <header class="qual-modal-header">
-          <div><span class="card-kicker">SEU CAMINHO</span><h2 id="qualTitle">{{ path?.playerName ?? 'Projeção' }}</h2></div>
-          <button class="qual-close" type="button" (click)="close.emit()" aria-label="Fechar">×</button>
+      <section class="qual-panel surface-card" aria-labelledby="qualTitle">
+        <header class="qual-panel-header">
+          <div><span class="card-kicker">{{ isGuest ? 'SEU CAMINHO' : 'CAMINHO DE' }}</span><h2 id="qualTitle">{{ path?.playerName ?? 'Projeção' }}</h2></div>
         </header>
 
         <div *ngIf="!isGuest && rows.length" class="qual-athletes" role="radiogroup" aria-label="Atleta">
@@ -123,7 +121,6 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         </ng-container>
         <p *ngIf="!path" class="muted">Não há dados suficientes para esta projeção.</p>
       </section>
-    </div>
   `
 })
 export class QualificationStatsComponent {
@@ -138,7 +135,6 @@ export class QualificationStatsComponent {
   @Input() targetPlayerId = '';
   @Input() targetPlace = 3;
   @Input() isGuest = false;
-  @Input() open = false;
   @Input() sharing = false;
   @Input() shareError = '';
   @Output() targetPlayerIdChange = new EventEmitter<string>();
@@ -146,7 +142,6 @@ export class QualificationStatsComponent {
   @Output() force = new EventEmitter<{ matchId: string; side: 'A' | 'B' }>();
   @Output() clearForced = new EventEmitter<void>();
   @Output() share = new EventEmitter<void>();
-  @Output() close = new EventEmitter<void>();
 
   get goal(): PathGoal | null { return this.path?.goals[this.targetPlace as GoalPlace] ?? null; }
   get distribution(): number[] { return (this.path?.placeDistribution ?? []).slice(0, 8); }

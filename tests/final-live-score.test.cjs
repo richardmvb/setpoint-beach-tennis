@@ -19,7 +19,7 @@ function loadTypeScript(file, dependencies = {}) {
 
 const live = loadTypeScript('final-live-score.ts');
 const { FinalsService } = loadTypeScript('finals.service.ts', { './final-live-score': live });
-const { StorageService } = loadTypeScript('storage.service.ts', { './final-live-score': live });
+const { StorageService } = loadTypeScript('storage.service.ts', { './final-live-score': live, './profile': loadTypeScript('profile.ts') });
 const { ShareCardService } = loadTypeScript('share-card.service.ts', { './finals.service': { FinalsService } });
 
 function game(points, side) { points.push(...Array(4).fill(side)); }

@@ -1,8 +1,9 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DoublesFormat, LocalLiveTournamentSnapshot, Match, MixedFinalFormat, Page, Player, PlayerGender, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentGroup, TournamentMode, GroupFormat, TournamentHostingMode, TournamentSize, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
+import { LocalProfile, PROFILE_NAME_MAX, profileAutoJoin } from './core/profile';
 import { OfflineSyncQueue, SyncKind } from './core/offline-sync-queue';
 import { LibraryEntry, libraryId, TournamentLibrary } from './core/tournament-library';
 import { SYNC_STATUS_LABEL, syncStatus, TOURNAMENT_PHASE_LABEL, tournamentPhase } from './core/state-machines';
@@ -89,6 +90,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private archiveRetryAfter = 0;
   private versionResetKeptTournament = false;
   libraryModalOpen = false;
+  profileOpen = false;
+  profile: LocalProfile = { name: '', autoJoin: true };
+  readonly profileNameMax = PROFILE_NAME_MAX;
   playerFormError = '';
   readonly hostingOptions: ChoiceOption[] = [
     { value: 'local', label: 'Neste dispositivo', hint: 'Só você lança os placares. Nada é compartilhado.' },
@@ -183,7 +187,13 @@ export class AppComponent implements OnInit, OnDestroy {
   feedbackMessage = '';
   qualificationTargetPlace = 3;
   qualificationTargetPlayerId = '';
-  qualificationModalOpen = false;
+  /** Guest view is one scrolling page; this swaps it for the projection section. */
+  guestTab: 'main' | 'projection' = 'main';
+  /** Rounds completed when the viewer last looked at the projection (drives the nav dot). */
+  private projectionSeen: { key: string; rounds: number } | null = null;
+  projectionTipDismissed = false;
+  projectionHintVisible = false;
+  private projectionHintTimer: number | null = null;
   qualificationForced: Record<string, 'A' | 'B'> = {};
   qualificationTrend: TrendPoint[] = [];
   sharingPath = false;
@@ -308,6 +318,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.roundCount = this.requiredRounds;
     }
     this.theme = this.storage.loadTheme();
+    this.profile = this.storage.loadProfile();
+    this.prefillFromProfile();
     this.initializeScoreDrafts();
     this.refreshLibrary();
     if (this.versionResetKeptTournament) this.message('Nova versão do SETPOINT. Seu torneio anterior continua salvo em Meus torneios.');
@@ -579,18 +591,74 @@ export class AppComponent implements OnInit, OnDestroy {
     this.qualificationTargetPlace = place;
     this.posthogService.posthog.capture('qualification_goal_changed', { goal: place });
   }
-  openQualificationStats(): void {
+  /** The projection exists for this tournament/viewer (it may still be locked until round 1 is done). */
+  get projectionConfigured(): boolean {
+    return !!this.state.qualificationStats && this.isSharedMode && !this.isGroupTournament && !this.state.finals
+      && (!this.isGuestView || !!this.guestPlayerId);
+  }
+  get projectionAvailable(): boolean { return this.qualificationEnabled && this.qualificationRows.length > 0; }
+  get projectionLockedHint(): string {
+    return this.projectionAvailable ? '' : 'A projeção é liberada quando a 1ª rodada termina.';
+  }
+  get isViewingProjection(): boolean { return this.isGuestView ? this.guestTab === 'projection' : this.page === 'projection'; }
+  /** New or updated since the viewer last opened it. */
+  get projectionHasNews(): boolean {
+    return this.projectionAvailable && !this.isViewingProjection && this.completedRounds > this.loadProjectionSeen();
+  }
+  /** One-time nudge the first time the projection unlocks. */
+  get showProjectionTip(): boolean {
+    return this.projectionAvailable && !this.projectionTipDismissed && !this.isViewingProjection && this.loadProjectionSeen() === 0;
+  }
+  dismissProjectionTip(): void { this.projectionTipDismissed = true; this.projectionHintVisible = false; }
+  /** Touch has no hover tooltip: tapping the locked item briefly explains when it unlocks. */
+  private flashProjectionHint(): void {
+    this.projectionHintVisible = true;
+    if (this.projectionHintTimer !== null) window.clearTimeout(this.projectionHintTimer);
+    this.projectionHintTimer = window.setTimeout(() => { this.projectionHintVisible = false; this.projectionHintTimer = null; }, 3200);
+  }
+  private get projectionSeenKey(): string {
+    return `setpoint.projection.seen.${this.state.sharedTournamentId ?? this.state.analyticsId ?? 'local'}.${this.isGuestView ? this.guestPlayerId : 'host'}`;
+  }
+  private loadProjectionSeen(): number {
+    const key = this.projectionSeenKey;
+    if (this.projectionSeen?.key !== key) {
+      let rounds = 0;
+      try { rounds = Number(localStorage.getItem(key)) || 0; } catch { /* sem armazenamento */ }
+      this.projectionSeen = { key, rounds };
+    }
+    return this.projectionSeen.rounds;
+  }
+  private markProjectionSeen(): void {
+    const key = this.projectionSeenKey;
+    this.projectionSeen = { key, rounds: this.completedRounds };
+    try { localStorage.setItem(key, String(this.completedRounds)); } catch { /* indicador é opcional */ }
+  }
+  /** Leaving the projection drops any simulated what-if results and records what the viewer saw. */
+  private leaveProjection(): void {
+    this.qualificationForced = {};
+    this.markProjectionSeen();
+  }
+
+  openProjection(): void {
+    if (!this.projectionAvailable) { this.flashProjectionHint(); return; }
+    this.projectionHintVisible = false;
+    if (this.isGuestView) {
+      if (this.guestTab !== 'projection') { this.guestTab = 'projection'; window.scrollTo({ top: 0 }); }
+    } else {
+      this.navigate('projection');
+      window.scrollTo({ top: 0 });
+    }
     const goal = this.qualificationPath?.goals[this.qualificationTargetPlace as GoalPlace];
     this.posthogService.posthog.capture('qualification_opened', {
       is_guest: this.isGuestView, goal: this.qualificationTargetPlace, goal_status: goal?.status,
       calc_mode: this.qualificationPath?.mode, open_matches: this.qualificationPath?.openMatches
     });
-    this.qualificationModalOpen = true;
     this.chanceToast = null;
+    this.projectionTipDismissed = true;
     this.pathShareError = '';
+    this.markProjectionSeen();
     this.refreshQualificationTrend();
   }
-  closeQualificationStats(): void { this.qualificationModalOpen = false; this.qualificationForced = {}; }
   toggleForcedResult(event: { matchId: string; side: 'A' | 'B' }): void {
     const next = { ...this.qualificationForced };
     const removing = next[event.matchId] === event.side;
@@ -645,7 +713,7 @@ export class AppComponent implements OnInit, OnDestroy {
     let previous: { p: number; s: string } | null = null;
     try { previous = JSON.parse(localStorage.getItem(key) ?? 'null') as { p: number; s: string } | null; } catch { previous = null; }
     try { localStorage.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status })); } catch { /* sem armazenamento */ }
-    if (!previous || this.qualificationModalOpen) return;
+    if (!previous || this.isViewingProjection) return;
     const label = goal.goal === 1 ? 'ser campeão' : `chegar ao top ${goal.goal}`;
     if (goal.status === 'clinched' && previous.s !== 'clinched') {
       this.showChanceToast(`${goal.headline}!`, 'clinched');
@@ -669,7 +737,7 @@ export class AppComponent implements OnInit, OnDestroy {
   openFromChanceToast(): void {
     this.posthogService.posthog.capture('chance_notification_opened', { tone: this.chanceToast?.tone });
     this.chanceToast = null;
-    this.openQualificationStats();
+    this.openProjection();
   }
 
   setQualificationStats(enabled: boolean): void {
@@ -1025,6 +1093,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   scrollGuestTo(id: string): void {
+    if (this.guestTab === 'projection') {
+      this.guestTab = 'main';
+      this.leaveProjection();
+      window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
+      return;
+    }
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -1095,8 +1169,13 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.canEditScores && this.hasSchedule && !this.hasFinals && this.state.players.length >= 8
       && (scheduleComplete || this.earlyFinalsReady);
   }
+  private podiumCache: { key: string; places: PodiumPlace[] } = { key: '', places: [] };
+  // Memoized: a fresh array on every change detection (clock tick) would re-render and re-animate the podium.
   get finalPodium(): PodiumPlace[] {
-    return this.state.finals ? this.finalsScheduler.podium(this.state.finals) : [];
+    const finals = this.state.finals;
+    const key = finals?.complete ? finals.podiumPlayerIds.join('|') : '';
+    if (key !== this.podiumCache.key) this.podiumCache = { key, places: finals ? this.finalsScheduler.podium(finals) : [] };
+    return this.podiumCache.places;
   }
   get unresolvedFinalTiePlayers(): PlayerStanding[] {
     let position = 0;
@@ -1295,6 +1374,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isDashboardRoute = false;
       window.history.pushState({}, '', `${this.appBasePath}/`);
     }
+    if (this.page === 'projection') this.leaveProjection();
     this.page = page;
     this.trackFeatureViewed(page);
   }
@@ -1340,6 +1420,58 @@ export class AppComponent implements OnInit, OnDestroy {
       tournament_size: this.state.size,
     });
   }
+  toggleProfile(): void {
+    this.profileOpen = !this.profileOpen;
+    if (this.profileOpen) { this.refreshLibrary(); window.setTimeout(() => document.getElementById('profilePanel')?.focus()); this.posthogService.posthog.capture('profile_opened', { has_name: !!this.profile.name, auto_join: this.profile.autoJoin }); }
+  }
+  @HostListener('document:keydown.escape')
+  closeProfile(): void {
+    if (!this.profileOpen) return;
+    this.saveProfileName();
+    this.profileOpen = false;
+  }
+  updateProfile(patch: Partial<LocalProfile>): void {
+    this.profile = { ...this.profile, ...patch };
+    this.storage.saveProfile(this.profile);
+    this.prefillFromProfile();
+  }
+  saveProfileName(): void {
+    const name = this.profile.name.trim();
+    if (name !== this.profile.name) this.profile = { ...this.profile, name };
+    this.storage.saveProfile(this.profile);
+    this.prefillFromProfile();
+  }
+  get profileFirstName(): string { return this.profile.name.trim().split(/\s+/)[0] ?? ''; }
+  get recentLibraryEntries(): LibraryEntry[] { return this.libraryEntries.slice(0, 3); }
+  openLibraryFromProfile(): void { this.profileOpen = false; this.openLibrary(); }
+  async openLibraryTournamentFromProfile(id: string): Promise<void> { this.profileOpen = false; await this.openLibraryTournament(id); }
+
+  /** Fill empty "your name" fields (shared moderator, invite join) with the profile; never overrides typed values. */
+  private prefillFromProfile(): void {
+    const { name, gender, photoDataUrl } = this.profile;
+    if (!this.moderatorName.trim()) this.moderatorName = name;
+    if (!this.moderatorGender && gender) this.moderatorGender = gender;
+    if (!this.moderatorAvatar && photoDataUrl) this.moderatorAvatar = photoDataUrl;
+    if (!this.guestJoined) {
+      if (!this.guestName.trim()) this.guestName = name;
+      if (!this.guestGender && gender) this.guestGender = gender;
+      if (!this.guestAvatar && photoDataUrl) this.guestAvatar = photoDataUrl;
+    }
+  }
+
+  /** Adds the device owner as a player of a fresh local tournament, unless they chose to only manage. */
+  private autoJoinProfile(): void {
+    if (this.isSharedMode || this.hasSchedule || this.state.players.length) return;
+    const result = profileAutoJoin(this.profile, this.state.players, this.state.size, this.isMixedDoubles);
+    if ('player' in result) {
+      this.state.players.push({ id: this.id(), ...result.player });
+      this.syncDefaultFixedPairs();
+      this.posthogService.posthog.capture('profile_auto_joined', { tournament_mode: this.state.tournamentMode, doubles_format: this.state.doublesFormat ?? 'open' });
+    } else if (result.skipped === 'needs-gender') {
+      this.message('Defina sua categoria no perfil para entrar automaticamente em torneios mistos.');
+    }
+  }
+
   toggleTheme(): void {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     this.storage.saveTheme(this.theme); this.applyTheme();
@@ -1557,6 +1689,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.name = this.state.name.trim() || 'Meu torneio';
       this.state.roundCount = this.requiredRounds;
       this.state.courts = this.requiredCourts;
+      this.autoJoinProfile();
       this.persist();
       this.setupStep = 2;
       this.trackSetupStepCompleted(1);
@@ -1940,10 +2073,11 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.sharedInviteToken) {
       this.isLocked = false;
       this.setPage('shared');
-      this.guestName = await this.supabase.getGuestName(this.sharedInviteToken);
+      const storedGuestName = await this.supabase.getGuestName(this.sharedInviteToken);
+      this.guestName = storedGuestName || this.profile.name;
       try {
         let snapshot = await this.supabase.getSharedTournament(this.sharedInviteToken);
-        if (this.guestName) { snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, this.guestName); this.guestJoined = true; }
+        if (storedGuestName) { snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, storedGuestName); this.guestJoined = true; }
         this.isGuestView = true;
         this.isSharedModerator = false;
         this.applySharedSnapshot(snapshot);

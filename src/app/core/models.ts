@@ -9,7 +9,7 @@ export type FinalMatchKind = 'quarterfinal' | 'semifinal' | 'championship' | 'th
 export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
 export type TournamentHostingMode = 'local' | 'shared';
 export type ThemeMode = 'light' | 'dark';
-export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'settings' | 'shared' | 'dashboard';
+export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'projection' | 'settings' | 'shared' | 'dashboard';
 
 export interface Player {
   id: string;
