@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const typescript = require('typescript');
 const { PGlite } = require('@electric-sql/pglite');
+const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const source = fs.readFileSync(path.join(__dirname, '../src/app/core/tournament-report.service.ts'), 'utf8');
 const javascript = typescript.transpileModule(source, {
@@ -163,10 +164,7 @@ test('link final aponta para snapshot concluído, somente leitura para visitante
   const owner = '00000000-0000-4000-8000-000000000001';
   try {
     await database.exec(`
-      create role anon; create role authenticated;
-      create schema auth; create schema extensions;
-      create table auth.users (id uuid primary key);
-      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+      ${FAKE_SUPABASE_SQL}
       create sequence extensions.token_sequence;
       create function extensions.gen_random_bytes(integer) returns bytea language sql as $$
         select decode(lpad(to_hex(nextval('extensions.token_sequence')), $1 * 2, '0'), 'hex')

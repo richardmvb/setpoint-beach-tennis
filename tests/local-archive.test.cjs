@@ -3,6 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { PGlite } = require('@electric-sql/pglite');
+const { loadTs } = require('./support/load-ts.cjs');
+const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const adminId = '00000000-0000-4000-8000-000000000001';
 const ownerId = '00000000-0000-4000-8000-000000000002';
@@ -36,12 +38,7 @@ const save = (state, id = archiveId, live = null) =>
 
 test.before(async () => {
   await database.exec(`
-    create role anon; create role authenticated;
-    create schema auth;
-    create table auth.users (id uuid primary key);
-    create function auth.uid() returns uuid language sql stable as $$
-      select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
-    $$;
+    ${FAKE_SUPABASE_SQL}
     create table public.setpoint_dashboard_admins (user_id uuid primary key);
     create table public.shared_tournaments (id uuid primary key, status text, state jsonb);
     create table public.local_live_tournaments (id uuid primary key, status text, state jsonb);
@@ -139,20 +136,7 @@ test('administradores listam e reabrem o torneio com todos os detalhes; os demai
 
 test('o dashboard exibe cada torneio uma vez: o arquivo completo substitui o link ao vivo', async () => {
   const typescript = require('typescript');
-  const source = fs.readFileSync(path.join(__dirname, '../src/app/core/supabase.service.ts'), 'utf8');
-  const javascript = typescript.transpileModule(source, {
-    compilerOptions: {
-      module: typescript.ModuleKind.CommonJS,
-      target: typescript.ScriptTarget.ES2022,
-      experimentalDecorators: true,
-    },
-  }).outputText;
-  const exported = {};
-  new Function('require', 'exports', javascript)((name) => {
-    if (name === '@angular/core') return { Injectable: () => (target) => target };
-    if (name === '@supabase/supabase-js') return {};
-    return require(name);
-  }, exported);
+  const exported = loadTs(path.join(__dirname, '../src/app/core/supabase.service.ts'));
   const service = Object.create(exported.SupabaseService.prototype);
   const recent = new Date().toISOString();
   const old = '2026-01-01T00:00:00Z';

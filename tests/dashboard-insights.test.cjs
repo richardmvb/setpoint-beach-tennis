@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { PGlite } = require('@electric-sql/pglite');
+const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const adminId = '00000000-0000-4000-8000-000000000001';
 const o1 = '00000000-0000-4000-8000-0000000000a1';
@@ -67,10 +68,7 @@ const call = async (days = 30, tz = 'UTC') =>
 
 test.before(async () => {
   await database.exec(`
-    create role anon; create role authenticated;
-    create schema auth;
-    create table auth.users (id uuid primary key);
-    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    ${FAKE_SUPABASE_SQL}
     create table public.setpoint_dashboard_admins (user_id uuid primary key);
     create table public.shared_tournaments (id uuid primary key, owner_id uuid, name text, capacity integer, status text, state jsonb, started_at timestamptz, created_at timestamptz, updated_at timestamptz);
     create table public.shared_tournament_participants (tournament_id uuid, role text, created_at timestamptz default now());

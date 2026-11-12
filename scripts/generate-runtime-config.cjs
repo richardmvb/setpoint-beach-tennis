@@ -40,7 +40,11 @@ if (!Number.isInteger(config.buildVersion) || config.buildVersion < 0) {
   problems.push('buildVersion must be a non-negative integer');
 }
 if (requireValues) {
-  if (!config.supabaseUrl.startsWith('https://')) problems.push('SUPABASE_URL must be an https:// URL');
+  // The Content-Security-Policy in src/index.html only allows these hosts for connect-src.
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(config.supabaseUrl))
+    problems.push('SUPABASE_URL must match https://<project>.supabase.co, or update the CSP in src/index.html');
+  if (config.posthogHost && !/^https:\/\/[a-z0-9-]+\.i\.posthog\.com\/?$/.test(config.posthogHost))
+    problems.push('NG_APP_POSTHOG_HOST must match https://<region>.i.posthog.com, or update the CSP in src/index.html');
   if (!config.publishableKey) problems.push('SUPABASE_PUBLISHABLE_KEY is required');
 }
 if (problems.length) {

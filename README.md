@@ -126,7 +126,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 
 ### Configuração do Supabase
 
-1. Aplique uma vez, nesta ordem, as migrations pendentes pelo SQL Editor do projeto:
+1. Aplique as migrations pendentes, em ordem de nome. Pela CLI: `npx supabase link --project-ref <ref>` e `npx supabase db push` (preferido). Pelo SQL Editor, aplique cada arquivo de `supabase/migrations/` nesta ordem:
    - `202610310001_shared_tournaments.sql`
    - `202611010001_moderator_manual_participants.sql`
    - `202611010002_cancel_shared_tournament.sql`
@@ -141,6 +141,7 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
    - `202611080003_archive_inactive_tournaments.sql`
    - `202611090001_local_tournament_archives.sql`
    - `202611090002_dashboard_insights.sql`
+   - `202611120001_security_hardening.sql`
      Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
    - `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
