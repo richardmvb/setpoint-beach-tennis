@@ -53,6 +53,7 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 - Persisted data (`setpoint.tournament.v1`, offline queue, shared snapshot) and database changes must stay backward compatible with the previous release.
 - Migrations are forward-only. Never edit a migration already on `main`. New functions are private by default (`revoke` is the default privilege); grant `execute` on purpose and add the function to the allowlists in `supabase/tests/security.test.sql`. New SQL uses `app.current_user_id()`, not `auth.uid()`.
 - Do not commit or push unless the user asks.
+- `docs/metrics.md` is a local-only file. Never `git add` it, never include it in a commit or PR, and do not paste its numbers into committed docs as a substitute.
 
 ## Known deferred items (not silenced; tracked in the plan)
 
@@ -82,7 +83,7 @@ Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) a
 
 - Plan, phases and standards: `docs/professionalization-plan.md`
 - Decisions: `docs/adr/`
-- Baselines and AI cost log: `docs/metrics.md`
+- Baselines and AI cost log: `docs/metrics.md` (local file, listed in `.gitignore`; keep it updated but never commit or stage it)
 - Security findings, CSP, abuse limits: `docs/security.md`
 - Vendor inventory and swap effort: `docs/vendors.md` (Phase 4)
 - Contributor guide (English): `CONTRIBUTING.md`
