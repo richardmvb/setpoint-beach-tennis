@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Player } from '../core/models';
 import { PodiumPlace } from '../core/finals.service';
@@ -23,7 +23,7 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
           </div>
           <div class="podium-who">
             @for (id of slot.playerIds; track id) {
-              <b [class.me]="id === highlightId">{{ nameOf(id) }}</b>
+              <b [class.me]="id === highlightId()">{{ nameOf(id) }}</b>
             }
           </div>
           <span class="podium-rank">{{ slot.place }}º lugar</span>
@@ -35,7 +35,7 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
         <span>4º</span
         ><strong>
           @for (id of place.playerIds; track id; let last = $last) {
-            <span class="podium-fourth-player" [class.me]="id === highlightId"
+            <span class="podium-fourth-player" [class.me]="id === highlightId()"
               ><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="podium-avatar" /><span
                 class="podium-player-name"
                 >{{ nameOf(id) }}</span
@@ -48,20 +48,20 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
   `,
 })
 export class PodiumComponent {
-  @Input() places: PodiumPlace[] = [];
-  @Input() players: Player[] = [];
-  @Input() highlightId = '';
+  readonly places = input<PodiumPlace[]>([]);
+  readonly players = input<Player[]>([]);
+  readonly highlightId = input('');
 
   nameOf(id: string): string {
-    return this.players.find((player) => player.id === id)?.name ?? '—';
+    return this.players().find((player) => player.id === id)?.name ?? '—';
   }
   photoOf(id: string): string {
-    return this.players.find((player) => player.id === id)?.photoDataUrl ?? '';
+    return this.players().find((player) => player.id === id)?.photoDataUrl ?? '';
   }
 
   get stage(): PodiumPlace[] {
     return [2, 1, 3]
-      .map((place) => this.places.find((item) => item.place === place))
+      .map((place) => this.places().find((item) => item.place === place))
       .filter((item): item is PodiumPlace => !!item);
   }
 
@@ -70,11 +70,12 @@ export class PodiumComponent {
   }
 
   isMine(slot: PodiumPlace): boolean {
-    return !!this.highlightId && slot.playerIds.includes(this.highlightId);
+    const highlightId = this.highlightId();
+    return !!highlightId && slot.playerIds.includes(highlightId);
   }
 
   get fourth(): PodiumPlace | undefined {
-    return this.places.find((item) => item.place === 4);
+    return this.places().find((item) => item.place === 4);
   }
 
   medal(place: number): string {
@@ -82,6 +83,6 @@ export class PodiumComponent {
   }
 
   namesOf(place: PodiumPlace): string[] {
-    return place.playerIds.map((id) => this.players.find((player) => player.id === id)?.name ?? '—');
+    return place.playerIds.map((id) => this.players().find((player) => player.id === id)?.name ?? '—');
   }
 }
