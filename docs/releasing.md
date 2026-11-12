@@ -13,7 +13,7 @@ This is the release and rollback procedure. The design (gates, order of deploy, 
 
 Apply migrations before the frontend that needs them. Keep the previous release working: add new columns and functions first, remove old ones only in a later release (expand, then contract). Migrations already on `main` are never edited.
 
-Apply with the Supabase CLI: `npx supabase link --project-ref <ref>` once, then `npx supabase db push`. Run `npm run db:start` and `npm run db:reset` first to prove the migrations apply from empty. CI does this on every PR (job `database`): migration rules, squawk, splinter lints, pgTAP permission tests and the generated-types check. Deploying migrations from CI needs a Supabase access token and the database password as repository secrets; until they are set, a maintainer runs `db push` before merging.
+Apply with the Supabase CLI: `npx supabase link --project-ref <ref>` once, then `npx supabase db push`. Run `npm run db:start` and `npm run db:reset` first to prove the migrations apply from empty. CI does this on every PR (job `database`): migration rules, squawk, splinter lints, pgTAP permission tests and the generated-types check. Migrations are applied automatically when a PR merges to `main` (Supabase GitHub integration), so the `database` job must be a required check. Apply by hand (`db push`) only if the integration is off.
 
 ## Rollback
 

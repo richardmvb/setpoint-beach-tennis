@@ -10,3 +10,6 @@
 /test-results
 /playwright-report
 coverage/
+
+# Local notes, never committed (baselines and AI cost log)
+docs/metrics.md
