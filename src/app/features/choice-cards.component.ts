@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, inject, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 export interface ChoiceOption {
   value: string;
@@ -11,7 +10,7 @@ export interface ChoiceOption {
 @Component({
   selector: 'app-choice-cards',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:block;min-width:0}'],
   template: `
@@ -22,22 +21,25 @@ export interface ChoiceOption {
       [attr.aria-label]="labelledBy ? null : label"
       (keydown)="onKey($event)"
     >
-      <button
-        *ngFor="let option of options; let i = index"
-        type="button"
-        role="radio"
-        class="choice-card"
-        [class.selected]="option.value === value"
-        [attr.aria-checked]="option.value === value"
-        [attr.tabindex]="i === tabStop ? 0 : -1"
-        (click)="pick(option.value)"
-      >
-        <span class="choice-text"
-          ><b>{{ option.label }}</b
-          ><small *ngIf="option.hint">{{ option.hint }}</small></span
+      @for (option of options; track option; let i = $index) {
+        <button
+          type="button"
+          role="radio"
+          class="choice-card"
+          [class.selected]="option.value === value"
+          [attr.aria-checked]="option.value === value"
+          [attr.tabindex]="i === tabStop ? 0 : -1"
+          (click)="pick(option.value)"
         >
-        <span class="choice-check" aria-hidden="true"></span>
-      </button>
+          <span class="choice-text"
+            ><b>{{ option.label }}</b>
+            @if (option.hint) {
+              <small>{{ option.hint }}</small>
+            }
+          </span>
+          <span class="choice-check" aria-hidden="true"></span>
+        </button>
+      }
     </div>
   `,
 })

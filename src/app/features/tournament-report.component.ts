@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TournamentState } from '../core/models';
 import { SupabaseService } from '../core/supabase.service';
 import { TournamentReportService } from '../core/tournament-report.service';
@@ -7,7 +7,7 @@ import { TournamentReportService } from '../core/tournament-report.service';
 @Component({
   selector: 'app-tournament-report',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -116,32 +116,42 @@ import { TournamentReportService } from '../core/tournament-report.service';
           {{ linkLoading ? 'Gerando link…' : finalLink ? 'Copiar link final' : 'Gerar link final' }}
         </button>
       </div>
-      <div *ngIf="textVisible">
-        <textarea class="report-text" aria-label="Texto do relatório final" readonly [value]="reportText"></textarea>
-        <div class="report-actions">
-          <button class="button secondary" type="button" (click)="copyText()">Copiar texto</button>
+      @if (textVisible) {
+        <div>
+          <textarea class="report-text" aria-label="Texto do relatório final" readonly [value]="reportText"></textarea>
+          <div class="report-actions">
+            <button class="button secondary" type="button" (click)="copyText()">Copiar texto</button>
+          </div>
         </div>
-      </div>
-      <div *ngIf="imageUrl" class="report-preview">
-        <img [src]="imageUrl" alt="Prévia do relatório completo do torneio" />
-      </div>
-      <div *ngIf="imageUrl" class="report-actions">
-        <button class="button primary" type="button" (click)="shareImage()">Compartilhar imagem</button
-        ><button class="button secondary" type="button" (click)="downloadImage()">Baixar imagem</button>
-      </div>
-      <div *ngIf="finalLink" class="report-link">
-        <input aria-label="Link para visualizar o resultado final" readonly [value]="finalLink" /><button
-          class="button secondary"
-          type="button"
-          (click)="copyLink()"
-        >
-          Copiar link
-        </button>
-      </div>
-      <p *ngIf="!sharedConfigured" class="report-message">
-        Link final indisponível: publicação não configurada neste deploy.
-      </p>
-      <p *ngIf="message" class="report-message" [class.error]="messageIsError" role="status">{{ message }}</p>
+      }
+      @if (imageUrl) {
+        <div class="report-preview">
+          <img [src]="imageUrl" alt="Prévia do relatório completo do torneio" />
+        </div>
+      }
+      @if (imageUrl) {
+        <div class="report-actions">
+          <button class="button primary" type="button" (click)="shareImage()">Compartilhar imagem</button
+          ><button class="button secondary" type="button" (click)="downloadImage()">Baixar imagem</button>
+        </div>
+      }
+      @if (finalLink) {
+        <div class="report-link">
+          <input aria-label="Link para visualizar o resultado final" readonly [value]="finalLink" /><button
+            class="button secondary"
+            type="button"
+            (click)="copyLink()"
+          >
+            Copiar link
+          </button>
+        </div>
+      }
+      @if (!sharedConfigured) {
+        <p class="report-message">Link final indisponível: publicação não configurada neste deploy.</p>
+      }
+      @if (message) {
+        <p class="report-message" [class.error]="messageIsError" role="status">{{ message }}</p>
+      }
     </article>
   `,
 })

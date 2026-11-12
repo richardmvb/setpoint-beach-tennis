@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-player-avatar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <span
@@ -14,8 +13,11 @@ import { CommonModule } from '@angular/common';
       [style.height.px]="size"
       aria-hidden="true"
     >
-      <img *ngIf="photoDataUrl; else initialsFallback" [src]="photoDataUrl" alt="" decoding="async" />
-      <ng-template #initialsFallback>{{ initials }}</ng-template>
+      @if (photoDataUrl) {
+        <img [src]="photoDataUrl" alt="" decoding="async" />
+      } @else {
+        {{ initials }}
+      }
     </span>
   `,
 })

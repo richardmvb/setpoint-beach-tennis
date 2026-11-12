@@ -9,13 +9,13 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AvatarService } from '../core/avatar.service';
 
 @Component({
   selector: 'app-avatar-picker',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:inline-block;position:relative}'],
   template: `
@@ -27,27 +27,35 @@ import { AvatarService } from '../core/avatar.service';
       aria-haspopup="menu"
       [attr.aria-label]="value ? 'Alterar foto' : 'Adicionar foto'"
     >
-      <img *ngIf="value; else placeholder" [src]="value" alt="" />
-      <ng-template #placeholder
-        ><span *ngIf="processing; else camera" class="avatar-trigger-icon" aria-hidden="true">…</span
-        ><ng-template #camera
-          ><svg class="avatar-camera-icon" viewBox="0 0 24 24" aria-hidden="true">
+      @if (value) {
+        <img [src]="value" alt="" />
+      } @else {
+        @if (processing) {
+          <span class="avatar-trigger-icon" aria-hidden="true">…</span>
+        } @else {
+          <svg class="avatar-camera-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h3l1.4-2h7.2L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"></path>
-            <circle cx="12" cy="13" r="3.5"></circle></svg></ng-template
-      ></ng-template>
+            <circle cx="12" cy="13" r="3.5"></circle>
+          </svg>
+        }
+      }
     </button>
-    <div *ngIf="menuOpen" class="avatar-menu" role="menu">
-      <label class="avatar-menu-item" role="menuitem"
-        >Tirar foto<input type="file" accept="image/*" capture="user" hidden (change)="pick($event)"
-      /></label>
-      <label class="avatar-menu-item" role="menuitem"
-        >Escolher da galeria<input type="file" accept="image/*" hidden (change)="pick($event)"
-      /></label>
-      <button *ngIf="value" class="avatar-menu-item danger" type="button" role="menuitem" (click)="remove()">
-        Remover foto
-      </button>
-    </div>
-    <small *ngIf="error" class="avatar-error" role="alert">{{ error }}</small>
+    @if (menuOpen) {
+      <div class="avatar-menu" role="menu">
+        <label class="avatar-menu-item" role="menuitem"
+          >Tirar foto<input type="file" accept="image/*" capture="user" hidden (change)="pick($event)"
+        /></label>
+        <label class="avatar-menu-item" role="menuitem"
+          >Escolher da galeria<input type="file" accept="image/*" hidden (change)="pick($event)"
+        /></label>
+        @if (value) {
+          <button class="avatar-menu-item danger" type="button" role="menuitem" (click)="remove()">Remover foto</button>
+        }
+      </div>
+    }
+    @if (error) {
+      <small class="avatar-error" role="alert">{{ error }}</small>
+    }
   `,
 })
 export class AvatarPickerComponent {

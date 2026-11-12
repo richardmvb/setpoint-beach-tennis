@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-round-navigation',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:block}'],
   template: `
@@ -22,25 +21,23 @@ import { CommonModule } from '@angular/common';
       <span class="round-nav-current"
         ><small>RODADA</small><b>{{ selectedRound + 1 }} / {{ roundCount }}</b></span
       >
-      <button
-        *ngIf="!allRoundsComplete || finalsExist"
-        class="round-nav-arrow"
-        type="button"
-        (click)="roundSelect.emit(selectedRound + 1)"
-        [disabled]="selectedRound === roundCount - 1"
-        aria-label="Próxima rodada"
-        title="Próxima rodada"
-      >
-        →
-      </button>
-      <button
-        *ngIf="allRoundsComplete && !finalsExist"
-        class="button primary round-nav-ranking"
-        type="button"
-        (click)="ranking.emit()"
-      >
-        Ranking e finais →
-      </button>
+      @if (!allRoundsComplete || finalsExist) {
+        <button
+          class="round-nav-arrow"
+          type="button"
+          (click)="roundSelect.emit(selectedRound + 1)"
+          [disabled]="selectedRound === roundCount - 1"
+          aria-label="Próxima rodada"
+          title="Próxima rodada"
+        >
+          →
+        </button>
+      }
+      @if (allRoundsComplete && !finalsExist) {
+        <button class="button primary round-nav-ranking" type="button" (click)="ranking.emit()">
+          Ranking e finais →
+        </button>
+      }
     </div>
   `,
 })
