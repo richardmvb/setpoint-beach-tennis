@@ -41,7 +41,7 @@
     "@angular-eslint/template-parser": "21.4.0",
     "@angular/build": "^21.2.29",
     "@angular/cli": "^21.2.29",
-    "@angular/compiler-cli": "^21.2.26",
+    "@angular/compiler-cli": "^22.2.5",
     "@axe-core/playwright": "4.14.0",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
