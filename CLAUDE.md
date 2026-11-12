@@ -54,7 +54,6 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 | `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                                  | 5 (split into tokens and components) |
 | `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
 | Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
-| Coverage thresholds                                                                                                       | 2                                    |
 | Axe baseline: color-contrast (up to 62 nodes per page), label-content-name-mismatch, unnamed buttons in the profile panel | 5 (design system and accessibility)  |
 | E2E for shared invite and live viewer (mocked Supabase), saved tournaments, offline sync                                  | Phase 1 follow-ups                   |
 | `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
@@ -62,6 +61,8 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 ## Unit tests (Vitest)
 
 Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
+
+Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Baseline on 2026-11-12: statements 55.29, branches 57.63, functions 61.55, lines 53.28 (thresholds are the floors). New code must be covered.
 
 ## End-to-end tests (e2e/)
 
