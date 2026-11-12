@@ -50,5 +50,4 @@ Upload rule: only `hosting === 'local'` library entries are queued for the cloud
 
 ## Testing
 
-`npm test` runs `node --test tests/*.test.cjs`. Pure modules are loaded with `tests/helpers-ts.cjs`;
-SQL is exercised against PGlite. Add a test next to any new transition.
+`npm test` runs the Vitest specs (`src/**/*.spec.ts`); SQL is exercised against PGlite (`npm run test:db`). Add a test next to any new transition.
