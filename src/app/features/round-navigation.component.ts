@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-round-navigation',
@@ -47,8 +47,8 @@ export class RoundNavigationComponent {
   readonly completedRounds = input(0);
   readonly finalsExist = input(false);
   readonly position = input<'top' | 'bottom'>('top');
-  @Output() roundSelect = new EventEmitter<number>();
-  @Output() ranking = new EventEmitter<void>();
+  readonly roundSelect = output<number>();
+  readonly ranking = output<void>();
 
   get allRoundsComplete(): boolean {
     return this.roundCount() > 0 && this.completedRounds() === this.roundCount();

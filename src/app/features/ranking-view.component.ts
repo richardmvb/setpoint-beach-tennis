@@ -2,13 +2,12 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  EventEmitter,
   inject,
   OnChanges,
   OnDestroy,
-  Output,
   SimpleChanges,
   input,
+  output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Player, PlayerStanding, Round } from '../core/models';
@@ -323,7 +322,7 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
   readonly fixedPairsMode = input(false);
   readonly hasSchedule = input(false);
   readonly highlightId = input('');
-  @Output() playerSelected = new EventEmitter<string>();
+  readonly playerSelected = output<string>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['standings']) return;

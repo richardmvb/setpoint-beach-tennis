@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, inject, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
 
 export interface ChoiceOption {
   value: string;
@@ -50,7 +50,7 @@ export class ChoiceCardsComponent {
   readonly label = input('');
   readonly labelledBy = input('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  @Output() valueChange = new EventEmitter<any>();
+  readonly valueChange = output<any>();
 
   /** Roving tabindex: only the selected card (or the first) is a tab stop. */
   get tabStop(): number {

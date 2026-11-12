@@ -3,11 +3,10 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  EventEmitter,
   HostListener,
   Input,
-  Output,
   inject,
+  output,
 } from '@angular/core';
 
 import { AvatarService } from '../core/avatar.service';
@@ -64,7 +63,7 @@ export class AvatarPickerComponent {
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   @Input() value = '';
-  @Output() valueChange = new EventEmitter<string>();
+  readonly valueChange = output<string>();
   menuOpen = false;
   processing = false;
   error = '';

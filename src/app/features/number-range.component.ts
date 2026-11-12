@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-number-range',
@@ -45,7 +45,7 @@ export class NumberRangeComponent {
   readonly value = input(0);
   readonly suffix = input('');
   readonly inputId = input('number-range');
-  @Output() valueChange = new EventEmitter<number>();
+  readonly valueChange = output<number>();
   get selectedIndex(): number {
     return Math.max(0, this.values.indexOf(this.value()));
   }

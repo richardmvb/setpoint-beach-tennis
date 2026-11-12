@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 
 import { Match, Player } from '../core/models';
 import {
@@ -265,8 +265,8 @@ import { PlayerAvatarComponent } from './player-avatar.component';
 export class FinalLiveScoreComponent {
   readonly players = input<Player[]>([]);
   readonly editable = input(false);
-  @Output() pointSelected = new EventEmitter<FinalLivePoint>();
-  @Output() undoSelected = new EventEmitter<void>();
+  readonly pointSelected = output<FinalLivePoint>();
+  readonly undoSelected = output<void>();
   readonly sides: FinalLivePoint[] = ['A', 'B'];
   readonly maxPoints = MAX_FINAL_LIVE_POINTS;
   matchData!: Match;

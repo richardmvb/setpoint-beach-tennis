@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Player } from '../core/models';
 import { GoalPlace } from '../core/scenario-engine';
@@ -287,11 +287,14 @@ export class QualificationStatsComponent {
   readonly isGuest = input(false);
   readonly sharing = input(false);
   @Input() shareError = '';
-  @Output() targetPlayerIdChange = new EventEmitter<string>();
-  @Output() targetPlaceChange = new EventEmitter<number>();
-  @Output() force = new EventEmitter<{ matchId: string; side: 'A' | 'B' }>();
-  @Output() clearForced = new EventEmitter<void>();
-  @Output() share = new EventEmitter<void>();
+  readonly targetPlayerIdChange = output<string>();
+  readonly targetPlaceChange = output<number>();
+  readonly force = output<{
+    matchId: string;
+    side: 'A' | 'B';
+  }>();
+  readonly clearForced = output<void>();
+  readonly share = output<void>();
 
   get goal(): PathGoal | null {
     return this.path?.goals[this.targetPlace() as GoalPlace] ?? null;

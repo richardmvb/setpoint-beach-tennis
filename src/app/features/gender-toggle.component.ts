@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { PlayerGender } from '../core/models';
 import { GenderIconComponent } from './gender-icon.component';
@@ -37,5 +37,5 @@ export class GenderToggleComponent {
   readonly value = input<PlayerGender | ''>('');
   readonly label = input('Categoria');
   readonly compact = input(false);
-  @Output() valueChange = new EventEmitter<PlayerGender>();
+  readonly valueChange = output<PlayerGender>();
 }
