@@ -21,11 +21,11 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@angular/common": "^21.2.26",
-    "@angular/compiler": "^21.2.26",
-    "@angular/core": "^21.2.26",
-    "@angular/forms": "^21.2.26",
-    "@angular/platform-browser": "^21.2.26",
+    "@angular/common": "^22.2.6",
+    "@angular/compiler": "^22.2.6",
+    "@angular/core": "^22.2.6",
+    "@angular/forms": "^22.2.6",
+    "@angular/platform-browser": "^22.2.6",
     "@supabase/supabase-js": "^2.118.0",
     "@zhuravlev-biz/padel-score-engine": "^1.2.0",
     "driver.js": "^1.10.2",
@@ -39,9 +39,9 @@
     "@angular-eslint/eslint-plugin": "21.4.0",
     "@angular-eslint/eslint-plugin-template": "21.4.0",
     "@angular-eslint/template-parser": "21.4.0",
-    "@angular/build": "^21.2.29",
-    "@angular/cli": "^21.2.29",
-    "@angular/compiler-cli": "^21.2.26",
+    "@angular/build": "^22.2.7",
+    "@angular/cli": "^22.2.7",
+    "@angular/compiler-cli": "^22.2.6",
     "@axe-core/playwright": "4.14.0",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
@@ -59,7 +59,7 @@
     "prettier": "3.10.0",
     "stylelint": "18.0.0",
     "stylelint-config-standard": "41.0.0",
-    "typescript": "~5.9.2",
+    "typescript": "~6.0.3",
     "typescript-eslint": "8.72.2"
   },
   "lint-staged": {
