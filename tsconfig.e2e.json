@@ -3,8 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
-    "module": "commonjs",
-    "moduleResolution": "node10",
+    "module": "node16",
+    "moduleResolution": "node16",
     "resolveJsonModule": true
   },
   "include": ["e2e/**/*.ts", "playwright.config.ts"]
