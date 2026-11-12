@@ -60,9 +60,9 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 
 ## Unit tests (Vitest)
 
-Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
+Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. Property tests use `fast-check` in `*.property.spec.ts` next to the module (schedule shuffle, scenario engine, qualification); failures print a seed, so rerun with `fc.assert(..., { seed, path })` to reproduce. Use `seededRandom` for the code's own random source. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
 
-Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Baseline on 2026-11-12: statements 55.29, branches 57.63, functions 61.55, lines 53.28 (thresholds are the floors). New code must be covered.
+Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Measured on 2026-11-12 with the property tests: statements 56.7, branches 59.26, functions 62.84, lines 54.7 (the thresholds are the floors). New code must be covered.
 
 ## End-to-end tests (e2e/)
 
