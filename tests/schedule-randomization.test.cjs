@@ -16,6 +16,11 @@ function seeded(seed) {
   };
 }
 
+// These tests check that draws vary and stay valid. Several services default to Math.random, and a statistical
+// check such as "six draws are not all identical" can fail by chance. Each test file runs in its own process,
+// so seeding Math.random here makes every run reproduce the same draws.
+Math.random = seeded(20261112);
+
 const roster = (size, mixed) =>
   Array.from({ length: size }, (_, index) => ({
     id: `p${index + 1}`,

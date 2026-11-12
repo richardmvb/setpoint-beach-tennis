@@ -12,8 +12,16 @@ const players = names.map((name, i) => ({ id: `p${i}`, name }));
 let seed = 5;
 const random = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 
-function build(playedRounds, partial = 0) {
-  const rounds = new ScheduleService().generate(players, 8, 2, 7, false);
+/** Small seeded generator so the schedule shuffle (Math.random by default) is the same on every run. */
+function seededRandom(start) {
+  let state = start;
+  return () => (state = (state * 1664525 + 1013904223) % 4294967296) / 4294967296;
+}
+
+function build(playedRounds, partial = 0, scheduleSeed = 11) {
+  const schedule = new ScheduleService();
+  schedule.random = seededRandom(scheduleSeed);
+  const rounds = schedule.generate(players, 8, 2, 7, false);
   rounds.forEach((round, ri) =>
     round.matches.forEach((match, mi) => {
       const played = ri < playedRounds || (ri === playedRounds && mi < partial);
@@ -105,6 +113,19 @@ test('os jogos do atleta trazem o lado em que ele joga e a chance se vencer ou p
   }
   assert.ok(goal.watchMatches.every((m) => !m.mine && m.swing >= 0.01));
   assert.ok(goal.rivals.length <= 3 && goal.rivals.every((r) => r.gainPerLoss > 0 && r.playerId !== 'p1'));
+});
+
+test('nenhum rival aparece com +0 pontos, qualquer que seja o sorteio das rodadas', () => {
+  // Regression: a rival whose gain rounds to 0 points used to be listed as "+0 pts" for some schedules.
+  for (let scheduleSeed = 1; scheduleSeed <= 40; scheduleSeed++) {
+    const { state, standings } = build(3, 0, scheduleSeed);
+    const path = service.projectPath(state, standings, 'p1');
+    for (const goal of [1, 2, 3]) {
+      for (const rival of path.goals[goal].rivals) {
+        assert.ok(rival.gainPerLoss > 0, 'sorteio ' + scheduleSeed + ', meta ' + goal + ': rival com +0 pts');
+      }
+    }
+  }
 });
 
 test('os textos seguem o estado: garantido, fora da disputa ou chance em porcentagem', () => {

@@ -20,6 +20,7 @@ npm run knip            # unused files, exports, dependencies
 npm test                # unit tests (node:test)
 npm run test:db         # SQL tests on PGlite
 npm run test:coverage   # unit tests with Node coverage
+npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
 npm run check           # lint, styles, format, typecheck, knip, tests, build
 ```
@@ -47,15 +48,24 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 
 ## Known deferred items (not silenced; tracked in the plan)
 
-| Item                                                                                                           | Phase                                |
-| -------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `@typescript-eslint/no-unsafe-*` rules off, because of untyped Supabase results                                | 3 (generated DB types and parsers)   |
-| `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                       | 5 (split into tokens and components) |
-| `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                        | 4 (per-feature templates)            |
-| Modal focus trap and Escape handling are partial                                                               | 5 (`@angular/cdk/dialog`)            |
-| Four `core/` files keep unused-looking exports because `tests/` load them through `loadCore` (see `knip.json`) | 4 (move logic to `domain/`)          |
-| Coverage thresholds, e2e (Playwright) and axe checks                                                           | 1 and 2                              |
-| `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                           | 7                                    |
+| Item                                                                                                                      | Phase                                |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `@typescript-eslint/no-unsafe-*` rules off, because of untyped Supabase results                                           | 3 (generated DB types and parsers)   |
+| `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                                  | 5 (split into tokens and components) |
+| `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
+| Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
+| Four `core/` files keep unused-looking exports because `tests/` load them through `loadCore` (see `knip.json`)            | 4 (move logic to `domain/`)          |
+| Coverage thresholds                                                                                                       | 2                                    |
+| Axe baseline: color-contrast (up to 62 nodes per page), label-content-name-mismatch, unnamed buttons in the profile panel | 5 (design system and accessibility)  |
+| E2E for shared invite and live viewer (mocked Supabase), saved tournaments, offline sync                                  | Phase 1 follow-ups                   |
+| `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
+
+## End-to-end tests (e2e/)
+
+- Playwright runs the real app. `e2e/support/fixtures.ts` blocks every host except localhost, so tests never reach Supabase, PostHog or Google Fonts, and it starts like a returning user (landing, tour and profile prompt skipped). Use its `test`, never the raw Playwright one.
+- Select elements by role and accessible name. The fixture seeds `Math.random`, so the draw is the same on every run; still prefer asserting structure (counts, headings, saved state) over player names. Ties are resolved by `generateFinals`. Use `test.use({ randomSeed: null })` only to test real randomness.
+- Accessibility is a ratchet: `e2e/a11y-baseline.json` holds today's axe violations and a page fails when a rule appears or grows. Fix violations, then lower the baseline with `A11Y_RECORD=1`, which never raises a count. Do not edit the file by hand upward.
+- Persisted-data fixtures live in `tests/fixtures/persisted/<kind>/v<N>.json` and are never edited. When a stored shape changes, add a new version and keep the old one.
 
 ## Where to look
 

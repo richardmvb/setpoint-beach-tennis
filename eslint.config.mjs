@@ -56,6 +56,25 @@ export default tseslint.config(
     },
   },
 
+  // End-to-end tests (Playwright): same type-aware rules as the app, with the tsconfig of e2e/.
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [eslint.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: {
+        project: ['./tsconfig.e2e.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-floating-promises': 'error',
+      // Playwright fixtures that need no other fixture are declared as `async ({}, use)`.
+      'no-empty-pattern': ['error', { allowObjectPatternsAsParameters: true }],
+    },
+  },
+
   // Angular components: OnPush and standalone, enforced where the code already complies.
   {
     files: ['src/app/features/**/*.ts'],
