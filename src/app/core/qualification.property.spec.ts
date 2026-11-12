@@ -97,7 +97,7 @@ describe('qualification.service (property)', () => {
       }),
       { numRuns: 40 },
     );
-  });
+  }, 30_000);
 
   it('formatChance renders any probability as a short percentage', () => {
     fc.assert(

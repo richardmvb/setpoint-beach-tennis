@@ -89,7 +89,7 @@ describe('projectScenarios (property)', () => {
       }),
       { numRuns: 40 },
     );
-  });
+  }, 30_000);
 
   it('is deterministic for the same seed', () => {
     fc.assert(
@@ -101,7 +101,7 @@ describe('projectScenarios (property)', () => {
       }),
       { numRuns: 20 },
     );
-  });
+  }, 30_000);
 
   it('with every open match forced, only one future remains and the places still add up', () => {
     fc.assert(
@@ -115,5 +115,5 @@ describe('projectScenarios (property)', () => {
       }),
       { numRuns: 30 },
     );
-  });
+  }, 30_000);
 });

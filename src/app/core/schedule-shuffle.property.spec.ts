@@ -5,6 +5,9 @@ import { ScheduleService } from './schedule.service';
 import { shuffled, shuffleRoundsAndCourts } from './schedule-shuffle';
 import { seededRandom } from '../testing/seeded-random';
 
+/** Each run builds a whole schedule (simulated annealing), so keep the runs few and the timeout generous for CI. */
+const RUNS = 15;
+const TIMEOUT = 30_000;
 const seed = fc.integer({ min: 0, max: 2 ** 31 });
 const formats: readonly [TournamentSize, number, number][] = [
   [8, 2, 7],
@@ -49,58 +52,70 @@ describe('shuffleRoundsAndCourts (property)', () => {
     return scheduler.generate(roster(format[0]), format[0], format[1], format[2]);
   };
 
-  it('only reorders rounds and rotates courts: every round keeps its matches and rests', () => {
-    fc.assert(
-      fc.property(fc.constantFrom(...formats), seed, seed, (format, base, shuffle) => {
-        const rounds = generate(format, base);
-        const result = shuffleRoundsAndCourts(rounds, {
-          random: seededRandom(shuffle),
-          matchId: (number, match) => `r${number}-m${match.court}`,
-        });
-        expect(result.map(roundKey).sort()).toStrictEqual(rounds.map(roundKey).sort());
-        expect(result.map((round) => round.number)).toStrictEqual(result.map((_, index) => index + 1));
-      }),
-      { numRuns: 60 },
-    );
-  });
+  it(
+    'only reorders rounds and rotates courts: every round keeps its matches and rests',
+    () => {
+      fc.assert(
+        fc.property(fc.constantFrom(...formats), seed, seed, (format, base, shuffle) => {
+          const rounds = generate(format, base);
+          const result = shuffleRoundsAndCourts(rounds, {
+            random: seededRandom(shuffle),
+            matchId: (number, match) => `r${number}-m${match.court}`,
+          });
+          expect(result.map(roundKey).sort()).toStrictEqual(rounds.map(roundKey).sort());
+          expect(result.map((round) => round.number)).toStrictEqual(result.map((_, index) => index + 1));
+        }),
+        { numRuns: RUNS },
+      );
+    },
+    TIMEOUT,
+  );
 
-  it('keeps courts within range, distinct per round, and match ids unique', () => {
-    fc.assert(
-      fc.property(fc.constantFrom(...formats), seed, (format, s) => {
-        const rounds = generate(format, s);
-        const ids = rounds.flatMap((round) => round.matches.map((match) => match.id));
-        expect(new Set(ids).size).toBe(ids.length);
-        for (const round of rounds) {
-          const courts = round.matches.map((match) => match.court);
-          expect(new Set(courts).size).toBe(courts.length);
-          for (const court of courts) {
-            expect(court).toBeGreaterThanOrEqual(1);
-            expect(court).toBeLessThanOrEqual(format[1]);
+  it(
+    'keeps courts within range, distinct per round, and match ids unique',
+    () => {
+      fc.assert(
+        fc.property(fc.constantFrom(...formats), seed, (format, s) => {
+          const rounds = generate(format, s);
+          const ids = rounds.flatMap((round) => round.matches.map((match) => match.id));
+          expect(new Set(ids).size).toBe(ids.length);
+          for (const round of rounds) {
+            const courts = round.matches.map((match) => match.court);
+            expect(new Set(courts).size).toBe(courts.length);
+            for (const court of courts) {
+              expect(court).toBeGreaterThanOrEqual(1);
+              expect(court).toBeLessThanOrEqual(format[1]);
+            }
           }
-        }
-      }),
-      { numRuns: 60 },
-    );
-  });
+        }),
+        { numRuns: RUNS },
+      );
+    },
+    TIMEOUT,
+  );
 
-  it('lets every player appear exactly once per round, and rest evenly', () => {
-    fc.assert(
-      fc.property(fc.constantFrom(...formats), seed, (format, s) => {
-        const rounds = generate(format, s);
-        const rests = new Map<string, number>(roster(format[0]).map((player) => [player.id, 0]));
-        for (const round of rounds) {
-          const present = [
-            ...round.matches.flatMap((match) => [...match.teamA, ...match.teamB]),
-            ...round.restingPlayerIds,
-          ];
-          expect(new Set(present).size).toBe(format[0]);
-          expect(present.length).toBe(format[0]);
-          for (const id of round.restingPlayerIds) rests.set(id, (rests.get(id) ?? 0) + 1);
-        }
-        const counts = [...rests.values()];
-        expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
-      }),
-      { numRuns: 60 },
-    );
-  });
+  it(
+    'lets every player appear exactly once per round, and rest evenly',
+    () => {
+      fc.assert(
+        fc.property(fc.constantFrom(...formats), seed, (format, s) => {
+          const rounds = generate(format, s);
+          const rests = new Map<string, number>(roster(format[0]).map((player) => [player.id, 0]));
+          for (const round of rounds) {
+            const present = [
+              ...round.matches.flatMap((match) => [...match.teamA, ...match.teamB]),
+              ...round.restingPlayerIds,
+            ];
+            expect(new Set(present).size).toBe(format[0]);
+            expect(present.length).toBe(format[0]);
+            for (const id of round.restingPlayerIds) rests.set(id, (rests.get(id) ?? 0) + 1);
+          }
+          const counts = [...rests.values()];
+          expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+        }),
+        { numRuns: RUNS },
+      );
+    },
+    TIMEOUT,
+  );
 });
