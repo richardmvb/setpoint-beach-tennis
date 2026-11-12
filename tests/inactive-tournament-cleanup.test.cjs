@@ -4,6 +4,8 @@ const path = require('node:path');
 const test = require('node:test');
 const { PGlite } = require('@electric-sql/pglite');
 const typescript = require('typescript');
+const { loadTs } = require('./support/load-ts.cjs');
+const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const migrationDir = path.join(__dirname, '../supabase/migrations');
 const readMigration = (name) => fs.readFileSync(path.join(migrationDir, name), 'utf8');
@@ -21,9 +23,8 @@ test('o worker arquiva por inatividade sem apagar resultados nem encerrar tornei
   const db = new PGlite();
   try {
     await db.exec(`
-      create role anon; create role authenticated;
-      create schema auth; create schema extensions; create schema cron;
-      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+      ${FAKE_SUPABASE_SQL}
+    create schema cron;
       create function extensions.gen_random_bytes(integer) returns bytea language sql as $$ select decode(repeat('ab', $1), 'hex') $$;
       create function extensions.digest(bytea, text) returns bytea language sql immutable as $$ select $1 $$;
       create function extensions.digest(text, text) returns bytea language sql immutable as $$ select convert_to($1, 'UTF8') $$;
@@ -214,20 +215,7 @@ test('o job existente executa a rotina de limpeza a cada cinco minutos', () => {
 });
 
 test('o dashboard mescla arquivos locais e mantém compatibilidade antes da migration', async () => {
-  const source = fs.readFileSync(path.join(__dirname, '../src/app/core/supabase.service.ts'), 'utf8');
-  const javascript = typescript.transpileModule(source, {
-    compilerOptions: {
-      module: typescript.ModuleKind.CommonJS,
-      target: typescript.ScriptTarget.ES2022,
-      experimentalDecorators: true,
-    },
-  }).outputText;
-  const exports = {};
-  new Function('require', 'exports', javascript)((name) => {
-    if (name === '@angular/core') return { Injectable: () => (target) => target };
-    if (name === '@supabase/supabase-js') return {};
-    return require(name);
-  }, exports);
+  const exports = loadTs(path.join(__dirname, '../src/app/core/supabase.service.ts'));
   const service = Object.create(exports.SupabaseService.prototype);
   const base = { active_tournaments: [], archived_tournaments: [{ id: 'shared', updated_at: '2026-11-07T10:00:00Z' }] };
   let migrationInstalled = true;

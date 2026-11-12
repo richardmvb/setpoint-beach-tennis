@@ -2576,7 +2576,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.localLiveNotice = '';
     try {
       this.state.analyticsId ??= this.id();
-      const publishedState: TournamentState = JSON.parse(JSON.stringify(this.state));
+      const publishedState: TournamentState = structuredClone(this.state);
       const credentials = await this.supabase.createLocalLiveTournament(publishedState);
       this.localLiveId = credentials.id;
       this.localLiveReadToken = credentials.readToken;

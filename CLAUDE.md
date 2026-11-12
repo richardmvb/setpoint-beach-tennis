@@ -18,7 +18,13 @@ npm run format:check    # Prettier (src/**/*.html and src/styles.css are exclude
 npm run typecheck       # tsc over src/**/*.ts
 npm run knip            # unused files, exports, dependencies
 npm test                # unit tests (Vitest through the Angular unit-test builder, src/**/*.spec.ts)
-npm run test:db         # SQL tests on PGlite (node:test, tests/)
+npm run test:db         # SQL tests on PGlite (node:test, tests/), fast, no Docker
+npm run db:start        # local Supabase in Docker (applies every migration from empty)
+npm run db:reset        # re-apply all migrations
+npm run test:db:supabase # pgTAP security and permission tests on the real local stack
+npm run db:lint         # splinter + supabase db lint (fails on any ERROR or unexpected WARN)
+npm run db:migrations   # forward-only and vendor-neutral migration rules
+npm run db:types        # regenerate src/app/core/database.types.ts (never edit it by hand)
 npm run test:coverage   # unit tests with V8 coverage
 npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
@@ -33,7 +39,9 @@ Local runtime config is `public/runtime-config.js` (tracked, development values)
 - `src/app/core/`: services and domain logic (`supabase.service.ts`, `storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Unit tests are colocated `*.spec.ts` files run by Vitest.
 - `src/app/features/`: presentational components (flat for now).
 - `src/styles.css`: one global stylesheet. Split into tokens and components in Phase 5.
-- `supabase/migrations/`: SQL applied by hand until Phase 3 adds the Supabase CLI.
+- `supabase/`: `migrations/` (forward-only), `tests/` (pgTAP), `lint/` (splinter), `config.toml` (Supabase CLI). Security findings and rules: `docs/security.md`.
+- `src/app/shared/parsers/`: Valibot parsers for everything that comes from outside (RPC responses today). Do not cast RPC data with `as`; add a parser.
+- `src/index.html` holds the Content-Security-Policy. A new external host needs a CSP change and a test; fonts are self-hosted (`src/fonts/`).
 
 Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 in `docs/adr/`.
 
@@ -43,14 +51,13 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 - Never silence a gate: no `eslint-disable`, `@ts-ignore`, `stylelint-disable`, skipped tests, or baselines. Fix the code, or reduce scope and say so.
 - Ratchet: rules that legacy code cannot pass are enabled only for the folders that comply (see `eslint.config.mjs`). Widen the glob as code is migrated.
 - Persisted data (`setpoint.tournament.v1`, offline queue, shared snapshot) and database changes must stay backward compatible with the previous release.
-- Migrations are forward-only. Never edit a migration already on `main`.
+- Migrations are forward-only. Never edit a migration already on `main`. New functions are private by default (`revoke` is the default privilege); grant `execute` on purpose and add the function to the allowlists in `supabase/tests/security.test.sql`. New SQL uses `app.current_user_id()`, not `auth.uid()`.
 - Do not commit or push unless the user asks.
 
 ## Known deferred items (not silenced; tracked in the plan)
 
 | Item                                                                                                                      | Phase                                |
 | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `@typescript-eslint/no-unsafe-*` rules off, because of untyped Supabase results                                           | 3 (generated DB types and parsers)   |
 | `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                                  | 5 (split into tokens and components) |
 | `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
 | Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
@@ -76,6 +83,6 @@ Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) a
 - Plan, phases and standards: `docs/professionalization-plan.md`
 - Decisions: `docs/adr/`
 - Baselines and AI cost log: `docs/metrics.md`
-- Security findings: `docs/security.md` (Phase 3)
+- Security findings, CSP, abuse limits: `docs/security.md`
 - Vendor inventory and swap effort: `docs/vendors.md` (Phase 4)
 - Contributor guide (English): `CONTRIBUTING.md`

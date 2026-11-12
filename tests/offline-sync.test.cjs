@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const typescript = require('typescript');
 const { PGlite } = require('@electric-sql/pglite');
+const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const source = fs.readFileSync(path.join(__dirname, '../src/app/core/offline-sync-queue.ts'), 'utf8');
 const javascript = typescript.transpileModule(source, {
@@ -48,9 +49,7 @@ test('RPCs rejeitam conflitos e permitem repetir uma confirmação perdida', asy
   const updated = { ...base, rounds: [{ matches: [{ scoreA: 4, scoreB: 2 }] }] };
   try {
     await database.exec(`
-      create role anon; create role authenticated;
-      create schema auth; create schema extensions;
-      create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+      ${FAKE_SUPABASE_SQL}
       create function extensions.digest(text, text) returns bytea language sql immutable as $$ select convert_to($1, 'UTF8') $$;
       create table public.shared_tournaments (id uuid primary key, owner_id uuid, status text, state jsonb, capacity integer, invite_expires_at timestamptz, expires_at timestamptz, updated_at timestamptz);
       create table public.local_live_tournaments (id uuid primary key, owner_id uuid, status text, state jsonb, write_token_hash text, updated_at timestamptz);

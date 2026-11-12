@@ -69,7 +69,19 @@ export const test = base.extend<Fixtures>({
         };
       }, randomSeed);
     }
+    // Every test also proves the Content-Security-Policy in index.html does not block anything the app needs.
+    await page.addInitScript(() => {
+      const violations: string[] = [];
+      (window as unknown as { __cspViolations: string[] }).__cspViolations = violations;
+      document.addEventListener('securitypolicyviolation', (event) => {
+        violations.push(`${event.violatedDirective} blocked ${event.blockedURI || 'inline'}`);
+      });
+    });
     await use(page);
+    const violations = await page
+      .evaluate(() => (window as unknown as { __cspViolations?: string[] }).__cspViolations ?? [])
+      .catch(() => [] as string[]);
+    expect(violations, 'Content-Security-Policy violations').toEqual([]);
   },
 });
 

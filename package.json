@@ -9,6 +9,13 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test --no-watch",
     "test:db": "node --test tests/dashboard-activity.test.cjs tests/dashboard-insights.test.cjs tests/inactive-tournament-cleanup.test.cjs tests/local-archive.test.cjs tests/offline-sync.test.cjs tests/tournament-report.test.cjs",
+    "test:db:supabase": "supabase test db",
+    "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:lint": "node scripts/db-lint.cjs",
+    "db:migrations": "node scripts/check-migrations.cjs",
+    "db:types": "supabase gen types typescript --local --schema public > src/app/core/database.types.ts",
     "test:coverage": "ng test --no-watch --coverage",
     "lint": "eslint .",
     "lint:styles": "stylelint \"src/**/*.css\"",
@@ -33,6 +40,7 @@
     "rxjs": "~7.8.2",
     "sweetalert2": "^11.26.25",
     "tslib": "^2.8.1",
+    "valibot": "^1.5.0",
     "zone.js": "~0.15.1"
   },
   "devDependencies": {
@@ -60,8 +68,10 @@
     "knip": "6.45.1",
     "lint-staged": "17.6.0",
     "prettier": "3.10.0",
+    "squawk-cli": "^2.72.0",
     "stylelint": "18.0.0",
     "stylelint-config-standard": "41.0.0",
+    "supabase": "^3.1.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.72.2",
     "vitest": "^4.1.12"

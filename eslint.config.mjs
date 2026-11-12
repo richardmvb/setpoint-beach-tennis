@@ -10,23 +10,10 @@ import templateParser from '@angular-eslint/template-parser';
  * Ratchet rule (docs/professionalization-plan.md, Working rules): a rule that legacy code
  * cannot pass yet is enabled only for the folders listed in a scoped block below, and the
  * globs widen as code is migrated. Never add eslint-disable comments to make a gate pass.
- *
- * Deferred rules (scheduled in the plan, not silenced):
- * - @typescript-eslint/no-unsafe-* : Phase 3, rules #7 and #8. They come from untyped
- *   Supabase RPC results; generated DB types and Valibot parsers remove them at the source.
  */
-const deferredToPhase3 = {
-  '@typescript-eslint/no-unsafe-assignment': 'off',
-  '@typescript-eslint/no-unsafe-argument': 'off',
-  '@typescript-eslint/no-unsafe-call': 'off',
-  '@typescript-eslint/no-unsafe-member-access': 'off',
-  '@typescript-eslint/no-unsafe-return': 'off',
-  '@typescript-eslint/no-unsafe-enum-comparison': 'off',
-};
-
 export default tseslint.config(
   {
-    ignores: ['dist/', '.angular/', 'node_modules/', 'public/', 'coverage/'],
+    ignores: ['dist/', '.angular/', 'node_modules/', 'public/', 'coverage/', 'src/app/core/database.types.ts'],
   },
 
   // Application TypeScript: type-aware rules over everything in tsconfig.eslint.json.
@@ -41,7 +28,6 @@ export default tseslint.config(
     },
     plugins: { '@angular-eslint': angularPlugin },
     rules: {
-      ...deferredToPhase3,
       'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-empty': ['error', { allowEmptyCatch: false }],
       '@typescript-eslint/no-explicit-any': 'error',
