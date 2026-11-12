@@ -10,15 +10,25 @@ export class AvatarService {
     if (file.size > MAX_SOURCE_BYTES) throw new Error('A imagem original deve ter até 8 MB.');
     const image = await createImageBitmap(file);
     try {
-      for (const [size, quality] of [[96, 0.68], [80, 0.56], [64, 0.48]] as const) {
+      for (const [size, quality] of [
+        [96, 0.68],
+        [80, 0.56],
+        [64, 0.48],
+      ] as const) {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const context = canvas.getContext('2d');
         if (!context) throw new Error('Não foi possível processar a foto.');
         const scale = Math.max(size / image.width, size / image.height);
-        context.drawImage(image, (size - image.width * scale) / 2, (size - image.height * scale) / 2, image.width * scale, image.height * scale);
-        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', quality));
+        context.drawImage(
+          image,
+          (size - image.width * scale) / 2,
+          (size - image.height * scale) / 2,
+          image.width * scale,
+          image.height * scale,
+        );
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
         if (blob && blob.size <= MAX_AVATAR_BYTES) return await this.toDataUrl(blob);
       }
     } finally {
@@ -30,7 +40,8 @@ export class AvatarService {
   private toDataUrl(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Foto inválida.'));
+      reader.onload = () =>
+        typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Foto inválida.'));
       reader.onerror = () => reject(new Error('Não foi possível ler a foto.'));
       reader.readAsDataURL(blob);
     });

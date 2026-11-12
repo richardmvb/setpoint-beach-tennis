@@ -18,22 +18,36 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "css",
-            "assets": [{"glob":"**/*","input":"public"},{"glob":"**/*","input":"src/assets","output":"assets","ignore":["**/logo-source.jpeg"]}],
-            "styles": ["node_modules/driver.js/dist/driver.css", "node_modules/sweetalert2/dist/sweetalert2.min.css", "src/styles.css"]
+            "assets": [
+              { "glob": "**/*", "input": "public" },
+              { "glob": "**/*", "input": "src/assets", "output": "assets", "ignore": ["**/logo-source.jpeg"] }
+            ],
+            "styles": [
+              "node_modules/driver.js/dist/driver.css",
+              "node_modules/sweetalert2/dist/sweetalert2.min.css",
+              "src/styles.css"
+            ]
           },
           "configurations": {
-            "production": {"budgets":[{"type":"initial","maximumWarning":"1.5MB","maximumError":"2MB"},{"type":"anyComponentStyle","maximumWarning":"8kB","maximumError":"12kB"}],"outputHashing":"all","sourceMap":{"scripts":true,"styles":true,"hidden":true,"vendor":true}},
-            "development": {"optimization":false,"extractLicenses":false,"sourceMap":true}
+            "production": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "1.5MB", "maximumError": "2MB" },
+                { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "12kB" }
+              ],
+              "outputHashing": "all",
+              "sourceMap": { "scripts": true, "styles": true, "hidden": true, "vendor": true }
+            },
+            "development": { "optimization": false, "extractLicenses": false, "sourceMap": true }
           },
-          "defaultConfiguration":"production"
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": {"buildTarget":"setpoint:build:production"},
-            "development": {"buildTarget":"setpoint:build:development"}
+            "production": { "buildTarget": "setpoint:build:production" },
+            "development": { "buildTarget": "setpoint:build:development" }
           },
-          "defaultConfiguration":"development"
+          "defaultConfiguration": "development"
         }
       }
     }

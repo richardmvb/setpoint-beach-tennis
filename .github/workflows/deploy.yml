@@ -16,7 +16,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: checks
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -33,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate runtime config
+      - name: Generate runtime config (fails when Supabase settings are missing)
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
@@ -41,9 +45,7 @@ jobs:
           NG_APP_POSTHOG_HOST: ${{ vars.NG_APP_POSTHOG_HOST }}
           NG_APP_LOCK_SCREEN_ENABLED: ${{ vars.NG_APP_LOCK_SCREEN_ENABLED }}
           BUILD_ID: ${{ github.sha }}
-        run: |
-          export BUILD_VERSION="$(git rev-list --count HEAD)"
-          node -e "const fs = require('node:fs'); fs.mkdirSync('public', { recursive: true }); fs.writeFileSync('public/runtime-config.js', 'window.__SETPOINT_CONFIG__ = ' + JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || '', buildId: (process.env.BUILD_ID || '').slice(0, 7), buildVersion: Number(process.env.BUILD_VERSION), production: true, lockScreenEnabled: process.env.NG_APP_LOCK_SCREEN_ENABLED === 'true', ...(process.env.NG_APP_POSTHOG_PROJECT_TOKEN ? { posthogKey: process.env.NG_APP_POSTHOG_PROJECT_TOKEN } : {}), ...(process.env.NG_APP_POSTHOG_HOST ? { posthogHost: process.env.NG_APP_POSTHOG_HOST } : {}) }) + ';\\n');"
+        run: node scripts/generate-runtime-config.cjs --require-values
 
       - name: Build Angular app
         env:

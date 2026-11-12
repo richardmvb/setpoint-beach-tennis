@@ -24,8 +24,12 @@ class PairCounter {
     this.counts = new Int32Array(playerCount * playerCount);
   }
 
-  index(a: number, b: number): number { return a < b ? a * this.playerCount + b : b * this.playerCount + a; }
-  get(pair: number): number { return this.counts[pair]; }
+  index(a: number, b: number): number {
+    return a < b ? a * this.playerCount + b : b * this.playerCount + a;
+  }
+  get(pair: number): number {
+    return this.counts[pair];
+  }
 
   adjust(pairs: number[], amount: 1 | -1): void {
     for (const pair of pairs) {
@@ -44,7 +48,7 @@ export class ScheduleService {
 
   generate(players: Player[], size: TournamentSize, courts: number, roundCount: number, mixed = false): Round[] {
     if (players.length !== size) throw new Error(`O Super ${size} exige exatamente ${size} jogadores.`);
-    if (new Set(players.map(player => player.id)).size !== players.length) {
+    if (new Set(players.map((player) => player.id)).size !== players.length) {
       throw new Error('Cada jogador precisa ter um identificador único.');
     }
     const expectedRounds = this.expectedRounds(size, courts, mixed);
@@ -53,18 +57,21 @@ export class ScheduleService {
       throw new Error(`O Super ${size} precisa de exatamente ${expectedRounds} rodadas.`);
     }
     if (!Number.isInteger(courts) || !allowedCourts.includes(courts)) {
-      throw new Error(`O Super ${size} permite ${allowedCourts.join(' ou ')} quadras sem comprometer o equilíbrio dos jogos.`);
+      throw new Error(
+        `O Super ${size} permite ${allowedCourts.join(' ou ')} quadras sem comprometer o equilíbrio dos jogos.`,
+      );
     }
 
     // The registration order must not decide partners, opponents, round order or courts.
     const drawnPlayers = shuffled(players, this.random);
-    const rounds = size === 24
-      ? this.generateSuper24(drawnPlayers, mixed, courts)
-      : this.generateBalanced(drawnPlayers, size, courts, mixed);
+    const rounds =
+      size === 24
+        ? this.generateSuper24(drawnPlayers, mixed, courts)
+        : this.generateBalanced(drawnPlayers, size, courts, mixed);
     const result = shuffleRoundsAndCourts(rounds, {
       random: this.random,
       blockSize: size === 24 && courts === 3 ? 2 : 1,
-      matchId: (roundNumber, match) => `r${roundNumber}-m${match.court}`
+      matchId: (roundNumber, match) => `r${roundNumber}-m${match.court}`,
     });
     this.validateSchedule(players, size, courts, result, mixed);
     return result;
@@ -78,11 +85,14 @@ export class ScheduleService {
       : this.createPartnerRounds(players);
     const searchRoundCount = partnerRounds.length;
     const optionsByRound = partnerRounds.map((teams, index) => this.createRoundOptions(teams, index, courts, indexOf));
-    const totalPairs = size * (size - 1) / 2;
+    const totalPairs = (size * (size - 1)) / 2;
     const equalizingRoundNeeded = !mixed && (size === 10 || (size === 12 && courts === 2));
     const restsPerRound = size - courts * 4;
-    const maxRestCount = equalizingRoundNeeded ? restsPerRound
-      : mixed && restsPerRound > 0 ? Math.ceil(searchRoundCount * restsPerRound / size) : 0;
+    const maxRestCount = equalizingRoundNeeded
+      ? restsPerRound
+      : mixed && restsPerRound > 0
+        ? Math.ceil((searchRoundCount * restsPerRound) / size)
+        : 0;
 
     for (let attempt = 0; attempt < 1000; attempt++) {
       const opponents = new PairCounter(size);
@@ -99,7 +109,7 @@ export class ScheduleService {
       const cost = (): number => (totalPairs - opponents.covered) * 100 + restSquares;
 
       const selected = this.createInitialSelection(optionsByRound, size, maxRestCount);
-      selected.forEach(option => apply(option, 1));
+      selected.forEach((option) => apply(option, 1));
       const steps = size * 800;
 
       for (let step = 0; step < steps; step++) {
@@ -111,7 +121,7 @@ export class ScheduleService {
 
         const previousCost = cost();
         apply(previous, -1);
-        if (candidate.restingIndexes.some(index => rests[index] >= maxRestCount)) {
+        if (candidate.restingIndexes.some((index) => rests[index] >= maxRestCount)) {
           apply(previous, 1);
           continue;
         }
@@ -137,11 +147,18 @@ export class ScheduleService {
       }
     }
 
-    throw new Error('Não foi possível montar uma tabela sem repetir parceiros e com todos os confrontos. Tente gerar novamente.');
+    throw new Error(
+      'Não foi possível montar uma tabela sem repetir parceiros e com todos os confrontos. Tente gerar novamente.',
+    );
   }
 
   private completeSchedule(
-    players: Player[], size: TournamentSize, courts: number, selected: RoundOption[], equalizingRoundNeeded: boolean, mixed: boolean
+    players: Player[],
+    size: TournamentSize,
+    courts: number,
+    selected: RoundOption[],
+    equalizingRoundNeeded: boolean,
+    mixed: boolean,
   ): Round[] | null {
     const baseRounds = this.toRounds(selected);
     const finalRound = equalizingRoundNeeded ? this.createEqualizingRound(players, baseRounds, courts) : null;
@@ -158,19 +175,21 @@ export class ScheduleService {
   private generateSuper24(players: Player[], mixed = false, courts = 6): Round[] {
     const playerCount = players.length;
     const indexOf = new Map(players.map((player, index) => [player.id, index]));
-    const partnerRounds = (mixed ? this.createMixedPartnerRounds(players, 12) : this.createPartnerRounds(players))
-      .map(teams => teams.map(([a, b]): IndexTeam => [indexOf.get(a)!, indexOf.get(b)!]));
+    const partnerRounds = (mixed ? this.createMixedPartnerRounds(players, 12) : this.createPartnerRounds(players)).map(
+      (teams) => teams.map(([a, b]): IndexTeam => [indexOf.get(a)!, indexOf.get(b)!]),
+    );
     const rounds = partnerRounds.length;
-    const totalPairs = playerCount * (playerCount - 1) / 2;
+    const totalPairs = (playerCount * (playerCount - 1)) / 2;
     let bestSelection: IndexMatch[][] | null = null;
     let bestCoverage = 0;
 
     for (let attempt = 0; attempt < (mixed ? 3 : 16); attempt++) {
       const opponents = new PairCounter(playerCount);
-      const selected = partnerRounds.map(teams => this.randomTeamMatches(teams));
+      const selected = partnerRounds.map((teams) => this.randomTeamMatches(teams));
       const groups = new Map<number, number>();
-      selected.forEach(matches => opponents.adjust(this.opponentPairsForMatches(matches, opponents), 1));
-      if (mixed) selected.forEach(matches => this.adjustCounts(this.groupKeysForMatches(matches, playerCount), 1, groups));
+      selected.forEach((matches) => opponents.adjust(this.opponentPairsForMatches(matches, opponents), 1));
+      if (mixed)
+        selected.forEach((matches) => this.adjustCounts(this.groupKeysForMatches(matches, playerCount), 1, groups));
       const steps = mixed ? 8000 : 24 * 2500;
 
       for (let step = 0; step < steps; step++) {
@@ -179,7 +198,7 @@ export class ScheduleService {
         const candidate = mixed ? this.swapTeamOpponents(previous) : this.randomTeamMatches(partnerRounds[roundIndex]);
         const previousPairs = this.opponentPairsForMatches(previous, opponents);
         const candidatePairs = this.opponentPairsForMatches(candidate, opponents);
-        if (previousPairs.every(pair => candidatePairs.includes(pair))) continue;
+        if (previousPairs.every((pair) => candidatePairs.includes(pair))) continue;
 
         const affected = new Set([...previousPairs, ...candidatePairs]);
         const previousGroups = mixed ? this.groupKeysForMatches(previous, playerCount) : [];
@@ -224,9 +243,9 @@ export class ScheduleService {
   private toSuper24Rounds(selected: IndexMatch[][], courts: number, players: Player[]): Round[] {
     const rounds: Round[] = [];
     const id = (index: number): string => players[index].id;
-    selected.forEach(matches => {
+    selected.forEach((matches) => {
       const batches = courts === 3 ? [matches.slice(0, 3), matches.slice(3)] : [matches];
-      batches.forEach(batch => {
+      batches.forEach((batch) => {
         const active = new Set(batch.flatMap(([teamA, teamB]) => [...teamA, ...teamB]));
         const number = rounds.length + 1;
         rounds.push({
@@ -237,9 +256,9 @@ export class ScheduleService {
             teamA: [id(teamA[0]), id(teamA[1])],
             teamB: [id(teamB[0]), id(teamB[1])],
             scoreA: null,
-            scoreB: null
+            scoreB: null,
           })),
-          restingPlayerIds: players.filter((_, index) => !active.has(index)).map(player => player.id)
+          restingPlayerIds: players.filter((_, index) => !active.has(index)).map((player) => player.id),
         });
       });
     });
@@ -271,9 +290,9 @@ export class ScheduleService {
 
   /** Identifies the four players of each match, regardless of how they are split into teams. */
   private groupKeysForMatches(matches: IndexMatch[], playerCount: number): number[] {
-    return matches.map(([teamA, teamB]) => [...teamA, ...teamB]
-      .sort((a, b) => a - b)
-      .reduce((key, index) => key * playerCount + index, 0));
+    return matches.map(([teamA, teamB]) =>
+      [...teamA, ...teamB].sort((a, b) => a - b).reduce((key, index) => key * playerCount + index, 0),
+    );
   }
 
   private repeatedGroupCost(groups: Map<number, number>, keys: Set<number>): number {
@@ -306,27 +325,33 @@ export class ScheduleService {
     const rotating = [...players];
     const rounds: PartnerTeam[][] = [];
     for (let roundIndex = 0; roundIndex < players.length - 1; roundIndex++) {
-      rounds.push(Array.from({ length: players.length / 2 }, (_, index) => [
-        rotating[index].id, rotating[players.length - 1 - index].id
-      ] as PartnerTeam));
+      rounds.push(
+        Array.from(
+          { length: players.length / 2 },
+          (_, index) => [rotating[index].id, rotating[players.length - 1 - index].id] as PartnerTeam,
+        ),
+      );
       rotating.splice(1, 0, rotating.pop()!);
     }
     return rounds;
   }
 
   private createMixedPartnerRounds(players: Player[], roundCount: number): PartnerTeam[][] {
-    const men = players.filter(player => player.gender === 'male');
-    const women = players.filter(player => player.gender === 'female');
+    const men = players.filter((player) => player.gender === 'male');
+    const women = players.filter((player) => player.gender === 'female');
     if (men.length !== women.length || men.length * 2 !== players.length) {
       throw new Error('Duplas mistas exigem a mesma quantidade de atletas masculinos e femininos.');
     }
-    return Array.from({ length: roundCount }, (_, roundIndex) => men.map((player, index) => [
-      player.id, women[(index + roundIndex) % women.length].id
-    ] as PartnerTeam));
+    return Array.from({ length: roundCount }, (_, roundIndex) =>
+      men.map((player, index) => [player.id, women[(index + roundIndex) % women.length].id] as PartnerTeam),
+    );
   }
 
   private createRoundOptions(
-    teams: PartnerTeam[], roundIndex: number, courtCount: number, indexOf: Map<string, number>
+    teams: PartnerTeam[],
+    roundIndex: number,
+    courtCount: number,
+    indexOf: Map<string, number>,
   ): RoundOption[] {
     const options: RoundOption[] = [];
     const activeTeamCount = courtCount * 2;
@@ -338,8 +363,8 @@ export class ScheduleService {
     };
     for (const activeTeams of this.chooseTeams(teams, activeTeamCount)) {
       const activeIds = new Set(activeTeams.flat());
-      const restingPlayerIds = teams.filter(team => !activeIds.has(team[0])).flat();
-      const restingIndexes = restingPlayerIds.map(id => indexOf.get(id)!);
+      const restingPlayerIds = teams.filter((team) => !activeIds.has(team[0])).flat();
+      const restingIndexes = restingPlayerIds.map((id) => indexOf.get(id)!);
       for (const pairing of this.pairTeams(activeTeams)) {
         const matches = pairing.map(([teamA, teamB], matchIndex): Match => ({
           id: `r${roundIndex + 1}-m${matchIndex + 1}`,
@@ -347,9 +372,11 @@ export class ScheduleService {
           teamA,
           teamB,
           scoreA: null,
-          scoreB: null
+          scoreB: null,
         }));
-        const opponentPairs = matches.flatMap(match => match.teamA.flatMap(a => match.teamB.map(b => pairIndex(a, b))));
+        const opponentPairs = matches.flatMap((match) =>
+          match.teamA.flatMap((a) => match.teamB.map((b) => pairIndex(a, b))),
+        );
         options.push({ matches, restingPlayerIds, restingIndexes, opponentPairs });
       }
     }
@@ -373,15 +400,21 @@ export class ScheduleService {
     if (teams.length < count) return [];
     const [first, ...remaining] = teams;
     return [
-      ...this.chooseTeams(remaining, count - 1).map(selection => [first, ...selection]),
-      ...this.chooseTeams(remaining, count)
+      ...this.chooseTeams(remaining, count - 1).map((selection) => [first, ...selection]),
+      ...this.chooseTeams(remaining, count),
     ];
   }
 
-  private createInitialSelection(optionsByRound: RoundOption[][], playerCount: number, maxRestCount: number): RoundOption[] {
+  private createInitialSelection(
+    optionsByRound: RoundOption[][],
+    playerCount: number,
+    maxRestCount: number,
+  ): RoundOption[] {
     const plannedRests = new Int32Array(playerCount);
-    return optionsByRound.map(options => {
-      const eligible = options.filter(option => option.restingIndexes.every(index => plannedRests[index] < maxRestCount));
+    return optionsByRound.map((options) => {
+      const eligible = options.filter((option) =>
+        option.restingIndexes.every((index) => plannedRests[index] < maxRestCount),
+      );
       const candidates = eligible.length ? eligible : options;
       let minimumRestCost = Number.POSITIVE_INFINITY;
       let bestOptions: RoundOption[] = [];
@@ -395,7 +428,7 @@ export class ScheduleService {
         }
       }
       const selected = bestOptions[Math.floor(this.random() * bestOptions.length)];
-      selected.restingIndexes.forEach(index => plannedRests[index]++);
+      selected.restingIndexes.forEach((index) => plannedRests[index]++);
       return selected;
     });
   }
@@ -404,16 +437,16 @@ export class ScheduleService {
     return selected.map((option, roundIndex) => ({
       number: roundIndex + 1,
       matches: option.matches,
-      restingPlayerIds: option.restingPlayerIds
+      restingPlayerIds: option.restingPlayerIds,
     }));
   }
 
   private createEqualizingRound(players: Player[], rounds: Round[], courts: number): Round | null {
-    const restCounts = new Map(players.map(player => [player.id, 0]));
+    const restCounts = new Map(players.map((player) => [player.id, 0]));
     const partnerCounts = new Set<string>();
     const opponentCounts = new Set<string>();
     for (const round of rounds) {
-      round.restingPlayerIds.forEach(id => this.increment(restCounts, id));
+      round.restingPlayerIds.forEach((id) => this.increment(restCounts, id));
       for (const match of round.matches) {
         partnerCounts.add(this.pairKey(...match.teamA));
         partnerCounts.add(this.pairKey(...match.teamB));
@@ -422,12 +455,10 @@ export class ScheduleService {
     }
 
     const requiredFinalRests = players.length - courts * 4;
-    const restingPlayerIds = [...restCounts]
-      .filter(([, count]) => count === requiredFinalRests - 1)
-      .map(([id]) => id);
+    const restingPlayerIds = [...restCounts].filter(([, count]) => count === requiredFinalRests - 1).map(([id]) => id);
     if (restingPlayerIds.length !== requiredFinalRests) return null;
     const restingSet = new Set(restingPlayerIds);
-    const activeIds = players.filter(player => !restingSet.has(player.id)).map(player => player.id);
+    const activeIds = players.filter((player) => !restingSet.has(player.id)).map((player) => player.id);
 
     // Every pair that has not met yet must meet in this last round; resting players cannot meet anyone.
     const missingPairs: PartnerTeam[] = [];
@@ -442,7 +473,7 @@ export class ScheduleService {
     }
 
     for (const teams of this.pairPlayers(activeIds)) {
-      if (teams.some(team => partnerCounts.has(this.pairKey(...team)))) continue;
+      if (teams.some((team) => partnerCounts.has(this.pairKey(...team)))) continue;
       for (const pairing of this.pairTeams(teams)) {
         const opponentOf = new Set<string>();
         pairing.forEach(([teamA, teamB]) => {
@@ -456,7 +487,7 @@ export class ScheduleService {
           teamA,
           teamB,
           scoreA: null,
-          scoreB: null
+          scoreB: null,
         }));
         return { number: rounds.length + 1, matches, restingPlayerIds };
       }
@@ -476,13 +507,19 @@ export class ScheduleService {
     return result;
   }
 
-  private validateSchedule(players: Player[], size: TournamentSize, courts: number, rounds: Round[], mixed = false): void {
-    const playerIds = players.map(player => player.id);
-    const genders = new Map(players.map(player => [player.id, player.gender]));
+  private validateSchedule(
+    players: Player[],
+    size: TournamentSize,
+    courts: number,
+    rounds: Round[],
+    mixed = false,
+  ): void {
+    const playerIds = players.map((player) => player.id);
+    const genders = new Map(players.map((player) => [player.id, player.gender]));
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
     const groups = new Set<string>();
-    const restCounts = new Map(playerIds.map(id => [id, 0]));
+    const restCounts = new Map(playerIds.map((id) => [id, 0]));
 
     const expectedRounds = this.expectedRounds(size, courts, mixed);
     const expectedMatches = courts;
@@ -499,7 +536,7 @@ export class ScheduleService {
           if (groups.has(group)) throw new Error('Há um grupo de quatro jogadores repetido.');
           groups.add(group);
         }
-        if (mixed && [match.teamA, match.teamB].some(team => genders.get(team[0]) === genders.get(team[1]))) {
+        if (mixed && [match.teamA, match.teamB].some((team) => genders.get(team[0]) === genders.get(team[1]))) {
           throw new Error('Cada dupla mista precisa ter um atleta masculino e um feminino.');
         }
         for (const id of [...match.teamA, ...match.teamB]) {
@@ -508,9 +545,10 @@ export class ScheduleService {
         }
         this.increment(partnerCounts, this.pairKey(...match.teamA));
         this.increment(partnerCounts, this.pairKey(...match.teamB));
-        for (const a of match.teamA) for (const b of match.teamB) {
-          this.increment(opponentCounts, this.pairKey(a, b));
-        }
+        for (const a of match.teamA)
+          for (const b of match.teamB) {
+            this.increment(opponentCounts, this.pairKey(a, b));
+          }
       }
       for (const id of round.restingPlayerIds) {
         if (!restCounts.has(id) || seen.has(id)) throw new Error('Descanso duplicado ou inválido.');
@@ -520,7 +558,7 @@ export class ScheduleService {
       if (seen.size !== size) throw new Error('Nem todos os jogadores foram alocados na rodada.');
     }
 
-    if ([...partnerCounts.values()].some(count => count > (mixed && size !== 24 ? 2 : 1))) {
+    if ([...partnerCounts.values()].some((count) => count > (mixed && size !== 24 ? 2 : 1))) {
       throw new Error('Há uma dupla repetida.');
     }
     if (!(mixed && size === 24)) {
@@ -532,16 +570,20 @@ export class ScheduleService {
         }
       }
     }
-    if ((size === 10 || (size === 12 && courts === 2))
-      && Math.max(...restCounts.values()) !== Math.min(...restCounts.values())) {
+    if (
+      (size === 10 || (size === 12 && courts === 2)) &&
+      Math.max(...restCounts.values()) !== Math.min(...restCounts.values())
+    ) {
       throw new Error('Os descansos não foram distribuídos de forma equilibrada.');
     }
     const matchesPerPlayer = mixed && size === 24 ? 12 : size === 10 || (size === 12 && courts === 2) ? 8 : size - 1;
-    const playedCounts = new Map(playerIds.map(id => [id, 0]));
-    rounds.forEach(round => round.matches.forEach(match => {
-      [...match.teamA, ...match.teamB].forEach(id => this.increment(playedCounts, id));
-    }));
-    if ([...playedCounts.values()].some(count => count !== matchesPerPlayer)) {
+    const playedCounts = new Map(playerIds.map((id) => [id, 0]));
+    rounds.forEach((round) =>
+      round.matches.forEach((match) => {
+        [...match.teamA, ...match.teamB].forEach((id) => this.increment(playedCounts, id));
+      }),
+    );
+    if ([...playedCounts.values()].some((count) => count !== matchesPerPlayer)) {
       throw new Error('Os jogos não foram distribuídos igualmente entre os jogadores.');
     }
   }
@@ -554,6 +596,10 @@ export class ScheduleService {
     return size - 1;
   }
 
-  private pairKey(a: string, b: string): string { return a < b ? `${a}|${b}` : `${b}|${a}`; }
-  private increment(map: Map<string, number>, key: string): void { map.set(key, (map.get(key) ?? 0) + 1); }
+  private pairKey(a: string, b: string): string {
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  }
+  private increment(map: Map<string, number>, key: string): void {
+    map.set(key, (map.get(key) ?? 0) + 1);
+  }
 }

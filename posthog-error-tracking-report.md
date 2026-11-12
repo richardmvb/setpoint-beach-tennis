@@ -1,6 +1,7 @@
 # PostHog Error Tracking
 
 > ⚠️ **Needs your attention**
+>
 > - In GitHub repository Settings → Secrets and variables → Actions, create the Actions secret `POSTHOG_CLI_API_KEY`.
 > - In the same GitHub Actions settings, create repository variables `POSTHOG_CLI_PROJECT_ID` and `POSTHOG_CLI_HOST`.
 > - Trigger the next main-branch deployment and confirm that its build uploads a symbol set and deploys successfully.

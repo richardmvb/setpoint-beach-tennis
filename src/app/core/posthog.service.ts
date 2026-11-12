@@ -16,19 +16,24 @@ export class PostHogService {
       get: () => () => undefined,
     });
   }
-  get isInitialized(): boolean { return this.initialized; }
+  get isInitialized(): boolean {
+    return this.initialized;
+  }
 
   displayApiSurveyByName(name: string, centered = false): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId) || !this.initialized) return Promise.resolve(false);
 
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       let settled = false;
-      const timeout = window.setTimeout(() => { settled = true; resolve(false); }, 10000);
-      posthog.getSurveys(surveys => {
+      const timeout = window.setTimeout(() => {
+        settled = true;
+        resolve(false);
+      }, 10000);
+      posthog.getSurveys((surveys) => {
         if (settled) return;
         settled = true;
         window.clearTimeout(timeout);
-        const survey = surveys.find(item => item.name === name && item.type === 'api');
+        const survey = surveys.find((item) => item.name === name && item.type === 'api');
         if (!survey) {
           resolve(false);
           return;
@@ -40,7 +45,7 @@ export class PostHogService {
             ignoreConditions: true,
             ignoreDelay: true,
             position: centered ? 'center' : 'next_to_trigger',
-            ...(centered ? {} : { selector: '.footer-feedback' })
+            ...(centered ? {} : { selector: '.footer-feedback' }),
           });
           resolve(true);
         } catch {
@@ -57,9 +62,7 @@ export class PostHogService {
 
     if (!apiKey || !options.api_host) {
       if (isDevMode()) {
-        const variableName = apiKey
-          ? 'NG_APP_POSTHOG_HOST'
-          : 'NG_APP_POSTHOG_PROJECT_TOKEN';
+        const variableName = apiKey ? 'NG_APP_POSTHOG_HOST' : 'NG_APP_POSTHOG_PROJECT_TOKEN';
         console.warn(`${variableName} is not configured; PostHog analytics are disabled in this local session.`);
       }
       return;

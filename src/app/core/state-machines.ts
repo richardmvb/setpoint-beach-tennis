@@ -16,7 +16,7 @@ export const TOURNAMENT_PHASE_FLOW: Readonly<Record<TournamentPhase, readonly To
   ready: ['registration', 'qualifying'],
   qualifying: ['finals', 'finished'],
   finals: ['finished'],
-  finished: []
+  finished: [],
 };
 
 export const TOURNAMENT_PHASE_LABEL: Readonly<Record<TournamentPhase, string>> = {
@@ -25,11 +25,11 @@ export const TOURNAMENT_PHASE_LABEL: Readonly<Record<TournamentPhase, string>> =
   ready: 'Pronto para iniciar',
   qualifying: 'Em andamento',
   finals: 'Finais',
-  finished: 'Finalizado'
+  finished: 'Finalizado',
 };
 
 export function tournamentPhase(
-  state: Pick<TournamentState, 'rounds' | 'finals' | 'finishedAt' | 'hostingMode' | 'sharedStatus'>
+  state: Pick<TournamentState, 'rounds' | 'finals' | 'finishedAt' | 'hostingMode' | 'sharedStatus'>,
 ): TournamentPhase {
   if (state.finishedAt) return 'finished';
   if (state.finals) return 'finals';
@@ -66,7 +66,7 @@ export const SYNC_STATUS_LABEL: Readonly<Record<SyncStatus, string>> = {
   paused: 'Modo offline',
   syncing: 'Sincronizando',
   pending: 'Aguardando sincronização',
-  synced: 'Sincronizado'
+  synced: 'Sincronizado',
 };
 
 export function syncStatus(input: SyncStatusInput): SyncStatus {

@@ -14,12 +14,17 @@ export interface FinalLiveScore {
   winner: 1 | 2 | null;
 }
 
-export function finalLiveMatchScore(score: FinalLiveScore): { scoreA: number; scoreB: number; tieBreakA: number | null; tieBreakB: number | null } {
+export function finalLiveMatchScore(score: FinalLiveScore): {
+  scoreA: number;
+  scoreB: number;
+  tieBreakA: number | null;
+  tieBreakB: number | null;
+} {
   return {
     scoreA: score.gamesA,
     scoreB: score.gamesB,
     tieBreakA: score.tieBreakA,
-    tieBreakB: score.tieBreakB
+    tieBreakB: score.tieBreakB,
   };
 }
 
@@ -35,7 +40,7 @@ export function calculateFinalLiveScore(points: readonly FinalLivePoint[]): Fina
     if (previousTieBreak && (next.score.A.sets || next.score.B.sets)) {
       finalTieBreak = {
         A: previousTieBreak.A + (point === 'A' ? 1 : 0),
-        B: previousTieBreak.B + (point === 'B' ? 1 : 0)
+        B: previousTieBreak.B + (point === 'B' ? 1 : 0),
       };
     }
     state = { ...next, history: [] };
@@ -52,6 +57,6 @@ export function calculateFinalLiveScore(points: readonly FinalLivePoint[]): Fina
     tieBreak,
     tieBreakA: tieBreakScore?.A ?? null,
     tieBreakB: tieBreakScore?.B ?? null,
-    winner
+    winner,
   };
 }

@@ -4,5 +4,4 @@ import { providePostHogErrorHandler } from './app/core/posthog-error-handler';
 
 bootstrapApplication(AppComponent, {
   providers: [providePostHogErrorHandler()],
-})
-  .catch((error: unknown) => console.error('Falha ao iniciar SETPOINT', error));
+}).catch((error: unknown) => console.error('Falha ao iniciar SETPOINT', error));

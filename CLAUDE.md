@@ -1,0 +1,67 @@
+# CLAUDE.md
+
+Guidance for AI agents and developers working in this repository. Keep it short; long-form decisions live in `docs/`.
+
+## What this is
+
+SETPOINT: a beach tennis tournament manager. Angular 20 standalone SPA (pt-BR UI), Supabase (SQL migrations, RPCs, realtime), PostHog analytics, hosted on GitHub Pages. The active work is the professionalization plan in [docs/professionalization-plan.md](docs/professionalization-plan.md); read its Engineering standards and Phase sections before changing structure.
+
+## Commands
+
+```bash
+nvm use                 # Node 24, from .nvmrc
+npm ci
+npm start               # dev server (ng serve)
+npm run lint            # ESLint: TypeScript + templates
+npm run lint:styles     # Stylelint
+npm run format:check    # Prettier (src/**/*.html and src/styles.css are excluded, see below)
+npm run typecheck       # tsc over src/**/*.ts
+npm run knip            # unused files, exports, dependencies
+npm test                # unit tests (node:test)
+npm run test:db         # SQL tests on PGlite
+npm run test:coverage   # unit tests with Node coverage
+npm run build           # production build (run scripts/generate-runtime-config.cjs first)
+npm run check           # lint, styles, format, typecheck, knip, tests, build
+```
+
+Local runtime config is `public/runtime-config.js` (tracked, development values). Do not overwrite it. CI and deploy regenerate it with `scripts/generate-runtime-config.cjs`.
+
+## Architecture (current)
+
+- `src/app/app.component.ts` and `.html`: monolith (about 3,000 lines of logic). Being decomposed in Phase 4. Do not add new features here; put new code in the target structure.
+- `src/app/core/`: services and domain logic (`supabase.service.ts`, `storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Pure logic is tested through `tests/*.test.cjs`, which transpile the TypeScript with `tests/helpers-ts.cjs`.
+- `src/app/features/`: presentational components (flat for now).
+- `src/styles.css`: one global stylesheet. Split into tokens and components in Phase 5.
+- `supabase/migrations/`: SQL applied by hand until Phase 3 adds the Supabase CLI.
+
+Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 in `docs/adr/`.
+
+## Engineering rules (enforced)
+
+- Conventional Commits. Enforced by commitlint on commits (husky hook) and on PR titles (CI).
+- Never silence a gate: no `eslint-disable`, `@ts-ignore`, `stylelint-disable`, skipped tests, or baselines. Fix the code, or reduce scope and say so.
+- Ratchet: rules that legacy code cannot pass are enabled only for the folders that comply (see `eslint.config.mjs`). Widen the glob as code is migrated.
+- Persisted data (`setpoint.tournament.v1`, offline queue, shared snapshot) and database changes must stay backward compatible with the previous release.
+- Migrations are forward-only. Never edit a migration already on `main`.
+- Do not commit or push unless the user asks.
+
+## Known deferred items (not silenced; tracked in the plan)
+
+| Item                                                                                                           | Phase                                |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `@typescript-eslint/no-unsafe-*` rules off, because of untyped Supabase results                                | 3 (generated DB types and parsers)   |
+| `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                       | 5 (split into tokens and components) |
+| `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                        | 4 (per-feature templates)            |
+| Modal focus trap and Escape handling are partial                                                               | 5 (`@angular/cdk/dialog`)            |
+| Four `core/` files keep unused-looking exports because `tests/` load them through `loadCore` (see `knip.json`) | 4 (move logic to `domain/`)          |
+| Coverage thresholds, e2e (Playwright) and axe checks                                                           | 1 and 2                              |
+| `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                           | 7                                    |
+
+## Where to look
+
+- Plan, phases and standards: `docs/professionalization-plan.md`
+- Decisions: `docs/adr/`
+- Baselines and AI cost log: `docs/metrics.md`
+- Security findings: `docs/security.md` (Phase 3)
+- Vendor inventory and swap effort: `docs/vendors.md` (Phase 4)
+- Contributor guide (English): `CONTRIBUTING.md`

@@ -6,14 +6,29 @@ const { TournamentLibrary, libraryId } = loadCore('tournament-library');
 
 function tournament(id, overrides = {}) {
   return {
-    version: 1, name: `Torneio ${id}`, size: 8, courts: 2, gamesToWin: 4, roundCount: 7,
+    version: 1,
+    name: `Torneio ${id}`,
+    size: 8,
+    courts: 2,
+    gamesToWin: 4,
+    roundCount: 7,
     players: [{ id: 'p1', name: 'Ana', photoDataUrl: 'data:image/webp;base64,AAAA' }],
-    rounds: [{ number: 1, restingPlayerIds: [], matches: [
-      { id: 'm1', court: 1, teamA: ['p1', 'p2'], teamB: ['p3', 'p4'], scoreA: 4, scoreB: 2 },
-      { id: 'm2', court: 2, teamA: ['p5', 'p6'], teamB: ['p7', 'p8'], scoreA: null, scoreB: null }
-    ] }],
-    createdAt: '2026-11-09T09:00:00.000Z', startedAt: '2026-11-09T09:30:00.000Z',
-    analyticsId: id, hostingMode: 'local', tournamentMode: 'super', ...overrides
+    rounds: [
+      {
+        number: 1,
+        restingPlayerIds: [],
+        matches: [
+          { id: 'm1', court: 1, teamA: ['p1', 'p2'], teamB: ['p3', 'p4'], scoreA: 4, scoreB: 2 },
+          { id: 'm2', court: 2, teamA: ['p5', 'p6'], teamB: ['p7', 'p8'], scoreA: null, scoreB: null },
+        ],
+      },
+    ],
+    createdAt: '2026-11-09T09:00:00.000Z',
+    startedAt: '2026-11-09T09:30:00.000Z',
+    analyticsId: id,
+    hostingMode: 'local',
+    tournamentMode: 'super',
+    ...overrides,
   };
 }
 
@@ -80,10 +95,16 @@ test('torneios compartilhados nunca ficam na fila de envio', () => {
 test('lista do mais recente ao mais antigo, aplica o limite e exclui', () => {
   const library = create(new MemoryStorage(), 3);
   for (const id of ['a', 'b', 'c', 'd']) library.save(tournament(id));
-  assert.deepEqual(library.list().map(entry => entry.id), ['d', 'c', 'b']);
+  assert.deepEqual(
+    library.list().map((entry) => entry.id),
+    ['d', 'c', 'b'],
+  );
   assert.equal(library.load('a'), null);
   library.remove('c');
-  assert.deepEqual(library.list().map(entry => entry.id), ['d', 'b']);
+  assert.deepEqual(
+    library.list().map((entry) => entry.id),
+    ['d', 'b'],
+  );
 });
 
 test('com o armazenamento cheio, descarta os mais antigos e preserva o atual', () => {
@@ -91,7 +112,7 @@ test('com o armazenamento cheio, descarta os mais antigos e preserva o atual', (
   const storage = new MemoryStorage(size * 2 + 1200);
   const library = create(storage);
   for (const id of ['a', 'b', 'c', 'd']) assert.ok(library.save(tournament(id)), id);
-  const ids = library.list().map(entry => entry.id);
+  const ids = library.list().map((entry) => entry.id);
   assert.equal(ids[0], 'd');
   assert.ok(ids.length < 4 && ids.length >= 1);
   assert.ok(library.load('d'));
@@ -109,7 +130,7 @@ test('o histórico respeita o orçamento de bytes e nunca descarta o torneio sen
   const one = JSON.stringify(tournament('a')).length;
   const library = new TournamentLibrary(new MemoryStorage(), undefined, 30, clock, one * 2 + 10);
   for (const id of ['a', 'b', 'c', 'd']) library.save(tournament(id));
-  const ids = library.list().map(entry => entry.id);
+  const ids = library.list().map((entry) => entry.id);
   assert.equal(ids[0], 'd');
   assert.ok(ids.length <= 2, `esperava no máximo 2 torneios, havia ${ids.length}`);
   assert.equal(library.load('a'), null);

@@ -43,18 +43,18 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 
 ## Formatos
 
-| Formato | Rodadas | Quadras | Observações |
-| --- | ---: | ---: | --- |
-| Super 8 | 7 | 2 | Todos enfrentam os demais; parceiros não se repetem no formato aberto. |
-| Super 10 | 10 | 2 | Descansos distribuídos para equilibrar partidas. |
-| Super 12 | 11 | 3 | Todos jogam 8 partidas. |
-| Super 12 | 12 | 2 | Rodada de equalização de jogos e descansos. |
-| Super 24 aberto | 23 | 6 | Todos jogam em cada rodada. |
-| Super 24 misto | 12 | 6 | Cada atleta joga 12 partidas, uma com cada parceiro da outra categoria. |
-| Super 24 misto | 24 | 3 | Cada dupla de rodadas equaliza os jogos; permite encerrar a classificatória antecipadamente. |
-| Grupos rotativos abertos | 3 | 1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três. |
-| Grupos rotativos mistos | 2 | 1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria. |
-| Grupos fixos | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar. |
+| Formato                  |            Rodadas |          Quadras | Observações                                                                                  |
+| ------------------------ | -----------------: | ---------------: | -------------------------------------------------------------------------------------------- |
+| Super 8                  |                  7 |                2 | Todos enfrentam os demais; parceiros não se repetem no formato aberto.                       |
+| Super 10                 |                 10 |                2 | Descansos distribuídos para equilibrar partidas.                                             |
+| Super 12                 |                 11 |                3 | Todos jogam 8 partidas.                                                                      |
+| Super 12                 |                 12 |                2 | Rodada de equalização de jogos e descansos.                                                  |
+| Super 24 aberto          |                 23 |                6 | Todos jogam em cada rodada.                                                                  |
+| Super 24 misto           |                 12 |                6 | Cada atleta joga 12 partidas, uma com cada parceiro da outra categoria.                      |
+| Super 24 misto           |                 24 |                3 | Cada dupla de rodadas equaliza os jogos; permite encerrar a classificatória antecipadamente. |
+| Grupos rotativos abertos |                  3 |      1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três.                             |
+| Grupos rotativos mistos  |                  2 |      1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria.                             |
+| Grupos fixos             | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar.                                                           |
 
 Em todos os formatos, a cada tabela gerada os atletas são sorteados (inclusive a composição dos grupos rotativos), a ordem das rodadas é embaralhada e as quadras são distribuídas para que cada atleta passe pelas diferentes quadras. No Super 24 misto em 3 quadras, as duas metades de cada rodada completa continuam juntas, preservando os pontos em que todos têm o mesmo número de partidas (necessários para as finais antecipadas). Nos grupos, o número de quadras continua sendo um por grupo, mas um grupo não fica preso à mesma quadra.
 
@@ -95,6 +95,21 @@ npm run build -- --base-href /setpoint-beach-tennis/
 
 Os arquivos de produção são gerados em `dist/setpoint/browser`. Rode os testes com `npm test`. O mapa das máquinas de estado do app está em [`docs/state-machines.md`](docs/state-machines.md).
 
+## Desenvolvimento
+
+Para contribuir, veja [CONTRIBUTING.md](CONTRIBUTING.md) (em inglês). As regras do projeto para pessoas e agentes de IA estão em [CLAUDE.md](CLAUDE.md). Comandos principais:
+
+```bash
+npm run lint         # ESLint (TypeScript e templates)
+npm run lint:styles  # Stylelint
+npm run format:check # Prettier
+npm run typecheck    # TypeScript
+npm run knip         # código e dependências não usados
+npm test             # testes unitários
+npm run test:db      # testes SQL (PGlite)
+npm run check        # todos os itens acima e o build de produção
+```
+
 ## Modo local
 
 O torneio completo fica no `localStorage` do navegador. Todo torneio iniciado também é guardado em **Meus torneios** (botão no cabeçalho, na configuração e em Ajustes): até 30 torneios, mesmo depois de iniciar outro ou de uma nova versão do app. Abra qualquer um para rever tabela, placares e ranking; torneios finalizados abrem somente para leitura. As fotos não são guardadas no histórico. Não é necessário Supabase para montar tabelas, lançar resultados, gerar finais ou usar os backups. Com o Supabase configurado, a tela Ajustes também permite gerar um link público de acompanhamento para torneios locais, inclusive em andamento. Esse link só permite visualizar participantes, partidas e placares; não permite entrar nem editar. As fotos dos participantes não são publicadas nesse espelho.
@@ -112,25 +127,25 @@ Abrir o aplicativo pela primeira vez, criar ou iniciar torneios compartilhados e
 ### Configuração do Supabase
 
 1. Aplique uma vez, nesta ordem, as migrations pendentes pelo SQL Editor do projeto:
-	- `202610310001_shared_tournaments.sql`
-	- `202611010001_moderator_manual_participants.sql`
-	- `202611010002_cancel_shared_tournament.sql`
-	- `202611010003_archive_dashboard_metrics.sql`
-	- `202611010004_local_tournament_metrics.sql`
-	- `202611010005_super24_mixed_doubles.sql`
-	- `202611010006_shared_player_avatars.sql`
-	- `202611070001_local_metrics_super24_three_courts.sql`
-	- `202611070002_local_live_spectator_links.sql`
-	- `202611080001_dashboard_activity.sql`
-	- `202611080002_offline_sync.sql`
-	- `202611080003_archive_inactive_tournaments.sql`
-	- `202611090001_local_tournament_archives.sql`
-	- `202611090002_dashboard_insights.sql`
-   Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
+   - `202610310001_shared_tournaments.sql`
+   - `202611010001_moderator_manual_participants.sql`
+   - `202611010002_cancel_shared_tournament.sql`
+   - `202611010003_archive_dashboard_metrics.sql`
+   - `202611010004_local_tournament_metrics.sql`
+   - `202611010005_super24_mixed_doubles.sql`
+   - `202611010006_shared_player_avatars.sql`
+   - `202611070001_local_metrics_super24_three_courts.sql`
+   - `202611070002_local_live_spectator_links.sql`
+   - `202611080001_dashboard_activity.sql`
+   - `202611080002_offline_sync.sql`
+   - `202611080003_archive_inactive_tournaments.sql`
+   - `202611090001_local_tournament_archives.sql`
+   - `202611090002_dashboard_insights.sql`
+     Aplique as migrations antes de publicar a nova versão do app, para que os envios ao vivo não fiquem pendentes por falta das RPCs.
 2. Em **Authentication → URL Configuration**, configure o Site URL e permita os redirects usados, incluindo:
-	- `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
-	- `http://localhost:4200/dashboard`
-	- `http://localhost:4201/dashboard`, se usar essa porta local.
+   - `https://richardmvb.github.io/setpoint-beach-tennis/dashboard`
+   - `http://localhost:4200/dashboard`
+   - `http://localhost:4201/dashboard`, se usar essa porta local.
 3. Habilite **Allow anonymous sign-ins** para o moderador sem e-mail, métricas locais e publicação de links de acompanhamento.
 4. Para o dashboard, use o magic link com uma conta autorizada em `public.setpoint_dashboard_admins`. A RPC verifica a sessão e a allowlist no banco.
 

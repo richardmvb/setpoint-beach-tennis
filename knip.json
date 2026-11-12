@@ -1,0 +1,9 @@
+{
+  "ignore": ["public/**"],
+  "ignoreIssues": {
+    "src/app/core/dashboard-insights.ts": ["exports"],
+    "src/app/core/dialog.service.ts": ["exports"],
+    "src/app/core/scenario-engine.ts": ["exports"],
+    "src/app/core/state-machines.ts": ["exports"]
+  }
+}

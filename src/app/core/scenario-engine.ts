@@ -16,8 +16,16 @@
 export type GoalPlace = 1 | 2 | 3;
 export type GoalStatus = 'clinched' | 'alive' | 'eliminated';
 
-export interface EnginePlayer { id: string; wins: number; }
-export interface EngineMatch { id: string; round: number; teamA: readonly string[]; teamB: readonly string[]; }
+export interface EnginePlayer {
+  id: string;
+  wins: number;
+}
+export interface EngineMatch {
+  id: string;
+  round: number;
+  teamA: readonly string[];
+  teamB: readonly string[];
+}
 
 export interface EngineOptions {
   /** Visit every future when open matches <= this. Default 18 (262k futures). */
@@ -29,7 +37,7 @@ export interface EngineOptions {
   forced?: Readonly<Record<string, 'A' | 'B'>>;
 }
 
-export interface EngineMatchImpact {
+interface EngineMatchImpact {
   matchId: string;
   round: number;
   teamA: readonly string[];
@@ -44,7 +52,7 @@ export interface EngineMatchImpact {
   better: 'A' | 'B' | null;
 }
 
-export interface EngineRivalImpact {
+interface EngineRivalImpact {
   playerId: string;
   /** Sum, over this rival's games that do not involve the athlete, of the chance gained when the rival loses. */
   totalGain: number;
@@ -53,7 +61,7 @@ export interface EngineRivalImpact {
   matches: number;
 }
 
-export interface EngineGoalResult {
+interface EngineGoalResult {
   goal: GoalPlace;
   probability: number;
   status: GoalStatus;
@@ -96,7 +104,7 @@ export function tieValue(s: number, t: number, goal: number): number {
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
-    a = (a + 0x6D2B79F5) >>> 0;
+    a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -104,24 +112,31 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-interface OpenMatch { id: string; round: number; teamA: number[]; teamB: number[]; meSide: -1 | 0 | 1; }
+interface OpenMatch {
+  id: string;
+  round: number;
+  teamA: number[];
+  teamB: number[];
+  meSide: -1 | 0 | 1;
+}
 
 export function projectScenarios(
   players: readonly EnginePlayer[],
   matches: readonly EngineMatch[],
   playerId: string,
-  options: EngineOptions = {}
+  options: EngineOptions = {},
 ): EngineResult {
-  const me = players.findIndex(player => player.id === playerId);
+  const me = players.findIndex((player) => player.id === playerId);
   if (me < 0) throw new Error('Atleta fora do torneio.');
   const exactLimit = options.exactLimit ?? 18;
   const simulations = options.simulations ?? 20000;
   const forced = options.forced ?? {};
   const index = new Map(players.map((player, i) => [player.id, i] as const));
-  const toIndexes = (ids: readonly string[]): number[] => ids.map(id => index.get(id)).filter((i): i is number => i !== undefined);
+  const toIndexes = (ids: readonly string[]): number[] =>
+    ids.map((id) => index.get(id)).filter((i): i is number => i !== undefined);
 
   const P = players.length;
-  const base = Int32Array.from(players.map(player => player.wins));
+  const base = Int32Array.from(players.map((player) => player.wins));
   const open: OpenMatch[] = [];
   const remaining = new Int32Array(P);
   let myOpenMatches = 0;
@@ -173,10 +188,14 @@ export function projectScenarios(
     const v1 = tieValue(s, t, 1);
     const v2 = tieValue(s, t, 2);
     const v3 = tieValue(s, t, 3);
-    goalSum[1] += v1; goalSum[2] += v2; goalSum[3] += v3;
+    goalSum[1] += v1;
+    goalSum[2] += v2;
+    goalSum[3] += v3;
     for (let goal = 1; goal <= 3; goal++) if (s + 1 <= goal && s + t + 1 > goal) tieMass[goal]++;
     const row = myOpenMatches + 1;
-    byWinsSum[myFree] += v1; byWinsSum[row + myFree] += v2; byWinsSum[2 * row + myFree] += v3;
+    byWinsSum[myFree] += v1;
+    byWinsSum[row + myFree] += v2;
+    byWinsSum[2 * row + myFree] += v3;
     byWinsCount[myFree]++;
     for (let i = 0; i < R; i++) {
       const side = outcome[i];
@@ -190,7 +209,8 @@ export function projectScenarios(
   const apply = (match: OpenMatch, aWins: boolean, delta: number): void => {
     for (const i of aWins ? match.teamA : match.teamB) wins[i] += delta;
   };
-  const isMyWin = (match: OpenMatch, aWins: boolean): boolean => match.meSide === 0 ? aWins : match.meSide === 1 ? !aWins : false;
+  const isMyWin = (match: OpenMatch, aWins: boolean): boolean =>
+    match.meSide === 0 ? aWins : match.meSide === 1 ? !aWins : false;
 
   if (mode === 'exact') {
     wins.set(base);
@@ -250,32 +270,37 @@ export function projectScenarios(
   const goals = {} as Record<GoalPlace, EngineGoalResult>;
   for (const goal of GOALS) {
     const status = statusFor(goal);
-    const impacts: EngineMatchImpact[] = open.map((match, i) => {
-      const a = impactCount[i * 2 + 1];
-      const b = impactCount[i * 2];
-      const ifAWins = a ? impactSum[((goal - 1) * R + i) * 2 + 1] / a : 0;
-      const ifBWins = b ? impactSum[((goal - 1) * R + i) * 2] / b : 0;
-      const diff = ifAWins - ifBWins;
-      return {
-        matchId: match.id,
-        round: match.round,
-        teamA: match.teamA.map(k => players[k].id),
-        teamB: match.teamB.map(k => players[k].id),
-        mine: match.meSide >= 0,
-        ifAWins,
-        ifBWins,
-        swing: Math.abs(diff),
-        better: (Math.abs(diff) < 1e-9 ? null : diff > 0 ? 'A' : 'B') as 'A' | 'B' | null
-      };
-    }).sort((x, y) => y.swing - x.swing || x.round - y.round);
+    const impacts: EngineMatchImpact[] = open
+      .map((match, i): EngineMatchImpact => {
+        const a = impactCount[i * 2 + 1];
+        const b = impactCount[i * 2];
+        const ifAWins = a ? impactSum[((goal - 1) * R + i) * 2 + 1] / a : 0;
+        const ifBWins = b ? impactSum[((goal - 1) * R + i) * 2] / b : 0;
+        const diff = ifAWins - ifBWins;
+        return {
+          matchId: match.id,
+          round: match.round,
+          teamA: match.teamA.map((k) => players[k].id),
+          teamB: match.teamB.map((k) => players[k].id),
+          mine: match.meSide >= 0,
+          ifAWins,
+          ifBWins,
+          swing: Math.abs(diff),
+          better: Math.abs(diff) < 1e-9 ? null : diff > 0 ? 'A' : 'B',
+        };
+      })
+      .sort((x, y) => y.swing - x.swing || x.round - y.round);
 
     const rivalAcc = new Map<number, { gain: number; matches: number }>();
-    const impactById = new Map(impacts.map(item => [item.matchId, item] as const));
-    open.forEach(match => {
+    const impactById = new Map(impacts.map((item) => [item.matchId, item] as const));
+    open.forEach((match) => {
       if (match.meSide >= 0) return;
       const impact = impactById.get(match.id);
       if (!impact) return;
-      for (const [team, loseValue] of [[match.teamA, impact.ifBWins - impact.ifAWins], [match.teamB, impact.ifAWins - impact.ifBWins]] as const) {
+      for (const [team, loseValue] of [
+        [match.teamA, impact.ifBWins - impact.ifAWins],
+        [match.teamB, impact.ifAWins - impact.ifBWins],
+      ] as const) {
         for (const j of team) {
           const entry = rivalAcc.get(j) ?? { gain: 0, matches: 0 };
           entry.gain += Math.max(0, loseValue);
@@ -285,13 +310,19 @@ export function projectScenarios(
       }
     });
     const rivals: EngineRivalImpact[] = [...rivalAcc.entries()]
-      .map(([j, entry]) => ({ playerId: players[j].id, totalGain: entry.gain, gainPerLoss: entry.matches ? entry.gain / entry.matches : 0, matches: entry.matches }))
-      .filter(rival => rival.totalGain > 0.005)
+      .map(([j, entry]) => ({
+        playerId: players[j].id,
+        totalGain: entry.gain,
+        gainPerLoss: entry.matches ? entry.gain / entry.matches : 0,
+        matches: entry.matches,
+      }))
+      .filter((rival) => rival.totalGain > 0.005)
       .sort((x, y) => y.totalGain - x.totalGain);
 
     const byMyWins: { wins: number; probability: number }[] = [];
     for (let k = 0; k <= myOpenMatches; k++) {
-      if (byWinsCount[k]) byMyWins.push({ wins: k, probability: byWinsSum[(goal - 1) * (myOpenMatches + 1) + k] / byWinsCount[k] });
+      if (byWinsCount[k])
+        byMyWins.push({ wins: k, probability: byWinsSum[(goal - 1) * (myOpenMatches + 1) + k] / byWinsCount[k] });
     }
 
     goals[goal] = {
@@ -301,11 +332,11 @@ export function projectScenarios(
       tieShare: tieMass[goal] / futures,
       matchImpacts: impacts,
       rivals,
-      byMyWins
+      byMyWins,
     };
   }
 
-  const placeDistribution = Array.from(dist, value => value / futures);
+  const placeDistribution = Array.from(dist, (value) => value / futures);
   return {
     playerId,
     mode,
@@ -318,6 +349,6 @@ export function projectScenarios(
     expectedPlace: placeDistribution.reduce((sum, p, k) => sum + p * (k + 1), 0),
     bestPlace,
     worstPlace,
-    goals
+    goals,
   };
 }

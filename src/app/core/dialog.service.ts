@@ -35,20 +35,29 @@ export class DialogService {
       input: 'text',
       inputLabel: `Digite “${options.phrase}” para confirmar`,
       inputPlaceholder: options.phrase,
-      inputAttributes: { autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', spellcheck: 'false', 'aria-label': `Digite ${options.phrase} para confirmar` },
+      inputAttributes: {
+        autocapitalize: 'off',
+        autocomplete: 'off',
+        autocorrect: 'off',
+        spellcheck: 'false',
+        'aria-label': `Digite ${options.phrase} para confirmar`,
+      },
       focusCancel: false,
       focusConfirm: false,
-      didOpen: popup => {
+      didOpen: (popup) => {
         const confirm = Swal.getConfirmButton();
         const input = popup.querySelector<HTMLInputElement>('.swal2-input');
         if (!confirm || !input) return;
         confirm.disabled = true;
-        input.addEventListener('input', () => { confirm.disabled = !matchesPhrase(input.value, options.phrase); });
+        input.addEventListener('input', () => {
+          confirm.disabled = !matchesPhrase(input.value, options.phrase);
+        });
         input.focus();
       },
-      preConfirm: value => matchesPhrase(String(value ?? ''), options.phrase)
-        ? true
-        : Swal.showValidationMessage(`Digite exatamente “${options.phrase}”.`)
+      preConfirm: (value) =>
+        matchesPhrase(String(value ?? ''), options.phrase)
+          ? true
+          : Swal.showValidationMessage(`Digite exatamente “${options.phrase}”.`),
     } as SweetAlertOptions;
     const result = await Swal.fire(config);
     return result.isConfirmed;
@@ -78,8 +87,8 @@ export class DialogService {
         cancelButton: 'button secondary',
         input: 'sp-dialog-input',
         inputLabel: 'sp-dialog-label',
-        validationMessage: 'sp-dialog-error'
-      }
+        validationMessage: 'sp-dialog-error',
+      },
     };
   }
 }

@@ -37,7 +37,9 @@ export interface DashboardActiveTournament {
   matches_total: number;
 }
 
-interface DashboardLocalArchive extends DashboardActiveTournament { live_id: string | null; }
+interface DashboardLocalArchive extends DashboardActiveTournament {
+  live_id: string | null;
+}
 
 export interface DashboardActivity {
   active_tournaments: DashboardActiveTournament[];
@@ -66,17 +68,20 @@ export class SupabaseService {
       return;
     }
     this.client = createClient(supabaseUrl, publishableKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
     });
   }
 
-  get isConfigured(): boolean { return this.client !== null; }
+  get isConfigured(): boolean {
+    return this.client !== null;
+  }
 
   async finishUrlSignIn(): Promise<void> {
     try {
       await this.client?.auth.initialize();
     } finally {
-      if (window.location.hash) history.replaceState(history.state, '', window.location.pathname + window.location.search);
+      if (window.location.hash)
+        history.replaceState(history.state, '', window.location.pathname + window.location.search);
     }
   }
 
@@ -113,27 +118,35 @@ export class SupabaseService {
   }
 
   async createSharedTournament(
-    state: TournamentState, moderatorName: string, moderatorGender: PlayerGender = 'male', moderatorPhoto?: string
+    state: TournamentState,
+    moderatorName: string,
+    moderatorGender: PlayerGender = 'male',
+    moderatorPhoto?: string,
   ): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('create_shared_tournament', {
       p_name: state.name,
       p_capacity: state.size,
       p_moderator_name: moderatorName,
       p_moderator_gender: moderatorGender,
-      p_initial_state: { ...state, moderatorAvatarDataUrl: moderatorPhoto ?? null }
+      p_initial_state: { ...state, moderatorAvatarDataUrl: moderatorPhoto ?? null },
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
   }
 
-  async joinSharedTournament(inviteToken: string, displayName: string, gender: PlayerGender = 'male', photoDataUrl?: string): Promise<SharedTournamentSnapshot> {
+  async joinSharedTournament(
+    inviteToken: string,
+    displayName: string,
+    gender: PlayerGender = 'male',
+    photoDataUrl?: string,
+  ): Promise<SharedTournamentSnapshot> {
     const joinId = await this.getOrCreateJoinId(inviteToken);
     const { data, error } = await this.requireClient().rpc('join_shared_tournament', {
       p_invite_token: inviteToken,
       p_display_name: displayName,
       p_gender: gender,
       p_join_id: joinId,
-      p_avatar_data: photoDataUrl ?? null
+      p_avatar_data: photoDataUrl ?? null,
     });
     if (error) throw error;
     await this.saveGuestName(inviteToken, displayName);
@@ -145,13 +158,15 @@ export class SupabaseService {
     const key = await this.guestStorageKey(inviteToken);
     try {
       const saved = localStorage.getItem(key) ?? sessionStorage.getItem(key);
-      return saved ? (JSON.parse(saved) as { displayName?: string }).displayName ?? '' : '';
-    } catch { return ''; }
+      return saved ? ((JSON.parse(saved) as { displayName?: string }).displayName ?? '') : '';
+    } catch {
+      return '';
+    }
   }
 
   async getSharedTournament(inviteToken: string): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('get_shared_tournament', {
-      p_invite_token: inviteToken
+      p_invite_token: inviteToken,
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
@@ -159,20 +174,22 @@ export class SupabaseService {
 
   async getOwnedSharedTournament(id: string): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('get_owned_shared_tournament', {
-      p_tournament_id: id
+      p_tournament_id: id,
     });
     if (error) throw error;
     return data as SharedTournamentSnapshot;
   }
 
-  async createLocalLiveTournament(state: TournamentState): Promise<{ id: string; readToken: string; writeToken: string }> {
+  async createLocalLiveTournament(
+    state: TournamentState,
+  ): Promise<{ id: string; readToken: string; writeToken: string }> {
     const client = this.requireClient();
     if (!(await this.currentUser())) {
       const { error: authError } = await client.auth.signInAnonymously();
       if (authError) throw authError;
     }
     const { data, error } = await client.rpc('create_local_live_tournament', {
-      p_state: this.publicTournamentState(state)
+      p_state: this.publicTournamentState(state),
     });
     if (error) throw error;
     return data as { id: string; readToken: string; writeToken: string };
@@ -181,7 +198,7 @@ export class SupabaseService {
   async updateLocalLiveTournament(writeToken: string, state: TournamentState): Promise<LocalLiveTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('update_local_live_tournament', {
       p_write_token: writeToken,
-      p_state: this.publicTournamentState(state)
+      p_state: this.publicTournamentState(state),
     });
     if (error) throw error;
     return data as LocalLiveTournamentSnapshot;
@@ -193,11 +210,15 @@ export class SupabaseService {
     return data as LocalLiveTournamentSnapshot;
   }
 
-  async syncLocalLiveTournament(writeToken: string, base: TournamentState, state: TournamentState): Promise<LocalLiveTournamentSnapshot> {
+  async syncLocalLiveTournament(
+    writeToken: string,
+    base: TournamentState,
+    state: TournamentState,
+  ): Promise<LocalLiveTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('sync_local_live_tournament', {
       p_write_token: writeToken,
       p_base_state: base,
-      p_state: this.publicTournamentState(state)
+      p_state: this.publicTournamentState(state),
     });
     if (error) throw error;
     const snapshot = data as LocalLiveTournamentSnapshot;
@@ -210,9 +231,7 @@ export class SupabaseService {
     const key = `local-live:${id}`;
     const previous = this.channels.get(key);
     if (previous) void client.removeChannel(previous);
-    const channel = client.channel(key)
-      .on('broadcast', { event: 'refresh' }, onChange)
-      .subscribe();
+    const channel = client.channel(key).on('broadcast', { event: 'refresh' }, onChange).subscribe();
     this.channels.set(key, channel);
   }
 
@@ -226,20 +245,26 @@ export class SupabaseService {
     const client = this.requireClient();
     const channel = client.channel(key);
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => { void client.removeChannel(channel); reject(new Error('Live update timeout.')); }, 5000);
-      channel.subscribe(async status => {
-        if (status === 'SUBSCRIBED') {
-          const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
-          clearTimeout(timeout);
-          await client.removeChannel(channel);
-          if (result === 'ok') resolve();
-          else reject(new Error('Live update failed.'));
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          clearTimeout(timeout);
-          await client.removeChannel(channel);
-          reject(new Error('Live channel unavailable.'));
-        }
-      });
+      const timeout = setTimeout(() => {
+        void client.removeChannel(channel);
+        reject(new Error('Live update timeout.'));
+      }, 5000);
+      channel.subscribe(
+        (status) =>
+          void (async () => {
+            if (status === 'SUBSCRIBED') {
+              const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
+              clearTimeout(timeout);
+              await client.removeChannel(channel);
+              if (result === 'ok') resolve();
+              else reject(new Error('Live update failed.'));
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              clearTimeout(timeout);
+              await client.removeChannel(channel);
+              reject(new Error('Live channel unavailable.'));
+            }
+          })(),
+      );
     });
   }
 
@@ -247,7 +272,7 @@ export class SupabaseService {
     return {
       ...state,
       analyticsId: undefined,
-      players: state.players.map(({ photoDataUrl: _photoDataUrl, ...player }) => player)
+      players: state.players.map(({ photoDataUrl: _photoDataUrl, ...player }) => player),
     };
   }
 
@@ -273,17 +298,18 @@ export class SupabaseService {
     const [activityResult, localResult, archiveResult] = await Promise.all([
       client.rpc('get_dashboard_activity'),
       client.rpc('get_dashboard_archived_local_tournaments'),
-      client.rpc('get_dashboard_local_archives')
+      client.rpc('get_dashboard_local_archives'),
     ]);
     if (activityResult.error) throw activityResult.error;
     if (localResult.error && localResult.error.code !== 'PGRST202') throw localResult.error;
     // The archive RPC is newer than the rest: a deploy without its migration must keep working.
     if (archiveResult.error && archiveResult.error.code !== 'PGRST202') throw archiveResult.error;
     const activity = activityResult.data as DashboardActivity;
-    const archives = ((archiveResult.data ?? []) as (DashboardLocalArchive & { status?: string })[]);
+    const archives = (archiveResult.data ?? []) as (DashboardLocalArchive & { status?: string })[];
     // A tournament published live and archived appears once, as the archive (it has every detail).
-    const supersededLiveIds = new Set(archives.map(archive => archive.live_id).filter((id): id is string => !!id));
-    const keep = (item: DashboardActiveTournament): boolean => !(item.source === 'local' && supersededLiveIds.has(item.id));
+    const supersededLiveIds = new Set(archives.map((archive) => archive.live_id).filter((id): id is string => !!id));
+    const keep = (item: DashboardActiveTournament): boolean =>
+      !(item.source === 'local' && supersededLiveIds.has(item.id));
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const isLive = (archive: DashboardLocalArchive & { status?: string }): boolean =>
       archive.status === 'active' && Date.parse(archive.updated_at) > dayAgo;
@@ -295,16 +321,19 @@ export class SupabaseService {
       archived_tournaments: [
         ...activity.archived_tournaments.filter(keep),
         ...((localResult.data ?? []) as DashboardActiveTournament[]).filter(keep),
-        ...archives.filter(archive => !isLive(archive))
+        ...archives.filter((archive) => !isLive(archive)),
       ].sort(byRecent),
-      local_archives_available: !localResult.error
+      local_archives_available: !localResult.error,
     };
   }
 
-  async getDashboardTournament(source: DashboardTournamentSource, id: string): Promise<Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>> {
+  async getDashboardTournament(
+    source: DashboardTournamentSource,
+    id: string,
+  ): Promise<Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>> {
     const { data, error } = await this.requireClient().rpc('get_dashboard_tournament', {
       p_source: source,
-      p_tournament_id: id
+      p_tournament_id: id,
     });
     if (error) throw error;
     return data as Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>;
@@ -312,7 +341,7 @@ export class SupabaseService {
 
   async recordLocalTournamentMetrics(state: TournamentState, abandoned = false): Promise<void> {
     if (!this.client || state.hostingMode === 'shared' || !state.analyticsId || !state.startedAt) return;
-    if (!await this.currentUser()) await this.signInAnonymously();
+    if (!(await this.currentUser())) await this.signInAnonymously();
     const { error } = await this.requireClient().rpc('record_local_tournament_metrics', {
       p_tournament_id: state.analyticsId,
       p_tournament_mode: state.tournamentMode ?? 'super',
@@ -330,23 +359,32 @@ export class SupabaseService {
   }
 
   /** Uploads the full tournament (no photos) so the dashboard can reopen it. */
-  async saveLocalTournamentArchive(tournamentId: string, state: TournamentState, liveTournamentId?: string): Promise<void> {
+  async saveLocalTournamentArchive(
+    tournamentId: string,
+    state: TournamentState,
+    liveTournamentId?: string,
+  ): Promise<void> {
     const client = this.requireClient();
-    if (!await this.currentUser()) await this.signInAnonymously();
+    if (!(await this.currentUser())) await this.signInAnonymously();
     const { error } = await client.rpc('save_local_tournament_archive', {
       p_tournament_id: tournamentId,
       p_state: this.publicTournamentState(state),
-      p_live_tournament_id: liveTournamentId ?? null
+      p_live_tournament_id: liveTournamentId ?? null,
     });
     if (error) throw error;
   }
 
-  async addSharedParticipant(id: string, displayName: string, gender: PlayerGender = 'male', photoDataUrl?: string): Promise<SharedTournamentSnapshot> {
+  async addSharedParticipant(
+    id: string,
+    displayName: string,
+    gender: PlayerGender = 'male',
+    photoDataUrl?: string,
+  ): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('add_shared_participant', {
       p_tournament_id: id,
       p_display_name: displayName,
       p_gender: gender,
-      p_avatar_data: photoDataUrl ?? null
+      p_avatar_data: photoDataUrl ?? null,
     });
     if (error) throw error;
     await this.broadcastRefresh(id);
@@ -356,7 +394,7 @@ export class SupabaseService {
   async removeSharedParticipant(id: string, playerId: string): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('remove_shared_participant', {
       p_tournament_id: id,
-      p_player_id: playerId
+      p_player_id: playerId,
     });
     if (error) throw error;
     await this.broadcastRefresh(id);
@@ -371,7 +409,7 @@ export class SupabaseService {
 
   async rotateSharedInvite(id: string): Promise<{ inviteToken: string; inviteExpiresAt: string }> {
     const { data, error } = await this.requireClient().rpc('rotate_shared_invite', {
-      p_tournament_id: id
+      p_tournament_id: id,
     });
     if (error) throw error;
     return data as { inviteToken: string; inviteExpiresAt: string };
@@ -380,7 +418,7 @@ export class SupabaseService {
   async startSharedTournament(id: string, state: TournamentState): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('start_shared_tournament', {
       p_tournament_id: id,
-      p_state: state
+      p_state: state,
     });
     if (error) throw error;
     void this.broadcastRefresh(id).catch(() => undefined);
@@ -390,18 +428,22 @@ export class SupabaseService {
   async saveSharedTournament(id: string, state: TournamentState): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('save_shared_tournament', {
       p_tournament_id: id,
-      p_state: state
+      p_state: state,
     });
     if (error) throw error;
     await this.broadcastRefresh(id);
     return data as SharedTournamentSnapshot;
   }
 
-  async syncSharedTournament(id: string, base: TournamentState, state: TournamentState): Promise<SharedTournamentSnapshot> {
+  async syncSharedTournament(
+    id: string,
+    base: TournamentState,
+    state: TournamentState,
+  ): Promise<SharedTournamentSnapshot> {
     const { data, error } = await this.requireClient().rpc('sync_shared_tournament', {
       p_tournament_id: id,
       p_base_state: base,
-      p_state: state
+      p_state: state,
     });
     if (error) throw error;
     void this.broadcastRefresh(id).catch(() => undefined);
@@ -411,7 +453,8 @@ export class SupabaseService {
   subscribeToSharedTournament(id: string, onChange: () => void): RealtimeChannel {
     const client = this.requireClient();
     this.unsubscribeFromSharedTournament(id);
-    const channel = client.channel(`shared-tournament:${id}`)
+    const channel = client
+      .channel(`shared-tournament:${id}`)
       .on('broadcast', { event: 'refresh' }, onChange)
       .subscribe();
     this.channels.set(id, channel);
@@ -434,7 +477,7 @@ export class SupabaseService {
   async broadcastRefresh(id: string): Promise<void> {
     const subscribed = this.channels.get(id);
     if (subscribed) {
-      if (await subscribed.send({ type: 'broadcast', event: 'refresh', payload: {} }) !== 'ok') {
+      if ((await subscribed.send({ type: 'broadcast', event: 'refresh', payload: {} })) !== 'ok') {
         throw new Error('Não foi possível notificar os espectadores.');
       }
       return;
@@ -442,20 +485,26 @@ export class SupabaseService {
     const client = this.requireClient();
     const channel = client.channel(`shared-tournament:${id}`);
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => { void client.removeChannel(channel); reject(new Error('Tempo esgotado ao notificar os espectadores.')); }, 5000);
-      channel.subscribe(async status => {
-        if (status === 'SUBSCRIBED') {
-          const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
-          clearTimeout(timeout);
-          await client.removeChannel(channel);
-          if (result === 'ok') resolve();
-          else reject(new Error('Não foi possível notificar os espectadores.'));
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          clearTimeout(timeout);
-          await client.removeChannel(channel);
-          reject(new Error('Não foi possível conectar ao canal de atualizações.'));
-        }
-      });
+      const timeout = setTimeout(() => {
+        void client.removeChannel(channel);
+        reject(new Error('Tempo esgotado ao notificar os espectadores.'));
+      }, 5000);
+      channel.subscribe(
+        (status) =>
+          void (async () => {
+            if (status === 'SUBSCRIBED') {
+              const result = await channel.send({ type: 'broadcast', event: 'refresh', payload: {} });
+              clearTimeout(timeout);
+              await client.removeChannel(channel);
+              if (result === 'ok') resolve();
+              else reject(new Error('Não foi possível notificar os espectadores.'));
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              clearTimeout(timeout);
+              await client.removeChannel(channel);
+              reject(new Error('Não foi possível conectar ao canal de atualizações.'));
+            }
+          })(),
+      );
     });
   }
 
@@ -484,21 +533,28 @@ export class SupabaseService {
     try {
       const saved = localStorage.getItem(key) ?? sessionStorage.getItem(key);
       joinId = saved ? (JSON.parse(saved) as { joinId?: string }).joinId : undefined;
-    } catch { /* session storage below remains a fallback */ }
+    } catch {
+      /* session storage below remains a fallback */
+    }
     this.writeGuestRecord(key, { joinId, displayName });
   }
 
   private writeGuestRecord(key: string, value: { joinId?: string; displayName?: string }): void {
-    try { localStorage.setItem(key, JSON.stringify(value)); }
-    catch {
-      try { sessionStorage.setItem(key, JSON.stringify(value)); } catch { /* server still validates token and capacity */ }
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      try {
+        sessionStorage.setItem(key, JSON.stringify(value));
+      } catch {
+        /* server still validates token and capacity */
+      }
     }
   }
 
   private async guestStorageKey(inviteToken: string): Promise<string> {
     try {
       const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(inviteToken));
-      const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+      const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
       return `setpoint.shared.guest.${hash}`;
     } catch {
       return `setpoint.shared.guest.${inviteToken.slice(-16)}`;

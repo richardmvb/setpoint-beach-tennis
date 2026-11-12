@@ -4,9 +4,7 @@ const { config } = require('dotenv');
 config({ quiet: true });
 
 if (!process.env.POSTHOG_CLI_API_KEY || !process.env.POSTHOG_CLI_PROJECT_ID) {
-  console.warn(
-    'Skipping PostHog source map upload: POSTHOG_CLI_API_KEY and POSTHOG_CLI_PROJECT_ID are required.',
-  );
+  console.warn('Skipping PostHog source map upload: POSTHOG_CLI_API_KEY and POSTHOG_CLI_PROJECT_ID are required.');
   process.exit(0);
 }
 
