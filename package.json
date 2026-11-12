@@ -7,7 +7,17 @@
     "build": "ng build",
     "postbuild": "node scripts/upload-posthog-sourcemaps.cjs",
     "watch": "ng build --watch --configuration development",
-    "test": "node --test tests/*.test.cjs"
+    "test": "node --test tests/analytics-catalog.test.cjs tests/dashboard-insights-model.test.cjs tests/dialog.test.cjs tests/final-live-score.test.cjs tests/profile.test.cjs tests/qualification-path.test.cjs tests/scenario-engine.test.cjs tests/schedule-randomization.test.cjs tests/setup-tour.test.cjs tests/state-machines.test.cjs tests/super24-mixed.test.cjs tests/tournament-library.test.cjs",
+    "test:db": "node --test tests/dashboard-activity.test.cjs tests/dashboard-insights.test.cjs tests/inactive-tournament-cleanup.test.cjs tests/local-archive.test.cjs tests/offline-sync.test.cjs tests/tournament-report.test.cjs",
+    "test:coverage": "node --test --experimental-test-coverage tests/analytics-catalog.test.cjs tests/dashboard-insights-model.test.cjs tests/dialog.test.cjs tests/final-live-score.test.cjs tests/profile.test.cjs tests/qualification-path.test.cjs tests/scenario-engine.test.cjs tests/schedule-randomization.test.cjs tests/setup-tour.test.cjs tests/state-machines.test.cjs tests/super24-mixed.test.cjs tests/tournament-library.test.cjs",
+    "lint": "eslint .",
+    "lint:styles": "stylelint \"src/**/*.css\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.eslint.json --noEmit",
+    "knip": "knip",
+    "check": "npm run lint && npm run lint:styles && npm run format:check && npm run typecheck && npm run knip && npm test && npm run test:db && npm run build",
+    "prepare": "husky"
   },
   "dependencies": {
     "@angular/common": "^20.3.0",
@@ -25,12 +35,39 @@
     "zone.js": "~0.15.1"
   },
   "devDependencies": {
+    "@angular-eslint/eslint-plugin": "20.7.0",
+    "@angular-eslint/eslint-plugin-template": "20.7.0",
+    "@angular-eslint/template-parser": "20.7.0",
     "@angular/build": "^20.3.0",
     "@angular/cli": "^20.3.0",
     "@angular/compiler-cli": "^20.3.0",
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
     "@electric-sql/pglite": "^0.5.15",
+    "@eslint/js": "9.39.5",
     "@posthog/cli": "^0.19.0",
     "dotenv": "^18.0.9",
-    "typescript": "~5.9.2"
+    "eslint": "9.39.5",
+    "globals": "^17.14.0",
+    "husky": "9.1.7",
+    "knip": "6.45.1",
+    "lint-staged": "17.6.0",
+    "prettier": "3.10.0",
+    "stylelint": "18.0.0",
+    "stylelint-config-standard": "41.0.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "8.72.2"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "src/**/*.css": [
+      "stylelint --fix"
+    ],
+    "*.{json,md,cjs,mjs,yml}": [
+      "prettier --write"
+    ]
   }
 }
