@@ -291,7 +291,7 @@
     }
     @if (isSharedMode) {
       <article class="shared-invite-panel"><div><span class="card-kicker">CONVITE · EXPIRA EM 15 MIN SE INCOMPLETO</span><p class="muted">{{ state.players.length }} de {{ state.size }} participantes.</p>@if (sharedSnapshot?.expiresAt) {
-      <p class="muted">Disponível até {{ sharedSnapshot?.expiresAt | date:'short' }}.</p>
+      <p class="muted">Disponível até {{ sharedSnapshot.expiresAt | date:'short' }}.</p>
     }</div>@if (sharedInviteUrl) {
     <div class="shared-invite-copy"><input aria-label="Link de convite" readonly [value]="sharedInviteUrl"><button class="button secondary" type="button" (click)="copySharedInvite()">Copiar link</button><button class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">Novo link</button></div>
     }@if (!sharedInviteUrl && isSharedModerator) {
@@ -439,7 +439,7 @@
   <section class="content-grid">
     @if (isSharedMode && isSharedModerator && state.sharedTournamentId) {
       <article class="surface-card full-card shared-invite-panel"><div><span class="card-kicker">TORNEIO COMPARTILHADO · {{ sharedStatusLabel }}</span><h2>Link para acompanhar</h2><p class="muted">Convidados acompanham; só você registra placares.</p>@if (sharedSnapshot?.expiresAt) {
-      <p class="muted">Disponível até {{ sharedSnapshot?.expiresAt | date:'short' }}.</p>
+      <p class="muted">Disponível até {{ sharedSnapshot.expiresAt | date:'short' }}.</p>
     }</div><div class="shared-invite-copy">@if (sharedInviteUrl) {
     <input aria-label="Link de convite" readonly [value]="sharedInviteUrl">
     }@if (sharedInviteUrl) {
