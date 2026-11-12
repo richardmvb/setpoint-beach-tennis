@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Match, Player } from '../core/models';
 import { PlayerAvatarComponent } from './player-avatar.component';
 
@@ -7,28 +7,35 @@ import { PlayerAvatarComponent } from './player-avatar.component';
 @Component({
   selector: 'app-battle-card',
   standalone: true,
-  imports: [CommonModule, PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:block;min-width:0}'],
   template: `
     <div class="battle" [class.is-live]="inPlay" [class.is-done]="done" [class.has-mine]="mine">
       <div class="battle-meta">
         <span class="battle-court">{{ label }}</span>
-        <span class="battle-status" [class.live]="inPlay" [class.done]="done"
-          ><i *ngIf="inPlay"></i>{{ statusLabel }}</span
+        <span class="battle-status" [class.live]="inPlay" [class.done]="done">
+          @if (inPlay) {
+            <i></i>
+          }
+          {{ statusLabel }}</span
         >
       </div>
       <div class="battle-arena">
         <div class="battle-team team-a" [class.winner]="winner === 'A'" [class.loser]="winner === 'B'">
-          <div class="battle-player" *ngFor="let id of match.teamA" [class.me]="id === highlightId">
-            <app-player-avatar
-              [name]="nameOf(id)"
-              [photoDataUrl]="photoOf(id)"
-              variant="battle-avatar"
-            ></app-player-avatar>
-            <span class="battle-name">{{ nameOf(id) }}</span>
-          </div>
-          <span *ngIf="winner === 'A'" class="battle-win">VENCEU</span>
+          @for (id of match.teamA; track id) {
+            <div class="battle-player" [class.me]="id === highlightId">
+              <app-player-avatar
+                [name]="nameOf(id)"
+                [photoDataUrl]="photoOf(id)"
+                variant="battle-avatar"
+              ></app-player-avatar>
+              <span class="battle-name">{{ nameOf(id) }}</span>
+            </div>
+          }
+          @if (winner === 'A') {
+            <span class="battle-win">VENCEU</span>
+          }
         </div>
         <div
           class="battle-board"
@@ -37,25 +44,33 @@ import { PlayerAvatarComponent } from './player-avatar.component';
           role="img"
           [attr.aria-label]="ariaScore"
         >
-          <span *ngFor="let value of [match.scoreA]" class="battle-score score-a">{{ value ?? '–' }}</span>
+          @for (value of [match.scoreA]; track value) {
+            <span class="battle-score score-a">{{ value ?? '–' }}</span>
+          }
           <span class="battle-vs" aria-hidden="true">VS</span>
-          <span *ngFor="let value of [match.scoreB]" class="battle-score score-b">{{ value ?? '–' }}</span>
+          @for (value of [match.scoreB]; track value) {
+            <span class="battle-score score-b">{{ value ?? '–' }}</span>
+          }
         </div>
         <div class="battle-team team-b" [class.winner]="winner === 'B'" [class.loser]="winner === 'A'">
-          <div class="battle-player" *ngFor="let id of match.teamB" [class.me]="id === highlightId">
-            <app-player-avatar
-              [name]="nameOf(id)"
-              [photoDataUrl]="photoOf(id)"
-              variant="battle-avatar"
-            ></app-player-avatar>
-            <span class="battle-name">{{ nameOf(id) }}</span>
-          </div>
-          <span *ngIf="winner === 'B'" class="battle-win">VENCEU</span>
+          @for (id of match.teamB; track id) {
+            <div class="battle-player" [class.me]="id === highlightId">
+              <app-player-avatar
+                [name]="nameOf(id)"
+                [photoDataUrl]="photoOf(id)"
+                variant="battle-avatar"
+              ></app-player-avatar>
+              <span class="battle-name">{{ nameOf(id) }}</span>
+            </div>
+          }
+          @if (winner === 'B') {
+            <span class="battle-win">VENCEU</span>
+          }
         </div>
       </div>
-      <small *ngIf="match.tieBreakA != null && match.tieBreakB != null" class="battle-tie"
-        >Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small
-      >
+      @if (match.tieBreakA != null && match.tieBreakB != null) {
+        <small class="battle-tie">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
+      }
     </div>
   `,
 })

@@ -38,82 +38,91 @@ export interface GroupStandingTable {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
-    <article *ngFor="let group of groupTables" class="surface-card full-card group-ranking-card">
-      <div class="card-title-row">
-        <div>
-          <span class="card-kicker">{{ group.name }}</span>
-          <h2>Classificação</h2>
+    @for (group of groupTables; track group) {
+      <article class="surface-card full-card group-ranking-card">
+        <div class="card-title-row">
+          <div>
+            <span class="card-kicker">{{ group.name }}</span>
+            <h2>Classificação</h2>
+          </div>
+          <span class="mini-tag">{{ fixedPairsMode ? 'Duplas' : 'Atletas' }}</span>
         </div>
-        <span class="mini-tag">{{ fixedPairsMode ? 'Duplas' : 'Atletas' }}</span>
-      </div>
-      <div class="table-scroll">
-        <table class="leaderboard">
-          <thead>
-            <tr>
-              <th>POS.</th>
-              <th>{{ fixedPairsMode ? 'DUPLA' : 'JOGADOR' }}</th>
-              <th class="numeric">VIT.</th>
-              <th class="numeric">PRÓ</th>
-              <th class="numeric">SALDO</th>
-              <th class="numeric">JOGOS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              *ngFor="let entry of group.entries; let i = index"
-              [class.me-row]="isMine(entry)"
-              [class.rank-gold]="i === 0"
-              [class.rank-silver]="i === 1"
-              [class.rank-bronze]="i === 2"
-            >
-              <td>
-                <span class="rank-number" [class.top-three]="i < 3" [class.medal]="i < 3" [attr.data-place]="i + 1">{{
-                  i + 1
-                }}</span>
-              </td>
-              <td>
-                <span class="ranking-player-cell"
-                  ><app-player-avatar
-                    *ngFor="let id of entry.playerIds"
-                    [name]="nameOf(id)"
-                    [photoDataUrl]="photoOf(id)"
-                  ></app-player-avatar
-                  ><b>{{ entry.label }}</b
-                  ><em *ngIf="isMine(entry)" class="row-tag me-tag">VOCÊ</em></span
+        <div class="table-scroll">
+          <table class="leaderboard">
+            <thead>
+              <tr>
+                <th>POS.</th>
+                <th>{{ fixedPairsMode ? 'DUPLA' : 'JOGADOR' }}</th>
+                <th class="numeric">VIT.</th>
+                <th class="numeric">PRÓ</th>
+                <th class="numeric">SALDO</th>
+                <th class="numeric">JOGOS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of group.entries; track entry; let i = $index) {
+                <tr
+                  [class.me-row]="isMine(entry)"
+                  [class.rank-gold]="i === 0"
+                  [class.rank-silver]="i === 1"
+                  [class.rank-bronze]="i === 2"
                 >
-              </td>
-              <td class="numeric">
-                <b>{{ entry.setsWon }}</b>
-              </td>
-              <td class="numeric">{{ entry.gamesFor }}</td>
-              <td class="numeric">
-                <b
-                  class="balance-chip"
-                  [class.positive]="entry.gameBalance > 0"
-                  [class.negative]="entry.gameBalance < 0"
-                  >{{ entry.gameBalance > 0 ? '+' : '' }}{{ entry.gameBalance }}</b
-                >
-              </td>
-              <td class="numeric">{{ entry.matchesPlayed }} / {{ scheduledMatches(entry.playerIds[0]) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </article>
-    <section *ngIf="showGenderRankings" class="gender-ranking-grid">
-      <ng-container
-        *ngTemplateOutlet="
-          genderRanking;
-          context: { title: 'RANKING MASCULINO', icon: 'male', rows: maleStandings, limit: genderRankingLimit }
-        "
-      ></ng-container>
-      <ng-container
-        *ngTemplateOutlet="
-          genderRanking;
-          context: { title: 'RANKING FEMININO', icon: 'female', rows: femaleStandings, limit: genderRankingLimit }
-        "
-      ></ng-container>
-    </section>
+                  <td>
+                    <span
+                      class="rank-number"
+                      [class.top-three]="i < 3"
+                      [class.medal]="i < 3"
+                      [attr.data-place]="i + 1"
+                      >{{ i + 1 }}</span
+                    >
+                  </td>
+                  <td>
+                    <span class="ranking-player-cell">
+                      @for (id of entry.playerIds; track id) {
+                        <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)"></app-player-avatar>
+                      }
+                      <b>{{ entry.label }}</b>
+                      @if (isMine(entry)) {
+                        <em class="row-tag me-tag">VOCÊ</em>
+                      }
+                    </span>
+                  </td>
+                  <td class="numeric">
+                    <b>{{ entry.setsWon }}</b>
+                  </td>
+                  <td class="numeric">{{ entry.gamesFor }}</td>
+                  <td class="numeric">
+                    <b
+                      class="balance-chip"
+                      [class.positive]="entry.gameBalance > 0"
+                      [class.negative]="entry.gameBalance < 0"
+                      >{{ entry.gameBalance > 0 ? '+' : '' }}{{ entry.gameBalance }}</b
+                    >
+                  </td>
+                  <td class="numeric">{{ entry.matchesPlayed }} / {{ scheduledMatches(entry.playerIds[0]) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </article>
+    }
+    @if (showGenderRankings) {
+      <section class="gender-ranking-grid">
+        <ng-container
+          *ngTemplateOutlet="
+            genderRanking;
+            context: { title: 'RANKING MASCULINO', icon: 'male', rows: maleStandings, limit: genderRankingLimit }
+          "
+        ></ng-container>
+        <ng-container
+          *ngTemplateOutlet="
+            genderRanking;
+            context: { title: 'RANKING FEMININO', icon: 'female', rows: femaleStandings, limit: genderRankingLimit }
+          "
+        ></ng-container>
+      </section>
+    }
     <ng-template #genderRanking let-title="title" let-icon="icon" let-rows="rows" let-limit="limit"
       ><article class="surface-card gender-ranking-card">
         <div class="card-title-row">
@@ -138,47 +147,55 @@ export interface GroupStandingTable {
               </tr>
             </thead>
             <tbody>
-              <tr
-                *ngFor="let row of rows.slice(0, limit); let i = index"
-                [class.gender-cut]="i === limit - 1"
-                [class.rank-gold]="i === 0"
-                [class.rank-silver]="i === 1"
-                [class.rank-bronze]="i === 2"
-              >
-                <td>
-                  <span class="rank-number" [class.top-three]="i < 3" [class.medal]="i < 3" [attr.data-place]="i + 1">{{
-                    (i + 1).toString().padStart(2, '0')
-                  }}</span>
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="ranking-player-cell ranking-player-button"
-                    (click)="playerSelected.emit(row.playerId)"
-                  >
-                    <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar
-                    ><app-gender-icon [gender]="icon"></app-gender-icon
-                    ><span class="ranking-player-name"
-                      ><b>{{ row.name }}</b
-                      ><small class="table-sub"
-                        >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
-                      ></span
+              @for (row of rows.slice(0, limit); track row; let i = $index) {
+                <tr
+                  [class.gender-cut]="i === limit - 1"
+                  [class.rank-gold]="i === 0"
+                  [class.rank-silver]="i === 1"
+                  [class.rank-bronze]="i === 2"
+                >
+                  <td>
+                    <span
+                      class="rank-number"
+                      [class.top-three]="i < 3"
+                      [class.medal]="i < 3"
+                      [attr.data-place]="i + 1"
+                      >{{ (i + 1).toString().padStart(2, '0') }}</span
                     >
-                  </button>
-                </td>
-                <td class="numeric">
-                  <b>{{ row.setsWon }}</b>
-                </td>
-                <td class="numeric">{{ row.matchesPlayed }} / {{ scheduledMatches(row.playerId) }}</td>
-                <td class="numeric">{{ row.gamesFor }}</td>
-                <td class="numeric">{{ row.gamesAgainst }}</td>
-                <td class="numeric">
-                  <b class="balance-chip" [class.positive]="row.gameBalance > 0" [class.negative]="row.gameBalance < 0"
-                    >{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</b
-                  >
-                </td>
-                <td class="numeric">{{ row.rests }}</td>
-              </tr>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="ranking-player-cell ranking-player-button"
+                      (click)="playerSelected.emit(row.playerId)"
+                    >
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar
+                      ><app-gender-icon [gender]="icon"></app-gender-icon
+                      ><span class="ranking-player-name"
+                        ><b>{{ row.name }}</b
+                        ><small class="table-sub"
+                          >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
+                        ></span
+                      >
+                    </button>
+                  </td>
+                  <td class="numeric">
+                    <b>{{ row.setsWon }}</b>
+                  </td>
+                  <td class="numeric">{{ row.matchesPlayed }} / {{ scheduledMatches(row.playerId) }}</td>
+                  <td class="numeric">{{ row.gamesFor }}</td>
+                  <td class="numeric">{{ row.gamesAgainst }}</td>
+                  <td class="numeric">
+                    <b
+                      class="balance-chip"
+                      [class.positive]="row.gameBalance > 0"
+                      [class.negative]="row.gameBalance < 0"
+                      >{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</b
+                    >
+                  </td>
+                  <td class="numeric">{{ row.rests }}</td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
@@ -192,79 +209,101 @@ export interface GroupStandingTable {
         </div>
         <span class="mini-tag">{{ standings.length }} atletas</span>
       </div>
-      <div *ngIf="!hasSchedule" class="empty-state">
-        <span>↗</span><b>O ranking aparecerá após gerar a tabela</b
-        ><small>Cadastre os atletas e gere as rodadas.</small>
-      </div>
-      <div *ngIf="hasSchedule" class="table-scroll">
-        <table class="leaderboard">
-          <thead>
-            <tr>
-              <th>POS.</th>
-              <th>JOGADOR</th>
-              <th class="numeric">WINS</th>
-              <th class="numeric">JOGOS</th>
-              <th class="numeric">GAMES PRÓ</th>
-              <th class="numeric">CONTRA</th>
-              <th class="numeric">SALDO</th>
-              <th class="numeric">DESC.</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              *ngFor="let row of standings; let i = index"
-              [class.rank-gold]="i === 0"
-              [class.rank-silver]="i === 1"
-              [class.rank-bronze]="i === 2"
-              [class.me-row]="!!highlightId && row.playerId === highlightId"
-            >
-              <td>
-                <span class="rank-number" [class.top-three]="i < 3" [class.medal]="i < 3" [attr.data-place]="i + 1">{{
-                  (i + 1).toString().padStart(2, '0')
-                }}</span>
-              </td>
-              <td>
-                <button
-                  type="button"
-                  class="ranking-player-cell ranking-player-button"
-                  (click)="playerSelected.emit(row.playerId)"
+      @if (!hasSchedule) {
+        <div class="empty-state">
+          <span>↗</span><b>O ranking aparecerá após gerar a tabela</b
+          ><small>Cadastre os atletas e gere as rodadas.</small>
+        </div>
+      }
+      @if (hasSchedule) {
+        <div class="table-scroll">
+          <table class="leaderboard">
+            <thead>
+              <tr>
+                <th>POS.</th>
+                <th>JOGADOR</th>
+                <th class="numeric">WINS</th>
+                <th class="numeric">JOGOS</th>
+                <th class="numeric">GAMES PRÓ</th>
+                <th class="numeric">CONTRA</th>
+                <th class="numeric">SALDO</th>
+                <th class="numeric">DESC.</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of standings; track row; let i = $index) {
+                <tr
+                  [class.rank-gold]="i === 0"
+                  [class.rank-silver]="i === 1"
+                  [class.rank-bronze]="i === 2"
+                  [class.me-row]="!!highlightId && row.playerId === highlightId"
                 >
-                  <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar
-                  ><app-gender-icon *ngIf="genderOf(row.playerId)" [gender]="genderOf(row.playerId)!"></app-gender-icon
-                  ><span class="ranking-player-name"
-                    ><span class="ranking-name-line"
-                      ><b>{{ row.name }}</b
-                      ><i
-                        *ngIf="moveOf(row.playerId) as move"
-                        class="move-chip"
-                        [class.up]="move > 0"
-                        [class.down]="move < 0"
-                        [attr.aria-label]="move > 0 ? 'subiu ' + move + ' posições' : 'caiu ' + -move + ' posições'"
-                        >{{ move > 0 ? '▲' : '▼' }}{{ move > 0 ? move : -move }}</i
-                      ><em *ngIf="i === 0 && row.setsWon > 0" class="row-tag leader-tag">LÍDER</em
-                      ><em *ngIf="!!highlightId && row.playerId === highlightId" class="row-tag me-tag">VOCÊ</em></span
-                    ><small class="table-sub"
-                      >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
-                    ><span class="form-bar" aria-hidden="true"><i [style.width.%]="barPercent(row)"></i></span
-                  ></span>
-                </button>
-              </td>
-              <td class="numeric">
-                <b>{{ row.setsWon }}</b>
-              </td>
-              <td class="numeric">{{ row.matchesPlayed }} / {{ scheduledMatches(row.playerId) }}</td>
-              <td class="numeric">{{ row.gamesFor }}</td>
-              <td class="numeric">{{ row.gamesAgainst }}</td>
-              <td class="numeric">
-                <b class="balance-chip" [class.positive]="row.gameBalance > 0" [class.negative]="row.gameBalance < 0"
-                  >{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</b
-                >
-              </td>
-              <td class="numeric">{{ row.rests }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <td>
+                    <span
+                      class="rank-number"
+                      [class.top-three]="i < 3"
+                      [class.medal]="i < 3"
+                      [attr.data-place]="i + 1"
+                      >{{ (i + 1).toString().padStart(2, '0') }}</span
+                    >
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="ranking-player-cell ranking-player-button"
+                      (click)="playerSelected.emit(row.playerId)"
+                    >
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar>
+                      @if (genderOf(row.playerId)) {
+                        <app-gender-icon [gender]="genderOf(row.playerId)!"></app-gender-icon>
+                      }
+                      <span class="ranking-player-name"
+                        ><span class="ranking-name-line"
+                          ><b>{{ row.name }}</b>
+                          @if (moveOf(row.playerId); as move) {
+                            <i
+                              class="move-chip"
+                              [class.up]="move > 0"
+                              [class.down]="move < 0"
+                              [attr.aria-label]="
+                                move > 0 ? 'subiu ' + move + ' posições' : 'caiu ' + -move + ' posições'
+                              "
+                              >{{ move > 0 ? '▲' : '▼' }}{{ move > 0 ? move : -move }}</i
+                            >
+                          }
+                          @if (i === 0 && row.setsWon > 0) {
+                            <em class="row-tag leader-tag">LÍDER</em>
+                          }
+                          @if (!!highlightId && row.playerId === highlightId) {
+                            <em class="row-tag me-tag">VOCÊ</em>
+                          }</span
+                        ><small class="table-sub"
+                          >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
+                        ><span class="form-bar" aria-hidden="true"><i [style.width.%]="barPercent(row)"></i></span
+                      ></span>
+                    </button>
+                  </td>
+                  <td class="numeric">
+                    <b>{{ row.setsWon }}</b>
+                  </td>
+                  <td class="numeric">{{ row.matchesPlayed }} / {{ scheduledMatches(row.playerId) }}</td>
+                  <td class="numeric">{{ row.gamesFor }}</td>
+                  <td class="numeric">{{ row.gamesAgainst }}</td>
+                  <td class="numeric">
+                    <b
+                      class="balance-chip"
+                      [class.positive]="row.gameBalance > 0"
+                      [class.negative]="row.gameBalance < 0"
+                      >{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</b
+                    >
+                  </td>
+                  <td class="numeric">{{ row.rests }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </article>
   `,
 })

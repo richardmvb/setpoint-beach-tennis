@@ -22,41 +22,45 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         </div>
       </header>
 
-      <div *ngIf="!isGuest && rows.length" class="qual-athletes" role="radiogroup" aria-label="Atleta">
-        <button
-          *ngFor="let row of rows"
-          type="button"
-          role="radio"
-          class="qual-athlete"
-          [class.active]="row.playerId === targetPlayerId"
-          [attr.aria-checked]="row.playerId === targetPlayerId"
-          (click)="targetPlayerIdChange.emit(row.playerId)"
-        >
-          <app-player-avatar
-            [name]="row.name"
-            [photoDataUrl]="photoOf(row.playerId)"
-            variant="team-avatar"
-          ></app-player-avatar
-          ><span>{{ row.name }}</span
-          ><em>{{ row.position }}º</em>
-        </button>
-      </div>
+      @if (!isGuest && rows.length) {
+        <div class="qual-athletes" role="radiogroup" aria-label="Atleta">
+          @for (row of rows; track row) {
+            <button
+              type="button"
+              role="radio"
+              class="qual-athlete"
+              [class.active]="row.playerId === targetPlayerId"
+              [attr.aria-checked]="row.playerId === targetPlayerId"
+              (click)="targetPlayerIdChange.emit(row.playerId)"
+            >
+              <app-player-avatar
+                [name]="row.name"
+                [photoDataUrl]="photoOf(row.playerId)"
+                variant="team-avatar"
+              ></app-player-avatar
+              ><span>{{ row.name }}</span
+              ><em>{{ row.position }}º</em>
+            </button>
+          }
+        </div>
+      }
 
       <div class="qual-goals" role="radiogroup" aria-label="Objetivo">
-        <button
-          *ngFor="let option of goalOptions"
-          type="button"
-          role="radio"
-          class="qual-goal"
-          [class.active]="option.value === targetPlace"
-          [attr.aria-checked]="option.value === targetPlace"
-          (click)="targetPlaceChange.emit(option.value)"
-        >
-          <span>{{ option.label }}</span><small>{{ goalBadge(option.value) }}</small>
-        </button>
+        @for (option of goalOptions; track option) {
+          <button
+            type="button"
+            role="radio"
+            class="qual-goal"
+            [class.active]="option.value === targetPlace"
+            [attr.aria-checked]="option.value === targetPlace"
+            (click)="targetPlaceChange.emit(option.value)"
+          >
+            <span>{{ option.label }}</span><small>{{ goalBadge(option.value) }}</small>
+          </button>
+        }
       </div>
 
-      <ng-container *ngIf="path && goal as g">
+      @if (path && goal; as g) {
         <section class="qual-hero" [ngClass]="'is-' + g.status">
           <svg class="qual-gauge" viewBox="0 0 120 120" role="img" [attr.aria-label]="gaugeAria(g)">
             <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
@@ -76,171 +80,195 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
             <span class="qual-status">{{ statusLabel(g) }}</span>
             <h3>{{ g.headline }}</h3>
             <p>{{ g.detail }}</p>
-            <small *ngIf="g.tieNote" class="qual-tie">{{ g.tieNote }}</small>
+            @if (g.tieNote) {
+              <small class="qual-tie">{{ g.tieNote }}</small>
+            }
             <div class="qual-meta">
               <span>{{ path.position }}º agora · {{ path.wins }} {{ path.wins === 1 ? 'vitória' : 'vitórias' }}</span
               ><span>Colocação provável: {{ path.expectedPlace | number: '1.1-1' }}º</span>
             </div>
           </div>
         </section>
-
-        <section *ngIf="path.forcedMatches.length" class="qual-whatif-banner" aria-live="polite">
-          <div>
-            <b>Cenário simulado</b
-            ><span
-              >{{
-                path.forcedMatches.length === 1
-                  ? '1 resultado assumido'
-                  : path.forcedMatches.length + ' resultados assumidos'
-              }}
-              · sua chance agora: <strong>{{ chance(g.probability) }}</strong></span
-            >
-          </div>
-          <ul>
-            <li *ngFor="let m of path.forcedMatches">
-              <span>R{{ m.round }} · {{ m.forced === 'A' ? m.teamA : m.teamB }} vence</span
-              ><button
-                type="button"
-                (click)="force.emit({ matchId: m.id, side: m.forced! })"
-                aria-label="Desfazer este resultado"
+        @if (path.forcedMatches.length) {
+          <section class="qual-whatif-banner" aria-live="polite">
+            <div>
+              <b>Cenário simulado</b
+              ><span
+                >{{
+                  path.forcedMatches.length === 1
+                    ? '1 resultado assumido'
+                    : path.forcedMatches.length + ' resultados assumidos'
+                }}
+                · sua chance agora: <strong>{{ chance(g.probability) }}</strong></span
               >
-                ✕
-              </button>
-            </li>
-          </ul>
-          <button type="button" class="qual-link" (click)="clearForced.emit()">Limpar cenário</button>
-        </section>
-
+            </div>
+            <ul>
+              @for (m of path.forcedMatches; track m) {
+                <li>
+                  <span>R{{ m.round }} · {{ m.forced === 'A' ? m.teamA : m.teamB }} vence</span
+                  ><button
+                    type="button"
+                    (click)="force.emit({ matchId: m.id, side: m.forced! })"
+                    aria-label="Desfazer este resultado"
+                  >
+                    ✕
+                  </button>
+                </li>
+              }
+            </ul>
+            <button type="button" class="qual-link" (click)="clearForced.emit()">Limpar cenário</button>
+          </section>
+        }
         <section class="qual-section">
           <h3>Onde você pode terminar</h3>
           <div class="qual-bars" role="list">
-            <div
-              *ngFor="let bar of distribution; let i = index"
-              class="qual-bar"
-              role="listitem"
-              [class.in-goal]="i + 1 <= g.goal"
-              [attr.aria-label]="i + 1 + 'º lugar: ' + chance(bar)"
-            >
-              <span class="qual-bar-value">{{ chance(bar) }}</span>
-              <i [style.height.%]="barHeight(bar)"></i>
-              <b>{{ i + 1 }}º</b>
-            </div>
+            @for (bar of distribution; track bar; let i = $index) {
+              <div
+                class="qual-bar"
+                role="listitem"
+                [class.in-goal]="i + 1 <= g.goal"
+                [attr.aria-label]="i + 1 + 'º lugar: ' + chance(bar)"
+              >
+                <span class="qual-bar-value">{{ chance(bar) }}</span>
+                <i [style.height.%]="barHeight(bar)"></i>
+                <b>{{ i + 1 }}º</b>
+              </div>
+            }
           </div>
           <small class="qual-hint">Em dourado, as colocações que cumprem o objetivo.</small>
         </section>
-
-        <section *ngIf="trendDots.length > 1" class="qual-section">
-          <div class="qual-section-head">
-            <h3>Sua chance ao longo do torneio</h3>
-            <span
-              *ngIf="trendDelta !== null"
-              class="qual-delta"
-              [class.up]="trendDelta > 0"
-              [class.down]="trendDelta < 0"
-              >{{ trendDelta > 0 ? '▲ +' : trendDelta < 0 ? '▼ ' : '' }}{{ trendDelta }}
-              {{ trendDelta === 1 || trendDelta === -1 ? 'pt' : 'pts' }}</span
+        @if (trendDots.length > 1) {
+          <section class="qual-section">
+            <div class="qual-section-head">
+              <h3>Sua chance ao longo do torneio</h3>
+              @if (trendDelta !== null) {
+                <span class="qual-delta" [class.up]="trendDelta > 0" [class.down]="trendDelta < 0"
+                  >{{ trendDelta > 0 ? '▲ +' : trendDelta < 0 ? '▼ ' : '' }}{{ trendDelta }}
+                  {{ trendDelta === 1 || trendDelta === -1 ? 'pt' : 'pts' }}</span
+                >
+              }
+            </div>
+            <svg
+              class="qual-trend"
+              viewBox="0 0 300 64"
+              role="img"
+              [attr.aria-label]="'Chance de ' + trendDots[trendDots.length - 1].text + ' agora'"
             >
-          </div>
-          <svg
-            class="qual-trend"
-            viewBox="0 0 300 64"
-            role="img"
-            [attr.aria-label]="'Chance de ' + trendDots[trendDots.length - 1].text + ' agora'"
-          >
-            <polyline [attr.points]="trendLine" class="trend-line"></polyline>
-            <g *ngFor="let dot of trendDots; let last = last">
-              <circle [attr.cx]="dot.x" [attr.cy]="dot.y" [attr.r]="last ? 5 : 3" [class.trend-now]="last"></circle>
-            </g>
-          </svg>
-          <div class="qual-trend-labels">
-            <span>{{ trendDots[0].label }}</span><span
-              >{{ trendDots[trendDots.length - 1].label }} · {{ trendDots[trendDots.length - 1].text }}</span
-            >
-          </div>
-        </section>
-
-        <section *ngIf="g.myMatches.length" class="qual-section">
-          <h3>Seus próximos jogos</h3>
-          <article *ngFor="let m of g.myMatches" class="qual-match">
-            <small>RODADA {{ m.round }}</small>
-            <b>{{ m.teamA }} <span>×</span> {{ m.teamB }}</b>
-            <div class="qual-impact">
-              <span class="win"
-                >Vencendo <strong>{{ chance(myWin(m)) }}</strong></span
-              ><span class="lose"
-                >Perdendo <strong>{{ chance(myLoss(m)) }}</strong></span
+              <polyline [attr.points]="trendLine" class="trend-line"></polyline>
+              @for (dot of trendDots; track dot; let last = $last) {
+                <g>
+                  <circle [attr.cx]="dot.x" [attr.cy]="dot.y" [attr.r]="last ? 5 : 3" [class.trend-now]="last"></circle>
+                </g>
+              }
+            </svg>
+            <div class="qual-trend-labels">
+              <span>{{ trendDots[0].label }}</span><span
+                >{{ trendDots[trendDots.length - 1].label }} · {{ trendDots[trendDots.length - 1].text }}</span
               >
             </div>
-            <div class="qual-whatif">
-              <button type="button" (click)="force.emit({ matchId: m.id, side: m.mySide! })">E se eu vencer?</button
-              ><button type="button" (click)="force.emit({ matchId: m.id, side: m.mySide === 'A' ? 'B' : 'A' })">
-                E se eu perder?
-              </button>
+          </section>
+        }
+        @if (g.myMatches.length) {
+          <section class="qual-section">
+            <h3>Seus próximos jogos</h3>
+            @for (m of g.myMatches; track m) {
+              <article class="qual-match">
+                <small>RODADA {{ m.round }}</small>
+                <b>{{ m.teamA }} <span>×</span> {{ m.teamB }}</b>
+                <div class="qual-impact">
+                  <span class="win"
+                    >Vencendo <strong>{{ chance(myWin(m)) }}</strong></span
+                  ><span class="lose"
+                    >Perdendo <strong>{{ chance(myLoss(m)) }}</strong></span
+                  >
+                </div>
+                <div class="qual-whatif">
+                  <button type="button" (click)="force.emit({ matchId: m.id, side: m.mySide! })">E se eu vencer?</button
+                  ><button type="button" (click)="force.emit({ matchId: m.id, side: m.mySide === 'A' ? 'B' : 'A' })">
+                    E se eu perder?
+                  </button>
+                </div>
+              </article>
+            }
+          </section>
+        }
+        @if (g.watchMatches.length) {
+          <section class="qual-section">
+            <h3>Jogos dos outros que mexem na sua chance</h3>
+            @for (m of g.watchMatches; track m) {
+              <article class="qual-match">
+                <small
+                  >RODADA {{ m.round }} · MOVE {{ points(m.swing) }} {{ points(m.swing) === 1 ? 'PT' : 'PTS' }}</small
+                >
+                <div class="qual-versus">
+                  <button
+                    type="button"
+                    class="qual-side"
+                    [class.best]="m.better === 'A'"
+                    (click)="force.emit({ matchId: m.id, side: 'A' })"
+                  >
+                    <b>{{ m.teamA }}</b><span>vencendo: {{ chance(m.ifAWins) }}</span>
+                  </button>
+                  <em>×</em>
+                  <button
+                    type="button"
+                    class="qual-side"
+                    [class.best]="m.better === 'B'"
+                    (click)="force.emit({ matchId: m.id, side: 'B' })"
+                  >
+                    <b>{{ m.teamB }}</b><span>vencendo: {{ chance(m.ifBWins) }}</span>
+                  </button>
+                </div>
+              </article>
+            }
+            <small class="qual-hint">Toque em uma dupla para simular a vitória dela.</small>
+          </section>
+        }
+        @if (g.rivals.length) {
+          <section class="qual-section">
+            <h3>Quem acompanhar</h3>
+            @for (rival of g.rivals; track rival) {
+              <article class="qual-rival">
+                <span class="qual-rank">{{ rival.position }}º</span>
+                <div>
+                  <b>{{ rival.name }}</b>
+                  <p>
+                    Cada derrota nos jogos que faltam vale
+                    <strong>+{{ rival.gainPerLoss }} {{ rival.gainPerLoss === 1 ? 'pt' : 'pts' }}</strong> na sua
+                    chance.
+                  </p>
+                </div>
+              </article>
+            }
+          </section>
+        }
+        @if (g.byMyWins.length > 1) {
+          <section class="qual-section">
+            <h3>Quanto cada vitória vale</h3>
+            <div class="qual-wins">
+              @for (row of g.byMyWins; track row) {
+                <div>
+                  <span>{{ row.wins }} de {{ path.remainingMatches }}</span>
+                  <div class="qual-wins-bar"><i [style.width.%]="row.probability * 100"></i></div>
+                  <strong>{{ chance(row.probability) }}</strong>
+                </div>
+              }
             </div>
-          </article>
-        </section>
-
-        <section *ngIf="g.watchMatches.length" class="qual-section">
-          <h3>Jogos dos outros que mexem na sua chance</h3>
-          <article *ngFor="let m of g.watchMatches" class="qual-match">
-            <small>RODADA {{ m.round }} · MOVE {{ points(m.swing) }} {{ points(m.swing) === 1 ? 'PT' : 'PTS' }}</small>
-            <div class="qual-versus">
-              <button
-                type="button"
-                class="qual-side"
-                [class.best]="m.better === 'A'"
-                (click)="force.emit({ matchId: m.id, side: 'A' })"
-              >
-                <b>{{ m.teamA }}</b><span>vencendo: {{ chance(m.ifAWins) }}</span>
-              </button>
-              <em>×</em>
-              <button
-                type="button"
-                class="qual-side"
-                [class.best]="m.better === 'B'"
-                (click)="force.emit({ matchId: m.id, side: 'B' })"
-              >
-                <b>{{ m.teamB }}</b><span>vencendo: {{ chance(m.ifBWins) }}</span>
-              </button>
-            </div>
-          </article>
-          <small class="qual-hint">Toque em uma dupla para simular a vitória dela.</small>
-        </section>
-
-        <section *ngIf="g.rivals.length" class="qual-section">
-          <h3>Quem acompanhar</h3>
-          <article *ngFor="let rival of g.rivals" class="qual-rival">
-            <span class="qual-rank">{{ rival.position }}º</span>
-            <div>
-              <b>{{ rival.name }}</b>
-              <p>
-                Cada derrota nos jogos que faltam vale
-                <strong>+{{ rival.gainPerLoss }} {{ rival.gainPerLoss === 1 ? 'pt' : 'pts' }}</strong> na sua chance.
-              </p>
-            </div>
-          </article>
-        </section>
-
-        <section *ngIf="g.byMyWins.length > 1" class="qual-section">
-          <h3>Quanto cada vitória vale</h3>
-          <div class="qual-wins">
-            <div *ngFor="let row of g.byMyWins">
-              <span>{{ row.wins }} de {{ path.remainingMatches }}</span>
-              <div class="qual-wins-bar"><i [style.width.%]="row.probability * 100"></i></div>
-              <strong>{{ chance(row.probability) }}</strong>
-            </div>
-          </div>
-        </section>
-
+          </section>
+        }
         <footer class="qual-foot">
           <button type="button" class="button primary" (click)="share.emit()" [disabled]="sharing">
             {{ sharing ? 'Preparando imagem…' : 'Compartilhar meu caminho' }}
           </button>
-          <p *ngIf="shareError" class="shared-error" role="alert">{{ shareError }}</p>
+          @if (shareError) {
+            <p class="shared-error" role="alert">{{ shareError }}</p>
+          }
           <p class="qual-method-note">{{ methodNote }}</p>
         </footer>
-      </ng-container>
-      <p *ngIf="!path" class="muted">Não há dados suficientes para esta projeção.</p>
+      }
+      @if (!path) {
+        <p class="muted">Não há dados suficientes para esta projeção.</p>
+      }
     </section>
   `,
 })

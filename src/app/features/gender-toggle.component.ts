@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { PlayerGender } from '../core/models';
 import { GenderIconComponent } from './gender-icon.component';
 
 @Component({
   selector: 'app-gender-toggle',
   standalone: true,
-  imports: [CommonModule, GenderIconComponent],
+  imports: [GenderIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="gender-toggle" [class.compact]="compact" role="radiogroup" [attr.aria-label]="label">
