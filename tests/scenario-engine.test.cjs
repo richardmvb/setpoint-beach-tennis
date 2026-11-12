@@ -8,12 +8,18 @@ const { ScheduleService } = loadCore('schedule.service', stub);
 
 let seed = 99;
 const random = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+// The schedule shuffle defaults to Math.random. Seed it too, or each run starts from a different tournament and
+// the "covers both states" check below can fail by chance.
+let scheduleSeed = 7;
+const scheduleRandom = () => (scheduleSeed = (scheduleSeed * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const names = ['Ana', 'Bia', 'Caio', 'Duda', 'Edu', 'Fabi', 'Gui', 'Hana'];
 const players = names.map((name, i) => ({ id: `p${i}`, name }));
 
 /** A real Super 8 schedule with the first `played` rounds scored at random. */
 function scenario(played) {
-  const rounds = new ScheduleService().generate(players, 8, 2, 7, false);
+  const schedule = new ScheduleService();
+  schedule.random = scheduleRandom;
+  const rounds = schedule.generate(players, 8, 2, 7, false);
   const wins = new Map(players.map((p) => [p.id, 0]));
   const open = [];
   rounds.forEach((round, ri) =>
