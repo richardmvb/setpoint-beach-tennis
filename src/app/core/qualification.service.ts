@@ -215,13 +215,17 @@ export class QualificationService {
         tieNote: copy.tieNote,
         myMatches: impacts.filter((match) => match.mine).sort((a, b) => a.round - b.round),
         watchMatches: impacts.filter((match) => !match.mine && match.swing >= 0.01).slice(0, 4),
-        rivals: result.rivals.slice(0, 3).map((rival) => ({
-          playerId: rival.playerId,
-          name: this.playerName(state, rival.playerId),
-          position: standings.findIndex((row) => row.playerId === rival.playerId) + 1,
-          gainPerLoss: Math.round(rival.gainPerLoss * 100),
-          remainingMatches: rival.matches,
-        })),
+        // A rival whose gain rounds to 0 points would read as "+0 pts", so it is not listed.
+        rivals: result.rivals
+          .filter((rival) => Math.round(rival.gainPerLoss * 100) > 0)
+          .slice(0, 3)
+          .map((rival) => ({
+            playerId: rival.playerId,
+            name: this.playerName(state, rival.playerId),
+            position: standings.findIndex((row) => row.playerId === rival.playerId) + 1,
+            gainPerLoss: Math.round(rival.gainPerLoss * 100),
+            remainingMatches: rival.matches,
+          })),
         byMyWins: result.byMyWins,
       };
     }
