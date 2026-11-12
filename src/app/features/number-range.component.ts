@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-number-range',
@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
     @if (values.length < 2) {
       <div class="number-range static">
         <div class="number-range-head">
-          <span class="range-label">{{ label }}</span><strong>{{ displayValue }}</strong>
+          <span class="range-label">{{ label() }}</span><strong>{{ displayValue }}</strong>
         </div>
         <small class="muted">Definido pelo formato escolhido.</small>
       </div>
@@ -17,10 +17,10 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
     @if (values.length > 1) {
       <div class="number-range">
         <div class="number-range-head">
-          <label [attr.for]="inputId">{{ label }}</label><strong>{{ displayValue }}</strong>
+          <label [attr.for]="inputId()">{{ label() }}</label><strong>{{ displayValue }}</strong>
         </div>
         <input
-          [id]="inputId"
+          [id]="inputId()"
           type="range"
           [min]="0"
           [max]="values.length - 1"
@@ -32,7 +32,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
         />
         <div class="number-range-ticks" [style.--range-count]="values.length">
           @for (item of values; track item; let i = $index) {
-            <span [class.active]="item === value">{{ item }}</span>
+            <span [class.active]="item === value()">{{ item }}</span>
           }
         </div>
       </div>
@@ -40,17 +40,18 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
   `,
 })
 export class NumberRangeComponent {
-  @Input() label = '';
+  readonly label = input('');
   @Input() values: number[] = [];
-  @Input() value = 0;
-  @Input() suffix = '';
-  @Input() inputId = 'number-range';
-  @Output() valueChange = new EventEmitter<number>();
+  readonly value = input(0);
+  readonly suffix = input('');
+  readonly inputId = input('number-range');
+  readonly valueChange = output<number>();
   get selectedIndex(): number {
-    return Math.max(0, this.values.indexOf(this.value));
+    return Math.max(0, this.values.indexOf(this.value()));
   }
   get displayValue(): string {
-    return this.value + (this.suffix ? ' ' + this.suffix : '');
+    const suffix = this.suffix();
+    return this.value() + (suffix ? ' ' + suffix : '');
   }
   select(event: Event): void {
     const index = Number((event.target as HTMLInputElement).value);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { PlayerGender } from '../core/models';
 
 @Component({
@@ -7,12 +7,12 @@ import { PlayerGender } from '../core/models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<svg
     class="gender-icon"
-    [class.male]="gender === 'male'"
-    [class.female]="gender === 'female'"
+    [class.male]="gender() === 'male'"
+    [class.female]="gender() === 'female'"
     viewBox="0 0 24 24"
     aria-hidden="true"
   >
-    @if (gender === 'male') {
+    @if (gender() === 'male') {
       <circle cx="10" cy="14" r="5"></circle>
       <path d="M13.5 10.5 20 4m-5 0h5v5"></path>
     } @else {
@@ -22,5 +22,5 @@ import { PlayerGender } from '../core/models';
   </svg>`,
 })
 export class GenderIconComponent {
-  @Input() gender: PlayerGender | undefined = 'male';
+  readonly gender = input<PlayerGender | undefined>('male');
 }

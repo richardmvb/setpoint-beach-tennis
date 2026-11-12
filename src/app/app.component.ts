@@ -146,6 +146,14 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private storage = inject(StorageService);
+  private scheduler = inject(ScheduleService);
+  private groupScheduler = inject(GroupScheduleService);
+  private finalsScheduler = inject(FinalsService);
+  private supabase = inject(SupabaseService);
+  private shareCard = inject(ShareCardService);
+  private qualification = inject(QualificationService);
+
   private readonly posthogService = inject(PostHogService);
   private readonly dialog = inject(DialogService);
   private readonly pathCard = inject(PathCardService);
@@ -343,15 +351,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
 
-  constructor(
-    private storage: StorageService,
-    private scheduler: ScheduleService,
-    private groupScheduler: GroupScheduleService,
-    private finalsScheduler: FinalsService,
-    private supabase: SupabaseService,
-    private shareCard: ShareCardService,
-    private qualification: QualificationService,
-  ) {
+  constructor() {
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
     const liveToken = new URLSearchParams(window.location.search).get('live') ?? '';
     this.dashboardViewerId = new URLSearchParams(window.location.search).get('dashboardTournament') ?? '';

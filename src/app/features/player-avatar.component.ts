@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input } from '@angular/core';
 
 @Component({
   selector: 'app-player-avatar',
@@ -22,16 +22,17 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
   `,
 })
 export class PlayerAvatarComponent {
-  @Input() name = '';
+  readonly name = input('');
   @Input() photoDataUrl?: string;
-  @Input() variant: 'player-avatar' | 'team-avatar' | 'share-chip-avatar' | 'podium-avatar' | 'battle-avatar' =
-    'player-avatar';
+  readonly variant = input<'player-avatar' | 'team-avatar' | 'share-chip-avatar' | 'podium-avatar' | 'battle-avatar'>(
+    'player-avatar',
+  );
 
   get avatarClass(): string {
-    return this.variant;
+    return this.variant();
   }
   get size(): number {
-    switch (this.variant) {
+    switch (this.variant()) {
       case 'team-avatar':
         return 24;
       case 'share-chip-avatar':
@@ -45,7 +46,7 @@ export class PlayerAvatarComponent {
     }
   }
   get initials(): string {
-    return this.name
+    return this.name()
       .trim()
       .split(/\s+/)
       .slice(0, 2)

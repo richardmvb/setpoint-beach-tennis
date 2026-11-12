@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input } from '@angular/core';
 
 import { Match, Player } from '../core/models';
 import { PlayerAvatarComponent } from './player-avatar.component';
@@ -13,7 +13,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
   template: `
     <div class="battle" [class.is-live]="inPlay" [class.is-done]="done" [class.has-mine]="mine">
       <div class="battle-meta">
-        <span class="battle-court">{{ label }}</span>
+        <span class="battle-court">{{ label() }}</span>
         <span class="battle-status" [class.live]="inPlay" [class.done]="done">
           @if (inPlay) {
             <i></i>
@@ -24,12 +24,8 @@ import { PlayerAvatarComponent } from './player-avatar.component';
       <div class="battle-arena">
         <div class="battle-team team-a" [class.winner]="winner === 'A'" [class.loser]="winner === 'B'">
           @for (id of match.teamA; track id) {
-            <div class="battle-player" [class.me]="id === highlightId">
-              <app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="battle-avatar"
-              ></app-player-avatar>
+            <div class="battle-player" [class.me]="id === highlightId()">
+              <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar" />
               <span class="battle-name">{{ nameOf(id) }}</span>
             </div>
           }
@@ -54,12 +50,8 @@ import { PlayerAvatarComponent } from './player-avatar.component';
         </div>
         <div class="battle-team team-b" [class.winner]="winner === 'B'" [class.loser]="winner === 'A'">
           @for (id of match.teamB; track id) {
-            <div class="battle-player" [class.me]="id === highlightId">
-              <app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="battle-avatar"
-              ></app-player-avatar>
+            <div class="battle-player" [class.me]="id === highlightId()">
+              <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar" />
               <span class="battle-name">{{ nameOf(id) }}</span>
             </div>
           }
@@ -76,27 +68,28 @@ import { PlayerAvatarComponent } from './player-avatar.component';
 })
 export class BattleCardComponent {
   @Input({ required: true }) match!: Match;
-  @Input() players: Player[] = [];
-  @Input() highlightId = '';
-  @Input() label = '';
+  readonly players = input<Player[]>([]);
+  readonly highlightId = input('');
+  readonly label = input('');
   /** The round currently on court: unscored matches are shown as "em quadra". */
-  @Input() live = false;
+  readonly live = input(false);
 
   get done(): boolean {
     return this.match.scoreA !== null && this.match.scoreB !== null;
   }
   get inPlay(): boolean {
-    return this.live && !this.done;
+    return this.live() && !this.done;
   }
   get winner(): 'A' | 'B' | null {
     if (!this.done || this.match.scoreA === this.match.scoreB) return null;
     return (this.match.scoreA as number) > (this.match.scoreB as number) ? 'A' : 'B';
   }
   get mine(): boolean {
-    return !!this.highlightId && [...this.match.teamA, ...this.match.teamB].includes(this.highlightId);
+    const highlightId = this.highlightId();
+    return !!highlightId && [...this.match.teamA, ...this.match.teamB].includes(highlightId);
   }
   get statusLabel(): string {
-    return this.done ? 'ENCERRADA' : this.live ? 'EM QUADRA' : 'AGUARDANDO';
+    return this.done ? 'ENCERRADA' : this.live() ? 'EM QUADRA' : 'AGUARDANDO';
   }
   get ariaScore(): string {
     return this.done
@@ -105,10 +98,10 @@ export class BattleCardComponent {
   }
 
   nameOf(id: string): string {
-    return this.players.find((player) => player.id === id)?.name ?? 'A definir';
+    return this.players().find((player) => player.id === id)?.name ?? 'A definir';
   }
   photoOf(id: string): string | undefined {
-    return this.players.find((player) => player.id === id)?.photoDataUrl;
+    return this.players().find((player) => player.id === id)?.photoDataUrl;
   }
   private teamName(ids: readonly string[]): string {
     return ids.map((id) => this.nameOf(id)).join(' e ');

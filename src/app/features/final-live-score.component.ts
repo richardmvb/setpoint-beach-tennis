@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 
 import { Match, Player } from '../core/models';
 import {
@@ -192,7 +192,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
   ],
   template: `
     @if (score; as current) {
-      <div class="live-board" [class.readonly]="!editable">
+      <div class="live-board" [class.readonly]="!editable()">
         <div class="live-head">
           <span>PONTO A PONTO</span
           ><strong [class.on]="!current.winner">
@@ -201,7 +201,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
             }
             {{ current.winner ? 'SET ENCERRADO' : current.tieBreak ? 'TIE-BREAK' : 'EM ANDAMENTO' }}</strong
           >
-          @if (editable) {
+          @if (editable()) {
             <button
               class="live-undo"
               type="button"
@@ -216,7 +216,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
         </div>
         <div class="live-columns">
           <span>DUPLA</span><span>GAMES</span><span>PONTOS</span>
-          @if (editable) {
+          @if (editable()) {
             <span></span>
           }
         </div>
@@ -229,8 +229,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
                     [name]="nameOf(playerId)"
                     [photoDataUrl]="photoOf(playerId)"
                     variant="team-avatar"
-                  ></app-player-avatar
-                  ><span>{{ nameOf(playerId) }}</span>
+                  /><span>{{ nameOf(playerId) }}</span>
                 </div>
               }
             </div>
@@ -243,7 +242,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
               "
               >{{ pointLabel(current, side) }}</strong
             >
-            @if (editable) {
+            @if (editable()) {
               <button
                 class="live-add"
                 type="button"
@@ -264,10 +263,10 @@ import { PlayerAvatarComponent } from './player-avatar.component';
   `,
 })
 export class FinalLiveScoreComponent {
-  @Input() players: Player[] = [];
-  @Input() editable = false;
-  @Output() pointSelected = new EventEmitter<FinalLivePoint>();
-  @Output() undoSelected = new EventEmitter<void>();
+  readonly players = input<Player[]>([]);
+  readonly editable = input(false);
+  readonly pointSelected = output<FinalLivePoint>();
+  readonly undoSelected = output<void>();
   readonly sides: FinalLivePoint[] = ['A', 'B'];
   readonly maxPoints = MAX_FINAL_LIVE_POINTS;
   matchData!: Match;
@@ -283,10 +282,10 @@ export class FinalLiveScoreComponent {
   }
 
   nameOf(playerId: string): string {
-    return this.players.find((player) => player.id === playerId)?.name ?? 'A definir';
+    return this.players().find((player) => player.id === playerId)?.name ?? 'A definir';
   }
   photoOf(playerId: string): string | undefined {
-    return this.players.find((player) => player.id === playerId)?.photoDataUrl;
+    return this.players().find((player) => player.id === playerId)?.photoDataUrl;
   }
   pointLabel(score: FinalLiveScore, side: FinalLivePoint): string {
     if (score.tieBreak) return String(side === 'A' ? score.tieBreakA : score.tieBreakB);

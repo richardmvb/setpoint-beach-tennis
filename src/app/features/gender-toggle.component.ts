@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { PlayerGender } from '../core/models';
 import { GenderIconComponent } from './gender-icon.component';
@@ -9,33 +9,33 @@ import { GenderIconComponent } from './gender-icon.component';
   imports: [GenderIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="gender-toggle" [class.compact]="compact" role="radiogroup" [attr.aria-label]="label">
+    <div class="gender-toggle" [class.compact]="compact()" role="radiogroup" [attr.aria-label]="label()">
       <button
         type="button"
         role="radio"
         class="male"
-        [class.active]="value === 'male'"
-        [attr.aria-checked]="value === 'male'"
+        [class.active]="value() === 'male'"
+        [attr.aria-checked]="value() === 'male'"
         (click)="valueChange.emit('male')"
       >
-        <app-gender-icon gender="male"></app-gender-icon><span>Masculino</span>
+        <app-gender-icon gender="male" /><span>Masculino</span>
       </button>
       <button
         type="button"
         role="radio"
         class="female"
-        [class.active]="value === 'female'"
-        [attr.aria-checked]="value === 'female'"
+        [class.active]="value() === 'female'"
+        [attr.aria-checked]="value() === 'female'"
         (click)="valueChange.emit('female')"
       >
-        <app-gender-icon gender="female"></app-gender-icon><span>Feminino</span>
+        <app-gender-icon gender="female" /><span>Feminino</span>
       </button>
     </div>
   `,
 })
 export class GenderToggleComponent {
-  @Input() value: PlayerGender | '' = '';
-  @Input() label = 'Categoria';
-  @Input() compact = false;
-  @Output() valueChange = new EventEmitter<PlayerGender>();
+  readonly value = input<PlayerGender | ''>('');
+  readonly label = input('Categoria');
+  readonly compact = input(false);
+  readonly valueChange = output<PlayerGender>();
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
 
 import { TournamentState } from '../core/models';
 import { SupabaseService } from '../core/supabase.service';
@@ -111,7 +111,7 @@ import { TournamentReportService } from '../core/tournament-report.service';
           class="button secondary"
           type="button"
           (click)="generateFinalLink()"
-          [disabled]="linkLoading || !sharedConfigured"
+          [disabled]="linkLoading || !sharedConfigured()"
         >
           {{ linkLoading ? 'Gerando link…' : finalLink ? 'Copiar link final' : 'Gerar link final' }}
         </button>
@@ -146,7 +146,7 @@ import { TournamentReportService } from '../core/tournament-report.service';
           </button>
         </div>
       }
-      @if (!sharedConfigured) {
+      @if (!sharedConfigured()) {
         <p class="report-message">Link final indisponível: publicação não configurada neste deploy.</p>
       }
       @if (message) {
@@ -162,9 +162,9 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   private alive = true;
   private image: Blob | null = null;
 
-  @Input({ required: true }) state!: TournamentState;
-  @Input() existingLiveUrl = '';
-  @Input() sharedConfigured = false;
+  readonly state = input.required<TournamentState>();
+  readonly existingLiveUrl = input('');
+  readonly sharedConfigured = input(false);
   imageLoading = false;
   linkLoading = false;
   imageUrl = '';
@@ -189,16 +189,16 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
 
   toggleText(): void {
     this.textVisible = !this.textVisible;
-    if (this.textVisible) this.reportText = this.report.toText(this.report.build(this.state));
+    if (this.textVisible) this.reportText = this.report.toText(this.report.build(this.state()));
   }
 
   async shareText(): Promise<void> {
-    this.reportText = this.report.toText(this.report.build(this.state));
+    this.reportText = this.report.toText(this.report.build(this.state()));
     this.textVisible = true;
     this.message = '';
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Resultado · ${this.state.name}`, text: this.reportText });
+        await navigator.share({ title: `Resultado · ${this.state().name}`, text: this.reportText });
         return;
       }
       await this.copyText();
@@ -211,7 +211,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   }
 
   async copyText(): Promise<void> {
-    this.reportText = this.report.toText(this.report.build(this.state));
+    this.reportText = this.report.toText(this.report.build(this.state()));
     this.textVisible = true;
     try {
       await navigator.clipboard.writeText(this.reportText);
@@ -226,7 +226,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     this.imageLoading = true;
     this.message = '';
     try {
-      const image = await this.report.toImage(this.report.build(this.state));
+      const image = await this.report.toImage(this.report.build(this.state()));
       if (!this.alive) return;
       if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
       this.image = image;
@@ -247,7 +247,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      await navigator.share({ title: `Resultado · ${this.state.name}`, files: [file] });
+      await navigator.share({ title: `Resultado · ${this.state().name}`, files: [file] });
     } catch (error) {
       if (!(error instanceof Error && error.name === 'AbortError'))
         this.setMessage('Não foi possível compartilhar. Baixe a imagem e envie pelo WhatsApp.', true);
@@ -264,7 +264,8 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   }
 
   async generateFinalLink(): Promise<void> {
-    if (!this.state.finishedAt || this.linkLoading) return;
+    const state = this.state();
+    if (!state.finishedAt || this.linkLoading) return;
     if (this.finalLink) {
       await this.copyLink();
       return;
@@ -272,16 +273,17 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     this.linkLoading = true;
     this.message = '';
     try {
-      if (this.existingLiveUrl) {
-        const token = new URL(this.existingLiveUrl).searchParams.get('live');
+      const existingLiveUrl = this.existingLiveUrl();
+      if (existingLiveUrl) {
+        const token = new URL(existingLiveUrl).searchParams.get('live');
         if (token) {
           try {
             const existing = await this.supabase.getLocalLiveTournament(token);
             if (
               (existing.status === 'completed' || existing.status === 'archived') &&
-              existing.state.finishedAt === this.state.finishedAt
+              existing.state.finishedAt === state.finishedAt
             ) {
-              this.finalLink = this.existingLiveUrl;
+              this.finalLink = existingLiveUrl;
             }
           } catch {
             this.finalLink = '';
@@ -289,11 +291,11 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
         }
       }
       if (!this.finalLink) {
-        if (this.state.hostingMode === 'shared' && !(await this.supabase.currentUser())) {
+        if (state.hostingMode === 'shared' && !(await this.supabase.currentUser())) {
           throw new Error('Conecte-se com a sessão do moderador para gerar o link final.');
         }
         const snapshot: TournamentState = {
-          ...this.state,
+          ...state,
           hostingMode: 'local',
           analyticsId: undefined,
           sharedTournamentId: undefined,
@@ -331,8 +333,9 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   }
 
   private linkKey(): string {
-    const id = this.state.sharedTournamentId || this.state.analyticsId || this.state.createdAt;
-    return `setpoint.final-report.${id}.${this.state.finishedAt}`;
+    const state = this.state();
+    const id = state.sharedTournamentId || state.analyticsId || state.createdAt;
+    return `setpoint.final-report.${id}.${this.state().finishedAt}`;
   }
 
   private setMessage(message: string, error = false): void {

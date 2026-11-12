@@ -220,9 +220,19 @@ test('links finais reutilizam apenas snapshots atualizados e preservam a sessão
     },
   };
   const detector = { markForCheck() {} };
+  const settableSignal = (initial) => {
+    let current = initial;
+    const read = () => current;
+    read.set = (value) => {
+      current = value;
+    };
+    return read;
+  };
   const angular = {
     Component: () => (target) => target,
     Input: () => () => {},
+    // Signal inputs: input(initial) and input.required() return a readable signal the test can .set().
+    input: Object.assign((initial) => settableSignal(initial), { required: () => settableSignal(undefined) }),
     ChangeDetectionStrategy: { OnPush: 0 },
     ChangeDetectorRef: detectorToken,
     inject: (token) => (token === serviceToken ? supabase : token === detectorToken ? detector : {}),
@@ -269,15 +279,15 @@ test('links finais reutilizam apenas snapshots atualizados e preservam a sessão
   });
   try {
     const component = new componentExports.TournamentReportComponent();
-    component.state = { ...base, hostingMode: 'local', analyticsId: 'local-id' };
-    component.existingLiveUrl = `https://example.test/setpoint/?live=${'r'.repeat(64)}`;
+    component.state.set({ ...base, hostingMode: 'local', analyticsId: 'local-id' });
+    component.existingLiveUrl.set(`https://example.test/setpoint/?live=${'r'.repeat(64)}`);
     await component.generateFinalLink();
-    assert.equal(component.finalLink, component.existingLiveUrl);
+    assert.equal(component.finalLink, component.existingLiveUrl());
     assert.equal(created, 0);
 
     const stale = new componentExports.TournamentReportComponent();
-    stale.state = { ...base, hostingMode: 'local', analyticsId: 'another-id' };
-    stale.existingLiveUrl = component.existingLiveUrl;
+    stale.state.set({ ...base, hostingMode: 'local', analyticsId: 'another-id' });
+    stale.existingLiveUrl.set(component.existingLiveUrl());
     serverStatus = 'active';
     await stale.generateFinalLink();
     assert.match(stale.finalLink, /\?live=n{64}$/);
@@ -286,12 +296,12 @@ test('links finais reutilizam apenas snapshots atualizados e preservam a sessão
     assert.equal(published.hostingMode, 'local');
 
     const restored = new componentExports.TournamentReportComponent();
-    restored.state = stale.state;
+    restored.state.set(stale.state());
     restored.ngOnInit();
     assert.equal(restored.finalLink, stale.finalLink);
 
     const shared = new componentExports.TournamentReportComponent();
-    shared.state = { ...base, hostingMode: 'shared', sharedTournamentId: 'shared-id', sharedStatus: 'completed' };
+    shared.state.set({ ...base, hostingMode: 'shared', sharedTournamentId: 'shared-id', sharedStatus: 'completed' });
     session = null;
     await shared.generateFinalLink();
     assert.equal(created, 1);

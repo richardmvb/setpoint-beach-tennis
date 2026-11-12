@@ -60,6 +60,10 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 | E2E for shared invite and live viewer (mocked Supabase), saved tournaments, offline sync                                  | Phase 1 follow-ups                   |
 | `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
 
+## Unit tests that build classes by hand
+
+`tests/*.test.cjs` transpile TypeScript from `src/app` and instantiate services and components with `new`, using a stub for `@angular/core`. When a class starts using `inject()`, `input()`, `input.required()` or `output()`, give the stub of that test a matching function (`inject` returning the instance registered for a token, `input` returning a settable signal). `final-live-score.test.cjs` and `tournament-report.test.cjs` show both. Do not rewrite the class to suit the stub.
+
 ## End-to-end tests (e2e/)
 
 - Playwright runs the real app. `e2e/support/fixtures.ts` blocks every host except localhost, so tests never reach Supabase, PostHog or Google Fonts, and it starts like a returning user (landing, tour and profile prompt skipped). Use its `test`, never the raw Playwright one.

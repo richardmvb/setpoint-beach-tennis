@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Player } from '../core/models';
 import { GoalPlace } from '../core/scenario-engine';
@@ -17,28 +17,27 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
     <section class="qual-panel surface-card" aria-labelledby="qualTitle">
       <header class="qual-panel-header">
         <div>
-          <span class="card-kicker">{{ isGuest ? 'SEU CAMINHO' : 'CAMINHO DE' }}</span>
+          <span class="card-kicker">{{ isGuest() ? 'SEU CAMINHO' : 'CAMINHO DE' }}</span>
           <h2 id="qualTitle">{{ path?.playerName ?? 'Projeção' }}</h2>
         </div>
       </header>
 
-      @if (!isGuest && rows.length) {
+      @if (!isGuest() && rows.length) {
         <div class="qual-athletes" role="radiogroup" aria-label="Atleta">
           @for (row of rows; track row) {
             <button
               type="button"
               role="radio"
               class="qual-athlete"
-              [class.active]="row.playerId === targetPlayerId"
-              [attr.aria-checked]="row.playerId === targetPlayerId"
+              [class.active]="row.playerId === targetPlayerId()"
+              [attr.aria-checked]="row.playerId === targetPlayerId()"
               (click)="targetPlayerIdChange.emit(row.playerId)"
             >
               <app-player-avatar
                 [name]="row.name"
                 [photoDataUrl]="photoOf(row.playerId)"
                 variant="team-avatar"
-              ></app-player-avatar
-              ><span>{{ row.name }}</span
+              /><span>{{ row.name }}</span
               ><em>{{ row.position }}º</em>
             </button>
           }
@@ -51,8 +50,8 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
             type="button"
             role="radio"
             class="qual-goal"
-            [class.active]="option.value === targetPlace"
-            [attr.aria-checked]="option.value === targetPlace"
+            [class.active]="option.value === targetPlace()"
+            [attr.aria-checked]="option.value === targetPlace()"
             (click)="targetPlaceChange.emit(option.value)"
           >
             <span>{{ option.label }}</span><small>{{ goalBadge(option.value) }}</small>
@@ -257,8 +256,8 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
           </section>
         }
         <footer class="qual-foot">
-          <button type="button" class="button primary" (click)="share.emit()" [disabled]="sharing">
-            {{ sharing ? 'Preparando imagem…' : 'Compartilhar meu caminho' }}
+          <button type="button" class="button primary" (click)="share.emit()" [disabled]="sharing()">
+            {{ sharing() ? 'Preparando imagem…' : 'Compartilhar meu caminho' }}
           </button>
           @if (shareError) {
             <p class="shared-error" role="alert">{{ shareError }}</p>
@@ -280,22 +279,25 @@ export class QualificationStatsComponent {
     { value: 3, label: 'Top 3' },
   ];
   @Input() rows: QualificationRow[] = [];
-  @Input() players: Player[] = [];
+  readonly players = input<Player[]>([]);
   @Input() path: PathProjection | null = null;
-  @Input() trend: TrendPoint[] = [];
-  @Input() targetPlayerId = '';
-  @Input() targetPlace = 3;
-  @Input() isGuest = false;
-  @Input() sharing = false;
+  readonly trend = input<TrendPoint[]>([]);
+  readonly targetPlayerId = input('');
+  readonly targetPlace = input(3);
+  readonly isGuest = input(false);
+  readonly sharing = input(false);
   @Input() shareError = '';
-  @Output() targetPlayerIdChange = new EventEmitter<string>();
-  @Output() targetPlaceChange = new EventEmitter<number>();
-  @Output() force = new EventEmitter<{ matchId: string; side: 'A' | 'B' }>();
-  @Output() clearForced = new EventEmitter<void>();
-  @Output() share = new EventEmitter<void>();
+  readonly targetPlayerIdChange = output<string>();
+  readonly targetPlaceChange = output<number>();
+  readonly force = output<{
+    matchId: string;
+    side: 'A' | 'B';
+  }>();
+  readonly clearForced = output<void>();
+  readonly share = output<void>();
 
   get goal(): PathGoal | null {
-    return this.path?.goals[this.targetPlace as GoalPlace] ?? null;
+    return this.path?.goals[this.targetPlace() as GoalPlace] ?? null;
   }
   get distribution(): number[] {
     return (this.path?.placeDistribution ?? []).slice(0, 8);
@@ -309,7 +311,7 @@ export class QualificationStatsComponent {
   }
 
   photoOf(playerId: string): string | undefined {
-    return this.players.find((player) => player.id === playerId)?.photoDataUrl;
+    return this.players().find((player) => player.id === playerId)?.photoDataUrl;
   }
   goalBadge(place: GoalPlace): string {
     const goal = this.path?.goals[place];
@@ -349,10 +351,10 @@ export class QualificationStatsComponent {
   }
 
   get trendDots(): { x: number; y: number; label: string; text: string }[] {
-    const points = this.trend;
+    const points = this.trend();
     if (points.length < 2) return [];
     return points.map((point, index) => {
-      const value = point.probability[this.targetPlace as GoalPlace];
+      const value = point.probability[this.targetPlace() as GoalPlace];
       return {
         x: 8 + (284 * index) / (points.length - 1),
         y: 58 - value * 52,
@@ -365,10 +367,10 @@ export class QualificationStatsComponent {
     return this.trendDots.map((dot) => `${dot.x},${dot.y}`).join(' ');
   }
   get trendDelta(): number | null {
-    const points = this.trend;
+    const points = this.trend();
     if (points.length < 2) return null;
-    const last = points[points.length - 1].probability[this.targetPlace as GoalPlace];
-    const previous = points[points.length - 2].probability[this.targetPlace as GoalPlace];
+    const last = points[points.length - 1].probability[this.targetPlace() as GoalPlace];
+    const previous = points[points.length - 2].probability[this.targetPlace() as GoalPlace];
     return Math.round((last - previous) * 100);
   }
 }

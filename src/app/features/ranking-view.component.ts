@@ -2,13 +2,12 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  EventEmitter,
   inject,
-  Input,
   OnChanges,
   OnDestroy,
-  Output,
   SimpleChanges,
+  input,
+  output,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Player, PlayerStanding, Round } from '../core/models';
@@ -38,21 +37,21 @@ export interface GroupStandingTable {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
-    @for (group of groupTables; track group) {
+    @for (group of groupTables(); track group) {
       <article class="surface-card full-card group-ranking-card">
         <div class="card-title-row">
           <div>
             <span class="card-kicker">{{ group.name }}</span>
             <h2>Classificação</h2>
           </div>
-          <span class="mini-tag">{{ fixedPairsMode ? 'Duplas' : 'Atletas' }}</span>
+          <span class="mini-tag">{{ fixedPairsMode() ? 'Duplas' : 'Atletas' }}</span>
         </div>
         <div class="table-scroll">
           <table class="leaderboard">
             <thead>
               <tr>
                 <th>POS.</th>
-                <th>{{ fixedPairsMode ? 'DUPLA' : 'JOGADOR' }}</th>
+                <th>{{ fixedPairsMode() ? 'DUPLA' : 'JOGADOR' }}</th>
                 <th class="numeric">VIT.</th>
                 <th class="numeric">PRÓ</th>
                 <th class="numeric">SALDO</th>
@@ -79,7 +78,7 @@ export interface GroupStandingTable {
                   <td>
                     <span class="ranking-player-cell">
                       @for (id of entry.playerIds; track id) {
-                        <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)"></app-player-avatar>
+                        <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />
                       }
                       <b>{{ entry.label }}</b>
                       @if (isMine(entry)) {
@@ -107,20 +106,20 @@ export interface GroupStandingTable {
         </div>
       </article>
     }
-    @if (showGenderRankings) {
+    @if (showGenderRankings()) {
       <section class="gender-ranking-grid">
         <ng-container
           *ngTemplateOutlet="
             genderRanking;
-            context: { title: 'RANKING MASCULINO', icon: 'male', rows: maleStandings, limit: genderRankingLimit }
+            context: { title: 'RANKING MASCULINO', icon: 'male', rows: maleStandings(), limit: genderRankingLimit() }
           "
-        ></ng-container>
+        />
         <ng-container
           *ngTemplateOutlet="
             genderRanking;
-            context: { title: 'RANKING FEMININO', icon: 'female', rows: femaleStandings, limit: genderRankingLimit }
+            context: { title: 'RANKING FEMININO', icon: 'female', rows: femaleStandings(), limit: genderRankingLimit() }
           "
-        ></ng-container>
+        />
       </section>
     }
     <ng-template #genderRanking let-title="title" let-icon="icon" let-rows="rows" let-limit="limit"
@@ -130,7 +129,7 @@ export interface GroupStandingTable {
             <span class="card-kicker">{{ title }}</span>
             <h2>Top {{ limit }} classificados</h2>
           </div>
-          <app-gender-icon [gender]="icon"></app-gender-icon>
+          <app-gender-icon [gender]="icon" />
         </div>
         <div class="table-scroll">
           <table class="leaderboard">
@@ -169,9 +168,9 @@ export interface GroupStandingTable {
                       class="ranking-player-cell ranking-player-button"
                       (click)="playerSelected.emit(row.playerId)"
                     >
-                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar
-                      ><app-gender-icon [gender]="icon"></app-gender-icon
-                      ><span class="ranking-player-name"
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" /><app-gender-icon
+                        [gender]="icon"
+                      /><span class="ranking-player-name"
                         ><b>{{ row.name }}</b
                         ><small class="table-sub"
                           >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
@@ -207,15 +206,15 @@ export interface GroupStandingTable {
           <span class="card-kicker">CLASSIFICAÇÃO GERAL</span>
           <h2>Ranking individual</h2>
         </div>
-        <span class="mini-tag">{{ standings.length }} atletas</span>
+        <span class="mini-tag">{{ standings().length }} atletas</span>
       </div>
-      @if (!hasSchedule) {
+      @if (!hasSchedule()) {
         <div class="empty-state">
           <span>↗</span><b>O ranking aparecerá após gerar a tabela</b
           ><small>Cadastre os atletas e gere as rodadas.</small>
         </div>
       }
-      @if (hasSchedule) {
+      @if (hasSchedule()) {
         <div class="table-scroll">
           <table class="leaderboard">
             <thead>
@@ -231,12 +230,12 @@ export interface GroupStandingTable {
               </tr>
             </thead>
             <tbody>
-              @for (row of standings; track row; let i = $index) {
+              @for (row of standings(); track row; let i = $index) {
                 <tr
                   [class.rank-gold]="i === 0"
                   [class.rank-silver]="i === 1"
                   [class.rank-bronze]="i === 2"
-                  [class.me-row]="!!highlightId && row.playerId === highlightId"
+                  [class.me-row]="!!highlightId() && row.playerId === highlightId()"
                 >
                   <td>
                     <span
@@ -253,9 +252,9 @@ export interface GroupStandingTable {
                       class="ranking-player-cell ranking-player-button"
                       (click)="playerSelected.emit(row.playerId)"
                     >
-                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar>
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" />
                       @if (genderOf(row.playerId)) {
-                        <app-gender-icon [gender]="genderOf(row.playerId)!"></app-gender-icon>
+                        <app-gender-icon [gender]="genderOf(row.playerId)!" />
                       }
                       <span class="ranking-player-name"
                         ><span class="ranking-name-line"
@@ -274,7 +273,7 @@ export interface GroupStandingTable {
                           @if (i === 0 && row.setsWon > 0) {
                             <em class="row-tag leader-tag">LÍDER</em>
                           }
-                          @if (!!highlightId && row.playerId === highlightId) {
+                          @if (!!highlightId() && row.playerId === highlightId()) {
                             <em class="row-tag me-tag">VOCÊ</em>
                           }</span
                         ><small class="table-sub"
@@ -312,22 +311,22 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
   private lastRanks = new Map<string, number>();
   private movementTimer: ReturnType<typeof setTimeout> | null = null;
   private movement = new Map<string, number>();
-  @Input() groupTables: GroupStandingTable[] = [];
-  @Input() standings: PlayerStanding[] = [];
-  @Input() players: Player[] = [];
-  @Input() rounds: Round[] = [];
-  @Input() maleStandings: PlayerStanding[] = [];
-  @Input() femaleStandings: PlayerStanding[] = [];
-  @Input() showGenderRankings = false;
-  @Input() genderRankingLimit = 8;
-  @Input() fixedPairsMode = false;
-  @Input() hasSchedule = false;
-  @Input() highlightId = '';
-  @Output() playerSelected = new EventEmitter<string>();
+  readonly groupTables = input<GroupStandingTable[]>([]);
+  readonly standings = input<PlayerStanding[]>([]);
+  readonly players = input<Player[]>([]);
+  readonly rounds = input<Round[]>([]);
+  readonly maleStandings = input<PlayerStanding[]>([]);
+  readonly femaleStandings = input<PlayerStanding[]>([]);
+  readonly showGenderRankings = input(false);
+  readonly genderRankingLimit = input(8);
+  readonly fixedPairsMode = input(false);
+  readonly hasSchedule = input(false);
+  readonly highlightId = input('');
+  readonly playerSelected = output<string>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['standings']) return;
-    const ranks = new Map(this.standings.map((row, index) => [row.playerId, index] as const));
+    const ranks = new Map(this.standings().map((row, index) => [row.playerId, index] as const));
     if (this.lastRanks.size) {
       const moves = new Map<string, number>();
       ranks.forEach((rank, id) => {
@@ -355,15 +354,16 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
     return this.movement.get(playerId) ?? 0;
   }
   barPercent(row: PlayerStanding): number {
-    const best = this.standings.reduce((max, item) => Math.max(max, item.setsWon), 0);
+    const best = this.standings().reduce((max, item) => Math.max(max, item.setsWon), 0);
     return best ? Math.round((row.setsWon / best) * 100) : 0;
   }
 
   isMine(entry: GroupStandingEntry): boolean {
-    return !!this.highlightId && entry.playerIds.includes(this.highlightId);
+    const highlightId = this.highlightId();
+    return !!highlightId && entry.playerIds.includes(highlightId);
   }
   scheduledMatches(playerId: string): number {
-    return this.rounds.reduce(
+    return this.rounds().reduce(
       (total, round) =>
         total +
         round.matches.filter((match) => match.teamA.includes(playerId) || match.teamB.includes(playerId)).length,
@@ -371,12 +371,12 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
     );
   }
   nameOf(playerId: string): string {
-    return this.players.find((player) => player.id === playerId)?.name ?? '';
+    return this.players().find((player) => player.id === playerId)?.name ?? '';
   }
   photoOf(playerId: string): string {
-    return this.players.find((player) => player.id === playerId)?.photoDataUrl ?? '';
+    return this.players().find((player) => player.id === playerId)?.photoDataUrl ?? '';
   }
   genderOf(playerId: string) {
-    return this.players.find((player) => player.id === playerId)?.gender;
+    return this.players().find((player) => player.id === playerId)?.gender;
   }
 }

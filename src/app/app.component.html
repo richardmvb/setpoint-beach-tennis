@@ -158,7 +158,7 @@
           <button class="profile-trigger" type="button" (click)="toggleProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profile.name ? 'Perfil de ' + profile.name : 'Configurar perfil') + ' · ' + syncLabel">
             <span class="profile-trigger-avatar">
               @if (profile.name || profile.photoDataUrl) {
-                <app-player-avatar [name]="profile.name" [photoDataUrl]="profile.photoDataUrl" variant="player-avatar"></app-player-avatar>
+                <app-player-avatar [name]="profile.name" [photoDataUrl]="profile.photoDataUrl" variant="player-avatar" />
               } @else {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
               }
@@ -223,28 +223,28 @@
               }<button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar dicas' : 'Ligar dicas' }}</button></div>
               <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado" enterkeyhint="next" (keydown.enter)="!isSharedMode && nextSetupStep()"></div>
               @if (sharedConfigured) {
-                <div id="hostingMode" class="form-field"><span class="form-label" id="hostingLabel">Onde será gerenciado?</span><app-choice-cards labelledBy="hostingLabel" [options]="hostingOptions" [value]="state.hostingMode ?? 'local'" (valueChange)="changeHostingMode($event)"></app-choice-cards></div>
+                <div id="hostingMode" class="form-field"><span class="form-label" id="hostingLabel">Onde será gerenciado?</span><app-choice-cards labelledBy="hostingLabel" [options]="hostingOptions" [value]="state.hostingMode ?? 'local'" (valueChange)="changeHostingMode($event)" /></div>
               }
               @if (isSharedMode && !isGroupTournament) {
                 <label class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Seu caminho (projeção)</b><small>A partir da 1ª rodada concluída, cada atleta vê a chance de ser campeão, top 2 ou top 3.</small></span></label>
               }
-              <div id="doublesFormat" class="form-field"><span class="form-label" id="doublesLabel">Tipo de dupla</span><app-choice-cards labelledBy="doublesLabel" [options]="doublesOptions" [value]="state.doublesFormat ?? 'open'" (valueChange)="changeDoublesFormat($event)"></app-choice-cards></div>
+              <div id="doublesFormat" class="form-field"><span class="form-label" id="doublesLabel">Tipo de dupla</span><app-choice-cards labelledBy="doublesLabel" [options]="doublesOptions" [value]="state.doublesFormat ?? 'open'" (valueChange)="changeDoublesFormat($event)" /></div>
               @if (isSharedMode) {
                 <div class="shared-moderator-fields"><div class="form-field"><label for="moderatorName">Seu nome no torneio</label><input id="moderatorName" name="moderatorName" [(ngModel)]="moderatorName" maxlength="40" placeholder="Nome do moderador"></div>@if (isMixedDoubles) {
-                <div class="form-field"><span class="form-label">Sua categoria</span><app-gender-toggle [value]="moderatorGender" (valueChange)="moderatorGender = $event" label="Sua categoria"></app-gender-toggle></div>
-                }<div class="form-field"><span class="form-label">Foto (opcional)</span><app-avatar-picker [(value)]="moderatorAvatar"></app-avatar-picker></div><p class="muted helper-text">Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga.</p></div>
+                <div class="form-field"><span class="form-label">Sua categoria</span><app-gender-toggle [value]="moderatorGender" (valueChange)="moderatorGender = $event" label="Sua categoria" /></div>
+                }<div class="form-field"><span class="form-label">Foto (opcional)</span><app-avatar-picker [(value)]="moderatorAvatar" /></div><p class="muted helper-text">Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga.</p></div>
               }
-              <div id="tournamentMode" class="form-field"><span class="form-label" id="modeLabel">Formato do torneio</span><app-choice-cards labelledBy="modeLabel" [options]="modeOptions" [value]="state.tournamentMode ?? 'super'" (valueChange)="changeTournamentMode($event)"></app-choice-cards></div>@if (isGroupTournament) {
-              <div class="form-field"><span class="form-label" id="groupFormatLabel">Formato dos grupos</span><app-choice-cards labelledBy="groupFormatLabel" [options]="groupFormatOptions" [value]="state.groupFormat ?? 'rotating'" (valueChange)="changeGroupFormat($event)"></app-choice-cards></div>
+              <div id="tournamentMode" class="form-field"><span class="form-label" id="modeLabel">Formato do torneio</span><app-choice-cards labelledBy="modeLabel" [options]="modeOptions" [value]="state.tournamentMode ?? 'super'" (valueChange)="changeTournamentMode($event)" /></div>@if (isGroupTournament) {
+              <div class="form-field"><span class="form-label" id="groupFormatLabel">Formato dos grupos</span><app-choice-cards labelledBy="groupFormatLabel" [options]="groupFormatOptions" [value]="state.groupFormat ?? 'rotating'" (valueChange)="changeGroupFormat($event)" /></div>
             }
-            <div class="setup-ranges" [class.single]="isGroupTournament"><app-number-range inputId="setupSize" label="Participantes" [values]="availableSizes" [value]="state.size" suffix="jogadores" (valueChange)="changeSize($event)"></app-number-range>@if (!isGroupTournament) {
-            <app-number-range inputId="setupCourts" label="Quadras por rodada" [values]="availableCourts" [value]="state.courts" suffix="quadras" (valueChange)="changeCourts($event)"></app-number-range>
+            <div class="setup-ranges" [class.single]="isGroupTournament"><app-number-range inputId="setupSize" label="Participantes" [values]="availableSizes" [value]="state.size" suffix="jogadores" (valueChange)="changeSize($event)" />@if (!isGroupTournament) {
+            <app-number-range inputId="setupCourts" label="Quadras por rodada" [values]="availableCourts" [value]="state.courts" suffix="quadras" (valueChange)="changeCourts($event)" />
           }</div>@if (isEarlyFinalsOptionAvailable) {
           <label class="toggle-field"><input type="checkbox" name="earlyFinals" [ngModel]="!!state.earlyFinalsEnabled" (ngModelChange)="setEarlyFinals($event)"><span><b>Permitir finais antecipadas</b><small>O moderador poderá encerrar a classificatória quando todos tiverem o mesmo número de partidas.</small></span></label>
           }@if (isEarlyFinalsOptionAvailable && state.earlyFinalsEnabled) {
           <div class="form-field"><label for="mixedFinalFormat">Fase final mista</label><select id="mixedFinalFormat" name="mixedFinalFormat" [ngModel]="state.mixedFinalFormat ?? 'knockout'" (ngModelChange)="setMixedFinalFormat($event)"><option [ngValue]="'knockout'">Chave completa · top 8 de cada categoria</option><option [ngValue]="'direct'">Final e 3º lugar · top 4 de cada categoria</option></select><small class="muted">{{ (state.mixedFinalFormat ?? 'knockout') === 'knockout' ? 'Quartas, semifinais, final e disputa de 3º.' : 'Quatro duplas disputam diretamente final e 3º lugar.' }}</small></div>
         }
-        <div class="setup-ranges single"><app-number-range inputId="setupGames" label="Games para vencer" [values]="availableGamesToWin" [value]="state.gamesToWin" suffix="games" (valueChange)="state.gamesToWin = $event"></app-number-range></div>
+        <div class="setup-ranges single"><app-number-range inputId="setupGames" label="Games para vencer" [values]="availableGamesToWin" [value]="state.gamesToWin" suffix="games" (valueChange)="state.gamesToWin = $event" /></div>
         <div id="setupSummary" class="setup-summary" role="status" aria-live="polite"><div><b>{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }}</b><small>formato</small></div><div><b>{{ requiredRounds }}</b><small>rodadas</small></div><div><b>{{ requiredCourts }}</b><small>{{ requiredCourts === 1 ? 'quadra' : 'quadras' }}</small></div><div><b>{{ state.gamesToWin }}</b><small>games p/ vencer</small></div></div>
         @if (state.gamesToWin === 3) {
           <p class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
@@ -265,8 +265,8 @@
       <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
       <div id="enrollProgress" class="enroll-progress" role="status" aria-live="polite"><div class="enroll-head"><span>{{ isSharedMode ? 'Convidados entram pelo link' : 'Atletas inscritos' }}</span><b>{{ state.players.length }} / {{ state.size }}</b></div><div class="enroll-bar"><span [style.width.%]="state.players.length / state.size * 100"></span></div><small>{{ enrollHint }}</small></div>
       @if (!isSharedMode) {
-        <form class="participant-form" [class.open-doubles]="!isMixedDoubles" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [(value)]="newPlayerAvatar"></app-avatar-picker><input id="wizardPlayerName" name="wizardPlayerName" [ngModel]="newPlayerName" (ngModelChange)="newPlayerName = $event; playerFormError = ''" maxlength="40" placeholder="Nome do jogador" aria-label="Nome do jogador" enterkeyhint="done" autocomplete="off" [attr.aria-invalid]="playerFormError ? 'true' : null"></div>@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="newPlayerGender" (valueChange)="newPlayerGender = $event" label="Categoria do jogador"></app-gender-toggle>
+        <form class="participant-form" [class.open-doubles]="!isMixedDoubles" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [(value)]="newPlayerAvatar" /><input id="wizardPlayerName" name="wizardPlayerName" [ngModel]="newPlayerName" (ngModelChange)="newPlayerName = $event; playerFormError = ''" maxlength="40" placeholder="Nome do jogador" aria-label="Nome do jogador" enterkeyhint="done" autocomplete="off" [attr.aria-invalid]="playerFormError ? 'true' : null"></div>@if (isMixedDoubles) {
+        <app-gender-toggle [compact]="true" [value]="newPlayerGender" (valueChange)="newPlayerGender = $event" label="Categoria do jogador" />
         }<button class="button primary" type="submit" [disabled]="state.players.length >= state.size || !newPlayerName.trim() || (isMixedDoubles && !newPlayerGender)">Adicionar jogador</button></form>
         }@if (playerFormError) {
         <p class="shared-error player-form-error" role="alert">{{ playerFormError }}</p>
@@ -274,8 +274,8 @@
         <button class="batch-entry-button" type="button" (click)="openBatchModal()">＋ Adicionar em lote</button>
       }
       <div class="wizard-player-list">@for (player of state.players; track player; let i = $index) {
-        <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span>@if (isMixedDoubles && player.gender) {
-        <app-gender-icon [gender]="player.gender"></app-gender-icon>
+        <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span>@if (isMixedDoubles && player.gender) {
+        <app-gender-icon [gender]="player.gender" />
         }@if (isMixedDoubles && !hasSchedule) {
         <select [name]="'playerGender' + i" [ngModel]="player.gender ?? ''" (ngModelChange)="updatePlayerGender(player.id, $event)" aria-label="Categoria de {{ player.name }}"><option [ngValue]="''" disabled>Categoria</option><option [ngValue]="'male'">Masculino</option><option [ngValue]="'female'">Feminino</option></select>
         }@if (!isSharedMode) {
@@ -285,8 +285,8 @@
       }</div>
     }</div>
     @if (canManageParticipants && !sharedCapacityReached) {
-      <form class="participant-form manual-participant" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="addManualParticipant()"><span class="card-kicker">ADICIONAR QUEM ESTÁ SEM CELULAR</span><div class="participant-form-main"><app-avatar-picker [(value)]="manualParticipantAvatar"></app-avatar-picker><input name="manualParticipantName" [(ngModel)]="manualParticipantName" maxlength="40" placeholder="Nome do participante" aria-label="Nome do participante sem celular"></div>@if (isMixedDoubles) {
-      <app-gender-toggle [compact]="true" [value]="manualParticipantGender" (valueChange)="manualParticipantGender = $event" label="Categoria do participante"></app-gender-toggle>
+      <form class="participant-form manual-participant" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="addManualParticipant()"><span class="card-kicker">ADICIONAR QUEM ESTÁ SEM CELULAR</span><div class="participant-form-main"><app-avatar-picker [(value)]="manualParticipantAvatar" /><input name="manualParticipantName" [(ngModel)]="manualParticipantName" maxlength="40" placeholder="Nome do participante" aria-label="Nome do participante sem celular"></div>@if (isMixedDoubles) {
+      <app-gender-toggle [compact]="true" [value]="manualParticipantGender" (valueChange)="manualParticipantGender = $event" label="Categoria do participante" />
       }<button class="button secondary" type="submit" [disabled]="!manualParticipantName.trim() || sharedLoading || (isMixedDoubles && !manualParticipantGender)">Adicionar participante</button></form>
     }
     @if (isSharedMode) {
@@ -331,8 +331,8 @@
     <div id="reviewSummary" class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
     <div class="callout"><b>{{ state.name }}</b><span>{{ reviewDescription }}</span></div>
     <div class="wizard-roster"><span class="card-kicker">JOGADORES</span><div class="roster-chips">@for (player of state.players; track player) {
-    <span class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar"></app-player-avatar>{{ player.name }}@if (isMixedDoubles && player.gender) {
-    <app-gender-icon [gender]="player.gender"></app-gender-icon>
+    <span class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar" />{{ player.name }}@if (isMixedDoubles && player.gender) {
+    <app-gender-icon [gender]="player.gender" />
   }</span>
 }</div></div>
 <p class="muted helper-text">Ao gerar a tabela, a lista de jogadores fica bloqueada e o cronômetro do torneio começa.</p>
@@ -370,8 +370,8 @@
         <article class="surface-card data-card"><div><span class="card-kicker">ARQUIVO ADMINISTRATIVO</span><h2>Backup do torneio</h2><p class="muted">O backup pode ser importado como torneio local, sem reabrir o convite original.</p></div><button class="button secondary" type="button" (click)="exportBackup()">Exportar backup JSON</button></article>
       }
       @if (canJoinSharedTournament) {
-        <article class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar"></app-avatar-picker><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div>@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria"></app-gender-toggle>
+        <article class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar" /><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div>@if (isMixedDoubles) {
+        <app-gender-toggle [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria" />
         }<button class="button primary" type="submit" [disabled]="!guestName.trim() || sharedLoading || (isMixedDoubles && !guestGender)">{{ sharedLoading ? 'Entrando…' : 'Participar' }}</button></form></article>
       }
       @if (!sharedLoading && !sharedSnapshot && !sharedError) {
@@ -380,17 +380,17 @@
       @if (sharedSnapshot && guestTab === 'projection') {
         <section id="guest-projection" class="projection-page">
           @if (projectionAvailable) {
-            <ng-container *ngTemplateOutlet="projectionPanel"></ng-container>
+            <ng-container *ngTemplateOutlet="projectionPanel" />
           } @else {
             <div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>Projeção ainda bloqueada</h2><p class="muted">{{ state.finals ? 'A fase de grupos acabou — acompanhe as finais.' : 'Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.' }}</p></div>
           }
         </section>
       }
       @if (sharedSnapshot && guestTab !== 'projection') {
-        <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live"></app-battle-card></ng-template>
+        <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live" /></ng-template>
         @if (state.players.length && !state.rounds.length) {
           <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span>@for (player of state.players; track player) {
-          <div class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b>@if (isMe(player.id)) {
+          <div class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (isMe(player.id)) {
           <small>você</small>
         }</span></div>
       }</article>
@@ -402,30 +402,30 @@
       <section id="guest-rounds" class="shared-round-list">
         @if (spotlightRound; as round) {
           <article class="arena-spotlight"><div class="card-title-row"><div><span class="card-kicker"><i class="spot-dot"></i> EM QUADRA AGORA</span><h2>Rodada {{ round.number }}</h2></div><span class="mini-tag">{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</span></div><div class="battle-list">@for (match of round.matches; track trackMatch($index, match)) {
-          <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match, live: true }"></ng-container>
+          <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match, live: true }" />
         }</div></article>
       }
       @for (round of historyRounds; track trackRound($index, round)) {
         <details class="surface-card shared-round arena-history"><summary><span class="card-kicker">RODADA {{ round.number }}</span><b>{{ round.matches.length }} partidas</b><em>{{ roundDone(round.number - 1) ? 'ENCERRADA' : 'A SEGUIR' }}</em></summary><div class="battle-list">@for (match of round.matches; track trackMatch($index, match)) {
-        <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container>
+        <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }" />
       }</div></details>
     }
   </section>
 }
 @if (state.rounds.length) {
-  <app-ranking-view id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId" (playerSelected)="openPlayerMatches($event)"></app-ranking-view>
+  <app-ranking-view id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId" (playerSelected)="openPlayerMatches($event)" />
 }
 @if (state.finals) {
   <article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2>@for (match of state.finals.matches; track match) {
   <div class="shared-final-match"><span class="card-kicker">{{ finalKindLabel(match) }}</span>@if (match.finalKind === 'championship' && match.livePoints !== undefined) {
-  <app-final-live-score [match]="match" [players]="state.players"></app-final-live-score>
+  <app-final-live-score [match]="match" [players]="state.players" />
 } @else {
-  <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }"></ng-container>@if (match.tieBreakA != null && match.tieBreakB != null) {
+  <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }" />@if (match.tieBreakA != null && match.tieBreakB != null) {
   <small class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
 }
 }</div>
 }@if (state.finals.complete) {
-<app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId"></app-podium>@if (guestPlayerId) {
+<app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId" />@if (guestPlayerId) {
 <div class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button>@if (shareMessage) {
 <small class="muted">{{ shareMessage }}</small>
 }</div>
@@ -472,7 +472,7 @@
     <div class="empty-state"><span>♙</span><b>Nenhum jogador cadastrado</b><small>Adicione os participantes para começar.</small></div>
   }
   @for (player of state.players; track player; let i = $index) {
-    <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl"></app-player-avatar><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" (click)="removePlayer(player.id)" [disabled]="hasSchedule" aria-label="Remover jogador">×</button></div>
+    <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" (click)="removePlayer(player.id)" [disabled]="hasSchedule" aria-label="Remover jogador">×</button></div>
   }
 </article>
 <article class="surface-card full-card"><div class="callout"><span>Após gerar a tabela, jogadores e ajustes ficam bloqueados.</span></div><button class="button primary" (click)="navigate('settings')" [disabled]="hasSchedule">Revisar configurações</button><button class="button secondary" (click)="generateSchedule()" [disabled]="hasSchedule || state.players.length !== state.size">Gerar todas as rodadas <span>→</span></button></article>
@@ -485,7 +485,7 @@
     }
     @if (hasSchedule && currentRound; as round) {
       <article class="surface-card rounds-header"><div><span class="card-kicker">{{ state.name }}</span><h2>Calendário</h2><p class="muted">{{ roundsLocked ? 'Bloqueadas após as finais.' : 'Lance os resultados em qualquer ordem.' }}</p></div><div class="round-summary"><b>{{ completedRounds }}<small> / {{ state.roundCount }}</small></b><span>rodadas</span></div><div class="round-summary elapsed-summary"><b>{{ elapsedLabel }}</b><span>{{ state.finishedAt ? 'duração' : 'tempo' }}</span></div></article>
-      <app-round-navigation [selectedRound]="selectedRound" [roundCount]="state.rounds.length" [completedRounds]="completedRounds" [finalsExist]="!!state.finals" (roundSelect)="selectRound($event)" (ranking)="navigate('ranking')"></app-round-navigation>
+      <app-round-navigation [selectedRound]="selectedRound" [roundCount]="state.rounds.length" [completedRounds]="completedRounds" [finalsExist]="!!state.finals" (roundSelect)="selectRound($event)" (ranking)="navigate('ranking')" />
       <div class="round-tabs" role="tablist" aria-label="Rodadas do torneio">@for (item of state.rounds; track item; let i = $index) {
         <button [attr.id]="'round-tab-' + i" type="button" role="tab" [attr.aria-selected]="selectedRound === i" [class.active]="selectedRound === i" [class.done]="roundDone(i)" (click)="selectRound(i)"><span>RODADA</span><b>{{ item.number }}</b>@if (roundDone(i)) {
         <i>✓</i>
@@ -496,7 +496,7 @@
       @for (match of round.matches; track match) {
         <article class="surface-card match-card">
           <div class="match-meta"><span class="court-label">{{ match.groupId ? groupName(match.groupId) + ' · ' : '' }}QUADRA {{ match.court }}</span><span class="match-state" [class.done]="isScored(match)">{{ isScored(match) ? '● Registrado' : '○ Pendente' }}</span></div>
-          <div class="match-teams"><div class="team"><div class="team-names"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar"></app-player-avatar><span class="team-player-name">{{ playerName(match.teamA[0]) }}</span></b><b><app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar"></app-player-avatar><span class="team-player-name">{{ playerName(match.teamA[1]) }}</span></b></div><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="scoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="scoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2"><div class="team-names"><b><span class="team-player-name">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar"></app-player-avatar></b><b><span class="team-player-name">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar"></app-player-avatar></b></div></div><small class="score-status">{{ scoreStatus(match) }}</small></div>
+          <div class="match-teams"><div class="team"><div class="team-names"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[0]) }}</span></b><b><app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[1]) }}</span></b></div><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="scoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="scoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2"><div class="team-names"><b><span class="team-player-name">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar" /></b><b><span class="team-player-name">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar" /></b></div></div><small class="score-status">{{ scoreStatus(match) }}</small></div>
           @if (isScored(match)) {
             <div class="score-foot"><span>Placar salvo</span><button type="button" (click)="clearScore(match)" [disabled]="!canEditRoundScores">Limpar</button></div>
           }
@@ -505,16 +505,16 @@
     </div>
     @if (round.restingPlayerIds.length) {
       <aside class="surface-card rest-card"><span class="card-kicker">PAUSA</span><h3>Em descanso</h3>@for (id of round.restingPlayerIds; track id) {
-      <div class="rest-player"><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)"></app-player-avatar><b>{{ playerName(id) }}</b><small>Descanso</small></div>
+      <div class="rest-player"><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)" /><b>{{ playerName(id) }}</b><small>Descanso</small></div>
     }</aside>
   }</div>
-  <app-round-navigation class="round-nav-bottom" [position]="'bottom'" [selectedRound]="selectedRound" [roundCount]="state.rounds.length" [completedRounds]="completedRounds" [finalsExist]="!!state.finals" (roundSelect)="selectRound($event)" (ranking)="navigate('ranking')"></app-round-navigation>
+  <app-round-navigation class="round-nav-bottom" [position]="'bottom'" [selectedRound]="selectedRound" [roundCount]="state.rounds.length" [completedRounds]="completedRounds" [finalsExist]="!!state.finals" (roundSelect)="selectRound($event)" (ranking)="navigate('ranking')" />
 }
 </section>
 }
 @case ('ranking') {
   <section class="content-grid ranking-page">
-    <app-ranking-view [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="hasSchedule" (playerSelected)="openPlayerMatches($event)"></app-ranking-view>
+    <app-ranking-view [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="hasSchedule" (playerSelected)="openPlayerMatches($event)" />
     @if (canGenerateFinal) {
       <article class="surface-card full-card final-qualifier"><div><span class="card-kicker">FASE FINAL</span><h2>{{ usesMixedFinals ? 'Finais mistas disponíveis' : earlyFinalsReady ? 'Finais antecipadas disponíveis' : 'Oito classificados' }}</h2><p class="muted">{{ usesMixedFinalBracket ? 'Os 8 melhores homens e as 8 melhores mulheres formarão duplas fixas para quartas, semis, final e disputa de 3º lugar.' : usesMixedFinals ? 'Os 4 melhores homens e as 4 melhores mulheres formarão duplas fixas para final e disputa de 3º lugar.' : earlyFinalsReady ? 'Todos já têm a mesma quantidade de partidas. Ao gerar as finais, as rodadas restantes serão bloqueadas.' : '1º+3º × 2º+4º decidem o título; 5º+7º × 6º+8º, o 3º lugar.' }}</p></div><button class="button primary" type="button" (click)="generateFinal()">Gerar finais</button></article>
     }
@@ -526,9 +526,9 @@
           <button class="button secondary final-live-toggle" type="button" (click)="toggleFinalLiveScore(match)" [disabled]="!match.teamA[0] || !match.teamB[0]">{{ match.livePoints !== undefined ? 'Usar placar manual' : 'Ativar ponto a ponto' }}</button>
         }
         @if (match.finalKind === 'championship' && match.livePoints !== undefined) {
-          <app-final-live-score [match]="match" [players]="state.players" [editable]="canEditFinalScores" (pointSelected)="addFinalLivePoint(match, $event)" (undoSelected)="undoFinalLivePoint(match)"></app-final-live-score>
+          <app-final-live-score [match]="match" [players]="state.players" [editable]="canEditFinalScores" (pointSelected)="addFinalLivePoint(match, $event)" (undoSelected)="undoFinalLivePoint(match)" />
         } @else {
-          <div class="match-teams"><div class="team"><div class="team-names"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar"></app-player-avatar><span class="team-player-name">{{ playerName(match.teamA[0]) }}</span></b><b><app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar"></app-player-avatar><span class="team-player-name">{{ playerName(match.teamA[1]) }}</span></b></div><input class="inline-score" type="number" min="0" max="7" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="finalScoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1 na final"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" max="7" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="finalScoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2 na final"><div class="team-names"><b><span class="team-player-name">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar"></app-player-avatar></b><b><span class="team-player-name">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar"></app-player-avatar></b></div></div><small class="score-status">{{ finalScoreStatus(match) }}</small></div>
+          <div class="match-teams"><div class="team"><div class="team-names"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[0]) }}</span></b><b><app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[1]) }}</span></b></div><input class="inline-score" type="number" min="0" max="7" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="finalScoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1 na final"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" max="7" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="finalScoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2 na final"><div class="team-names"><b><span class="team-player-name">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar" /></b><b><span class="team-player-name">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar" /></b></div></div><small class="score-status">{{ finalScoreStatus(match) }}</small></div>
           @if (match.scoreA === 6 && match.scoreB === 6) {
             <div class="tiebreak-row"><b>Tie-break</b><label><span>Dupla 1</span><input type="number" min="0" max="99" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].tieBreakA" (ngModelChange)="finalScoreChanged(match, 'tieBreakA', $event)" [ngModelOptions]="{standalone: true}" aria-label="Pontos de tie-break da dupla 1"></label><strong>:</strong><label><span>Dupla 2</span><input type="number" min="0" max="99" step="1" [disabled]="!canEditFinalScores || !match.teamA[0] || !match.teamB[0]" [ngModel]="scoreDrafts[match.id].tieBreakB" (ngModelChange)="finalScoreChanged(match, 'tieBreakB', $event)" [ngModelOptions]="{standalone: true}" aria-label="Pontos de tie-break da dupla 2"></label></div>
           }
@@ -540,8 +540,8 @@
       <p class="muted podium-duration">Duração do torneio: {{ elapsedLabel }}</p>
       }@if (canFinalizeTournament) {
       <div class="finalize-box"><p class="muted">Após finalizar, nada mais pode ser editado.</p><button class="button primary" type="button" (click)="finalizeTournament()">Finalizar torneio</button></div>
-      }<app-podium [places]="finalPodium" [players]="state.players"></app-podium><div class="share-picker"><div class="share-picker-head"><span class="card-kicker">COMPARTILHAR</span><p class="muted">Escolha o atleta.</p></div><div class="share-picker-grid" role="radiogroup" aria-label="Atleta para gerar a imagem">@for (candidate of shareCandidates; track trackByPlayerId($index, candidate)) {
-      <button type="button" role="radio" class="share-chip" [class.selected]="sharePlayerId === candidate.playerId" [attr.aria-checked]="sharePlayerId === candidate.playerId" (click)="sharePlayerId = candidate.playerId"><app-player-avatar [name]="candidate.name" [photoDataUrl]="playerPhoto(candidate.playerId)" variant="share-chip-avatar"></app-player-avatar><span class="share-chip-name">{{ candidate.name }}</span><small class="share-chip-place">{{ candidate.place }}º</small></button>
+      }<app-podium [places]="finalPodium" [players]="state.players" /><div class="share-picker"><div class="share-picker-head"><span class="card-kicker">COMPARTILHAR</span><p class="muted">Escolha o atleta.</p></div><div class="share-picker-grid" role="radiogroup" aria-label="Atleta para gerar a imagem">@for (candidate of shareCandidates; track trackByPlayerId($index, candidate)) {
+      <button type="button" role="radio" class="share-chip" [class.selected]="sharePlayerId === candidate.playerId" [attr.aria-checked]="sharePlayerId === candidate.playerId" (click)="sharePlayerId = candidate.playerId"><app-player-avatar [name]="candidate.name" [photoDataUrl]="playerPhoto(candidate.playerId)" variant="share-chip-avatar" /><span class="share-chip-name">{{ candidate.name }}</span><small class="share-chip-place">{{ candidate.place }}º</small></button>
       }</div><button class="button primary share-picker-action" type="button" (click)="shareResults()" [disabled]="!sharePlayerId || sharingResults">{{ sharingResults ? 'Preparando imagem…' : sharePlayerId ? 'Gerar imagem de ' + playerName(sharePlayerId) : 'Selecione um atleta' }}</button>@if (shareMessage) {
       <small class="muted">{{ shareMessage }}</small>
     }</div></section>
@@ -554,7 +554,7 @@
 @case ('projection') {
   <section class="projection-page">
     @if (projectionAvailable) {
-      <ng-container *ngTemplateOutlet="projectionPanel"></ng-container>
+      <ng-container *ngTemplateOutlet="projectionPanel" />
     } @else {
       <div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>Projeção ainda bloqueada</h2><p class="muted">{{ state.finals ? 'A fase de grupos acabou — acompanhe as finais.' : 'Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.' }}</p></div>
     }
@@ -618,7 +618,7 @@
   }<li>Todos jogam a mesma quantidade de partidas; a classificação é por grupo.</li></ul>
 }</article>
 @if (state.finishedAt) {
-  <app-tournament-report [state]="state" [existingLiveUrl]="!isSharedMode ? localLiveUrl : ''" [sharedConfigured]="sharedConfigured"></app-tournament-report>
+  <app-tournament-report [state]="state" [existingLiveUrl]="!isSharedMode ? localLiveUrl : ''" [sharedConfigured]="sharedConfigured" />
 }
 @if (!isSharedMode && !state.finishedAt) {
   <article class="surface-card full-card data-card"><div><span class="card-kicker">ACOMPANHAMENTO PÚBLICO</span><h2>Link para acompanhar ao vivo</h2><p class="muted">Qualquer pessoa com o link pode ver participantes, partidas, placares e ranking. O link não permite entrar nem alterar o torneio.</p>@if (localLiveUrl) {
@@ -664,7 +664,7 @@
 <span role="status">{{ feedbackMessage }}</span>
 }</footer>
 @if (selectedRankingPlayer) {
-  <div class="player-matches-backdrop" tabindex="-1" (keydown.escape)="closePlayerMatches()" (click)="$event.target === $event.currentTarget && closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl"></app-player-avatar><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list">@for (item of selectedPlayerMatches; track item) {
+  <div class="player-matches-backdrop" tabindex="-1" (keydown.escape)="closePlayerMatches()" (click)="$event.target === $event.currentTarget && closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl" /><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list">@for (item of selectedPlayerMatches; track item) {
   <article class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article>
 }</div></section></div>
 }
@@ -672,7 +672,7 @@
   <div class="profile-backdrop" tabindex="-1" (keydown.escape)="closeProfile()" (click)="$event.target === $event.currentTarget && closeProfile()">
     <section id="profilePanel" class="profile-panel" [class.welcome]="profileWelcome" role="dialog" aria-modal="true" aria-labelledby="profileTitle" [attr.aria-describedby]="profileWelcome ? 'profileWelcomeText' : null" tabindex="-1">
       <div class="profile-head">
-        <app-avatar-picker [value]="profile.photoDataUrl || ''" (valueChange)="updateProfile({ photoDataUrl: $event || undefined })"></app-avatar-picker>
+        <app-avatar-picker [value]="profile.photoDataUrl || ''" (valueChange)="updateProfile({ photoDataUrl: $event || undefined })" />
         <div class="profile-head-text"><span class="card-kicker">{{ profileWelcome ? 'BEM-VINDO AO SETPOINT' : 'SEU PERFIL' }}</span><h2 id="profileTitle">{{ profile.name || 'Quem é você?' }}</h2><small class="profile-sync" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel"><i aria-hidden="true"></i>{{ syncLabel }}</small></div>
         <button type="button" class="modal-close" (click)="closeProfile()" aria-label="Fechar">×</button>
       </div>
@@ -681,7 +681,7 @@
       }
       <div class="profile-section">
         <label class="form-field profile-name-field"><span>Seu nome</span><input id="profileName" name="profileName" [(ngModel)]="profile.name" (blur)="saveProfileName()" (keydown.enter)="saveProfileName()" [maxlength]="profileNameMax" placeholder="Como você aparece nos torneios" autocomplete="name"></label>
-        <div class="form-field"><span>Categoria <small class="muted">(para duplas mistas)</small></span><app-gender-toggle [compact]="true" [value]="profile.gender || ''" (valueChange)="updateProfile({ gender: $event })" label="Sua categoria"></app-gender-toggle></div>
+        <div class="form-field"><span>Categoria <small class="muted">(para duplas mistas)</small></span><app-gender-toggle [compact]="true" [value]="profile.gender || ''" (valueChange)="updateProfile({ gender: $event })" label="Sua categoria" /></div>
         <label class="profile-switch" [class.disabled]="!profile.name.trim()">
           <input type="checkbox" role="switch" [checked]="profile.autoJoin" (change)="updateProfile({ autoJoin: $any($event.target).checked })" [disabled]="!profile.name.trim()">
           <span class="profile-switch-track" aria-hidden="true"><span></span></span>
@@ -759,7 +759,7 @@
     @if (batchPlayers.length) {
       <div class="batch-preview">@for (player of batchPlayers; track player; let i = $index) {
         <div class="batch-player" [class.invalid]="player.error"><span>{{ i + 1 }}</span><input [name]="'batchName' + i" [(ngModel)]="player.name" (ngModelChange)="validateBatchPlayers()" maxlength="40" aria-label="Nome do participante">@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="player.gender" (valueChange)="player.gender = $event; validateBatchPlayers()" [label]="'Categoria de ' + player.name"></app-gender-toggle>
+        <app-gender-toggle [compact]="true" [value]="player.gender" (valueChange)="player.gender = $event; validateBatchPlayers()" [label]="'Categoria de ' + player.name" />
         }@if (player.error) {
         <small>{{ player.error }}</small>
       }</div>
@@ -777,12 +777,12 @@
       <p class="muted">O confronto direto não resolveu. Sorteie a ordem para gerar as finais.</p>
       @if (!activeTieDrawResult.length) {
         <div class="tie-draw-participants">@for (id of activeTiePlayerIds; track id) {
-          <span><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)"></app-player-avatar>{{ playerName(id) }}</span>
+          <span><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)" />{{ playerName(id) }}</span>
         }</div>
       }
       @if (activeTieDrawResult.length) {
         <ol class="tie-draw-result">@for (id of activeTieDrawResult; track id; let i = $index) {
-          <li><b>{{ i + 1 }}º</b><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)"></app-player-avatar><span>{{ playerName(id) }}</span></li>
+          <li><b>{{ i + 1 }}º</b><app-player-avatar [name]="playerName(id)" [photoDataUrl]="playerPhoto(id)" /><span>{{ playerName(id) }}</span></li>
         }</ol>
       }
       <div class="tie-draw-actions"><button class="button secondary" type="button" (click)="cancelTieDraw()">Cancelar</button><button class="button primary" type="button" (click)="activeTieDrawResult.length ? confirmTieDraw() : drawActiveTie()">{{ activeTieDrawResult.length ? (unresolvedFinalTiePlayers.length > 0 ? 'Confirmar e sortear próximo empate' : 'Confirmar e gerar finais') : 'Realizar sorteio' }}</button></div>
@@ -835,7 +835,7 @@
 }
 <ng-template #projectionPanel>
   @defer {
-  <app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()"></app-qualification-stats>
+  <app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()" />
   } @loading (minimum 200ms) {
   <div class="surface-card projection-loading" role="status">Calculando projeção…</div>
 }
