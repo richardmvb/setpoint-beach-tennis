@@ -87,10 +87,10 @@
             "coverageInclude": ["src/app/core/**/*.ts"],
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
-              "statements": 55,
-              "branches": 57,
-              "functions": 61,
-              "lines": 53
+              "statements": 56,
+              "branches": 59,
+              "functions": 62,
+              "lines": 54
             }
           }
         }
