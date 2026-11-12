@@ -17,9 +17,9 @@ npm run lint:styles     # Stylelint
 npm run format:check    # Prettier (src/**/*.html and src/styles.css are excluded, see below)
 npm run typecheck       # tsc over src/**/*.ts
 npm run knip            # unused files, exports, dependencies
-npm test                # unit tests (node:test)
-npm run test:db         # SQL tests on PGlite
-npm run test:coverage   # unit tests with Node coverage
+npm test                # unit tests (Vitest through the Angular unit-test builder, src/**/*.spec.ts)
+npm run test:db         # SQL tests on PGlite (node:test, tests/)
+npm run test:coverage   # unit tests with V8 coverage
 npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
 npm run check           # lint, styles, format, typecheck, knip, tests, build
@@ -30,7 +30,7 @@ Local runtime config is `public/runtime-config.js` (tracked, development values)
 ## Architecture (current)
 
 - `src/app/app.component.ts` and `.html`: monolith (about 3,000 lines of logic). Being decomposed in Phase 4. Do not add new features here; put new code in the target structure.
-- `src/app/core/`: services and domain logic (`supabase.service.ts`, `storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Pure logic is tested through `tests/*.test.cjs`, which transpile the TypeScript with `tests/helpers-ts.cjs`.
+- `src/app/core/`: services and domain logic (`supabase.service.ts`, `storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Unit tests are colocated `*.spec.ts` files run by Vitest.
 - `src/app/features/`: presentational components (flat for now).
 - `src/styles.css`: one global stylesheet. Split into tokens and components in Phase 5.
 - `supabase/migrations/`: SQL applied by hand until Phase 3 adds the Supabase CLI.
@@ -54,15 +54,14 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 | `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                                  | 5 (split into tokens and components) |
 | `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
 | Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
-| Four `core/` files keep unused-looking exports because `tests/` load them through `loadCore` (see `knip.json`)            | 4 (move logic to `domain/`)          |
 | Coverage thresholds                                                                                                       | 2                                    |
 | Axe baseline: color-contrast (up to 62 nodes per page), label-content-name-mismatch, unnamed buttons in the profile panel | 5 (design system and accessibility)  |
 | E2E for shared invite and live viewer (mocked Supabase), saved tournaments, offline sync                                  | Phase 1 follow-ups                   |
 | `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
 
-## Unit tests that build classes by hand
+## Unit tests (Vitest)
 
-`tests/*.test.cjs` transpile TypeScript from `src/app` and instantiate services and components with `new`, using a stub for `@angular/core`. When a class starts using `inject()`, `input()`, `input.required()` or `output()`, give the stub of that test a matching function (`inject` returning the instance registered for a token, `input` returning a settable signal). `final-live-score.test.cjs` and `tournament-report.test.cjs` show both. Do not rewrite the class to suit the stub.
+Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
 
 ## End-to-end tests (e2e/)
 
