@@ -28,18 +28,23 @@ export interface LibraryEntry {
   archivePending: boolean;
 }
 
-interface LibraryIndex { version: 1; entries: LibraryEntry[]; }
+interface LibraryIndex {
+  version: 1;
+  entries: LibraryEntry[];
+}
 
-export const MAX_LIBRARY_ENTRIES = 30;
+const MAX_LIBRARY_ENTRIES = 30;
 /** localStorage is ~5 MB shared with the active tournament and sync queues: the history gets a small slice. */
-export const MAX_LIBRARY_BYTES = 1_500_000;
+const MAX_LIBRARY_BYTES = 1_500_000;
 const INDEX_KEY = 'setpoint.library.v1';
 const STATE_PREFIX = 'setpoint.library.v1.state.';
 
 type LibraryStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /** Stable identity of a tournament across saves; null while it has not been started/identified yet. */
-export function libraryId(state: Pick<TournamentState, 'hostingMode' | 'sharedTournamentId' | 'analyticsId'>): string | null {
+export function libraryId(
+  state: Pick<TournamentState, 'hostingMode' | 'sharedTournamentId' | 'analyticsId'>,
+): string | null {
   if (state.hostingMode === 'shared') return state.sharedTournamentId ? `shared-${state.sharedTournamentId}` : null;
   return state.analyticsId ?? null;
 }
@@ -50,25 +55,31 @@ function withoutPhotos(state: TournamentState): TournamentState {
 }
 
 function allMatches(state: TournamentState): Match[] {
-  return [...state.rounds.flatMap(round => round.matches), ...(state.finals?.matches ?? [])];
+  return [...state.rounds.flatMap((round) => round.matches), ...(state.finals?.matches ?? [])];
 }
 
 export class TournamentLibrary {
   constructor(
     private readonly storage: LibraryStorage,
-    private readonly parse: (raw: string) => TournamentState | null = raw => {
-      try { return JSON.parse(raw) as TournamentState; } catch { return null; }
+    private readonly parse: (raw: string) => TournamentState | null = (raw) => {
+      try {
+        return JSON.parse(raw) as TournamentState;
+      } catch {
+        return null;
+      }
     },
     private readonly maxEntries = MAX_LIBRARY_ENTRIES,
     private readonly clock: () => Date = () => new Date(),
-    private readonly maxBytes = MAX_LIBRARY_BYTES
+    private readonly maxBytes = MAX_LIBRARY_BYTES,
   ) {}
 
   list(): LibraryEntry[] {
     return [...this.readIndex().entries].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   }
 
-  get(id: string): LibraryEntry | null { return this.readIndex().entries.find(entry => entry.id === id) ?? null; }
+  get(id: string): LibraryEntry | null {
+    return this.readIndex().entries.find((entry) => entry.id === id) ?? null;
+  }
 
   load(id: string): TournamentState | null {
     const raw = this.storage.getItem(STATE_PREFIX + id);
@@ -83,7 +94,7 @@ export class TournamentLibrary {
     const snapshot = withoutPhotos(state);
     const serialized = JSON.stringify(snapshot);
     const index = this.readIndex();
-    const previous = index.entries.find(entry => entry.id === id);
+    const previous = index.entries.find((entry) => entry.id === id);
     if (previous && this.storage.getItem(STATE_PREFIX + id) === serialized) return previous;
 
     const matches = allMatches(state);
@@ -96,35 +107,35 @@ export class TournamentLibrary {
       size: state.size,
       playerCount: state.players.length,
       phase: tournamentPhase(state),
-      matchesCompleted: matches.filter(match => match.scoreA !== null && match.scoreB !== null).length,
+      matchesCompleted: matches.filter((match) => match.scoreA !== null && match.scoreB !== null).length,
       matchesTotal: matches.length,
       createdAt: state.createdAt,
       startedAt: state.startedAt,
       finishedAt: state.finishedAt,
       updatedAt: this.clock().toISOString(),
       bytes: serialized.length,
-      archivePending: hosting === 'local'
+      archivePending: hosting === 'local',
     };
 
-    const entries = [entry, ...index.entries.filter(item => item.id !== id)];
+    const entries = [entry, ...index.entries.filter((item) => item.id !== id)];
     return this.commit(entries, id, serialized) ? entry : null;
   }
 
   remove(id: string): void {
     const index = this.readIndex();
     this.storage.removeItem(STATE_PREFIX + id);
-    this.writeIndex({ ...index, entries: index.entries.filter(entry => entry.id !== id) });
+    this.writeIndex({ ...index, entries: index.entries.filter((entry) => entry.id !== id) });
   }
 
   pendingArchives(): LibraryEntry[] {
-    return this.list().filter(entry => entry.hosting === 'local' && entry.archivePending);
+    return this.list().filter((entry) => entry.hosting === 'local' && entry.archivePending);
   }
 
   /** Forces the next upload, e.g. when the cloud copy must learn about a newly linked live id. */
   requeue(id: string | undefined): void {
     if (!id) return;
     const index = this.readIndex();
-    const entry = index.entries.find(item => item.id === id && item.hosting === 'local');
+    const entry = index.entries.find((item) => item.id === id && item.hosting === 'local');
     if (!entry) return;
     entry.archivePending = true;
     this.writeIndex(index);
@@ -133,7 +144,7 @@ export class TournamentLibrary {
   /** Clears the pending flag only if the entry did not change while the upload was in flight. */
   markArchived(id: string, updatedAt: string): void {
     const index = this.readIndex();
-    const entry = index.entries.find(item => item.id === id);
+    const entry = index.entries.find((item) => item.id === id);
     if (!entry || entry.updatedAt !== updatedAt) return;
     entry.archivePending = false;
     this.writeIndex(index);
@@ -146,10 +157,11 @@ export class TournamentLibrary {
     for (const entry of [...kept].reverse()) {
       if (total <= this.maxBytes) break;
       if (entry.id === id) continue;
-      kept = kept.filter(item => item !== entry);
+      kept = kept.filter((item) => item !== entry);
       total -= entry.bytes ?? 0;
     }
-    for (const dropped of entries.filter(entry => !kept.includes(entry))) this.storage.removeItem(STATE_PREFIX + dropped.id);
+    for (const dropped of entries.filter((entry) => !kept.includes(entry)))
+      this.storage.removeItem(STATE_PREFIX + dropped.id);
 
     // Storage can be full: evict the oldest other entries one at a time and retry.
     for (;;) {
@@ -158,13 +170,13 @@ export class TournamentLibrary {
         this.writeIndex({ version: 1, entries: kept });
         return true;
       } catch {
-        const victim = [...kept].reverse().find(entry => entry.id !== id);
+        const victim = [...kept].reverse().find((entry) => entry.id !== id);
         if (!victim) {
           this.storage.removeItem(STATE_PREFIX + id);
           return false;
         }
         this.storage.removeItem(STATE_PREFIX + victim.id);
-        kept = kept.filter(entry => entry !== victim);
+        kept = kept.filter((entry) => entry !== victim);
       }
     }
   }
@@ -175,8 +187,10 @@ export class TournamentLibrary {
       if (!raw) return { version: 1, entries: [] };
       const parsed = JSON.parse(raw) as Partial<LibraryIndex>;
       if (parsed.version !== 1 || !Array.isArray(parsed.entries)) return { version: 1, entries: [] };
-      return { version: 1, entries: parsed.entries.filter(entry => !!entry && typeof entry.id === 'string') };
-    } catch { return { version: 1, entries: [] }; }
+      return { version: 1, entries: parsed.entries.filter((entry) => !!entry && typeof entry.id === 'string') };
+    } catch {
+      return { version: 1, entries: [] };
+    }
   }
 
   private writeIndex(index: LibraryIndex): void {

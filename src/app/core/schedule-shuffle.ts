@@ -34,7 +34,11 @@ export function shuffleRoundsAndCourts(rounds: Round[], options: ShuffleRoundsOp
   const ordered = orderRounds(rounds, Math.max(1, options.blockSize ?? 1), random);
   return bestCourtLayout(ordered, random).map((round, index) => {
     const number = index + 1;
-    return { ...round, number, matches: round.matches.map(match => ({ ...match, id: options.matchId(number, match) })) };
+    return {
+      ...round,
+      number,
+      matches: round.matches.map((match) => ({ ...match, id: options.matchId(number, match) })),
+    };
   });
 }
 
@@ -45,10 +49,11 @@ export function shuffleRoundsAndCourts(rounds: Round[], options: ShuffleRoundsOp
 function orderRounds(rounds: Round[], blockSize: number, random: RandomSource): Round[] {
   const blocks: Round[][] = [];
   for (let index = 0; index < rounds.length; index += blockSize) blocks.push(rounds.slice(index, index + blockSize));
-  const randomOrder = (): Round[][] => shuffled(blocks, random).map(block => random() < 0.5 ? block : [...block].reverse());
-  if (blocks.length < 2 || !rounds.some(round => round.restingPlayerIds.length)) return randomOrder().flat();
+  const randomOrder = (): Round[][] =>
+    shuffled(blocks, random).map((block) => (random() < 0.5 ? block : [...block].reverse()));
+  if (blocks.length < 2 || !rounds.some((round) => round.restingPlayerIds.length)) return randomOrder().flat();
 
-  const restSets = new Map(rounds.map(round => [round, new Set(round.restingPlayerIds)]));
+  const restSets = new Map(rounds.map((round) => [round, new Set(round.restingPlayerIds)]));
   const consecutiveRests = (sequence: Round[]): number => {
     let total = 0;
     for (let index = 1; index < sequence.length; index++) {
@@ -102,15 +107,17 @@ const COURT_LAYOUT_ATTEMPTS = 12;
  * then each round is re-optimized against all the others until no round improves.
  */
 function assignCourts(rounds: Round[], random: RandomSource): { rounds: Round[]; cost: number } {
-  const roundPlayers = rounds.map(round => round.matches.map(match => [...match.teamA, ...match.teamB]));
+  const roundPlayers = rounds.map((round) => round.matches.map((match) => [...match.teamA, ...match.teamB]));
   const courtCounts = new Map<string, number[]>();
   const assignment: number[][] = rounds.map(() => []);
-  const update = (roundIndex: number, amount: 1 | -1): void => assignment[roundIndex].forEach((court, matchIndex) =>
-    roundPlayers[roundIndex][matchIndex].forEach(id => {
-      const counts = courtCounts.get(id) ?? [];
-      counts[court] = (counts[court] ?? 0) + amount;
-      courtCounts.set(id, counts);
-    }));
+  const update = (roundIndex: number, amount: 1 | -1): void =>
+    assignment[roundIndex].forEach((court, matchIndex) =>
+      roundPlayers[roundIndex][matchIndex].forEach((id) => {
+        const counts = courtCounts.get(id) ?? [];
+        counts[court] = (counts[court] ?? 0) + amount;
+        courtCounts.set(id, counts);
+      }),
+    );
 
   for (let pass = 0; pass < 8; pass++) {
     let improved = false;
@@ -118,11 +125,15 @@ function assignCourts(rounds: Round[], random: RandomSource): { rounds: Round[];
       const refining = pass > 0;
       if (refining) update(roundIndex, -1);
       const courtCount = rounds[roundIndex].matches.length;
-      const cost = roundPlayers[roundIndex].map(ids => Array.from({ length: courtCount }, (_, court) =>
-        ids.reduce((sum, id) => sum + (courtCounts.get(id)?.[court] ?? 0), 0)));
+      const cost = roundPlayers[roundIndex].map((ids) =>
+        Array.from({ length: courtCount }, (_, court) =>
+          ids.reduce((sum, id) => sum + (courtCounts.get(id)?.[court] ?? 0), 0),
+        ),
+      );
       const costOf = (permutation: number[]): number => {
         let total = 0;
-        for (let matchIndex = 0; matchIndex < permutation.length; matchIndex++) total += cost[matchIndex][permutation[matchIndex]];
+        for (let matchIndex = 0; matchIndex < permutation.length; matchIndex++)
+          total += cost[matchIndex][permutation[matchIndex]];
         return total;
       };
 
@@ -162,8 +173,8 @@ function assignCourts(rounds: Round[], random: RandomSource): { rounds: Round[];
       ...round,
       matches: round.matches
         .map((match, matchIndex): Match => ({ ...match, court: assignment[roundIndex][matchIndex] + 1 }))
-        .sort((a, b) => a.court - b.court)
-    }))
+        .sort((a, b) => a.court - b.court),
+    })),
   };
 }
 
@@ -177,9 +188,17 @@ function permutations(size: number): number[][] {
       result.push(prefix);
       return;
     }
-    remaining.forEach((value, index) => build([...prefix, value], remaining.filter((_, other) => other !== index)));
+    remaining.forEach((value, index) =>
+      build(
+        [...prefix, value],
+        remaining.filter((_, other) => other !== index),
+      ),
+    );
   };
-  build([], Array.from({ length: size }, (_, index) => index));
+  build(
+    [],
+    Array.from({ length: size }, (_, index) => index),
+  );
   permutationCache.set(size, result);
   return result;
 }

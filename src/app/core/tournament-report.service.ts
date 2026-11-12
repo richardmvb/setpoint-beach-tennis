@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { FinalMatchKind, Match, TournamentState } from './models';
 
-export interface TournamentReportMatch {
+interface TournamentReportMatch {
   label: string;
   teamA: string;
   teamB: string;
@@ -11,7 +11,7 @@ export interface TournamentReportMatch {
   pending: boolean;
 }
 
-export interface TournamentReportSection {
+interface TournamentReportSection {
   title: string;
   matches: TournamentReportMatch[];
 }
@@ -27,34 +27,42 @@ export interface TournamentReport {
 export class TournamentReportService {
   build(state: TournamentState): TournamentReport {
     if (!state.finishedAt) throw new Error('Finalize o torneio antes de gerar o relatório.');
-    const players = new Map(state.players.map(player => [player.id, player.name]));
-    const groups = new Map((state.groups ?? []).map(group => [group.id, group.name]));
+    const players = new Map(state.players.map((player) => [player.id, player.name]));
+    const groups = new Map((state.groups ?? []).map((group) => [group.id, group.name]));
     const finalLabels: Record<FinalMatchKind, string> = {
       quarterfinal: 'Quartas de final',
       semifinal: 'Semifinal',
       championship: 'Final',
-      'third-place': 'Disputa de 3º lugar'
+      'third-place': 'Disputa de 3º lugar',
     };
     const formatMatch = (match: Match): TournamentReportMatch => {
-      const location = [match.finalKind ? finalLabels[match.finalKind] : undefined,
-        match.groupId ? groups.get(match.groupId) ?? match.groupId : undefined,
-        `Quadra ${match.court}`].filter(Boolean).join(' · ');
-      const team = (ids: [string, string]) => ids.map(id => players.get(id) ?? 'A definir').join(' + ');
+      const location = [
+        match.finalKind ? finalLabels[match.finalKind] : undefined,
+        match.groupId ? (groups.get(match.groupId) ?? match.groupId) : undefined,
+        `Quadra ${match.court}`,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      const team = (ids: [string, string]) => ids.map((id) => players.get(id) ?? 'A definir').join(' + ');
       return {
         label: location,
         teamA: team(match.teamA),
         teamB: team(match.teamB),
         scoreA: match.scoreA === null ? '—' : String(match.scoreA),
         scoreB: match.scoreB === null ? '—' : String(match.scoreB),
-        tieBreak: match.tieBreakA != null && match.tieBreakB != null ? `Tie-break ${match.tieBreakA}–${match.tieBreakB}` : '',
-        pending: match.scoreA === null || match.scoreB === null
+        tieBreak:
+          match.tieBreakA != null && match.tieBreakB != null ? `Tie-break ${match.tieBreakA}–${match.tieBreakB}` : '',
+        pending: match.scoreA === null || match.scoreB === null,
       };
     };
-    const includeMatch = (match: Match) => !state.earlyFinalsEnabled || (match.scoreA !== null && match.scoreB !== null);
-    const sections = state.rounds.map(round => ({
-      title: `Rodada ${round.number}`,
-      matches: round.matches.filter(includeMatch).map(formatMatch)
-    })).filter(section => section.matches.length > 0);
+    const includeMatch = (match: Match) =>
+      !state.earlyFinalsEnabled || (match.scoreA !== null && match.scoreB !== null);
+    const sections = state.rounds
+      .map((round) => ({
+        title: `Rodada ${round.number}`,
+        matches: round.matches.filter(includeMatch).map(formatMatch),
+      }))
+      .filter((section) => section.matches.length > 0);
     if (state.finals?.matches.length) {
       const matches = state.finals.matches.filter(includeMatch).map(formatMatch);
       if (matches.length) sections.push({ title: 'Fase final', matches });
@@ -70,7 +78,10 @@ export class TournamentReportService {
     for (const section of report.sections) {
       lines.push('', section.title.toLocaleUpperCase());
       for (const match of section.matches) {
-        lines.push(match.label, `${match.teamA} ${match.scoreA} × ${match.scoreB} ${match.teamB}${match.pending ? ' (pendente)' : ''}${match.tieBreak ? ` · ${match.tieBreak}` : ''}`);
+        lines.push(
+          match.label,
+          `${match.teamA} ${match.scoreA} × ${match.scoreB} ${match.teamB}${match.pending ? ' (pendente)' : ''}${match.tieBreak ? ` · ${match.tieBreak}` : ''}`,
+        );
       }
     }
     return lines.join('\n');
@@ -87,20 +98,35 @@ export class TournamentReportService {
     context.font = '800 32px Manrope, sans-serif';
     const nameLines = this.wrapText(context, report.name, width - margin * 2);
     context.font = '700 18px "DM Sans", sans-serif';
-    const layout = report.sections.map(section => ({
+    const layout = report.sections.map((section) => ({
       title: section.title,
-      matches: section.matches.map(match => {
-        const label = this.wrapText(context, `${match.label}${match.tieBreak ? ` · ${match.tieBreak}` : ''}${match.pending ? ' · Pendente' : ''}`, width - margin * 2 - 32);
+      matches: section.matches.map((match) => {
+        const label = this.wrapText(
+          context,
+          `${match.label}${match.tieBreak ? ` · ${match.tieBreak}` : ''}${match.pending ? ' · Pendente' : ''}`,
+          width - margin * 2 - 32,
+        );
         context.font = '600 22px "DM Sans", sans-serif';
         const teamA = this.wrapText(context, match.teamA, width - margin * 2 - 150);
         const teamB = this.wrapText(context, match.teamB, width - margin * 2 - 150);
         context.font = '700 18px "DM Sans", sans-serif';
-        return { match, label, teamA, teamB, height: 24 + label.length * 25 + (teamA.length + teamB.length) * lineHeight + 20 };
-      })
+        return {
+          match,
+          label,
+          teamA,
+          teamB,
+          height: 24 + label.length * 25 + (teamA.length + teamB.length) * lineHeight + 20,
+        };
+      }),
     }));
     const headerHeight = 185 + nameLines.length * 38;
-    const height = headerHeight + layout.reduce((sum, section) =>
-      sum + 62 + section.matches.reduce((matchSum, match) => matchSum + match.height, 0), 0) + 100;
+    const height =
+      headerHeight +
+      layout.reduce(
+        (sum, section) => sum + 62 + section.matches.reduce((matchSum, match) => matchSum + match.height, 0),
+        0,
+      ) +
+      100;
     const scale = Math.min(1, 16384 / height, Math.sqrt(14_000_000 / (width * height)));
     canvas.width = Math.max(1, Math.floor(width * scale));
     canvas.height = Math.max(1, Math.ceil(height * scale));
@@ -156,10 +182,12 @@ export class TournamentReportService {
     context.fillStyle = '#697a71';
     context.font = '700 16px "DM Sans", sans-serif';
     context.fillText('SETPOINT · BEACH TENNIS', margin, height - 58);
-    return new Promise<Blob>((resolve, reject) => canvas.toBlob(
-      value => value ? resolve(value) : reject(new Error('Não foi possível preparar a imagem do relatório.')),
-      'image/png'
-    ));
+    return new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (value) => (value ? resolve(value) : reject(new Error('Não foi possível preparar a imagem do relatório.'))),
+        'image/png',
+      ),
+    );
   }
 
   private wrapText(context: CanvasRenderingContext2D, value: string, maxWidth: number): string[] {
@@ -171,7 +199,10 @@ export class TournamentReportService {
         line = combined;
         continue;
       }
-      if (line) { lines.push(line); line = ''; }
+      if (line) {
+        lines.push(line);
+        line = '';
+      }
       for (const character of word) {
         if (line && context.measureText(line + character).width > maxWidth) {
           lines.push(line);

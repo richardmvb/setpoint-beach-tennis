@@ -32,11 +32,7 @@ class PostHogErrorHandler implements ErrorHandler {
 }
 
 function unwrapZoneError(errorCandidate: unknown): unknown {
-  if (
-    errorCandidate &&
-    typeof errorCandidate === 'object' &&
-    'ngOriginalError' in errorCandidate
-  ) {
+  if (errorCandidate && typeof errorCandidate === 'object' && 'ngOriginalError' in errorCandidate) {
     return errorCandidate.ngOriginalError;
   }
 
@@ -48,11 +44,7 @@ function extractHttpError(error: HttpErrorResponse): Error | string {
     return error.error;
   }
 
-  if (
-    typeof ErrorEvent !== 'undefined' &&
-    error.error instanceof ErrorEvent &&
-    error.error.message
-  ) {
+  if (typeof ErrorEvent !== 'undefined' && error.error instanceof ErrorEvent && error.error.message) {
     return error.error.message;
   }
 

@@ -9,7 +9,7 @@ const template = fs.readFileSync(path.join(root, 'app.component.html'), 'utf8');
 
 test('todo alvo do tutorial da configuração existe no template', () => {
   const block = component.slice(component.indexOf('private setupTourSteps'), component.indexOf('async startSetupTour'));
-  const selectors = [...block.matchAll(/element: '([^']+)'/g)].map(match => match[1]);
+  const selectors = [...block.matchAll(/element: '([^']+)'/g)].map((match) => match[1]);
   assert.ok(selectors.length >= 12, 'esperava passos para as três etapas');
   for (const selector of selectors) {
     const id = selector.slice(1);

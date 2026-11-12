@@ -19,7 +19,9 @@ export class OfflineSyncQueue {
       const record = JSON.parse(raw) as SyncRecord;
       if (record.version !== 1 || !record.base || !Number.isSafeInteger(record.revision)) return null;
       return record;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   initialize(kind: SyncKind, id: string, base: TournamentState): void {
@@ -51,11 +53,15 @@ export class OfflineSyncQueue {
     this.write(kind, id, record);
   }
 
-  remove(kind: SyncKind, id: string): void { this.storage.removeItem(this.key(kind, id)); }
+  remove(kind: SyncKind, id: string): void {
+    this.storage.removeItem(this.key(kind, id));
+  }
 
   private write(kind: SyncKind, id: string, record: SyncRecord): void {
     this.storage.setItem(this.key(kind, id), JSON.stringify(record));
   }
 
-  private key(kind: SyncKind, id: string): string { return `setpoint.sync.${kind}.${id}`; }
+  private key(kind: SyncKind, id: string): string {
+    return `setpoint.sync.${kind}.${id}`;
+  }
 }

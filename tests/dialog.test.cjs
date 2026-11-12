@@ -3,8 +3,8 @@ const test = require('node:test');
 const { loadCore } = require('./helpers-ts.cjs');
 
 const { matchesPhrase } = loadCore('dialog.service', {
-  '@angular/core': { Injectable: () => target => target },
-  sweetalert2: {}
+  '@angular/core': { Injectable: () => (target) => target },
+  sweetalert2: {},
 });
 
 test('finalizar só é aceito quando a palavra é digitada, ignorando caixa e espaços', () => {

@@ -12,7 +12,14 @@ test('a fase do torneio é derivada do estado, do cadastro ao encerramento', () 
   assert.equal(phase({ rounds: [], hostingMode: 'shared', sharedStatus: 'ready' }), 'ready');
   assert.equal(phase({ rounds: [round], hostingMode: 'shared', sharedStatus: 'active' }), 'qualifying');
   assert.equal(phase({ rounds: [round], finals: { matches: [], complete: false, podiumPlayerIds: [] } }), 'finals');
-  assert.equal(phase({ rounds: [round], finals: { matches: [], complete: true, podiumPlayerIds: [] }, finishedAt: '2026-11-09T10:00:00Z' }), 'finished');
+  assert.equal(
+    phase({
+      rounds: [round],
+      finals: { matches: [], complete: true, podiumPlayerIds: [] },
+      finishedAt: '2026-11-09T10:00:00Z',
+    }),
+    'finished',
+  );
 });
 
 test('finalizado é terminal e nenhuma fase volta ao início', () => {

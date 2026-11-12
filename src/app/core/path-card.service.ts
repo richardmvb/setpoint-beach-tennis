@@ -97,7 +97,9 @@ export class PathCardService {
     context.font = '600 18px "DM Sans", sans-serif';
     context.fillText('Todos os jogos restantes considerados equilibrados · SETPOINT', 80, 1262, 920);
 
-    return await new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem.')), 'image/png'));
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Falha ao gerar a imagem.'))), 'image/png'),
+    );
   }
 
   private percent(value: number): string {

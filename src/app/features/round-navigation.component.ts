@@ -9,12 +9,40 @@ import { CommonModule } from '@angular/common';
   styles: [':host{display:block}'],
   template: `
     <div class="round-nav" [class.round-nav-bottom]="position === 'bottom'">
-      <button class="round-nav-arrow" type="button" (click)="roundSelect.emit(selectedRound - 1)" [disabled]="selectedRound === 0" aria-label="Rodada anterior" title="Rodada anterior">←</button>
-      <span class="round-nav-current"><small>RODADA</small><b>{{ selectedRound + 1 }} / {{ roundCount }}</b></span>
-      <button *ngIf="!allRoundsComplete || finalsExist" class="round-nav-arrow" type="button" (click)="roundSelect.emit(selectedRound + 1)" [disabled]="selectedRound === roundCount - 1" aria-label="Próxima rodada" title="Próxima rodada">→</button>
-      <button *ngIf="allRoundsComplete && !finalsExist" class="button primary round-nav-ranking" type="button" (click)="ranking.emit()">Ranking e finais →</button>
+      <button
+        class="round-nav-arrow"
+        type="button"
+        (click)="roundSelect.emit(selectedRound - 1)"
+        [disabled]="selectedRound === 0"
+        aria-label="Rodada anterior"
+        title="Rodada anterior"
+      >
+        ←
+      </button>
+      <span class="round-nav-current"
+        ><small>RODADA</small><b>{{ selectedRound + 1 }} / {{ roundCount }}</b></span
+      >
+      <button
+        *ngIf="!allRoundsComplete || finalsExist"
+        class="round-nav-arrow"
+        type="button"
+        (click)="roundSelect.emit(selectedRound + 1)"
+        [disabled]="selectedRound === roundCount - 1"
+        aria-label="Próxima rodada"
+        title="Próxima rodada"
+      >
+        →
+      </button>
+      <button
+        *ngIf="allRoundsComplete && !finalsExist"
+        class="button primary round-nav-ranking"
+        type="button"
+        (click)="ranking.emit()"
+      >
+        Ranking e finais →
+      </button>
     </div>
-  `
+  `,
 })
 export class RoundNavigationComponent {
   @Input() selectedRound = 0;
@@ -25,5 +53,7 @@ export class RoundNavigationComponent {
   @Output() roundSelect = new EventEmitter<number>();
   @Output() ranking = new EventEmitter<void>();
 
-  get allRoundsComplete(): boolean { return this.roundCount > 0 && this.completedRounds === this.roundCount; }
+  get allRoundsComplete(): boolean {
+    return this.roundCount > 0 && this.completedRounds === this.roundCount;
+  }
 }

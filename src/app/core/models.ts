@@ -4,12 +4,13 @@ export type GroupFormat = 'fixed' | 'rotating';
 export type DoublesFormat = 'open' | 'mixed';
 export type PlayerGender = 'male' | 'female';
 export type MixedFinalFormat = 'knockout' | 'direct';
-export type MatchPhase = 'super' | 'groups' | 'final';
+type MatchPhase = 'super' | 'groups' | 'final';
 export type FinalMatchKind = 'quarterfinal' | 'semifinal' | 'championship' | 'third-place';
-export type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
+type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
 export type TournamentHostingMode = 'local' | 'shared';
 export type ThemeMode = 'light' | 'dark';
-export type Page = 'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'projection' | 'settings' | 'shared' | 'dashboard';
+export type Page =
+  'setup' | 'overview' | 'players' | 'rounds' | 'ranking' | 'projection' | 'settings' | 'shared' | 'dashboard';
 
 export interface Player {
   id: string;
@@ -54,7 +55,7 @@ export interface FinalStage {
   podiumPlayerIds: string[];
 }
 
-export interface TieBreakDraw {
+interface TieBreakDraw {
   playerIds: string[];
   order: string[];
   createdAt: string;
