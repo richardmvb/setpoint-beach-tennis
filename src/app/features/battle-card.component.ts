@@ -25,11 +25,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
         <div class="battle-team team-a" [class.winner]="winner === 'A'" [class.loser]="winner === 'B'">
           @for (id of match.teamA; track id) {
             <div class="battle-player" [class.me]="id === highlightId">
-              <app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="battle-avatar"
-              ></app-player-avatar>
+              <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar" />
               <span class="battle-name">{{ nameOf(id) }}</span>
             </div>
           }
@@ -55,11 +51,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
         <div class="battle-team team-b" [class.winner]="winner === 'B'" [class.loser]="winner === 'A'">
           @for (id of match.teamB; track id) {
             <div class="battle-player" [class.me]="id === highlightId">
-              <app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="battle-avatar"
-              ></app-player-avatar>
+              <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar" />
               <span class="battle-name">{{ nameOf(id) }}</span>
             </div>
           }

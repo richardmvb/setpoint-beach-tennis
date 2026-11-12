@@ -37,8 +37,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
                 [name]="row.name"
                 [photoDataUrl]="photoOf(row.playerId)"
                 variant="team-avatar"
-              ></app-player-avatar
-              ><span>{{ row.name }}</span
+              /><span>{{ row.name }}</span
               ><em>{{ row.position }}º</em>
             </button>
           }

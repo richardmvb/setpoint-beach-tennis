@@ -18,7 +18,7 @@ import { GenderIconComponent } from './gender-icon.component';
         [attr.aria-checked]="value === 'male'"
         (click)="valueChange.emit('male')"
       >
-        <app-gender-icon gender="male"></app-gender-icon><span>Masculino</span>
+        <app-gender-icon gender="male" /><span>Masculino</span>
       </button>
       <button
         type="button"
@@ -28,7 +28,7 @@ import { GenderIconComponent } from './gender-icon.component';
         [attr.aria-checked]="value === 'female'"
         (click)="valueChange.emit('female')"
       >
-        <app-gender-icon gender="female"></app-gender-icon><span>Feminino</span>
+        <app-gender-icon gender="female" /><span>Feminino</span>
       </button>
     </div>
   `,

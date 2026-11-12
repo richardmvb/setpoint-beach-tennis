@@ -18,11 +18,7 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
           <span class="podium-medal" aria-hidden="true">{{ medal(slot.place) }}</span>
           <div class="podium-faces">
             @for (id of slot.playerIds; track id) {
-              <app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="battle-avatar"
-              ></app-player-avatar>
+              <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="battle-avatar" />
             }
           </div>
           <div class="podium-who">
@@ -40,12 +36,10 @@ const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
         ><strong>
           @for (id of place.playerIds; track id; let last = $last) {
             <span class="podium-fourth-player" [class.me]="id === highlightId"
-              ><app-player-avatar
-                [name]="nameOf(id)"
-                [photoDataUrl]="photoOf(id)"
-                variant="podium-avatar"
-              ></app-player-avatar
-              ><span class="podium-player-name">{{ nameOf(id) }}</span></span
+              ><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" variant="podium-avatar" /><span
+                class="podium-player-name"
+                >{{ nameOf(id) }}</span
+              ></span
             >{{ last ? '' : ' + ' }}
           }
         </strong>

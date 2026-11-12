@@ -79,7 +79,7 @@ export interface GroupStandingTable {
                   <td>
                     <span class="ranking-player-cell">
                       @for (id of entry.playerIds; track id) {
-                        <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)"></app-player-avatar>
+                        <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />
                       }
                       <b>{{ entry.label }}</b>
                       @if (isMine(entry)) {
@@ -114,13 +114,13 @@ export interface GroupStandingTable {
             genderRanking;
             context: { title: 'RANKING MASCULINO', icon: 'male', rows: maleStandings, limit: genderRankingLimit }
           "
-        ></ng-container>
+        />
         <ng-container
           *ngTemplateOutlet="
             genderRanking;
             context: { title: 'RANKING FEMININO', icon: 'female', rows: femaleStandings, limit: genderRankingLimit }
           "
-        ></ng-container>
+        />
       </section>
     }
     <ng-template #genderRanking let-title="title" let-icon="icon" let-rows="rows" let-limit="limit"
@@ -130,7 +130,7 @@ export interface GroupStandingTable {
             <span class="card-kicker">{{ title }}</span>
             <h2>Top {{ limit }} classificados</h2>
           </div>
-          <app-gender-icon [gender]="icon"></app-gender-icon>
+          <app-gender-icon [gender]="icon" />
         </div>
         <div class="table-scroll">
           <table class="leaderboard">
@@ -169,9 +169,9 @@ export interface GroupStandingTable {
                       class="ranking-player-cell ranking-player-button"
                       (click)="playerSelected.emit(row.playerId)"
                     >
-                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar
-                      ><app-gender-icon [gender]="icon"></app-gender-icon
-                      ><span class="ranking-player-name"
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" /><app-gender-icon
+                        [gender]="icon"
+                      /><span class="ranking-player-name"
                         ><b>{{ row.name }}</b
                         ><small class="table-sub"
                           >{{ row.matchesPlayed }} de {{ scheduledMatches(row.playerId) }} jogos</small
@@ -253,9 +253,9 @@ export interface GroupStandingTable {
                       class="ranking-player-cell ranking-player-button"
                       (click)="playerSelected.emit(row.playerId)"
                     >
-                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)"></app-player-avatar>
+                      <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" />
                       @if (genderOf(row.playerId)) {
-                        <app-gender-icon [gender]="genderOf(row.playerId)!"></app-gender-icon>
+                        <app-gender-icon [gender]="genderOf(row.playerId)!" />
                       }
                       <span class="ranking-player-name"
                         ><span class="ranking-name-line"

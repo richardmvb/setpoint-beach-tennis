@@ -229,8 +229,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
                     [name]="nameOf(playerId)"
                     [photoDataUrl]="photoOf(playerId)"
                     variant="team-avatar"
-                  ></app-player-avatar
-                  ><span>{{ nameOf(playerId) }}</span>
+                  /><span>{{ nameOf(playerId) }}</span>
                 </div>
               }
             </div>
