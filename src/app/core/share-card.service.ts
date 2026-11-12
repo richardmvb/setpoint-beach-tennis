@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { FinalsService, PodiumPlace } from './finals.service';
 import { Match, PlayerStanding, TournamentState } from './models';
 
@@ -26,7 +26,7 @@ export function formatElapsed(milliseconds: number): string {
 
 @Injectable({ providedIn: 'root' })
 export class ShareCardService {
-  constructor(private finals: FinalsService) {}
+  private finals = inject(FinalsService);
 
   // Finalistas usam o pódio (2 atletas por colocação); os demais, a posição no ranking.
   placementOf(state: TournamentState, standings: PlayerStanding[], playerId: string): number {

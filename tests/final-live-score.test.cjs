@@ -4,7 +4,8 @@ const path = require('node:path');
 const test = require('node:test');
 const typescript = require('typescript');
 
-function loadTypeScript(file, dependencies = {}) {
+/** `injections` plays the role of the injector: inject(Token) returns the instance registered for that token. */
+function loadTypeScript(file, dependencies = {}, injections = new Map()) {
   const source = fs.readFileSync(path.join(__dirname, '../src/app/core', file), 'utf8');
   const javascript = typescript.transpileModule(source, {
     compilerOptions: {
@@ -15,7 +16,8 @@ function loadTypeScript(file, dependencies = {}) {
   }).outputText;
   const exports = {};
   new Function('require', 'exports', javascript)((name) => {
-    if (name === '@angular/core') return { Injectable: () => (target) => target };
+    if (name === '@angular/core')
+      return { Injectable: () => (target) => target, inject: (token) => injections.get(token) };
     return dependencies[name] ?? require(name);
   }, exports);
   return exports;
@@ -27,7 +29,12 @@ const { StorageService } = loadTypeScript('storage.service.ts', {
   './final-live-score': live,
   './profile': loadTypeScript('profile.ts'),
 });
-const { ShareCardService } = loadTypeScript('share-card.service.ts', { './finals.service': { FinalsService } });
+const shareCardInjections = new Map();
+const { ShareCardService } = loadTypeScript(
+  'share-card.service.ts',
+  { './finals.service': { FinalsService } },
+  shareCardInjections,
+);
 
 function game(points, side) {
   points.push(...Array(4).fill(side));
@@ -142,7 +149,8 @@ test('o pódio exige a final e o terceiro lugar, sem alterar a disputa de tercei
   assert.equal(final.matches.find((match) => match.finalKind === 'third-place').livePoints, undefined);
   assert.deepEqual(final.podiumPlayerIds.slice(0, 2), championship.teamA);
   state.finals = final;
-  const cards = new ShareCardService(service);
+  shareCardInjections.set(FinalsService, service);
+  const cards = new ShareCardService();
   const winner = cards.playerResults(state, championship.teamA[0]).find((result) => result.label === 'Final');
   const runnerUp = cards.playerResults(state, championship.teamB[0]).find((result) => result.label === 'Final');
   assert.equal(winner.won, true);
