@@ -51,6 +51,6 @@ Limits of a meta CSP: `frame-ancestors`, `report-to` and `Permissions-Policy` ne
 ## Follow-ups
 
 - Real security headers and `frame-ancestors` after the hosting decision.
-- Deploy migrations from CI (needs `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` secrets and a manual approval step).
+- Migrations are applied automatically on merge by the Supabase GitHub integration, so the `database` CI job is the gate: keep it required in branch protection.
 - Hosted Auth settings review (rate limits, CAPTCHA, redirect URLs) in the Supabase dashboard (the hosted project was not checked from the repo).
 - Index the `owner_id` foreign keys if the tables grow (splinter INFO).

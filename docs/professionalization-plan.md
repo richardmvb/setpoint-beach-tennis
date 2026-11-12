@@ -1,6 +1,6 @@
 # Plan: Make Setpoint Beach Tennis a professional, scalable, maintainable project
 
-Status: approved, not started. Next step is Phase 0. Reviewed 2026-11-11: phases 1 and 2 swapped (safety net before upgrade), and two sections added: engineering standards enforced on every PR, and release and delivery.
+Status: approved. Phases 0 to 3 done. Next step is Phase 4. Reviewed 2026-11-11: phases 1 and 2 swapped (safety net before upgrade), and two sections added: engineering standards enforced on every PR, and release and delivery.
 
 ## Context
 
@@ -136,7 +136,7 @@ The first estimate was **~$300 (range $150 to $700), ~3,300 turns**. Review 2 cu
 | 0 Foundations              | 150          | $10         | ~$2.3 (-77%)               |                                                                                                                                                                                            |
 | 1 Test safety net          | 200          | $15         | in Phase 1 + 2 total       | e2e is the characterization suite; no `AppComponent` unit tests that Phase 4 would delete                                                                                                  |
 | 2 Angular upgrade + Vitest | 170          | $13         | ~$15.1 with Phase 1 (-46%) | Angular migration schematics do the signal/inject/control-flow rewrites; + property tests                                                                                                  |
-| 3 Security hardening       | 230          | $18         | pending                    | `splinter`/`supabase db lint` replace hand-written catalog checks; + pgTAP permission tests                                                                                                |
+| 3 Security hardening       | 230          | $18         | ~$3.4 (-81%)               | `splinter`/`supabase db lint` replace hand-written catalog checks; + pgTAP permission tests                                                                                                |
 | 4 Refactor (7 features)    | 1,120        | $145        | pending                    | pilot + template; includes building `ui/` components on first use, ~6 Opus review checkpoints, and ports/adapters with contract suites (+120 turns, offset later by faster tests on fakes) |
 | 5 Design system            | 300          | $25         | pending                    | most components already built in Phase 4; gallery route instead of Storybook                                                                                                               |
 | 6 i18n                     | 150          | $10         | pending                    | keys already exist; `transloco-keys-manager` finds missing keys; Haiku drafts `en`                                                                                                         |
@@ -202,7 +202,7 @@ Rules to stay at the low end:
 
 ## Phase 3: Security hardening
 
-**Status (2026-11-12): done in one PR.** Steps 1 to 5 delivered; results in `docs/metrics.md` and `docs/security.md`. Left for later (listed in `docs/security.md`): real security headers after the hosting decision, deploying migrations from CI, hosted Auth settings review, URL/invite/import parsers wired in Phase 4.
+**Status (2026-11-12): done and merged (PR #22), metrics closed.** Steps 1 to 5 delivered; results in `docs/metrics.md` and `docs/security.md`. Left for later (see "Left over from Phase 3" in `docs/metrics.md`; the hosted Auth settings review is the owner's action): real security headers after the hosting decision, deploying migrations from CI, hosted Auth settings review, URL/invite/import parsers wired in Phase 4.
 
 1. CSP: as a `<meta http-equiv>` in `src/index.html` if the app stays on GitHub Pages, or as real headers if hosting moves (see Decisions). Restrict `script-src`, `connect-src` (Supabase, PostHog), `style-src`, `font-src`, `img-src`. Self-host Google Fonts (also a performance win). Add `referrer` and `permissions` policies.
 2. Supabase: add the Supabase CLI and `supabase/config.toml`; keep migrations in `supabase/migrations/`. CI starts a local Supabase (free, no paid branching), applies all migrations from empty, and runs `squawk`, `splinter` + `supabase db lint` (#11), the PGlite tests, `supabase test db` (pgTAP) and the generated-types drift check (#8). Replace the hand-written row interfaces with generated types, used only inside the Supabase adapter (Vendor independence, pattern 3). Add the `app.current_user_id()` helper migration (#25). Stop manual SQL-Editor application.
