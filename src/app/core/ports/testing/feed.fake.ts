@@ -23,4 +23,11 @@ export class FakeTournamentFeed implements TournamentFeed {
   trigger(kind: 'local' | 'shared', id: string): void {
     (kind === 'local' ? this.local : this.shared).get(id)?.();
   }
+  /** The tournaments being watched, as `local:<id>` or `shared:<id>`, so a spec can check none is left open. */
+  watching(): string[] {
+    return [
+      ...[...this.local.keys()].map((id) => `local:${id}`),
+      ...[...this.shared.keys()].map((id) => `shared:${id}`),
+    ];
+  }
 }

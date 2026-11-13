@@ -2,7 +2,10 @@
   "shell": {
     "footer": {
       "versionTitle": "Versão do aplicativo",
-      "feedback": "Feedback"
-    }
+      "feedback": "Feedback",
+      "surveyUnavailable": "Pesquisa indisponível no momento.",
+      "surveyFailed": "Não foi possível abrir a pesquisa."
+    },
+    "loading": "Carregando torneio…"
   }
 }

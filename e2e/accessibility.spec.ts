@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { completeRoundMatches, createLocalTournament, expect, generateFinals, test } from './support/fixtures';
+import { mockSupabase, tournamentFixture } from './support/supabase-mock';
 
 /**
  * Accessibility ratchet. e2e/a11y-baseline.json lists the axe violations that exist today, as
@@ -76,6 +77,34 @@ test.describe('accessibility (axe, no new violations)', () => {
       await expect(page.getByRole('heading', { name: /Do sorteio ao pódio/ })).toBeVisible();
       expect(check('landing', await scan(page), readBaseline())).toEqual([]);
     });
+  });
+
+  test('shared views: invite and live link', async ({ page }) => {
+    const baseline = readBaseline();
+    const supabase = await mockSupabase(page);
+    supabase.rpc('get_shared_tournament', {
+      id: 'shared-1',
+      status: 'registration',
+      capacity: 8,
+      state: { ...tournamentFixture(), hostingMode: 'shared', rounds: [], players: [{ id: 'p1', name: 'Moderadora' }] },
+      inviteExpiresAt: '2099-01-01T00:00:00Z',
+      expiresAt: null,
+      canJoin: true,
+    });
+    supabase.rpc('get_local_live_tournament', {
+      id: 'live-1',
+      status: 'active',
+      state: { ...tournamentFixture(), hostingMode: 'local' },
+    });
+
+    await page.goto('/?invite=invite-token');
+    await expect(page.getByRole('heading', { name: 'Entre no torneio' })).toBeVisible();
+    const problems = check('shared-invite', await scan(page), baseline);
+
+    await page.goto('/?live=live-token');
+    await expect(page.getByText('EM QUADRA AGORA')).toBeVisible();
+    problems.push(...check('shared-live', await scan(page), baseline));
+    expect(problems).toEqual([]);
   });
 
   test('tournament: rounds, ranking, finals and profile', async ({ page }) => {

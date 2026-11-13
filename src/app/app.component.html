@@ -28,7 +28,7 @@
   <main class="landing">
     <header class="landing-nav">
       <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS · {{ versionLabel }}</small></span></div>
-      <nav class="landing-links" aria-label="Seções"><button type="button" (click)="scrollGuestTo('landing-formats')">Formatos</button><button type="button" (click)="scrollGuestTo('landing-live')">Ao vivo</button><button type="button" (click)="scrollGuestTo('landing-path')">Seu caminho</button><button type="button" (click)="scrollGuestTo('landing-steps')">Como funciona</button></nav>
+      <nav class="landing-links" aria-label="Seções"><button type="button" (click)="scrollToSection('landing-formats')">Formatos</button><button type="button" (click)="scrollToSection('landing-live')">Ao vivo</button><button type="button" (click)="scrollToSection('landing-path')">Seu caminho</button><button type="button" (click)="scrollToSection('landing-steps')">Como funciona</button></nav>
       <div class="landing-nav-actions">@if (libraryEntries.length) {
         <button class="button secondary" type="button" (click)="continueFromLanding()">Meus torneios <b class="landing-count">{{ libraryEntries.length }}</b></button>
         }<button class="button primary" type="button" (click)="enterApp()">Abrir o app</button></div>
@@ -44,7 +44,7 @@
               <button class="button secondary landing-primary" type="button" (click)="continueFromLanding()">Retomar um torneio</button>
             }
             @if (!libraryEntries.length) {
-              <button class="button ghost landing-primary" type="button" (click)="scrollGuestTo('landing-steps')">Ver como funciona</button>
+              <button class="button ghost landing-primary" type="button" (click)="scrollToSection('landing-steps')">Ver como funciona</button>
             }
           </div>
           <ul class="landing-proof"><li><b>8 a 24</b><span>atletas</span></li><li><b>até 6</b><span>quadras</span></li><li><b>0</b><span>planilhas</span></li></ul>
@@ -147,8 +147,8 @@
 }
 
 @if (!isLocked && !isDashboardRoute && !showLanding) {
-  <div class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isGuestView">
-    @if (!isGuestView) {
+  <div class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isSharedView">
+    @if (!isSharedView) {
       <header class="topbar">
         <button class="brand brand-button" type="button" (click)="handleBrandClick()" aria-label="SETPOINT início">
           <span class="brand-mark">SP</span>
@@ -170,14 +170,14 @@
         </div>
       </header>
     }
-    @if (!isGuestView) {
+    @if (!isSharedView) {
       <section class="page-heading">
         <div><h1>{{ page === 'setup' ? 'Novo torneio' : page === 'overview' ? 'Visão geral' : page === 'players' ? 'Jogadores' : page === 'rounds' ? 'Partidas' : page === 'ranking' ? 'Ranking' : page === 'projection' ? 'Projeção' : 'Ajustes' }}</h1>
       </div>
       <div class="heading-tag">{{ isGroupTournament ? 'GRUPOS' : 'SUPER' }} {{ state.size }}</div>
     </section>
   }
-  @if (!isGuestView && hasSchedule) {
+  @if (!isSharedView && hasSchedule) {
     <nav class="main-nav" aria-label="Navegação principal">
       @if (!hasSchedule) {
         <button type="button" [class.active]="page === 'setup'" (click)="navigate('setup')"><span>＋</span> Preparar</button>
@@ -186,22 +186,22 @@
       <button type="button" [class.active]="page === 'players'" (click)="navigate('players')"><span>♙</span> Jogadores</button>
       <button type="button" [class.active]="page === 'rounds'" (click)="navigate('rounds')"><span>▦</span> Partidas</button>
       <button type="button" [class.active]="page === 'ranking'" (click)="navigate('ranking')"><span>↗</span> Ranking</button>
-      @if (projectionConfigured) {
-        <button type="button" class="nav-projection" [class.active]="page === 'projection'" [class.locked]="!projectionAvailable" [attr.aria-disabled]="!projectionAvailable" (click)="openProjection()" [title]="projectionLockedHint || 'Projeção'" [attr.aria-label]="projectionAvailable ? 'Projeção' + (projectionHasNews ? ' (atualizada)' : '') : 'Projeção — ' + projectionLockedHint"><span><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Projeção@if (projectionHasNews) {
+      @if (projection.configured) {
+        <button type="button" class="nav-projection" [class.active]="page === 'projection'" [class.locked]="!projection.available" [attr.aria-disabled]="!projection.available" (click)="openProjection()" [title]="projectionLockedHint || 'Projeção'" [attr.aria-label]="projection.available ? 'Projeção' + (projection.hasNews ? ' (atualizada)' : '') : 'Projeção — ' + projectionLockedHint"><span><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Projeção@if (projection.hasNews) {
         <i class="nav-dot" aria-hidden="true"></i>
-        }@if (showProjectionTip || projectionHintVisible) {
-        <em class="nav-tip" [class.muted-tip]="projectionHintVisible" role="status">{{ projectionHintVisible ? 'Liberada quando a 1ª rodada terminar' : 'Projeção liberada!' }}<b (click)="$event.stopPropagation(); dismissProjectionTip()" (keydown.enter)="$event.stopPropagation(); dismissProjectionTip()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); dismissProjectionTip()" tabindex="0" aria-label="Dispensar aviso" role="button">×</b></em>
+        }@if (projection.showTip || projection.hintVisible()) {
+        <em class="nav-tip" [class.muted-tip]="projection.hintVisible()" role="status">{{ projection.hintVisible() ? 'Liberada quando a 1ª rodada terminar' : 'Projeção liberada!' }}<b (click)="$event.stopPropagation(); projection.dismissTip()" (keydown.enter)="$event.stopPropagation(); projection.dismissTip()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); projection.dismissTip()" tabindex="0" aria-label="Dispensar aviso" role="button">×</b></em>
       }</button>
     }
     <button type="button" [class.active]="page === 'settings'" (click)="navigate('settings')"><span>⚙</span> Ajustes</button>
   </nav>
 }
-@if (notice && !isGuestView) {
+@if (notice && !isSharedView) {
   <div class="notice" [class.error]="noticeType === 'error'" role="status">
     <span>{{ noticeType === 'error' ? '!' : '✓' }}</span>{{ notice }}<button type="button" (click)="notice = ''" aria-label="Fechar aviso">×</button>
   </div>
 }
-@if (syncError && !isGuestView) {
+@if (syncError && !isSharedView) {
   <div class="notice error" role="alert"><span>!</span>{{ syncError }} <button type="button" (click)="navigate('settings')">Ajustes</button></div>
 }
 <main [class.ranking-mode]="page === 'ranking'">
@@ -342,98 +342,11 @@
 </section>
 }
 @case ('shared') {
-  <section class="shared-guest-page">
-    @if (!isDashboardViewer || sharedSnapshot) {
-      <article class="arena-hero" [class.is-live]="arenaLive">
-        <div class="arena-top"><span class="arena-badge" [class.live]="arenaLive">@if (arenaLive) {
-          <i></i>
-          }{{ arenaBadge }}</span><span class="arena-kicker">{{ sharedSnapshot?.status === 'archived' ? (isDashboardViewer ? 'ARQUIVO ADMINISTRATIVO' : 'TORNEIO ARQUIVADO') : isLiveViewer ? 'ACOMPANHAMENTO AO VIVO' : 'TORNEIO COMPARTILHADO' }}</span><span class="arena-version" title="Versão do aplicativo">{{ versionLabel }}</span></div>
-          <h1>{{ state.name }}</h1>
-          <p>{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ sharedStatusLabel }}</p>
-          <div class="arena-stats">
-            <div><b>{{ completedMatches }}<small>/{{ totalMatches }}</small></b><span>PARTIDAS</span></div>
-            <div><b>{{ state.players.length }}<small>/{{ state.size }}</small></b><span>ATLETAS</span></div>
-            @if (state.startedAt && sharedSnapshot?.status !== 'archived') {
-              <div><b>{{ elapsedLabel }}</b><span>TEMPO</span></div>
-            }
-            <div><b class="arena-phase">{{ arenaPhaseLabel }}</b><span>FASE</span></div>
-          </div>
-          @if (totalMatches) {
-            <div class="arena-progress" role="progressbar" [attr.aria-valuenow]="progress" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso do torneio"><span [style.width.%]="progress"></span></div>
-          }
-        </article>
-      }
-      @if (sharedError) {
-        <p class="shared-error" role="alert">{{ sharedError }}</p>
-      }
-      @if (isDashboardViewer && sharedSnapshot?.status === 'archived') {
-        <article class="surface-card data-card"><div><span class="card-kicker">ARQUIVO ADMINISTRATIVO</span><h2>Backup do torneio</h2><p class="muted">O backup pode ser importado como torneio local, sem reabrir o convite original.</p></div><button class="button secondary" type="button" (click)="exportBackup()">Exportar backup JSON</button></article>
-      }
-      @if (canJoinSharedTournament) {
-        <article class="surface-card guest-join-panel"><span class="card-kicker">LINK DE CONVITE</span><h2>Entre no torneio</h2><p class="muted">Informe seu nome.</p><form class="participant-form" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="joinSharedTournament()"><div class="participant-form-main"><app-avatar-picker [(value)]="guestAvatar" /><input name="guestName" [(ngModel)]="guestName" maxlength="40" placeholder="Seu nome" autocomplete="name" aria-label="Seu nome"></div>@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="guestGender" (valueChange)="guestGender = $event" label="Sua categoria" />
-        }<button class="button primary" type="submit" [disabled]="!guestName.trim() || sharedLoading || (isMixedDoubles && !guestGender)">{{ sharedLoading ? 'Entrando…' : 'Participar' }}</button></form></article>
-      }
-      @if (!sharedLoading && !sharedSnapshot && !sharedError) {
-        <article class="surface-card shared-loading">Carregando torneio…</article>
-      }
-      @if (sharedSnapshot && guestTab === 'projection') {
-        <section id="guest-projection" class="projection-page">
-          @if (projectionAvailable) {
-            <ng-container *ngTemplateOutlet="projectionPanel" />
-          } @else {
-            <div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>Projeção ainda bloqueada</h2><p class="muted">{{ state.finals ? 'A fase de grupos acabou — acompanhe as finais.' : 'Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.' }}</p></div>
-          }
-        </section>
-      }
-      @if (sharedSnapshot && guestTab !== 'projection') {
-        <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live" /></ng-template>
-        @if (state.players.length && !state.rounds.length) {
-          <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span>@for (player of state.players; track player.id) {
-          <div class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (isMe(player.id)) {
-          <small>você</small>
-        }</span></div>
-      }</article>
-    }
-    @if (sharedSnapshot.status === 'registration') {
-      <article class="surface-card shared-waiting"><b>{{ isLiveViewer ? 'Aguardando início' : 'Inscrições abertas' }}</b><span>{{ isLiveViewer ? 'A tabela e os placares aparecerão aqui assim que o torneio começar.' : 'As partidas aparecem quando o torneio começar.' }}</span></article>
-    }
-    @if (guestVisibleRounds.length) {
-      <section id="guest-rounds" class="shared-round-list">
-        @if (spotlightRound; as round) {
-          <article class="arena-spotlight"><div class="card-title-row"><div><span class="card-kicker"><i class="spot-dot"></i> EM QUADRA AGORA</span><h2>Rodada {{ round.number }}</h2></div><span class="mini-tag">{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</span></div><div class="battle-list">@for (match of round.matches; track trackMatch($index, match)) {
-          <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match, live: true }" />
-        }</div></article>
-      }
-      @for (round of historyRounds; track trackRound($index, round)) {
-        <details class="surface-card shared-round arena-history"><summary><span class="card-kicker">RODADA {{ round.number }}</span><b>{{ round.matches.length }} partidas</b><em>{{ roundDone(round.number - 1) ? 'ENCERRADA' : 'A SEGUIR' }}</em></summary><div class="battle-list">@for (match of round.matches; track trackMatch($index, match)) {
-        <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }" />
-      }</div></details>
-    }
-  </section>
-}
-@if (state.rounds.length) {
-  <app-ranking-view id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId" (playerSelected)="openPlayerMatches($event)" />
-}
-@if (state.finals) {
-  <article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2>@for (match of state.finals.matches; track match.id) {
-  <div class="shared-final-match"><span class="card-kicker">{{ finalKindLabel(match) }}</span>@if (match.finalKind === 'championship' && match.livePoints !== undefined) {
-  <app-final-live-score [match]="match" [players]="state.players" />
-} @else {
-  <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }" />@if (match.tieBreakA != null && match.tieBreakB != null) {
-  <small class="muted">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
-}
-}</div>
-}@if (state.finals.complete) {
-<app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId" />@if (guestPlayerId) {
-<div class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()">Compartilhar minha colocação</button>@if (shareMessage) {
-<small class="muted">{{ shareMessage }}</small>
-}</div>
-}
-}</article>
-}
-}
-</section>
+  @defer (on immediate) {
+    <app-shared-view />
+  } @placeholder {
+    <article class="surface-card shared-loading">{{ 'shell.loading' | transloco }}</article>
+  }
 }
 @case ('overview') {
   <section class="content-grid">
@@ -553,11 +466,7 @@
 }
 @case ('projection') {
   <section class="projection-page">
-    @if (projectionAvailable) {
-      <ng-container *ngTemplateOutlet="projectionPanel" />
-    } @else {
-      <div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>Projeção ainda bloqueada</h2><p class="muted">{{ state.finals ? 'A fase de grupos acabou — acompanhe as finais.' : 'Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.' }}</p></div>
-    }
+    <app-projection-panel [state]="state" (targetPlayerChange)="setQualificationTargetPlayer($event)" />
   </section>
 }
 @case ('settings') {
@@ -647,21 +556,15 @@
 }
 }
 </main>
-@if (isGuestView && state.rounds.length && (!isDashboardViewer || sharedSnapshot)) {
-  <nav class="guest-mobile-nav" [class.has-projection]="projectionConfigured" aria-label="Navegação do torneio"><button type="button" [class.active]="guestTab === 'main'" (click)="scrollGuestTo('guest-rounds')">Partidas</button><button type="button" (click)="scrollGuestTo('guest-ranking')">Ranking</button>@if (projectionConfigured) {
-  <button type="button" class="nav-projection" [class.active]="guestTab === 'projection'" [class.locked]="!projectionAvailable" [attr.aria-disabled]="!projectionAvailable" (click)="openProjection()" [title]="projectionLockedHint || 'Meu caminho'" [attr.aria-label]="projectionAvailable ? 'Meu caminho' + (qualificationChanceLabel ? ' (chance ' + qualificationChanceLabel + ')' : '') + (projectionHasNews ? ', atualizado' : '') : 'Meu caminho — ' + projectionLockedHint"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg><span>Meu caminho</span>@if (qualificationChanceLabel) {
-  <small class="nav-chance">{{ qualificationChanceLabel }}</small>
-  }@if (projectionHasNews) {
-  <i class="nav-dot" aria-hidden="true"></i>
-  }@if (showProjectionTip || projectionHintVisible) {
-  <em class="nav-tip" [class.muted-tip]="projectionHintVisible" role="status">{{ projectionHintVisible ? 'Liberado quando a 1ª rodada terminar' : 'Seu caminho está liberado!' }}<b (click)="$event.stopPropagation(); dismissProjectionTip()" (keydown.enter)="$event.stopPropagation(); dismissProjectionTip()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); dismissProjectionTip()" tabindex="0" aria-label="Dispensar aviso" role="button">×</b></em>
-}</button>
-}<button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
+<footer class="app-footer"><span>SETPOINT</span><span class="build-id" [title]="'shell.footer.versionTitle' | transloco">{{ versionLabel }}</span>@if (nps.available) {
+<button class="footer-feedback" type="button" (click)="nps.open()" [disabled]="nps.loading()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>{{ 'shell.footer.feedback' | transloco }}</button>
+}@switch (nps.message()) {
+@case ('unavailable') {
+<span role="status">{{ 'shell.footer.surveyUnavailable' | transloco }}</span>
 }
-<footer class="app-footer"><span>SETPOINT</span><span class="build-id" [title]="'shell.footer.versionTitle' | transloco">{{ versionLabel }}</span>@if (posthogFeedbackEnabled) {
-<button class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>{{ 'shell.footer.feedback' | transloco }}</button>
-}@if (feedbackMessage) {
-<span role="status">{{ feedbackMessage }}</span>
+@case ('failed') {
+<span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
+}
 }</footer>
 @if (profileOpen) {
   <div class="profile-backdrop" tabindex="-1" (keydown.escape)="closeProfile()" (click)="$event.target === $event.currentTarget && closeProfile()">
@@ -787,24 +690,6 @@
 </div>
 }
 
-@if (chanceToast && !isViewingProjection) {
-  <button type="button" class="chance-toast" [ngClass]="'tone-' + chanceToast.tone" role="status" (click)="openFromChanceToast()"><span aria-hidden="true">{{ chanceToast.tone === 'up' ? '▲' : chanceToast.tone === 'down' ? '▼' : chanceToast.tone === 'clinched' ? '🏆' : '•' }}</span><span>{{ chanceToast.text }}</span><em>Ver caminho</em></button>
-}
-@if (showConfetti) {
-  <div class="confetti" aria-hidden="true">@for (piece of confettiPieces; track piece) {
-    <i [style.left.%]="piece.left" [style.animation-delay.s]="piece.delay" [style.width.px]="piece.size" [style.height.px]="piece.size * 1.6" [style.background]="'hsl(' + piece.hue + ' 85% 60%)'"></i>
-  }</div>
-}
-@if (!isLocked && isGuestView && guestUpdateCount > 0) {
-  <button class="guest-update-button" type="button" (click)="openFirstGuestUpdate()"><span aria-hidden="true">↓</span>{{ guestUpdateCount }} {{ guestUpdateCount === 1 ? 'nova atualização' : 'novas atualizações' }}</button>
-}
-<ng-template #projectionPanel>
-  @defer {
-  <app-qualification-stats [rows]="qualificationRows" [players]="state.players" [path]="qualificationPath" [trend]="qualificationTrend" [targetPlayerId]="qualificationPlayerId" [targetPlace]="qualificationTargetPlace" [isGuest]="isGuestView" [sharing]="sharingPath" [shareError]="pathShareError" (targetPlayerIdChange)="setQualificationTargetPlayer($event)" (targetPlaceChange)="setQualificationTargetPlace($event)" (force)="toggleForcedResult($event)" (clearForced)="clearForcedResults()" (share)="shareQualificationPath()" />
-  } @loading (minimum 200ms) {
-  <div class="surface-card projection-loading" role="status">Calculando projeção…</div>
-}
-</ng-template>
 
 @if (isDashboardRoute && dashboardAuthenticated) {
   <div class="dashboard-shell">
@@ -1006,10 +891,15 @@
 </div>
 }
 }
-<footer class="dashboard-footer"><span>SETPOINT · {{ versionLabel }}</span>@if (posthogFeedbackEnabled) {
-<button class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button>
-}@if (feedbackMessage) {
-<span role="status">{{ feedbackMessage }}</span>
+<footer class="dashboard-footer"><span>SETPOINT · {{ versionLabel }}</span>@if (nps.available) {
+<button class="footer-feedback" type="button" (click)="nps.open()" [disabled]="nps.loading()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button>
+}@switch (nps.message()) {
+@case ('unavailable') {
+<span role="status">{{ 'shell.footer.surveyUnavailable' | transloco }}</span>
+}
+@case ('failed') {
+<span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
+}
 }</footer>
 </div>
 }

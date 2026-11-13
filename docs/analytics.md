@@ -40,6 +40,8 @@ Notes for reading the numbers:
 | `tutorial_started` / `tutorial_finished` / `tutorial_disabled` | Interactive tutorial (also fired when the toggle in the setup screen is switched) | `step` (1–3) when from the tour                         |
 | `player_added`                                                 | Athlete added                                                                     | mode, size, `participant_count`                         |
 
+On a shared view (`is_guest_view: true`: live link, invite or admin viewer), `hosting_mode` is the kind of tournament being viewed: `shared` for an invite, `local` for a live link, the `source` for an admin link. Before the shared view became its own feature (Phase 4) it reported the device's own saved tournament instead; for the same reason `app_opened.has_schedule` is now always `false` on a shared view (the tournament is read after `app_opened` is sent). The shared view's events (`shared_tournament_joined`, `qualification_*`, `chance_notification_*`, `nps_feedback_opened`) keep their names and properties; they are sent from `features/shared-view/`, `features/tournament/projection/` and `core/nps-feedback.service.ts`.
+
 ### Running a tournament
 
 | Event                                                            | When                                          | Properties                          |

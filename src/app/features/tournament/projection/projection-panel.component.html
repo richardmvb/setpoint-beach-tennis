@@ -1,0 +1,11 @@
+<ng-container *transloco="let t; prefix: 'tournament.projection'">
+  @if (projection.available) {
+    @defer {
+      <app-qualification-stats [rows]="projection.rows" [players]="state().players" [path]="projection.path" [trend]="projection.trend()" [targetPlayerId]="projection.playerId" [targetPlace]="projection.targetPlace()" [isGuest]="projection.isGuest" [sharing]="projection.sharing()" [shareError]="projection.shareFailed() ? t('shareError') : ''" (targetPlayerIdChange)="targetPlayerChange.emit($event)" (targetPlaceChange)="projection.setTargetPlace($event)" (force)="projection.toggleForced($event)" (clearForced)="projection.clearForced()" (share)="projection.share()" />
+    } @loading (minimum 200ms) {
+      <div class="surface-card projection-loading" role="status">{{ t('calculating') }}</div>
+    }
+  } @else {
+    <div class="surface-card projection-locked"><span class="projection-locked-icon" aria-hidden="true"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><h2>{{ t('lockedTitle') }}</h2><p class="muted">{{ state().finals ? t('lockedFinals') : t('lockedRound') }}</p></div>
+  }
+</ng-container>

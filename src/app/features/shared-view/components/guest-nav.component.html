@@ -1,0 +1,11 @@
+<ng-container *transloco="let t; prefix: 'shared.nav'">
+<nav class="guest-mobile-nav" [class.has-projection]="projectionConfigured()" [attr.aria-label]="t('label')"><button type="button" [class.active]="tab() === 'main'" (click)="sectionSelected.emit('guest-rounds')">{{ t('matches') }}</button><button type="button" (click)="sectionSelected.emit('guest-ranking')">{{ t('ranking') }}</button>@if (projectionConfigured()) {
+<button type="button" class="nav-projection" [class.active]="tab() === 'projection'" [class.locked]="!projectionAvailable()" [attr.aria-disabled]="!projectionAvailable()" (click)="projectionSelected.emit()" [title]="projectionAvailable() ? t('path') : t('lockedHint')" [attr.aria-label]="!projectionAvailable() ? t('pathLocked') : chance() ? (hasNews() ? t('pathWithChanceUpdated', { chance: chance() }) : t('pathWithChance', { chance: chance() })) : hasNews() ? t('pathUpdated') : t('path')"><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg><span>{{ t('path') }}</span>@if (chance()) {
+<small class="nav-chance">{{ chance() }}</small>
+}@if (hasNews()) {
+<i class="nav-dot" aria-hidden="true"></i>
+}@if (showTip() || hintVisible()) {
+<em class="nav-tip" [class.muted-tip]="hintVisible()" role="status">{{ hintVisible() ? t('tipLocked') : t('tipUnlocked') }}<b (click)="$event.stopPropagation(); tipDismissed.emit()" (keydown.enter)="$event.stopPropagation(); tipDismissed.emit()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); tipDismissed.emit()" tabindex="0" [attr.aria-label]="t('dismissTip')" role="button">×</b></em>
+}</button>
+}<button type="button" (click)="sectionSelected.emit('guest-finals')" [disabled]="!hasFinals()">{{ t('finals') }}</button></nav>
+</ng-container>

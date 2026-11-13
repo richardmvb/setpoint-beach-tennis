@@ -1,0 +1,47 @@
+<ng-container *transloco="let t; prefix: 'shared.arena'">
+<article class="arena-hero" [class.is-live]="arena().live">
+  <div class="arena-top"><span class="arena-badge" [class.live]="arena().live">@if (arena().live) {
+    <i></i>
+    }@switch (arena().badge) {
+    @case ('archived') {{{ t('badge.archived') }}}
+    @case ('finished') {{{ t('badge.finished') }}}
+    @case ('live') {{{ t('badge.live') }}}
+    @case ('ongoing') {{{ t('badge.ongoing') }}}
+    @default {{{ t('badge.soon') }}}
+    }</span><span class="arena-kicker">@switch (arena().kicker) {
+    @case ('adminArchive') {{{ t('kicker.adminArchive') }}}
+    @case ('archived') {{{ t('kicker.archived') }}}
+    @case ('live') {{{ t('kicker.live') }}}
+    @default {{{ t('kicker.shared') }}}
+    }</span><span class="arena-version" [title]="t('versionTitle')">{{ versionLabel() }}</span></div>
+  <h1>{{ arena().name }}</h1>
+  <p>@switch (arena().status) {
+    @case ('archived') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.archived') }) : t('superFormat', { size: arena().size, status: t('status.archived') }) }}}
+    @case ('finished') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.finished') }) : t('superFormat', { size: arena().size, status: t('status.finished') }) }}}
+    @case ('following') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.following') }) : t('superFormat', { size: arena().size, status: t('status.following') }) }}}
+    @case ('waiting') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.waiting') }) : t('superFormat', { size: arena().size, status: t('status.waiting') }) }}}
+    @case ('registration') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.registration') }) : t('superFormat', { size: arena().size, status: t('status.registration') }) }}}
+    @case ('ready') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.ready') }) : t('superFormat', { size: arena().size, status: t('status.ready') }) }}}
+    @case ('active') {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.active') }) : t('superFormat', { size: arena().size, status: t('status.active') }) }}}
+    @default {{{ arena().groups ? t('groupsFormat', { size: arena().size, status: t('status.completed') }) : t('superFormat', { size: arena().size, status: t('status.completed') }) }}}
+    }</p>
+  <div class="arena-stats">
+    <div><b>{{ arena().completedMatches }}<small>/{{ arena().totalMatches }}</small></b><span>{{ t('matches') }}</span></div>
+    <div><b>{{ arena().players }}<small>/{{ arena().size }}</small></b><span>{{ t('players') }}</span></div>
+    @if (arena().elapsed; as elapsed) {
+      <div><b>{{ elapsed }}</b><span>{{ t('time') }}</span></div>
+    }
+    <div><b class="arena-phase">@switch (arena().phase) {
+      @case ('setup') {{{ t('phase.setup') }}}
+      @case ('registration') {{{ t('phase.registration') }}}
+      @case ('ready') {{{ t('phase.ready') }}}
+      @case ('qualifying') {{{ t('phase.qualifying') }}}
+      @case ('finals') {{{ t('phase.finals') }}}
+      @default {{{ t('phase.finished') }}}
+      }</b><span>{{ t('phaseLabel') }}</span></div>
+  </div>
+  @if (arena().totalMatches) {
+    <div class="arena-progress" role="progressbar" [attr.aria-valuenow]="arena().progress" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="t('progress')"><span [style.width.%]="arena().progress"></span></div>
+  }
+</article>
+</ng-container>

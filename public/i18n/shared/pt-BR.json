@@ -1,0 +1,132 @@
+{
+  "loading": "Carregando torneio…",
+  "arena": {
+    "versionTitle": "Versão do aplicativo",
+    "kicker": {
+      "adminArchive": "ARQUIVO ADMINISTRATIVO",
+      "archived": "TORNEIO ARQUIVADO",
+      "live": "ACOMPANHAMENTO AO VIVO",
+      "shared": "TORNEIO COMPARTILHADO"
+    },
+    "badge": {
+      "archived": "ARQUIVADO",
+      "finished": "ENCERRADO",
+      "live": "AO VIVO",
+      "ongoing": "EM ANDAMENTO",
+      "soon": "EM BREVE"
+    },
+    "groupsFormat": "Grupos {{ size }} · {{ status }}",
+    "superFormat": "Super {{ size }} · {{ status }}",
+    "status": {
+      "archived": "Torneio arquivado",
+      "finished": "Torneio finalizado",
+      "following": "Acompanhando ao vivo",
+      "waiting": "Aguardando início",
+      "registration": "Inscrições abertas",
+      "ready": "Vagas preenchidas · aguardando início",
+      "active": "Torneio em andamento",
+      "completed": "Torneio concluído"
+    },
+    "matches": "PARTIDAS",
+    "players": "ATLETAS",
+    "time": "TEMPO",
+    "phaseLabel": "FASE",
+    "phase": {
+      "setup": "Configuração",
+      "registration": "Inscrições",
+      "ready": "Pronto para iniciar",
+      "qualifying": "Em andamento",
+      "finals": "Finais",
+      "finished": "Finalizado"
+    },
+    "progress": "Progresso do torneio"
+  },
+  "errors": {
+    "invalidLiveLink": "Este link de acompanhamento não é válido.",
+    "authentication": "Não foi possível autenticar a publicação. Tente novamente.",
+    "completed": "O torneio já foi finalizado e não pode mais ser atualizado.",
+    "inviteExpired": "Este convite expirou ou as inscrições foram encerradas.",
+    "full": "As vagas deste torneio já foram preenchidas.",
+    "expired": "Este torneio compartilhado já expirou.",
+    "invalidInvite": "Este link de convite não é válido.",
+    "chooseCategory": "Selecione sua categoria para entrar no torneio misto.",
+    "adminUnavailable": "Visualização administrativa indisponível.",
+    "adminForbidden": "Torneio indisponível ou acesso administrativo não autorizado.",
+    "liveNotConfigured": "O acompanhamento ao vivo não está configurado neste deploy.",
+    "sharedNotConfigured": "O modo compartilhado não está configurado neste deploy.",
+    "unknown": "Não foi possível acessar o torneio compartilhado."
+  },
+  "backup": {
+    "kicker": "ARQUIVO ADMINISTRATIVO",
+    "title": "Backup do torneio",
+    "text": "O backup pode ser importado como torneio local, sem reabrir o convite original.",
+    "export": "Exportar backup JSON",
+    "exported": "Backup JSON exportado."
+  },
+  "join": {
+    "kicker": "LINK DE CONVITE",
+    "title": "Entre no torneio",
+    "text": "Informe seu nome.",
+    "name": "Seu nome",
+    "category": "Sua categoria",
+    "joining": "Entrando…",
+    "submit": "Participar"
+  },
+  "participants": {
+    "kicker": "PARTICIPANTES · {{ count }} / {{ size }}",
+    "you": "você"
+  },
+  "waiting": {
+    "liveTitle": "Aguardando início",
+    "liveText": "A tabela e os placares aparecerão aqui assim que o torneio começar.",
+    "inviteTitle": "Inscrições abertas",
+    "inviteText": "As partidas aparecem quando o torneio começar."
+  },
+  "rounds": {
+    "onCourt": "EM QUADRA AGORA",
+    "round": "Rodada {{ number }}",
+    "oneMatch": "1 partida",
+    "matches": "{{ count }} partidas",
+    "historyKicker": "RODADA {{ number }}",
+    "done": "ENCERRADA",
+    "next": "A SEGUIR",
+    "court": "QUADRA {{ number }}"
+  },
+  "finals": {
+    "kicker": "FASE FINAL",
+    "podium": "Pódio final",
+    "ongoing": "Finais em andamento",
+    "tieBreak": "Tie-break {{ a }}–{{ b }}",
+    "yourPlace": "Você ficou em",
+    "place": "{{ place }}º",
+    "share": "Compartilhar minha colocação"
+  },
+  "nav": {
+    "label": "Navegação do torneio",
+    "matches": "Partidas",
+    "ranking": "Ranking",
+    "path": "Meu caminho",
+    "pathWithChance": "Meu caminho (chance {{ chance }})",
+    "pathUpdated": "Meu caminho, atualizado",
+    "pathWithChanceUpdated": "Meu caminho (chance {{ chance }}), atualizado",
+    "pathLocked": "Meu caminho — A projeção é liberada quando a 1ª rodada termina.",
+    "lockedHint": "A projeção é liberada quando a 1ª rodada termina.",
+    "tipUnlocked": "Seu caminho está liberado!",
+    "tipLocked": "Liberado quando a 1ª rodada terminar",
+    "dismissTip": "Dispensar aviso",
+    "finals": "Finais"
+  },
+  "chance": {
+    "clinched": "{{ headline }}!",
+    "eliminated": "{{ headline }}. {{ detail }}",
+    "championUp": "Sua chance de ser campeão subiu de {{ from }} para {{ to }}",
+    "championDown": "Sua chance de ser campeão caiu de {{ from }} para {{ to }}",
+    "topUp": "Sua chance de chegar ao top {{ goal }} subiu de {{ from }} para {{ to }}",
+    "topDown": "Sua chance de chegar ao top {{ goal }} caiu de {{ from }} para {{ to }}",
+    "open": "Ver caminho"
+  },
+  "updates": {
+    "one": "1 nova atualização",
+    "many": "{{ count }} novas atualizações"
+  }
+}

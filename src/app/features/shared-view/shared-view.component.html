@@ -1,0 +1,82 @@
+<ng-container *transloco="let t; prefix: 'shared'">
+<section class="shared-guest-page">
+  @if (store.arena(); as arena) {
+    <app-arena-hero [arena]="arena" [versionLabel]="store.versionLabel" />
+  }
+  @if (store.error(); as error) {
+    <p class="shared-error" role="alert">@switch (error.key) {
+      @case ('invalidLiveLink') {{{ t('errors.invalidLiveLink') }}}
+      @case ('authentication') {{{ t('errors.authentication') }}}
+      @case ('completed') {{{ t('errors.completed') }}}
+      @case ('inviteExpired') {{{ t('errors.inviteExpired') }}}
+      @case ('full') {{{ t('errors.full') }}}
+      @case ('expired') {{{ t('errors.expired') }}}
+      @case ('invalidInvite') {{{ t('errors.invalidInvite') }}}
+      @case ('chooseCategory') {{{ t('errors.chooseCategory') }}}
+      @case ('adminUnavailable') {{{ t('errors.adminUnavailable') }}}
+      @case ('adminForbidden') {{{ t('errors.adminForbidden') }}}
+      @case ('liveNotConfigured') {{{ t('errors.liveNotConfigured') }}}
+      @case ('sharedNotConfigured') {{{ t('errors.sharedNotConfigured') }}}
+      @default {{{ error.detail || t('errors.unknown') }}}
+    }</p>
+  }
+  @if (store.mode === 'admin' && store.status() === 'archived') {
+    <article class="surface-card data-card"><div><span class="card-kicker">{{ t('backup.kicker') }}</span><h2>{{ t('backup.title') }}</h2><p class="muted">{{ t('backup.text') }}</p>@if (store.backupExported()) {
+      <p class="muted" role="status">{{ t('backup.exported') }}</p>
+    }</div><button class="button secondary" type="button" (click)="store.exportBackup()">{{ t('backup.export') }}</button></article>
+  }
+  @if (store.canJoin()) {
+    <app-guest-join-form [(name)]="store.guestName" [(gender)]="store.guestGender" [(avatar)]="store.guestAvatar" [mixed]="store.mixedDoubles()" [busy]="store.loading()" (joinRequested)="store.join()" />
+  }
+  @if (!store.snapshot() && !store.error()) {
+    <article class="surface-card shared-loading">{{ t('loading') }}</article>
+  }
+  @if (store.tournament(); as state) {
+    @if (store.tab() === 'projection') {
+      <section id="guest-projection" class="projection-page">
+        <app-projection-panel [state]="state" />
+      </section>
+    } @else {
+      @if (state.players.length && !state.rounds.length) {
+        <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">{{ t('participants.kicker', { count: state.players.length, size: state.size }) }}</span>@for (player of state.players; track player.id) {
+        <div class="player-row" [class.me-row]="player.id === store.guestPlayerId()"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (player.id === store.guestPlayerId()) {
+        <small>{{ t('participants.you') }}</small>
+      }</span></div>
+      }</article>
+      }
+      @if (store.status() === 'registration') {
+        <article class="surface-card shared-waiting">@if (store.mode === 'invite') {
+          <b>{{ t('waiting.inviteTitle') }}</b><span>{{ t('waiting.inviteText') }}</span>
+        } @else {
+          <b>{{ t('waiting.liveTitle') }}</b><span>{{ t('waiting.liveText') }}</span>
+        }</article>
+      }
+      @if (store.rounds().visible.length) {
+        <app-guest-rounds [state]="state" [spotlight]="store.rounds().spotlight" [history]="store.rounds().history" [players]="state.players" [highlightId]="store.guestPlayerId()" />
+      }
+      @if (state.rounds.length) {
+        <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" />
+      }
+      @if (state.finals; as finals) {
+        <app-guest-finals [finals]="finals" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
+      }
+    }
+    @if (state.rounds.length) {
+      <app-guest-nav [tab]="store.tab()" [projectionConfigured]="projection.configured" [projectionAvailable]="projection.available" [chance]="projection.chanceLabel" [hasNews]="projection.hasNews" [showTip]="projection.showTip" [hintVisible]="projection.hintVisible()" [hasFinals]="!!state.finals" (sectionSelected)="goTo($event)" (projectionSelected)="openProjection()" (tipDismissed)="projection.dismissTip()" />
+    }
+  }
+</section>
+@if (store.chanceToast(); as toast) {
+  @if (store.tab() !== 'projection') {
+    <app-chance-toast [toast]="toast" (opened)="openProjection(true)" />
+  }
+}
+@if (store.showConfetti()) {
+  <div class="confetti" aria-hidden="true">@for (piece of confetti; track piece) {
+    <i [style.left.%]="piece.left" [style.animation-delay.s]="piece.delay" [style.width.px]="piece.size" [style.height.px]="piece.size * 1.6" [style.background]="'hsl(' + piece.hue + ' 85% 60%)'"></i>
+  }</div>
+}
+@if (store.updateCount() > 0) {
+  <app-update-pill [count]="store.updateCount()" (opened)="openFirstUpdate()" />
+}
+</ng-container>

@@ -1,4 +1,6 @@
+import storedFixture from '../../../tests/fixtures/persisted/tournament/v1.json';
 import type { Match, Player, Round, TournamentState } from '../core/models';
+import { parseTournamentCore } from '../shared/parsers/rpc-responses';
 
 /** A Super 8 with no schedule; pass what the test cares about. */
 export function tournamentState(overrides: Partial<TournamentState> = {}): TournamentState {
@@ -36,4 +38,12 @@ export function match(
 
 export function round(number: number, matches: Match[], restingPlayerIds: string[] = []): Round {
   return { number, matches, restingPlayerIds };
+}
+
+/**
+ * The tournament captured from the app (tests/fixtures/persisted/tournament/v1.json): a Super 8 with 7 rounds and
+ * one match played. Parsed with the RPC schema, so it is typed without a cast. A fresh copy on every call.
+ */
+export function storedTournament(): TournamentState {
+  return parseTournamentCore({ id: 'fixture', status: 'active', state: structuredClone(storedFixture) }).state;
 }

@@ -1,0 +1,5 @@
+<ng-container *transloco="let t; prefix: 'shared.join'">
+<article class="surface-card guest-join-panel"><span class="card-kicker">{{ t('kicker') }}</span><h2>{{ t('title') }}</h2><p class="muted">{{ t('text') }}</p><form class="participant-form" [class.open-doubles]="!mixed()" (ngSubmit)="joinRequested.emit()"><div class="participant-form-main"><app-avatar-picker [value]="avatar()" (valueChange)="avatar.set($event)" /><input name="guestName" [ngModel]="name()" (ngModelChange)="name.set($event)" maxlength="40" [placeholder]="t('name')" autocomplete="name" [attr.aria-label]="t('name')"></div>@if (mixed()) {
+<app-gender-toggle [compact]="true" [value]="gender()" (valueChange)="gender.set($event)" [label]="t('category')" />
+}<button class="button primary" type="submit" [disabled]="!canSubmit">{{ busy() ? t('joining') : t('submit') }}</button></form></article>
+</ng-container>
