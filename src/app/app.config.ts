@@ -1,7 +1,7 @@
 import type { ApplicationConfig } from '@angular/core';
 import { provideZoneChangeDetection } from '@angular/core';
 import { providePostHogAdapters } from './core/adapters/posthog/posthog-adapters';
-import { provideSupabaseAdapters } from './core/adapters/supabase/supabase-auth';
+import { provideSupabaseAdapters } from './core/adapters/supabase/provide-supabase-adapters';
 import { provideAppErrorHandler } from './core/app-error-handler';
 
 /**

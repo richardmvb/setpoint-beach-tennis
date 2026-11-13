@@ -1,5 +1,5 @@
-import { inject, Injectable, Provider } from '@angular/core';
-import { AppUser, AUTH, AuthChange, AuthPort } from '../../ports/auth.port';
+import { inject, Injectable } from '@angular/core';
+import { AppUser, AuthChange, AuthPort } from '../../ports/auth.port';
 import { requireSupabaseClient, SUPABASE_CLIENT } from './supabase-client';
 
 @Injectable({ providedIn: 'root' })
@@ -47,8 +47,4 @@ export class SupabaseAuth implements AuthPort {
     const { error } = await requireSupabaseClient(this.client).auth.signInAnonymously();
     if (error) throw error;
   }
-}
-
-export function provideSupabaseAdapters(): Provider[] {
-  return [{ provide: AUTH, useExisting: SupabaseAuth }];
 }

@@ -20,7 +20,7 @@ const vendorPattern = {
   message: 'Vendor SDKs are imported only in src/app/core/adapters (docs/adr/0003-ports-and-adapters.md).',
 };
 /** Ratchet: files that still import a vendor SDK directly. Shrinks as each capability moves behind a port. */
-const legacyVendorFiles = ['src/app/core/supabase.service.ts'];
+const legacyVendorFiles = [];
 
 export default tseslint.config(
   {

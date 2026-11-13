@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 import { AUTH, AuthChange } from '../../ports/auth.port';
 import { authContract } from '../../ports/testing/auth.contract';
-import { provideSupabaseAdapters } from './supabase-auth';
+import { provideSupabaseAdapters } from './provide-supabase-adapters';
 import { AppSupabaseClient, SUPABASE_CLIENT } from './supabase-client';
 
 interface FakeSession {

@@ -38,13 +38,6 @@ import {
   finalLiveMatchScore,
   MAX_FINAL_LIVE_POINTS,
 } from './core/final-live-score';
-import {
-  DashboardActiveTournament,
-  DashboardActivity,
-  DashboardMetrics,
-  DashboardTournamentSource,
-  SupabaseService,
-} from './core/supabase.service';
 import { ShareCardLayout, ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
@@ -80,7 +73,18 @@ import {
 import { GoalPlace } from './core/scenario-engine';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
+import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
+import {
+  DASHBOARD,
+  type DashboardActiveTournament,
+  type DashboardActivity,
+  type DashboardMetrics,
+  type DashboardTournamentSource,
+} from './core/ports/dashboard.port';
+import { TOURNAMENT_FEED } from './core/ports/live-feed.port';
+import { LOCAL_LIVE, SHARED_TOURNAMENTS } from './core/ports/tournaments.port';
+import { publicTournamentState } from './core/public-tournament-state';
 import { DialogService } from './core/dialog.service';
 import { environment } from '../environments/environment';
 import { errorMessage } from './shared/parsers/error-message';
@@ -151,7 +155,11 @@ export class AppComponent implements OnInit, OnDestroy {
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
-  private supabase = inject(SupabaseService);
+  private readonly sharedTournaments = inject(SHARED_TOURNAMENTS);
+  private readonly localLive = inject(LOCAL_LIVE);
+  private readonly feed = inject(TOURNAMENT_FEED);
+  private readonly archive = inject(ARCHIVE);
+  private readonly dashboardData = inject(DASHBOARD);
   private readonly auth = inject(AUTH);
   private shareCard = inject(ShareCardService);
   private qualification = inject(QualificationService);
@@ -767,8 +775,8 @@ export class AppComponent implements OnInit, OnDestroy {
         if (!record?.pending) break;
         const snapshot =
           target.kind === 'shared'
-            ? await this.supabase.syncSharedTournament(target.id, record.base, record.pending)
-            : await this.supabase.syncLocalLiveTournament(this.localLiveWriteToken, record.base, record.pending);
+            ? await this.sharedTournaments.syncSharedTournament(target.id, record.base, record.pending)
+            : await this.localLive.syncLocalLiveTournament(this.localLiveWriteToken, record.base, record.pending);
         this.syncQueue.acknowledge(target.kind, target.id, record.revision, snapshot.state);
         if (target.kind === 'shared' && this.state.sharedTournamentId === target.id) {
           this.state.sharedStatus = snapshot.status;
@@ -1459,8 +1467,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dashboardError = '';
     try {
       const [metrics, activity] = await Promise.all([
-        this.supabase.getDashboardMetrics(),
-        this.supabase.getDashboardActivity(),
+        this.dashboardData.getDashboardMetrics(),
+        this.dashboardData.getDashboardActivity(),
       ]);
       this.dashboardMetrics = metrics;
       this.dashboardActivity = activity;
@@ -1477,7 +1485,7 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Insights are optional: an older database simply hides the new panels. */
   private async loadDashboardInsights(): Promise<void> {
     try {
-      const insights = await this.supabase.getDashboardInsights(this.dashboardDays);
+      const insights = await this.dashboardData.getDashboardInsights(this.dashboardDays);
       this.dashboardInsightsMissing = insights === null;
       this.dashboardInsights = insights;
       this.dashboardView = insights ? this.buildDashboardView(insights) : null;
@@ -2466,7 +2474,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedError = '';
     try {
       this.applySharedSnapshot(
-        await this.supabase.addSharedParticipant(
+        await this.sharedTournaments.addSharedParticipant(
           this.state.sharedTournamentId,
           name,
           this.manualParticipantGender || 'male',
@@ -2496,7 +2504,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedError = '';
     try {
       this.applySharedSnapshot(
-        await this.supabase.removeSharedParticipant(this.state.sharedTournamentId, playerId),
+        await this.sharedTournaments.removeSharedParticipant(this.state.sharedTournamentId, playerId),
         true,
       );
     } catch (error) {
@@ -2516,7 +2524,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      const snapshot = await this.supabase.joinSharedTournament(
+      const snapshot = await this.sharedTournaments.joinSharedTournament(
         this.sharedInviteToken,
         name,
         this.guestGender || 'male',
@@ -2569,14 +2577,14 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       this.state.analyticsId ??= this.id();
       const publishedState: TournamentState = structuredClone(this.state);
-      const credentials = await this.supabase.createLocalLiveTournament(publishedState);
+      const credentials = await this.localLive.createLocalLiveTournament(publishedState);
       this.localLiveId = credentials.id;
       this.localLiveReadToken = credentials.readToken;
       this.localLiveWriteToken = credentials.writeToken;
       this.localLiveAnalyticsId = this.state.analyticsId;
       this.localLiveUrl = this.createLocalLiveUrl(credentials.readToken);
       localStorage.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
-      this.syncQueue.initialize('local', this.state.analyticsId, this.supabase.publicTournamentState(publishedState));
+      this.syncQueue.initialize('local', this.state.analyticsId, publicTournamentState(publishedState));
       this.persist();
       this.library.requeue(this.state.analyticsId);
       void this.flushArchives();
@@ -2621,7 +2629,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.localLiveWriteToken = credentials.writeToken;
       this.localLiveAnalyticsId = this.state.analyticsId;
       this.localLiveUrl = this.createLocalLiveUrl(credentials.readToken);
-      this.syncQueue.initialize('local', this.state.analyticsId, this.supabase.publicTournamentState(this.state));
+      this.syncQueue.initialize('local', this.state.analyticsId, publicTournamentState(this.state));
     } catch {
       /* link remains unavailable if browser storage is blocked */
     }
@@ -2646,7 +2654,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      const invite = await this.supabase.rotateSharedInvite(this.state.sharedTournamentId);
+      const invite = await this.sharedTournaments.rotateSharedInvite(this.state.sharedTournamentId);
       this.sharedInviteToken = invite.inviteToken;
       this.saveOwnerInvite(this.state.sharedTournamentId, invite.inviteToken);
       this.sharedSnapshot = this.sharedSnapshot
@@ -2777,11 +2785,11 @@ export class AppComponent implements OnInit, OnDestroy {
       await this.refreshDashboardViewer(true);
       if (this.sharedSnapshot?.status === 'active') {
         if (this.dashboardViewerSource === 'local') {
-          this.supabase.subscribeToLocalLiveTournament(this.dashboardViewerId, () => {
+          this.feed.watchLocal(this.dashboardViewerId, () => {
             void this.refreshDashboardViewer();
           });
         } else {
-          this.supabase.subscribeToSharedTournament(this.dashboardViewerId, () => {
+          this.feed.watchShared(this.dashboardViewerId, () => {
             void this.refreshDashboardViewer();
           });
         }
@@ -2794,9 +2802,9 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       try {
-        const snapshot = await this.supabase.getLocalLiveTournament(this.localLiveReadToken);
+        const snapshot = await this.localLive.getLocalLiveTournament(this.localLiveReadToken);
         this.applyLocalLiveSnapshot(snapshot);
-        this.supabase.subscribeToLocalLiveTournament(snapshot.id, () => {
+        this.feed.watchLocal(snapshot.id, () => {
           void this.refreshLocalLiveState();
         });
       } catch (error) {
@@ -2811,12 +2819,12 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.sharedInviteToken) {
       this.isLocked = false;
       this.setPage('shared');
-      const storedGuestName = await this.supabase.getGuestName(this.sharedInviteToken);
+      const storedGuestName = await this.sharedTournaments.getGuestName(this.sharedInviteToken);
       this.guestName = storedGuestName || this.profile.name;
       try {
-        let snapshot = await this.supabase.getSharedTournament(this.sharedInviteToken);
+        let snapshot = await this.sharedTournaments.getSharedTournament(this.sharedInviteToken);
         if (storedGuestName) {
-          snapshot = await this.supabase.joinSharedTournament(this.sharedInviteToken, storedGuestName);
+          snapshot = await this.sharedTournaments.joinSharedTournament(this.sharedInviteToken, storedGuestName);
           this.guestJoined = true;
         }
         this.isGuestView = true;
@@ -2834,7 +2842,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
       try {
-        const snapshot = await this.supabase.getOwnedSharedTournament(this.state.sharedTournamentId);
+        const snapshot = await this.sharedTournaments.getOwnedSharedTournament(this.state.sharedTournamentId);
         this.isSharedModerator = true;
         this.sharedInviteToken = this.loadOwnerInvite(snapshot.id);
         if (this.syncQueue.read('shared', snapshot.id)?.pending) {
@@ -2867,7 +2875,7 @@ export class AppComponent implements OnInit, OnDestroy {
         fixedPairs: [],
         finals: null,
       };
-      const snapshot = await this.supabase.createSharedTournament(
+      const snapshot = await this.sharedTournaments.createSharedTournament(
         draft,
         this.moderatorName.trim(),
         this.moderatorGender || 'male',
@@ -2971,7 +2979,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private async refreshDashboardViewer(initialLoad = false): Promise<void> {
     if (!this.dashboardViewerSource || (document.hidden && !initialLoad)) return;
     try {
-      const snapshot = await this.supabase.getDashboardTournament(this.dashboardViewerSource, this.dashboardViewerId);
+      const snapshot = await this.dashboardData.getDashboardTournament(
+        this.dashboardViewerSource,
+        this.dashboardViewerId,
+      );
       const signature = JSON.stringify([snapshot.status, snapshot.state]);
       if (signature === this.dashboardViewerSignature) return;
       const hadSnapshot = !!this.sharedSnapshot;
@@ -3001,7 +3012,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async refreshLocalLiveState(): Promise<void> {
     if (!this.localLiveReadToken || this.sharedLoading || document.hidden) return;
     try {
-      const snapshot = await this.supabase.getLocalLiveTournament(this.localLiveReadToken);
+      const snapshot = await this.localLive.getLocalLiveTournament(this.localLiveReadToken);
       const signature = JSON.stringify([snapshot.status, snapshot.state]);
       if (signature === this.localLiveSignature) return;
       const updateTarget = this.guestUpdateTarget(this.state, snapshot.state);
@@ -3014,7 +3025,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private subscribeToShared(id: string, owner: boolean): void {
-    this.supabase.subscribeToSharedTournament(id, () => {
+    this.feed.watchShared(id, () => {
       void this.refreshSharedState(id, owner);
     });
   }
@@ -3022,8 +3033,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private async refreshSharedState(id: string, owner: boolean): Promise<void> {
     try {
       const snapshot = owner
-        ? await this.supabase.getOwnedSharedTournament(id)
-        : await this.supabase.getSharedTournament(this.sharedInviteToken);
+        ? await this.sharedTournaments.getOwnedSharedTournament(id)
+        : await this.sharedTournaments.getSharedTournament(this.sharedInviteToken);
       if (JSON.stringify([snapshot.status, snapshot.state]) === this.sharedSignature) return;
       if (owner && this.state.rounds.length) return;
       const updateTarget = !owner ? this.guestUpdateTarget(this.state, snapshot.state) : '';
@@ -3176,7 +3187,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
       if (this.isSharedMode && this.state.sharedTournamentId) {
         this.state.startedAt = new Date().toISOString();
-        const snapshot = await this.supabase.startSharedTournament(this.state.sharedTournamentId, this.state);
+        const snapshot = await this.sharedTournaments.startSharedTournament(this.state.sharedTournamentId, this.state);
         this.applySharedSnapshot(snapshot);
       }
       this.state.startedAt ??= new Date().toISOString();
@@ -3631,7 +3642,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.state.hostingMode === 'shared' || !this.state.startedAt) return;
     this.state.analyticsId ??= this.id();
     const snapshot = { ...this.state };
-    void this.supabase.recordLocalTournamentMetrics(snapshot, abandoned).catch(() => undefined);
+    void this.archive.recordLocalTournamentMetrics(snapshot, abandoned).catch(() => undefined);
   }
 
   async cancelSharedTournament(returnToLanding = false): Promise<void> {
@@ -3652,7 +3663,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedLoading = true;
     this.sharedError = '';
     try {
-      await this.supabase.cancelSharedTournament(id);
+      await this.sharedTournaments.cancelSharedTournament(id);
       this.clearLocalTournament(returnToLanding);
     } catch (error) {
       this.sharedError = this.sharedErrorMessage(error);
@@ -3918,8 +3929,7 @@ export class AppComponent implements OnInit, OnDestroy {
       for (let pending = this.library.pendingArchives(); pending.length; pending = this.library.pendingArchives()) {
         const entry = pending[0];
         const saved = this.library.load(entry.id);
-        if (saved)
-          await this.supabase.saveLocalTournamentArchive(entry.id, saved, this.storedLiveId(saved.analyticsId));
+        if (saved) await this.archive.saveLocalTournamentArchive(entry.id, saved, this.storedLiveId(saved.analyticsId));
         // Keeps the flag when the entry changed mid-upload, so the next pass sends the newer copy.
         this.library.markArchived(entry.id, entry.updatedAt);
       }
@@ -3942,7 +3952,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private leaveSharedTournament(): void {
-    if (this.state.sharedTournamentId) this.supabase.unsubscribeFromSharedTournament(this.state.sharedTournamentId);
+    if (this.state.sharedTournamentId) this.feed.stopSharedWatch(this.state.sharedTournamentId);
     this.isSharedModerator = false;
     this.sharedSnapshot = null;
     this.sharedInviteToken = '';

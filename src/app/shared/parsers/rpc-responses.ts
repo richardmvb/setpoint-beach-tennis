@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import type { DashboardActivity, DashboardLocalArchive, DashboardMetrics } from '../../core/supabase.service';
+import type { DashboardActivity, DashboardLocalArchive, DashboardMetrics } from '../../core/ports/dashboard.port';
 import type { DashboardInsights } from '../../core/dashboard-insights';
 import type { LocalLiveTournamentSnapshot, SharedTournamentSnapshot, TournamentState } from '../../core/models';
 import { isRecord } from './json';
