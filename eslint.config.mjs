@@ -143,6 +143,10 @@ export default tseslint.config(
           message: 'Inject RANDOM (core/ports/random.port.ts) and call random.uuid().',
         },
         {
+          selector: "MemberExpression[property.name='__SETPOINT_CONFIG__']",
+          message: 'Inject APP_CONFIG (core/ports/app-config.port.ts) instead of reading window.__SETPOINT_CONFIG__.',
+        },
+        {
           selector: "MemberExpression[property.name='getRandomValues']",
           message: 'Inject RANDOM (core/ports/random.port.ts) and call random.int().',
         },

@@ -75,6 +75,7 @@ import { QualificationStatsComponent } from './features/qualification-stats.comp
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
+import { APP_CONFIG } from './core/ports/app-config.port';
 import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import { RANDOM } from './core/ports/random.port';
@@ -89,7 +90,6 @@ import { TOURNAMENT_FEED } from './core/ports/live-feed.port';
 import { LOCAL_LIVE, SHARED_TOURNAMENTS } from './core/ports/tournaments.port';
 import { publicTournamentState } from './core/public-tournament-state';
 import { DialogService } from './core/dialog.service';
-import { environment } from '../environments/environment';
 import { errorMessage } from './shared/parsers/error-message';
 
 interface TourStep {
@@ -159,6 +159,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly session = inject(SESSION_STORE);
   private readonly clock = inject(CLOCK);
   private readonly random = inject(RANDOM);
+  private readonly config = inject(APP_CONFIG);
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -383,14 +384,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.localLiveReadToken = liveToken;
     try {
       this.isLocked =
-        environment.lockScreenEnabled &&
+        this.config.lockScreenEnabled &&
         !this.isDashboardRoute &&
         !this.isGuestView &&
         !this.authCallback &&
         this.session.getItem(UNLOCK_SESSION_KEY) !== 'true';
     } catch {
       this.isLocked =
-        environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
+        this.config.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
     }
     try {
       this.showLanding =
@@ -808,10 +809,8 @@ export class AppComponent implements OnInit, OnDestroy {
   get posthogFeedbackEnabled(): boolean {
     return this.surveys.available;
   }
-  readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
-  readonly versionLabel = window.__SETPOINT_CONFIG__?.buildVersion
-    ? `v${window.__SETPOINT_CONFIG__.buildVersion}`
-    : 'dev';
+  readonly buildId = this.config.buildId;
+  readonly versionLabel = this.config.buildVersion ? `v${this.config.buildVersion}` : 'dev';
   get isSharedMode(): boolean {
     return this.state.hostingMode === 'shared';
   }
