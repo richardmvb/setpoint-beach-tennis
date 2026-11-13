@@ -75,6 +75,7 @@ import { QualificationStatsComponent } from './features/qualification-stats.comp
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
+import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import {
   DASHBOARD,
   type DashboardActiveTournament,
@@ -152,6 +153,8 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 })
 export class AppComponent implements OnInit, OnDestroy {
   private storage = inject(StorageService);
+  private readonly local = inject(LOCAL_STORE);
+  private readonly session = inject(SESSION_STORE);
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -169,20 +172,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(DialogService);
   private readonly pathCard = inject(PathCardService);
   private readonly authCallback: boolean;
-  private readonly syncQueue = new OfflineSyncQueue({
-    getItem: (key) => localStorage.getItem(key),
-    setItem: (key, value) => localStorage.setItem(key, value),
-    removeItem: (key) => localStorage.removeItem(key),
-  });
+  private readonly syncQueue = new OfflineSyncQueue(this.local);
 
-  private readonly library = new TournamentLibrary(
-    {
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-      removeItem: (key) => localStorage.removeItem(key),
-    },
-    (raw) => this.storage.parseTournament(raw),
-  );
+  private readonly library = new TournamentLibrary(this.local, (raw) => this.storage.parseTournament(raw));
   private archiveInFlight = false;
   private archiveRetryAfter = 0;
   private versionResetKeptTournament = false;
@@ -383,7 +375,7 @@ export class AppComponent implements OnInit, OnDestroy {
         !this.isDashboardRoute &&
         !this.isGuestView &&
         !this.authCallback &&
-        sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
+        this.session.getItem(UNLOCK_SESSION_KEY) !== 'true';
     } catch {
       this.isLocked =
         environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
@@ -393,7 +385,7 @@ export class AppComponent implements OnInit, OnDestroy {
         !this.isDashboardRoute &&
         !this.isGuestView &&
         !this.authCallback &&
-        localStorage.getItem(LANDING_SEEN_KEY) !== 'true';
+        this.local.getItem(LANDING_SEEN_KEY) !== 'true';
     } catch {
       this.showLanding = false;
     }
@@ -415,7 +407,7 @@ export class AppComponent implements OnInit, OnDestroy {
       finals: null,
     };
     try {
-      this.syncPaused = localStorage.getItem(SYNC_PAUSED_KEY) === 'true';
+      this.syncPaused = this.local.getItem(SYNC_PAUSED_KEY) === 'true';
       if (!this.isGuestView && !this.isDashboardRoute) {
         const kind: SyncKind = this.state.hostingMode === 'shared' ? 'shared' : 'local';
         const id = kind === 'shared' ? this.state.sharedTournamentId : this.state.analyticsId;
@@ -745,7 +737,7 @@ export class AppComponent implements OnInit, OnDestroy {
   setSyncPaused(paused: boolean): void {
     this.syncPaused = paused;
     try {
-      localStorage.setItem(SYNC_PAUSED_KEY, String(paused));
+      this.local.setItem(SYNC_PAUSED_KEY, String(paused));
     } catch {
       this.syncError = 'Não foi possível salvar a preferência de sincronização.';
     }
@@ -909,7 +901,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.projectionSeen?.key !== key) {
       let rounds = 0;
       try {
-        rounds = Number(localStorage.getItem(key)) || 0;
+        rounds = Number(this.local.getItem(key)) || 0;
       } catch {
         /* sem armazenamento */
       }
@@ -921,7 +913,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const key = this.projectionSeenKey;
     this.projectionSeen = { key, rounds: this.completedRounds };
     try {
-      localStorage.setItem(key, String(this.completedRounds));
+      this.local.setItem(key, String(this.completedRounds));
     } catch {
       /* indicador é opcional */
     }
@@ -1022,12 +1014,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const key = `setpoint.chance.${this.state.sharedTournamentId ?? ''}.${this.guestPlayerId}.${goal.goal}`;
     let previous: { p: number; s: string } | null;
     try {
-      previous = JSON.parse(localStorage.getItem(key) ?? 'null') as { p: number; s: string } | null;
+      previous = JSON.parse(this.local.getItem(key) ?? 'null') as { p: number; s: string } | null;
     } catch {
       previous = null;
     }
     try {
-      localStorage.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status }));
+      this.local.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status }));
     } catch {
       /* sem armazenamento */
     }
@@ -1127,7 +1119,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   enterApp(): void {
     try {
-      localStorage.setItem(LANDING_SEEN_KEY, 'true');
+      this.local.setItem(LANDING_SEEN_KEY, 'true');
     } catch {
       /* landing volta na próxima visita */
     }
@@ -1146,13 +1138,13 @@ export class AppComponent implements OnInit, OnDestroy {
       return next();
     let prompted = true;
     try {
-      prompted = localStorage.getItem(PROFILE_PROMPTED_KEY) === 'true';
+      prompted = this.local.getItem(PROFILE_PROMPTED_KEY) === 'true';
     } catch {
       /* sem persistência: não insiste */
     }
     if (!shouldPromptProfile(this.profile, prompted)) return next();
     try {
-      localStorage.setItem(PROFILE_PROMPTED_KEY, 'true');
+      this.local.setItem(PROFILE_PROMPTED_KEY, 'true');
     } catch {
       /* aparece de novo na próxima visita */
     }
@@ -1172,8 +1164,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute || this.profileOpen) return;
     if (this.page !== 'setup' || this.setupStep < 1 || this.setupStep > 3) return;
     try {
-      if (localStorage.getItem(TUTORIAL_KEY) === 'off') return;
-      if (localStorage.getItem(this.tourKey(this.setupStep))) return;
+      if (this.local.getItem(TUTORIAL_KEY) === 'off') return;
+      if (this.local.getItem(this.tourKey(this.setupStep))) return;
     } catch {
       return;
     }
@@ -1183,8 +1175,8 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleTutorial(): void {
     this.tutorialEnabled = !this.tutorialEnabled;
     try {
-      if (this.tutorialEnabled) [1, 2, 3].forEach((step) => localStorage.removeItem(this.tourKey(step)));
-      else localStorage.setItem(TUTORIAL_KEY, 'off');
+      if (this.tutorialEnabled) [1, 2, 3].forEach((step) => this.local.removeItem(this.tourKey(step)));
+      else this.local.setItem(TUTORIAL_KEY, 'off');
     } catch {
       /* sem persistência */
     }
@@ -1327,7 +1319,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const { driver } = await import('driver.js');
     const mark = (value: string) => {
       try {
-        localStorage.setItem(this.tourKey(setupStep), value);
+        this.local.setItem(this.tourKey(setupStep), value);
       } catch {
         /* sem persistência */
       }
@@ -1357,7 +1349,7 @@ export class AppComponent implements OnInit, OnDestroy {
           finished = true;
           this.tutorialEnabled = false;
           try {
-            localStorage.setItem(TUTORIAL_KEY, 'off');
+            this.local.setItem(TUTORIAL_KEY, 'off');
           } catch {
             /* sem persistência */
           }
@@ -1379,7 +1371,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private tutorialInit(): void {
     try {
-      this.tutorialEnabled = localStorage.getItem(TUTORIAL_KEY) !== 'off';
+      this.tutorialEnabled = this.local.getItem(TUTORIAL_KEY) !== 'off';
     } catch {
       /* mantém ligado */
     }
@@ -1396,7 +1388,7 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Returning organizers go straight to their saved tournaments, skipping the first-visit tour. */
   continueFromLanding(): void {
     try {
-      localStorage.setItem(LANDING_SEEN_KEY, 'true');
+      this.local.setItem(LANDING_SEEN_KEY, 'true');
     } catch {
       /* landing volta na próxima visita */
     }
@@ -1418,7 +1410,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      sessionStorage.setItem(UNLOCK_SESSION_KEY, 'true');
+      this.session.setItem(UNLOCK_SESSION_KEY, 'true');
     } catch {
       /* desbloqueio vale até recarregar */
     }
@@ -2583,7 +2575,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.localLiveWriteToken = credentials.writeToken;
       this.localLiveAnalyticsId = this.state.analyticsId;
       this.localLiveUrl = this.createLocalLiveUrl(credentials.readToken);
-      localStorage.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
+      this.local.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
       this.syncQueue.initialize('local', this.state.analyticsId, publicTournamentState(publishedState));
       this.persist();
       this.library.requeue(this.state.analyticsId);
@@ -2620,7 +2612,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private restoreLocalLiveCredentials(): void {
     if (!this.state.analyticsId || this.state.hostingMode === 'shared') return;
     try {
-      const stored = localStorage.getItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`);
+      const stored = this.local.getItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`);
       if (!stored) return;
       const credentials = JSON.parse(stored) as { id?: string; readToken?: string; writeToken?: string };
       if (!credentials.id || !credentials.readToken || !credentials.writeToken) return;
@@ -2637,7 +2629,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private clearLocalLiveCredentials(): void {
     try {
-      if (this.localLiveAnalyticsId) localStorage.removeItem(`${LOCAL_LIVE_KEY}.${this.localLiveAnalyticsId}`);
+      if (this.localLiveAnalyticsId) this.local.removeItem(`${LOCAL_LIVE_KEY}.${this.localLiveAnalyticsId}`);
     } catch {
       /* sem armazenamento local */
     }
@@ -2837,8 +2829,8 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    localStorage.removeItem(SHARED_SETUP_KEY);
-    sessionStorage.removeItem(SHARED_SETUP_KEY);
+    this.local.removeItem(SHARED_SETUP_KEY);
+    this.session.removeItem(SHARED_SETUP_KEY);
 
     if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
       try {
@@ -2881,8 +2873,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.moderatorGender || 'male',
         this.moderatorAvatar || undefined,
       );
-      localStorage.removeItem(SHARED_SETUP_KEY);
-      sessionStorage.removeItem(SHARED_SETUP_KEY);
+      this.local.removeItem(SHARED_SETUP_KEY);
+      this.session.removeItem(SHARED_SETUP_KEY);
       this.isSharedModerator = true;
       this.isGuestView = false;
       this.sharedInviteToken = snapshot.inviteToken ?? '';
@@ -3076,7 +3068,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private saveOwnerInvite(id: string, token: string): void {
     try {
-      localStorage.setItem(`${OWNER_INVITE_KEY}.${id}`, token);
+      this.local.setItem(`${OWNER_INVITE_KEY}.${id}`, token);
     } catch {
       /* sem armazenamento local */
     }
@@ -3084,7 +3076,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private loadOwnerInvite(id: string): string {
     try {
-      return localStorage.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? '';
+      return this.local.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? '';
     } catch {
       return '';
     }
@@ -3944,7 +3936,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private storedLiveId(analyticsId?: string): string | undefined {
     if (!analyticsId) return undefined;
     try {
-      const stored = localStorage.getItem(`${LOCAL_LIVE_KEY}.${analyticsId}`);
+      const stored = this.local.getItem(`${LOCAL_LIVE_KEY}.${analyticsId}`);
       return stored ? (JSON.parse(stored) as { id?: string }).id : undefined;
     } catch {
       return undefined;
@@ -3959,8 +3951,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedError = '';
     this.sharedNotice = '';
     try {
-      if (this.state.sharedTournamentId)
-        localStorage.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`);
+      if (this.state.sharedTournamentId) this.local.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`);
     } catch {
       /* sem armazenamento local */
     }

@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { PlayerGender, SharedTournamentSnapshot, TournamentState } from '../../models';
+import { LOCAL_STORE, SESSION_STORE } from '../../ports/key-value-store.port';
 import type { SharedTournamentRepository } from '../../ports/tournaments.port';
 import { isRecord, parseJson } from '../../../shared/parsers/json';
 import { toJson } from './to-json';
@@ -15,6 +16,8 @@ function readString(value: unknown, key: string): string {
 export class SupabaseSharedTournaments implements SharedTournamentRepository {
   private readonly client: AppSupabaseClient | null = inject(SUPABASE_CLIENT);
   private readonly feed = inject(SupabaseFeed);
+  private readonly local = inject(LOCAL_STORE);
+  private readonly session = inject(SESSION_STORE);
 
   async createSharedTournament(
     state: TournamentState,
@@ -56,7 +59,7 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
   async getGuestName(inviteToken: string): Promise<string> {
     const key = await this.guestStorageKey(inviteToken);
     try {
-      const saved = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+      const saved = this.local.getItem(key) ?? this.session.getItem(key);
       return saved ? readString(parseJson(saved), 'displayName') : '';
     } catch {
       return '';
@@ -158,7 +161,7 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
   private async getOrCreateJoinId(inviteToken: string): Promise<string> {
     const key = await this.guestStorageKey(inviteToken);
     try {
-      const saved = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+      const saved = this.local.getItem(key) ?? this.session.getItem(key);
       const current = saved ? readString(parseJson(saved), 'joinId') || null : null;
       if (current) return current;
       const created = globalThis.crypto.randomUUID();
@@ -173,7 +176,7 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
     const key = await this.guestStorageKey(inviteToken);
     let joinId: string | undefined;
     try {
-      const saved = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+      const saved = this.local.getItem(key) ?? this.session.getItem(key);
       joinId = saved ? readString(parseJson(saved), 'joinId') || undefined : undefined;
     } catch {
       /* session storage below remains a fallback */
@@ -183,10 +186,10 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
 
   private writeGuestRecord(key: string, value: { joinId?: string; displayName?: string }): void {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      this.local.setItem(key, JSON.stringify(value));
     } catch {
       try {
-        sessionStorage.setItem(key, JSON.stringify(value));
+        this.session.setItem(key, JSON.stringify(value));
       } catch {
         /* server still validates token and capacity */
       }

@@ -106,6 +106,26 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { patterns: [vendorPattern] }] },
   },
 
+  // Browser boundary (ADR 0003): storage, time, randomness and runtime config are reached through ports.
+  // Only core/adapters/browser touches the globals; specs may use them to set up a test.
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/app/core/adapters/browser/**', 'src/**/*.spec.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'localStorage',
+          message: 'Inject LOCAL_STORE (core/ports/key-value-store.port.ts) instead of using localStorage.',
+        },
+        {
+          name: 'sessionStorage',
+          message: 'Inject SESSION_STORE (core/ports/key-value-store.port.ts) instead of using sessionStorage.',
+        },
+      ],
+    },
+  },
+
   // Angular templates: accessibility rules from angular-eslint.
   {
     files: ['src/**/*.html'],

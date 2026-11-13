@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 
 import { TournamentState } from '../core/models';
 import { AUTH } from '../core/ports/auth.port';
+import { LOCAL_STORE } from '../core/ports/key-value-store.port';
 import { LOCAL_LIVE } from '../core/ports/tournaments.port';
 import { TournamentReportService } from '../core/tournament-report.service';
 
@@ -160,6 +161,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly report = inject(TournamentReportService);
   private readonly localLive = inject(LOCAL_LIVE);
   private readonly auth = inject(AUTH);
+  private readonly store = inject(LOCAL_STORE);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private alive = true;
   private image: Blob | null = null;
@@ -178,7 +180,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     try {
-      this.finalLink = localStorage.getItem(this.linkKey()) ?? '';
+      this.finalLink = this.store.getItem(this.linkKey()) ?? '';
     } catch {
       this.finalLink = '';
     }
@@ -311,7 +313,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
         this.finalLink = url.toString();
       }
       try {
-        localStorage.setItem(this.linkKey(), this.finalLink);
+        this.store.setItem(this.linkKey(), this.finalLink);
       } catch {
         /* link remains available on screen */
       }

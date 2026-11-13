@@ -1,4 +1,5 @@
 import { Match, TournamentHostingMode, TournamentMode, TournamentSize, TournamentState } from './models';
+import type { KeyValueStore } from './ports/key-value-store.port';
 import { TournamentPhase, tournamentPhase } from './state-machines';
 
 /**
@@ -39,7 +40,7 @@ const MAX_LIBRARY_BYTES = 1_500_000;
 const INDEX_KEY = 'setpoint.library.v1';
 const STATE_PREFIX = 'setpoint.library.v1.state.';
 
-type LibraryStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+type LibraryStorage = Pick<KeyValueStore, 'getItem' | 'setItem' | 'removeItem'>;
 
 /** Stable identity of a tournament across saves; null while it has not been started/identified yet. */
 export function libraryId(
