@@ -1,35 +1,24 @@
-# ADR 0005: Public URL scheme and legacy redirects
+# ADR 0005: Keep today's URL shapes until hosting moves
 
-- Status: Proposed
-- Date: 2026-11-13
+- Status: Accepted
+- Date: 2026-11-13 (replaces the proposal of the same day for `/t/:token`, `/ao-vivo/:token` and `/painel`)
 
 ## Context
 
-Today the app reads the URL by hand in `AppComponent`: `?invite=<token>` (shared tournament guest), `?live=<token>` (local tournament live viewer), `/dashboard` (admin dashboard) and `?dashboardTournament=<id>&source=shared|local` (dashboard tournament viewer). Links with these shapes are already shared in WhatsApp messages and saved elsewhere, so they must keep working. Phase 4 introduces the Angular Router, and the router should be built once with the final paths.
+The app reads the URL by hand in `AppComponent`: `?invite=<token>` (shared tournament guest), `?live=<token>` (local tournament live viewer), `/dashboard` (admin dashboard) and `?dashboardTournament=<id>&source=shared|local` (dashboard tournament viewer). Links with these shapes are already shared in WhatsApp messages. Phase 4 introduces the Angular Router.
+
+The first proposal moved the tokens into paths (`/t/:token`, `/ao-vivo/:token`, `/painel`). On GitHub Pages (ADR 0006) every unknown path is served through `404.html`, so those links would answer with HTTP 404 and the app in the body. Browsers render that, but link-preview fetchers (WhatsApp is the main sharing channel) may reject it. That was not tested.
 
 ## Decision
 
-Final paths, relative to the app base:
+Keep the current shapes. The router is built around them: routes read `invite`, `live`, `dashboardTournament` and `source` from the query string, and `/dashboard` stays a path (it already relies on the 404 fallback and is not shared as a preview link). No legacy redirects are needed because nothing is renamed.
 
-| Path                                               | Purpose                                           |
-| -------------------------------------------------- | ------------------------------------------------- |
-| `/`                                                | Landing, setup and the user's own tournament      |
-| `/t/:token`                                        | Shared tournament invite (guest joins or watches) |
-| `/ao-vivo/:token`                                  | Live viewer of a local tournament                 |
-| `/painel`                                          | Admin dashboard                                   |
-| `/painel/torneio/:id` with `?source=shared\|local` | Dashboard view of one tournament                  |
-
-Legacy URLs are redirected by the router, keeping the token: `?invite=X` to `/t/X`, `?live=X` to `/ao-vivo/X`, `/dashboard` to `/painel`, `?dashboardTournament=X&source=Y` to `/painel/torneio/X?source=Y`. The redirects stay for as long as links already shared may be in use, and are removed only by a later ADR.
-
-The router cutover ships behind a feature flag, so the old parsing can be restored without a revert while the new routes are proven by e2e.
-
-## Open question (blocks acceptance)
-
-ADR 0006 keeps GitHub Pages, which serves every unknown path through the `404.html` fallback. A link such as `/t/:token` would therefore be answered with HTTP 404 and the app in the body. Browsers render it, but link-preview fetchers (WhatsApp, the main sharing channel) may reject it. This has not been tested. Before accepting, choose one of: keep the query-string forms (`?invite=`, `?live=`) until hosting moves; test WhatsApp previews on Pages first; or move hosting before the router cutover. The router must also keep `?code=` and `#access_token=` (Supabase email login return) intact through any redirect.
+Moving to path-based URLs (`/t/:token`, `/ao-vivo/:token`, `/painel`) is deferred to the hosting re-evaluation in ADR 0006. At that point a new ADR supersedes this one and adds the legacy redirects (`?invite=X` to `/t/X`, and so on).
 
 ## Consequences
 
-- The token moves from the query string to the path. PostHog masks the `invite` query property today; the path forms need the same masking (capture a templated path such as `/t/:token`, never the real one) and a test, in the same PR that adds the route.
-- The `Referrer-Policy` is `strict-origin-when-cross-origin` (`src/index.html`), so a path token is sent only to the same origin, never to other sites. This is the same exposure the query-string token has today.
-- Token format and length do not change here. Shorter share codes are a separate decision (branding section of the plan).
-- The e2e suite uses both the legacy and the new forms, so the redirects are tested.
+- No link already shared breaks, and there is nothing to test against WhatsApp previews now.
+- The router must keep `?code=` and `#access_token=` (Supabase email login return) intact. A test covers this before the router cutover.
+- The router cutover still ships behind a feature flag.
+- Path tokens, and the PostHog masking they would need, are not introduced yet. The `invite` query property is masked today and stays so.
+- Shorter, typeable share links remain a branding-step item.
