@@ -161,6 +161,7 @@ Em **GitHub → Settings → Secrets and variables → Actions → Variables**, 
 - `NG_APP_POSTHOG_PROJECT_TOKEN`: project token do PostHog.
 - `NG_APP_POSTHOG_HOST`: host PostHog da região do projeto.
 - `NG_APP_LOCK_SCREEN_ENABLED`: opcional; use `true` para ativar a tela de desbloqueio do torneio. Ausente ou `false`, a tela fica desativada.
+- `NG_APP_ROUTER_ENABLED`: opcional; use `true` para que o Angular Router trate o endereço do app. Ausente ou `false`, vale o código original (padrão). Como ligar, desligar e conferir: `docs/releasing.md`, seção "Router flag".
 
 O workflow gera `runtime-config.js`, compila o Angular e publica no GitHub Pages. A versão exibida é a quantidade de commits alcançáveis a partir do commit publicado; em desenvolvimento, sem essa configuração, aparece `dev`. O fallback do Pages permite carregar `/dashboard` diretamente. Use apenas chaves publicáveis no frontend; nunca coloque `service_role` no código ou nas variáveis do build.
 

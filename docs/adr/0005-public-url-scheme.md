@@ -22,3 +22,9 @@ Moving to path-based URLs (`/t/:token`, `/ao-vivo/:token`, `/painel`) is deferre
 - The router cutover still ships behind a feature flag.
 - Path tokens, and the PostHog masking they would need, are not introduced yet. The `invite` query property is masked today and stays so.
 - Shorter, typeable share links remain a branding-step item.
+
+## Update 2026-11-13: the router
+
+The Angular Router now exists behind the `routerEnabled` runtime flag (default off; `docs/releasing.md`, "Router flag"). It reads exactly the shapes above: the route table is `/`, `/dashboard` (a custom matcher so a trailing slash still works, as before) and an unknown path that opens the root. There are no components on the routes yet: the page content still lives in `AppComponent`, and the router only keeps the address, so nothing changes for users. `UrlState` (`src/app/core/routing`) is the app's view of its address, implemented by the original code (`LegacyUrlState`) and by the router (`RouterUrlState`); the URL contract e2e runs against both.
+
+Two facts found while doing it: nothing in the app navigates to `/dashboard` in-app (the dashboard is reached only by URL or the e-mail link), so the back and forward handling between `/` and `/dashboard` is effectively unused; and the router's blocking initial navigation resolves before it commits the URL, so `RouterUrlState` reads the address from the in-flight navigation at startup.
