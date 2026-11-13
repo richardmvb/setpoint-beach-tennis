@@ -1,22 +1,11 @@
-import { Injectable } from '@angular/core';
-import {
-  baseLiveUrl,
-  basePathOf,
-  dashboardUrl,
-  dashboardViewerUrl,
-  inviteUrl,
-  liveUrl,
-  parseUrl,
-  type DashboardSource,
-  type UrlSnapshot,
-} from './app-url';
-import type { UrlState } from './url-state';
+import { Injectable, type Provider } from '@angular/core';
+import { parseUrl, type UrlSnapshot } from './app-url';
+import { BaseUrlState } from './base-url-state';
+import { URL_STATE } from './url-state';
 
 /** The address handled with `window.location` and the History API, as the app always did. */
 @Injectable({ providedIn: 'root' })
-export class LegacyUrlState implements UrlState {
-  readonly basePath = basePathOf(document.baseURI);
-
+export class LegacyUrlState extends BaseUrlState {
   snapshot(): UrlSnapshot {
     return parseUrl(window.location);
   }
@@ -38,24 +27,8 @@ export class LegacyUrlState implements UrlState {
   clearAuthFragment(): Promise<void> {
     return Promise.resolve();
   }
+}
 
-  inviteUrl(token: string): string {
-    return inviteUrl(window.location.href, token);
-  }
-
-  liveUrl(token: string): string {
-    return liveUrl(window.location.href, token);
-  }
-
-  baseLiveUrl(token: string): string {
-    return baseLiveUrl(document.baseURI, token);
-  }
-
-  dashboardViewerUrl(id: string, source: DashboardSource): string {
-    return dashboardViewerUrl(document.baseURI, id, source);
-  }
-
-  dashboardUrl(): string {
-    return dashboardUrl(document.baseURI);
-  }
+export function provideLegacyUrlState(): Provider[] {
+  return [{ provide: URL_STATE, useExisting: LegacyUrlState }];
 }

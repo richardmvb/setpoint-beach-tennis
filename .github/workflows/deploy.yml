@@ -44,6 +44,7 @@ jobs:
           NG_APP_POSTHOG_PROJECT_TOKEN: ${{ vars.NG_APP_POSTHOG_PROJECT_TOKEN }}
           NG_APP_POSTHOG_HOST: ${{ vars.NG_APP_POSTHOG_HOST }}
           NG_APP_LOCK_SCREEN_ENABLED: ${{ vars.NG_APP_LOCK_SCREEN_ENABLED }}
+          NG_APP_ROUTER_ENABLED: ${{ vars.NG_APP_ROUTER_ENABLED }}
           BUILD_ID: ${{ github.sha }}
         run: node scripts/generate-runtime-config.cjs --require-values
 

@@ -31,6 +31,7 @@ const config = {
   buildVersion: Number(env.BUILD_VERSION ?? gitCommitCount()),
   production: true,
   lockScreenEnabled: env.NG_APP_LOCK_SCREEN_ENABLED === 'true',
+  routerEnabled: env.NG_APP_ROUTER_ENABLED === 'true',
   ...(env.NG_APP_POSTHOG_PROJECT_TOKEN ? { posthogKey: env.NG_APP_POSTHOG_PROJECT_TOKEN } : {}),
   ...(env.NG_APP_POSTHOG_HOST ? { posthogHost: env.NG_APP_POSTHOG_HOST } : {}),
 };
