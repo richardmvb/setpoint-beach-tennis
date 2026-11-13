@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideBrowserAdapters } from '../core/adapters/browser/provide-browser-adapters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUTH } from '../core/ports/auth.port';
 import { LOCAL_LIVE, LocalLiveRepository } from '../core/ports/tournaments.port';
@@ -62,6 +63,7 @@ describe('TournamentReportComponent final link', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        provideBrowserAdapters(),
         { provide: AUTH, useValue: auth },
         { provide: LOCAL_LIVE, useValue: localLive },
       ],

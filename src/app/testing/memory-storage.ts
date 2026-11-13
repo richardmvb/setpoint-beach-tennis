@@ -18,4 +18,8 @@ export class MemoryStorage {
   removeItem(key: string): void {
     this.map.delete(key);
   }
+
+  keys(): string[] {
+    return [...this.map.keys()];
+  }
 }

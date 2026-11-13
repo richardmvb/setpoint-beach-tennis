@@ -1,5 +1,6 @@
-import { InjectionToken } from '@angular/core';
+import { inject, InjectionToken } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { APP_CONFIG } from '../../ports/app-config.port';
 import type { Database } from './database.types';
 
 export type AppSupabaseClient = SupabaseClient<Database>;
@@ -11,9 +12,9 @@ export type AppSupabaseClient = SupabaseClient<Database>;
 export const SUPABASE_CLIENT = new InjectionToken<AppSupabaseClient | null>('SupabaseClient', {
   providedIn: 'root',
   factory: () => {
-    const config = window.__SETPOINT_CONFIG__;
-    const supabaseUrl = config?.supabaseUrl?.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-    const publishableKey = config?.publishableKey;
+    const config = inject(APP_CONFIG);
+    const supabaseUrl = config.supabaseUrl?.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+    const publishableKey = config.publishableKey;
     if (!supabaseUrl || !publishableKey) return null;
     return createClient<Database>(supabaseUrl, publishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },

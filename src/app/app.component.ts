@@ -75,6 +75,10 @@ import { QualificationStatsComponent } from './features/qualification-stats.comp
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
+import { APP_CONFIG } from './core/ports/app-config.port';
+import { CLOCK } from './core/ports/clock.port';
+import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
+import { RANDOM } from './core/ports/random.port';
 import {
   DASHBOARD,
   type DashboardActiveTournament,
@@ -86,7 +90,6 @@ import { TOURNAMENT_FEED } from './core/ports/live-feed.port';
 import { LOCAL_LIVE, SHARED_TOURNAMENTS } from './core/ports/tournaments.port';
 import { publicTournamentState } from './core/public-tournament-state';
 import { DialogService } from './core/dialog.service';
-import { environment } from '../environments/environment';
 import { errorMessage } from './shared/parsers/error-message';
 
 interface TourStep {
@@ -152,6 +155,11 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 })
 export class AppComponent implements OnInit, OnDestroy {
   private storage = inject(StorageService);
+  private readonly local = inject(LOCAL_STORE);
+  private readonly session = inject(SESSION_STORE);
+  private readonly clock = inject(CLOCK);
+  private readonly random = inject(RANDOM);
+  private readonly config = inject(APP_CONFIG);
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -169,19 +177,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(DialogService);
   private readonly pathCard = inject(PathCardService);
   private readonly authCallback: boolean;
-  private readonly syncQueue = new OfflineSyncQueue({
-    getItem: (key) => localStorage.getItem(key),
-    setItem: (key, value) => localStorage.setItem(key, value),
-    removeItem: (key) => localStorage.removeItem(key),
-  });
+  private readonly syncQueue = new OfflineSyncQueue(this.local);
 
   private readonly library = new TournamentLibrary(
-    {
-      getItem: (key) => localStorage.getItem(key),
-      setItem: (key, value) => localStorage.setItem(key, value),
-      removeItem: (key) => localStorage.removeItem(key),
-    },
+    this.local,
     (raw) => this.storage.parseTournament(raw),
+    undefined,
+    () => this.clock.date(),
   );
   private archiveInFlight = false;
   private archiveRetryAfter = 0;
@@ -249,7 +251,7 @@ export class AppComponent implements OnInit, OnDestroy {
   manualParticipantName = '';
   manualParticipantGender: PlayerGender | '' = '';
   manualParticipantAvatar = '';
-  now = Date.now();
+  now = this.clock.now();
   private clockTimer: number | null = null;
   guestName = '';
   guestGender: PlayerGender | '' = '';
@@ -363,6 +365,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
 
   constructor() {
+    // The schedule services default to Math.random; production draws go through the Random port instead.
+    this.scheduler.random = () => this.random.next();
+    this.groupScheduler.random = () => this.random.next();
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
     const liveToken = new URLSearchParams(window.location.search).get('live') ?? '';
     this.dashboardViewerId = new URLSearchParams(window.location.search).get('dashboardTournament') ?? '';
@@ -379,21 +384,21 @@ export class AppComponent implements OnInit, OnDestroy {
     this.localLiveReadToken = liveToken;
     try {
       this.isLocked =
-        environment.lockScreenEnabled &&
+        this.config.lockScreenEnabled &&
         !this.isDashboardRoute &&
         !this.isGuestView &&
         !this.authCallback &&
-        sessionStorage.getItem(UNLOCK_SESSION_KEY) !== 'true';
+        this.session.getItem(UNLOCK_SESSION_KEY) !== 'true';
     } catch {
       this.isLocked =
-        environment.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
+        this.config.lockScreenEnabled && !this.isDashboardRoute && !this.isGuestView && !this.authCallback;
     }
     try {
       this.showLanding =
         !this.isDashboardRoute &&
         !this.isGuestView &&
         !this.authCallback &&
-        localStorage.getItem(LANDING_SEEN_KEY) !== 'true';
+        this.local.getItem(LANDING_SEEN_KEY) !== 'true';
     } catch {
       this.showLanding = false;
     }
@@ -407,7 +412,7 @@ export class AppComponent implements OnInit, OnDestroy {
       roundCount: 7,
       players: [],
       rounds: [],
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
       tournamentMode: 'super',
       groupFormat: 'rotating',
       groups: [],
@@ -415,7 +420,7 @@ export class AppComponent implements OnInit, OnDestroy {
       finals: null,
     };
     try {
-      this.syncPaused = localStorage.getItem(SYNC_PAUSED_KEY) === 'true';
+      this.syncPaused = this.local.getItem(SYNC_PAUSED_KEY) === 'true';
       if (!this.isGuestView && !this.isDashboardRoute) {
         const kind: SyncKind = this.state.hostingMode === 'shared' ? 'shared' : 'local';
         const id = kind === 'shared' ? this.state.sharedTournamentId : this.state.analyticsId;
@@ -443,7 +448,7 @@ export class AppComponent implements OnInit, OnDestroy {
         roundCount: 7,
         players: [],
         rounds: [],
-        createdAt: new Date().toISOString(),
+        createdAt: this.clock.iso(),
         tournamentMode: 'super',
         groupFormat: 'rotating',
         groups: [],
@@ -530,7 +535,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.archiveCurrent();
     }
     this.clockTimer = window.setInterval(() => {
-      if (this.timerRunning) this.now = Date.now();
+      if (this.timerRunning) this.now = this.clock.now();
     }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
@@ -745,7 +750,7 @@ export class AppComponent implements OnInit, OnDestroy {
   setSyncPaused(paused: boolean): void {
     this.syncPaused = paused;
     try {
-      localStorage.setItem(SYNC_PAUSED_KEY, String(paused));
+      this.local.setItem(SYNC_PAUSED_KEY, String(paused));
     } catch {
       this.syncError = 'Não foi possível salvar a preferência de sincronização.';
     }
@@ -796,7 +801,7 @@ export class AppComponent implements OnInit, OnDestroy {
             detail.includes('tournament_archived')
           ? 'O torneio no servidor expirou, foi arquivado ou já foi finalizado. Exporte um backup dos dados locais.'
           : 'Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente.';
-      this.syncRetryAfter = Date.now() + 15000;
+      this.syncRetryAfter = this.clock.now() + 15000;
     } finally {
       this.syncInFlight = false;
     }
@@ -804,10 +809,8 @@ export class AppComponent implements OnInit, OnDestroy {
   get posthogFeedbackEnabled(): boolean {
     return this.surveys.available;
   }
-  readonly buildId = window.__SETPOINT_CONFIG__?.buildId || 'dev';
-  readonly versionLabel = window.__SETPOINT_CONFIG__?.buildVersion
-    ? `v${window.__SETPOINT_CONFIG__.buildVersion}`
-    : 'dev';
+  readonly buildId = this.config.buildId;
+  readonly versionLabel = this.config.buildVersion ? `v${this.config.buildVersion}` : 'dev';
   get isSharedMode(): boolean {
     return this.state.hostingMode === 'shared';
   }
@@ -909,7 +912,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.projectionSeen?.key !== key) {
       let rounds = 0;
       try {
-        rounds = Number(localStorage.getItem(key)) || 0;
+        rounds = Number(this.local.getItem(key)) || 0;
       } catch {
         /* sem armazenamento */
       }
@@ -921,7 +924,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const key = this.projectionSeenKey;
     this.projectionSeen = { key, rounds: this.completedRounds };
     try {
-      localStorage.setItem(key, String(this.completedRounds));
+      this.local.setItem(key, String(this.completedRounds));
     } catch {
       /* indicador é opcional */
     }
@@ -1022,12 +1025,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const key = `setpoint.chance.${this.state.sharedTournamentId ?? ''}.${this.guestPlayerId}.${goal.goal}`;
     let previous: { p: number; s: string } | null;
     try {
-      previous = JSON.parse(localStorage.getItem(key) ?? 'null') as { p: number; s: string } | null;
+      previous = JSON.parse(this.local.getItem(key) ?? 'null') as { p: number; s: string } | null;
     } catch {
       previous = null;
     }
     try {
-      localStorage.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status }));
+      this.local.setItem(key, JSON.stringify({ p: goal.probability, s: goal.status }));
     } catch {
       /* sem armazenamento */
     }
@@ -1127,7 +1130,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   enterApp(): void {
     try {
-      localStorage.setItem(LANDING_SEEN_KEY, 'true');
+      this.local.setItem(LANDING_SEEN_KEY, 'true');
     } catch {
       /* landing volta na próxima visita */
     }
@@ -1146,13 +1149,13 @@ export class AppComponent implements OnInit, OnDestroy {
       return next();
     let prompted = true;
     try {
-      prompted = localStorage.getItem(PROFILE_PROMPTED_KEY) === 'true';
+      prompted = this.local.getItem(PROFILE_PROMPTED_KEY) === 'true';
     } catch {
       /* sem persistência: não insiste */
     }
     if (!shouldPromptProfile(this.profile, prompted)) return next();
     try {
-      localStorage.setItem(PROFILE_PROMPTED_KEY, 'true');
+      this.local.setItem(PROFILE_PROMPTED_KEY, 'true');
     } catch {
       /* aparece de novo na próxima visita */
     }
@@ -1172,8 +1175,8 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isLocked || this.showLanding || this.isGuestView || this.isDashboardRoute || this.profileOpen) return;
     if (this.page !== 'setup' || this.setupStep < 1 || this.setupStep > 3) return;
     try {
-      if (localStorage.getItem(TUTORIAL_KEY) === 'off') return;
-      if (localStorage.getItem(this.tourKey(this.setupStep))) return;
+      if (this.local.getItem(TUTORIAL_KEY) === 'off') return;
+      if (this.local.getItem(this.tourKey(this.setupStep))) return;
     } catch {
       return;
     }
@@ -1183,8 +1186,8 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleTutorial(): void {
     this.tutorialEnabled = !this.tutorialEnabled;
     try {
-      if (this.tutorialEnabled) [1, 2, 3].forEach((step) => localStorage.removeItem(this.tourKey(step)));
-      else localStorage.setItem(TUTORIAL_KEY, 'off');
+      if (this.tutorialEnabled) [1, 2, 3].forEach((step) => this.local.removeItem(this.tourKey(step)));
+      else this.local.setItem(TUTORIAL_KEY, 'off');
     } catch {
       /* sem persistência */
     }
@@ -1327,7 +1330,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const { driver } = await import('driver.js');
     const mark = (value: string) => {
       try {
-        localStorage.setItem(this.tourKey(setupStep), value);
+        this.local.setItem(this.tourKey(setupStep), value);
       } catch {
         /* sem persistência */
       }
@@ -1357,7 +1360,7 @@ export class AppComponent implements OnInit, OnDestroy {
           finished = true;
           this.tutorialEnabled = false;
           try {
-            localStorage.setItem(TUTORIAL_KEY, 'off');
+            this.local.setItem(TUTORIAL_KEY, 'off');
           } catch {
             /* sem persistência */
           }
@@ -1379,7 +1382,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private tutorialInit(): void {
     try {
-      this.tutorialEnabled = localStorage.getItem(TUTORIAL_KEY) !== 'off';
+      this.tutorialEnabled = this.local.getItem(TUTORIAL_KEY) !== 'off';
     } catch {
       /* mantém ligado */
     }
@@ -1396,7 +1399,7 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Returning organizers go straight to their saved tournaments, skipping the first-visit tour. */
   continueFromLanding(): void {
     try {
-      localStorage.setItem(LANDING_SEEN_KEY, 'true');
+      this.local.setItem(LANDING_SEEN_KEY, 'true');
     } catch {
       /* landing volta na próxima visita */
     }
@@ -1418,7 +1421,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      sessionStorage.setItem(UNLOCK_SESSION_KEY, 'true');
+      this.session.setItem(UNLOCK_SESSION_KEY, 'true');
     } catch {
       /* desbloqueio vale até recarregar */
     }
@@ -1473,7 +1476,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboardMetrics = metrics;
       this.dashboardActivity = activity;
       await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = new Date();
+      this.dashboardUpdatedAt = this.clock.date();
     } catch {
       this.dashboardError =
         'Acesso não autorizado ou métricas indisponíveis. Entre com uma conta moderadora autorizada.';
@@ -1501,7 +1504,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dashboardLoading = true;
     try {
       await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = new Date();
+      this.dashboardUpdatedAt = this.clock.date();
     } finally {
       this.dashboardLoading = false;
     }
@@ -2583,7 +2586,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.localLiveWriteToken = credentials.writeToken;
       this.localLiveAnalyticsId = this.state.analyticsId;
       this.localLiveUrl = this.createLocalLiveUrl(credentials.readToken);
-      localStorage.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
+      this.local.setItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`, JSON.stringify(credentials));
       this.syncQueue.initialize('local', this.state.analyticsId, publicTournamentState(publishedState));
       this.persist();
       this.library.requeue(this.state.analyticsId);
@@ -2620,7 +2623,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private restoreLocalLiveCredentials(): void {
     if (!this.state.analyticsId || this.state.hostingMode === 'shared') return;
     try {
-      const stored = localStorage.getItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`);
+      const stored = this.local.getItem(`${LOCAL_LIVE_KEY}.${this.state.analyticsId}`);
       if (!stored) return;
       const credentials = JSON.parse(stored) as { id?: string; readToken?: string; writeToken?: string };
       if (!credentials.id || !credentials.readToken || !credentials.writeToken) return;
@@ -2637,7 +2640,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private clearLocalLiveCredentials(): void {
     try {
-      if (this.localLiveAnalyticsId) localStorage.removeItem(`${LOCAL_LIVE_KEY}.${this.localLiveAnalyticsId}`);
+      if (this.localLiveAnalyticsId) this.local.removeItem(`${LOCAL_LIVE_KEY}.${this.localLiveAnalyticsId}`);
     } catch {
       /* sem armazenamento local */
     }
@@ -2837,8 +2840,8 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    localStorage.removeItem(SHARED_SETUP_KEY);
-    sessionStorage.removeItem(SHARED_SETUP_KEY);
+    this.local.removeItem(SHARED_SETUP_KEY);
+    this.session.removeItem(SHARED_SETUP_KEY);
 
     if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
       try {
@@ -2881,8 +2884,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.moderatorGender || 'male',
         this.moderatorAvatar || undefined,
       );
-      localStorage.removeItem(SHARED_SETUP_KEY);
-      sessionStorage.removeItem(SHARED_SETUP_KEY);
+      this.local.removeItem(SHARED_SETUP_KEY);
+      this.session.removeItem(SHARED_SETUP_KEY);
       this.isSharedModerator = true;
       this.isGuestView = false;
       this.sharedInviteToken = snapshot.inviteToken ?? '';
@@ -3051,7 +3054,7 @@ export class AppComponent implements OnInit, OnDestroy {
   // Garante a atualização mesmo quando o Realtime não entrega o aviso.
   private pollShared(): void {
     if (document.hidden || this.sharedLoading) return;
-    if (!this.isGuestView && this.hasPendingSync && Date.now() >= this.syncRetryAfter) void this.syncPending();
+    if (!this.isGuestView && this.hasPendingSync && this.clock.now() >= this.syncRetryAfter) void this.syncPending();
     if (this.isDashboardViewer) {
       if (!this.sharedSnapshot || this.sharedSnapshot.status === 'active') void this.refreshDashboardViewer();
       return;
@@ -3076,7 +3079,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private saveOwnerInvite(id: string, token: string): void {
     try {
-      localStorage.setItem(`${OWNER_INVITE_KEY}.${id}`, token);
+      this.local.setItem(`${OWNER_INVITE_KEY}.${id}`, token);
     } catch {
       /* sem armazenamento local */
     }
@@ -3084,7 +3087,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private loadOwnerInvite(id: string): string {
     try {
-      return localStorage.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? '';
+      return this.local.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? '';
     } catch {
       return '';
     }
@@ -3186,13 +3189,13 @@ export class AppComponent implements OnInit, OnDestroy {
         );
       }
       if (this.isSharedMode && this.state.sharedTournamentId) {
-        this.state.startedAt = new Date().toISOString();
+        this.state.startedAt = this.clock.iso();
         const snapshot = await this.sharedTournaments.startSharedTournament(this.state.sharedTournamentId, this.state);
         this.applySharedSnapshot(snapshot);
       }
-      this.state.startedAt ??= new Date().toISOString();
+      this.state.startedAt ??= this.clock.iso();
       if (!this.isSharedMode) this.state.analyticsId ??= this.id();
-      this.now = Date.now();
+      this.now = this.clock.now();
       this.selectedRound = 0;
       this.initializeScoreDrafts();
       this.persist('Todas as rodadas foram geradas e salvas.');
@@ -3256,14 +3259,14 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!this.tieDrawModalOpen || this.activeTiePlayerIds.length < 2 || this.activeTieDrawResult.length) return;
     const order = [...this.activeTiePlayerIds];
     for (let index = order.length - 1; index > 0; index--) {
-      const swapIndex = this.secureRandomIndex(index + 1);
+      const swapIndex = this.random.int(index + 1);
       [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
     }
     this.state.tieBreakDraws ??= [];
     this.state.tieBreakDraws.push({
       playerIds: [...this.activeTiePlayerIds].sort(),
       order,
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
     });
     this.activeTieDrawResult = order;
     this.persist('Sorteio registrado; a classificação foi atualizada.');
@@ -3313,18 +3316,6 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       this.message(error instanceof Error ? error.message : 'Não foi possível gerar a final.', 'error');
     }
-  }
-
-  private secureRandomIndex(max: number): number {
-    const cryptoApi = globalThis.crypto;
-    if (!cryptoApi?.getRandomValues) return Math.floor(Math.random() * max);
-    const range = 0x1_0000_0000;
-    const limit = Math.floor(range / max) * max;
-    const sample = new Uint32Array(1);
-    do {
-      cryptoApi.getRandomValues(sample);
-    } while (sample[0] >= limit);
-    return sample[0] % max;
   }
 
   scoreChanged(match: Match, side: 'a' | 'b', value: number | null): void {
@@ -3497,7 +3488,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.canFinalizeTournament) return;
-    const finishedAt = new Date().toISOString();
+    const finishedAt = this.clock.iso();
     this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
     this.setPage('settings');
@@ -3693,7 +3684,7 @@ export class AppComponent implements OnInit, OnDestroy {
       roundCount: 7,
       players: [],
       rounds: [],
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
       tournamentMode: 'super',
       hostingMode: 'local',
       groupFormat: 'rotating',
@@ -3917,7 +3908,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async flushArchives(): Promise<void> {
     if (
       this.archiveInFlight ||
-      Date.now() < this.archiveRetryAfter ||
+      this.clock.now() < this.archiveRetryAfter ||
       !this.connectionOnline ||
       !this.auth.configured ||
       this.isGuestView ||
@@ -3935,7 +3926,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } catch {
       // Data stays on the device. Back off so a missing migration or an outage does not fire a request per score.
-      this.archiveRetryAfter = Date.now() + 60_000;
+      this.archiveRetryAfter = this.clock.now() + 60_000;
     } finally {
       this.archiveInFlight = false;
     }
@@ -3944,7 +3935,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private storedLiveId(analyticsId?: string): string | undefined {
     if (!analyticsId) return undefined;
     try {
-      const stored = localStorage.getItem(`${LOCAL_LIVE_KEY}.${analyticsId}`);
+      const stored = this.local.getItem(`${LOCAL_LIVE_KEY}.${analyticsId}`);
       return stored ? (JSON.parse(stored) as { id?: string }).id : undefined;
     } catch {
       return undefined;
@@ -3959,8 +3950,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sharedError = '';
     this.sharedNotice = '';
     try {
-      if (this.state.sharedTournamentId)
-        localStorage.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`);
+      if (this.state.sharedTournamentId) this.local.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`);
     } catch {
       /* sem armazenamento local */
     }
@@ -3971,7 +3961,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `setpoint-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `setpoint-${this.clock.iso().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     this.message('Backup JSON exportado.');
@@ -4066,6 +4056,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notice = '';
   }
   private id(): string {
-    return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return this.random.uuid();
   }
 }

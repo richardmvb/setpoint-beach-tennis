@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideBrowserAdapters } from '../browser/provide-browser-adapters';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { TournamentState } from '../../models';
 import { ARCHIVE } from '../../ports/archive.port';
@@ -42,6 +43,7 @@ function setup(options: { signedIn?: boolean; client?: null } = {}) {
   const supabase = fakeSupabase({ signedIn: options.signedIn });
   TestBed.configureTestingModule({
     providers: [
+      provideBrowserAdapters(),
       provideSupabaseAdapters(),
       { provide: SUPABASE_CLIENT, useValue: options.client === null ? null : supabase.client },
     ],

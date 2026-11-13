@@ -106,6 +106,70 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { patterns: [vendorPattern] }] },
   },
 
+  // Browser boundary (ADR 0003): storage, time, randomness and runtime config are reached through ports.
+  // Only core/adapters/browser touches the globals; specs may use them to set up a test.
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/app/core/adapters/browser/**', 'src/**/*.spec.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'localStorage',
+          message: 'Inject LOCAL_STORE (core/ports/key-value-store.port.ts) instead of using localStorage.',
+        },
+        {
+          name: 'sessionStorage',
+          message: 'Inject SESSION_STORE (core/ports/key-value-store.port.ts) instead of using sessionStorage.',
+        },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'Date', property: 'now', message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.now().' },
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.next().',
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.date() or clock.iso().',
+        },
+        {
+          selector: "MemberExpression[property.name='randomUUID']",
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.uuid().',
+        },
+        {
+          selector: "MemberExpression[property.name='__SETPOINT_CONFIG__']",
+          message: 'Inject APP_CONFIG (core/ports/app-config.port.ts) instead of reading window.__SETPOINT_CONFIG__.',
+        },
+        {
+          selector: "MemberExpression[property.name='getRandomValues']",
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.int().',
+        },
+      ],
+    },
+  },
+
+  // Ratchet: the schedule code still defaults its random source to Math.random (the production draw is wired to the
+  // Random port in AppComponent). Remove these files when the schedule moves into domain/ with an injected source.
+  {
+    files: [
+      'src/app/core/schedule.service.ts',
+      'src/app/core/group-schedule.service.ts',
+      'src/app/core/schedule-shuffle.ts',
+    ],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { object: 'Date', property: 'now', message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.now().' },
+      ],
+    },
+  },
+
   // Angular templates: accessibility rules from angular-eslint.
   {
     files: ['src/**/*.html'],

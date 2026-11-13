@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideBrowserAdapters } from './adapters/browser/provide-browser-adapters';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { calculateFinalLiveScore, finalLiveMatchScore, type FinalLivePoint } from './final-live-score';
 import { FinalsService } from './finals.service';
@@ -63,7 +64,10 @@ function fixture(): { service: FinalsService; state: TournamentState & { finals:
 }
 
 describe('final live score', () => {
-  beforeEach(() => TestBed.resetTestingModule());
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideBrowserAdapters()] });
+  });
 
   it('40–40 é ponto decisivo sem vantagem', () => {
     const points = sequence('AAABBB');

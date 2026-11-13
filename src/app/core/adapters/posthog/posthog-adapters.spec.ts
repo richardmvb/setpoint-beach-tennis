@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ANALYTICS, ERROR_REPORTER, SURVEYS } from '../../ports/analytics.port';
 import { analyticsContract } from '../../ports/testing/analytics.contract';
 import type { AnalyticsCall } from '../../ports/testing/analytics.fake';
+import { APP_CONFIG } from '../../ports/app-config.port';
+import { testConfig } from '../../ports/testing/app-config.fake';
 import { providePostHogAdapters } from './posthog-adapters';
 import { POSTHOG_SDK, POSTHOG_SETTINGS, PostHogSettings } from './posthog-client';
 
@@ -111,5 +113,18 @@ describe('PostHog adapters', () => {
     const { surveys, sdk } = setup();
     expect(await surveys.showByName('NPS')).toBe(false);
     expect(sdk.getSurveys).not.toHaveBeenCalled();
+  });
+
+  it('reads its settings from the app config by default', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: APP_CONFIG,
+          useValue: testConfig({ posthogKey: 'k', posthogHost: 'https://h', production: true }),
+        },
+      ],
+    });
+    expect(TestBed.inject(POSTHOG_SETTINGS)).toEqual({ apiKey: 'k', apiHost: 'https://h', production: true });
   });
 });

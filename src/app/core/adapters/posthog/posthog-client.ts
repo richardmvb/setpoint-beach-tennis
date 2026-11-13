@@ -1,7 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { inject, Injectable, InjectionToken, isDevMode, PLATFORM_ID } from '@angular/core';
 import posthog from 'posthog-js';
-import { environment } from '../../../../environments/environment';
+import { APP_CONFIG } from '../../ports/app-config.port';
 
 export interface PostHogSettings {
   apiKey?: string;
@@ -17,11 +17,10 @@ export const POSTHOG_SDK = new InjectionToken<typeof posthog>('PostHogSdk', {
 
 export const POSTHOG_SETTINGS = new InjectionToken<PostHogSettings>('PostHogSettings', {
   providedIn: 'root',
-  factory: () => ({
-    apiKey: environment.posthogKey,
-    apiHost: environment.posthogHost,
-    production: environment.production,
-  }),
+  factory: () => {
+    const config = inject(APP_CONFIG);
+    return { apiKey: config.posthogKey, apiHost: config.posthogHost, production: config.production };
+  },
 });
 
 /**

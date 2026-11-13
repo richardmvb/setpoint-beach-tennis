@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type { DashboardInsights } from '../../dashboard-insights';
+import { CLOCK } from '../../ports/clock.port';
 import type { SharedTournamentSnapshot } from '../../models';
 import type {
   DashboardActiveTournament,
@@ -21,6 +22,7 @@ import { AppSupabaseClient, requireSupabaseClient, SUPABASE_CLIENT } from './sup
 @Injectable({ providedIn: 'root' })
 export class SupabaseDashboard implements DashboardRepository {
   private readonly client: AppSupabaseClient | null = inject(SUPABASE_CLIENT);
+  private readonly clock = inject(CLOCK);
 
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     const { data, error } = await this.requireClient().rpc('get_dashboard_metrics');
@@ -56,7 +58,7 @@ export class SupabaseDashboard implements DashboardRepository {
     const supersededLiveIds = new Set(archives.map((archive) => archive.live_id).filter((id): id is string => !!id));
     const keep = (item: DashboardActiveTournament): boolean =>
       !(item.source === 'local' && supersededLiveIds.has(item.id));
-    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const dayAgo = this.clock.now() - 24 * 60 * 60 * 1000;
     const isLive = (archive: DashboardLocalArchive & { status?: string }): boolean =>
       archive.status === 'active' && Date.parse(archive.updated_at) > dayAgo;
     const byRecent = (first: DashboardActiveTournament, second: DashboardActiveTournament): number =>

@@ -1,5 +1,6 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Match, TournamentState, ThemeMode } from './models';
+import { LOCAL_STORE, SESSION_STORE } from './ports/key-value-store.port';
 import { LocalProfile, parseProfile, PROFILE_KEY, serializeProfile } from './profile';
 import { calculateFinalLiveScore, finalLiveMatchScore, MAX_FINAL_LIVE_POINTS } from './final-live-score';
 
@@ -9,12 +10,15 @@ const BUILD_KEY = 'setpoint.build.v1';
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
+  private readonly store = inject(LOCAL_STORE);
+  private readonly session = inject(SESSION_STORE);
+
   loadTournament(): TournamentState | null {
     try {
-      const raw = localStorage.getItem(STATE_KEY);
+      const raw = this.store.getItem(STATE_KEY);
       if (!raw) return null;
       const parsed = this.parseTournament(raw);
-      if (!parsed) localStorage.removeItem(STATE_KEY);
+      if (!parsed) this.store.removeItem(STATE_KEY);
       return parsed;
     } catch {
       return null;
@@ -38,7 +42,7 @@ export class StorageService {
 
   saveTournament(state: TournamentState): void {
     try {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+      this.store.setItem(STATE_KEY, JSON.stringify(state));
     } catch (error) {
       console.error('Não foi possível salvar o torneio no navegador.', error);
       throw new Error(
@@ -50,14 +54,14 @@ export class StorageService {
 
   clearCompletedTournamentOnVersionChange(buildId: string, state: TournamentState | null): boolean {
     try {
-      const previousBuild = localStorage.getItem(BUILD_KEY);
+      const previousBuild = this.store.getItem(BUILD_KEY);
       if (!previousBuild) {
-        localStorage.setItem(BUILD_KEY, buildId);
+        this.store.setItem(BUILD_KEY, buildId);
         return false;
       }
       if (previousBuild === buildId || (state && !state.finishedAt)) return false;
       this.clearTournament();
-      localStorage.setItem(BUILD_KEY, buildId);
+      this.store.setItem(BUILD_KEY, buildId);
       return true;
     } catch {
       return false;
@@ -66,7 +70,7 @@ export class StorageService {
 
   loadTheme(): ThemeMode {
     try {
-      return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+      return this.store.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
     } catch {
       return 'light';
     }
@@ -74,7 +78,7 @@ export class StorageService {
 
   saveTheme(theme: ThemeMode): void {
     try {
-      localStorage.setItem(THEME_KEY, theme);
+      this.store.setItem(THEME_KEY, theme);
     } catch {
       /* tema é uma preferência não crítica */
     }
@@ -82,7 +86,7 @@ export class StorageService {
 
   loadProfile(): LocalProfile {
     try {
-      return parseProfile(localStorage.getItem(PROFILE_KEY));
+      return parseProfile(this.store.getItem(PROFILE_KEY));
     } catch {
       return parseProfile(null);
     }
@@ -90,20 +94,19 @@ export class StorageService {
 
   saveProfile(profile: LocalProfile): void {
     try {
-      localStorage.setItem(PROFILE_KEY, serializeProfile(profile));
+      this.store.setItem(PROFILE_KEY, serializeProfile(profile));
     } catch {
       /* perfil é uma preferência não crítica */
     }
   }
 
   clearTournament(): void {
-    localStorage.removeItem(STATE_KEY);
-    for (let index = localStorage.length - 1; index >= 0; index--) {
-      const key = localStorage.key(index);
-      if (key?.startsWith('setpoint.shared.')) localStorage.removeItem(key);
+    this.store.removeItem(STATE_KEY);
+    for (const key of this.store.keys()) {
+      if (key.startsWith('setpoint.shared.')) this.store.removeItem(key);
     }
     try {
-      sessionStorage.removeItem('setpoint.shared.setup');
+      this.session.removeItem('setpoint.shared.setup');
     } catch {
       /* sessão indisponível */
     }

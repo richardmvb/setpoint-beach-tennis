@@ -1,4 +1,5 @@
 import { TournamentState } from './models';
+import type { KeyValueStore } from './ports/key-value-store.port';
 
 export type SyncKind = 'shared' | 'local';
 
@@ -10,7 +11,7 @@ export interface SyncRecord {
 }
 
 export class OfflineSyncQueue {
-  constructor(private readonly storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>) {}
+  constructor(private readonly storage: Pick<KeyValueStore, 'getItem' | 'setItem' | 'removeItem'>) {}
 
   read(kind: SyncKind, id: string): SyncRecord | null {
     const raw = this.storage.getItem(this.key(kind, id));
