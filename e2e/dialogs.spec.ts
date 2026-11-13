@@ -80,6 +80,8 @@ test.describe('confirmation dialog', () => {
   test('is a bottom sheet on a phone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 800 });
     const { dialog } = await openDeleteConfirmation(page);
+    // The dialog scales in over 200 ms; measure its final size, not a frame of the animation.
+    await page.evaluate(() => Promise.all(document.getAnimations().map((animation) => animation.finished)));
 
     const box = await page.locator('.ui-dialog').boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(388);
