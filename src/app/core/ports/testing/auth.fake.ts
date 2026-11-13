@@ -26,4 +26,9 @@ export class FakeAuth implements AuthPort {
     for (const listener of this.listeners) listener('signed-in', this.user);
     return Promise.resolve();
   }
+  /** Simulates the session ending (expired, or signed out in another tab). */
+  simulateSignOut(): void {
+    this.user = null;
+    for (const listener of this.listeners) listener('signed-out', null);
+  }
 }

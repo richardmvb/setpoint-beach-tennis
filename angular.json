@@ -98,7 +98,7 @@
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
               "statements": 77,
-              "branches": 74,
+              "branches": 75,
               "functions": 86,
               "lines": 77
             }

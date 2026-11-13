@@ -1,0 +1,52 @@
+<ng-container *transloco="let t; prefix: 'dashboard.summary'">
+<section class="dash-kpis" [attr.aria-label]="t('kpis')">
+  @for (card of view().cards; track card) {
+    <article class="dash-kpi">
+      <span>{{ card.label }}</span>
+      <strong>{{ card.value }}</strong>
+      <div class="dash-kpi-foot"><small>{{ card.hint }}</small>@if (card.delta.direction !== 'none') {
+      <em class="dash-delta" [ngClass]="'is-' + card.delta.direction" [attr.title]="t('compared', { days: days() })">{{ card.delta.direction === 'up' ? '▲ ' : card.delta.direction === 'down' ? '▼ ' : '' }}{{ card.delta.label }}</em>
+    }</div>
+    @if (card.spark) {
+      <svg class="dash-spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="sparkPoints(card.spark)"></polyline></svg>
+    }
+  </article>
+}
+</section>
+@if (view().insights.length) {
+  <section class="dash-card" aria-labelledby="dashInsightsTitle">
+    <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('insightsEyebrow') }}</span><h3 id="dashInsightsTitle">{{ t('insightsTitle') }}</h3></div></div>
+    <div class="dash-insights">
+      @for (insight of view().insights; track insight) {
+        <article class="dash-insight" [ngClass]="'tone-' + insight.tone"><span class="dash-insight-icon" aria-hidden="true">{{ insight.tone === 'good' ? '✓' : insight.tone === 'warn' ? '!' : 'i' }}</span><div><b>{{ insight.title }}</b><p>{{ insight.detail }}</p></div></article>
+      }
+    </div>
+  </section>
+}
+<div class="dash-grid-2">
+  <section class="dash-card" aria-labelledby="dashTrendTitle">
+    <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('trendEyebrow') }}</span><h3 id="dashTrendTitle">{{ t('trendTitle') }}</h3></div><div class="dash-legend"><span><i class="bar"></i>{{ t('started') }}</span><span><i class="line"></i>{{ t('finished') }}</span></div></div>
+    <svg class="dash-trend" [attr.viewBox]="'0 0 600 ' + (view().chart.height + 24)" role="img" [attr.aria-label]="t('trendLabel', { days: days() })">
+      <line x1="0" [attr.y1]="view().chart.height" x2="600" [attr.y2]="view().chart.height" class="axis"></line>
+      @for (bar of view().chart.bars; track bar) {
+        <rect [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height" rx="2" class="bar"><title>{{ t('bar', { date: (bar.date | date: 'dd/MM'), started: bar.started, finished: bar.finished }) }}</title></rect>
+      }
+      <polyline [attr.points]="view().chart.finishedLine" class="line"></polyline>
+      @for (label of view().chart.labels; track label) {
+        <text [attr.x]="label.x" [attr.y]="view().chart.height + 18" [attr.text-anchor]="label.anchor" class="tick">{{ label.text }}</text>
+      }
+    </svg>
+  </section>
+  <section class="dash-card" aria-labelledby="dashFunnelTitle">
+    <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('funnelEyebrow') }}</span><h3 id="dashFunnelTitle">{{ t('funnelTitle') }}</h3></div></div>
+    @if (!insights()?.funnel?.basis) {
+      <p class="dashboard-empty">{{ t('funnelEmpty') }}</p>
+    }
+    <div class="dash-funnel">@for (step of view().funnel; track step) {
+      <div class="dash-funnel-step"><div class="dash-funnel-label"><span>{{ step.label }}</span><b>{{ step.count }}</b></div><div class="dash-funnel-track"><span [style.width.%]="step.ofStart"></span></div><small>{{ t('ofStart', { percent: step.ofStart }) }}@if (step.key !== 'started') {
+      <span>{{ t('ofPrevious', { percent: step.ofPrevious }) }}</span>
+    }</small></div>
+  }</div>
+</section>
+</div>
+</ng-container>

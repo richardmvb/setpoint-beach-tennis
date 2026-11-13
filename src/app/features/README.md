@@ -25,6 +25,10 @@ Code two features share lives in `features/<shared-folder>/` (today `features/to
 - Methods are the actions the page offers. DOM work (scrolling, focus) stays in the component; the store returns what the component needs to do it (`showMain()` says whether to scroll without animation).
 - Errors are data: `{ key, detail? }`, where `key` is a typed union and the template switches on it with literal translation keys.
 
+### A store that follows the session
+
+`dashboard/` shows the other common shape: a page gated by sign-in. Its store subscribes to `AUTH.onAuthStateChange` (and stops through `DestroyRef`) and reads `AUTH.currentUser()` once at start; `AppComponent` still finishes a sign-in return in its startup, and the store hears the resulting `signed-in` change. A page that leaves for another route emits an output (`back`) and `AppComponent` navigates.
+
 ## Sources on ports
 
 When one page has several modes (invite, live link, admin), each mode is a source object built from a port: `inviteSource(SHARED_TOURNAMENTS, TOURNAMENT_FEED, token)`. A source reads only what its own mode owns (its token comes from the URL and nowhere else) and says when its data can still change (`isOpen`), so the store stops polling and watching a finished tournament. The store picks one source at start and never branches on the mode for loading.
