@@ -106,6 +106,33 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { patterns: [vendorPattern] }] },
   },
 
+  // Domain boundary (plan Phase 4, target structure): src/app/domain is framework-free logic over the app's models.
+  // It imports itself and, type-only, the models in core; never Angular, RxJS, a vendor, ui or a feature. A rule that
+  // needs a vendor (the padel score engine decides finals) is passed in as a function.
+  {
+    files: ['src/app/domain/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            vendorPattern,
+            featuresPattern,
+            {
+              group: ['@angular/*', 'rxjs', 'rxjs/*', '@jsverse/*', '@zhuravlev-biz/*', 'driver.js', '@ui/*'],
+              message: 'domain/ is framework-free: no Angular, RxJS, i18n, UI or vendor imports.',
+            },
+            {
+              regex: '^\\.{1,2}/(.*/)?(core|ui|shared)(/|$)',
+              allowTypeImports: true,
+              message: 'domain/ may only import types from core (for example core/models).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // UI boundary (ADR 0001): src/app/ui is the design system. It imports Angular, the CDK and itself, never core or features.
   {
     files: ['src/app/ui/**/*.ts'],

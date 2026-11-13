@@ -14,22 +14,7 @@ import { Player, PlayerStanding, Round } from '../core/models';
 import { PlayerAvatarComponent } from './player-avatar.component';
 import { GenderIconComponent } from './gender-icon.component';
 import { CardComponent } from '@ui/card/card.component';
-
-export interface GroupStandingEntry {
-  label: string;
-  playerIds: string[];
-  setsWon: number;
-  gamesFor: number;
-  gamesAgainst: number;
-  gameBalance: number;
-  matchesPlayed: number;
-}
-
-export interface GroupStandingTable {
-  id: string;
-  name: string;
-  entries: GroupStandingEntry[];
-}
+import type { GroupStandingEntry, GroupStandingTable } from '../domain/tournament-view/group-tables';
 
 @Component({
   selector: 'app-ranking-view',
