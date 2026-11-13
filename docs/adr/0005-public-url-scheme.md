@@ -1,6 +1,6 @@
 # ADR 0005: Public URL scheme and legacy redirects
 
-- Status: Accepted
+- Status: Proposed
 - Date: 2026-11-13
 
 ## Context
@@ -22,6 +22,10 @@ Final paths, relative to the app base:
 Legacy URLs are redirected by the router, keeping the token: `?invite=X` to `/t/X`, `?live=X` to `/ao-vivo/X`, `/dashboard` to `/painel`, `?dashboardTournament=X&source=Y` to `/painel/torneio/X?source=Y`. The redirects stay for as long as links already shared may be in use, and are removed only by a later ADR.
 
 The router cutover ships behind a feature flag, so the old parsing can be restored without a revert while the new routes are proven by e2e.
+
+## Open question (blocks acceptance)
+
+ADR 0006 keeps GitHub Pages, which serves every unknown path through the `404.html` fallback. A link such as `/t/:token` would therefore be answered with HTTP 404 and the app in the body. Browsers render it, but link-preview fetchers (WhatsApp, the main sharing channel) may reject it. This has not been tested. Before accepting, choose one of: keep the query-string forms (`?invite=`, `?live=`) until hosting moves; test WhatsApp previews on Pages first; or move hosting before the router cutover. The router must also keep `?code=` and `#access_token=` (Supabase email login return) intact through any redirect.
 
 ## Consequences
 
