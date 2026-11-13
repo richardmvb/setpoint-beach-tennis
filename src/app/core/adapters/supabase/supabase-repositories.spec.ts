@@ -298,6 +298,56 @@ describe('SupabaseDashboard', () => {
     expect(result.local_archives_available).toBe(false);
   });
 
+  it('shows each tournament once: the full archive replaces the live link', async () => {
+    const { supabase, dashboard } = setup();
+    const recent = new Date().toISOString();
+    const old = '2026-01-01T00:00:00Z';
+    supabase.reply('get_dashboard_activity', {
+      data: {
+        active_tournaments: [
+          { id: 'live', source: 'local', updated_at: recent },
+          { id: 'shared', source: 'shared', updated_at: recent },
+        ],
+        archived_tournaments: [],
+      },
+    });
+    supabase.reply('get_dashboard_archived_local_tournaments', {
+      data: [{ id: 'live-archived', source: 'local', updated_at: old }],
+    });
+    supabase.reply('get_dashboard_local_archives', {
+      data: [
+        { id: 'archive-live', live_id: 'live', source: 'local', status: 'active', updated_at: recent },
+        { id: 'archive-done', live_id: 'live-archived', source: 'local', status: 'completed', updated_at: old },
+        { id: 'archive-stale', live_id: null, source: 'local', status: 'active', updated_at: old },
+      ],
+    });
+
+    const merged = await dashboard.getDashboardActivity();
+
+    expect(merged.active_tournaments.map((entry) => entry.id).sort()).toEqual(['archive-live', 'shared']);
+    expect(merged.archived_tournaments.map((entry) => entry.id).sort()).toEqual(['archive-done', 'archive-stale']);
+  });
+
+  it('merges local archives, and stays compatible before the migration is applied', async () => {
+    const { supabase, dashboard } = setup();
+    supabase.reply('get_dashboard_activity', {
+      data: { active_tournaments: [], archived_tournaments: [{ id: 'shared', updated_at: '2026-11-07T10:00:00Z' }] },
+    });
+    supabase.reply('get_dashboard_local_archives', { data: [] });
+    supabase.reply('get_dashboard_archived_local_tournaments', {
+      data: [{ id: 'local', updated_at: '2026-11-08T10:00:00Z' }],
+    });
+
+    const merged = await dashboard.getDashboardActivity();
+    expect(merged.archived_tournaments.map((entry) => entry.id)).toEqual(['local', 'shared']);
+    expect(merged.local_archives_available).toBe(true);
+
+    supabase.reply('get_dashboard_archived_local_tournaments', { error: { code: 'PGRST202', message: 'missing' } });
+    const legacy = await dashboard.getDashboardActivity();
+    expect(legacy.archived_tournaments.map((entry) => entry.id)).toEqual(['shared']);
+    expect(legacy.local_archives_available).toBe(false);
+  });
+
   it('reads one tournament for the viewer', async () => {
     const { supabase, dashboard } = setup();
     supabase.reply('get_dashboard_tournament', { data: { id: 's1', status: 'active', state: STATE } });

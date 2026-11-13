@@ -3,7 +3,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { PGlite } = require('@electric-sql/pglite');
-const { loadTs } = require('./support/load-ts.cjs');
 const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const adminId = '00000000-0000-4000-8000-000000000001';
@@ -132,31 +131,4 @@ test('administradores listam e reabrem o torneio com todos os detalhes; os demai
     database.query("select public.get_dashboard_tournament('local', $1)", [archiveId]),
     /dashboard_admin_required/,
   );
-});
-
-test('o dashboard exibe cada torneio uma vez: o arquivo completo substitui o link ao vivo', async () => {
-  const typescript = require('typescript');
-  const exported = loadTs(path.join(__dirname, '../src/app/core/supabase.service.ts'));
-  const service = Object.create(exported.SupabaseService.prototype);
-  const recent = new Date().toISOString();
-  const old = '2026-01-01T00:00:00Z';
-  const responses = {
-    get_dashboard_activity: {
-      active_tournaments: [
-        { id: 'live', source: 'local', updated_at: recent },
-        { id: 'shared', source: 'shared', updated_at: recent },
-      ],
-      archived_tournaments: [],
-    },
-    get_dashboard_archived_local_tournaments: [{ id: 'live-archived', source: 'local', updated_at: old }],
-    get_dashboard_local_archives: [
-      { id: 'archive-live', live_id: 'live', source: 'local', status: 'active', updated_at: recent },
-      { id: 'archive-done', live_id: 'live-archived', source: 'local', status: 'completed', updated_at: old },
-      { id: 'archive-stale', live_id: null, source: 'local', status: 'active', updated_at: old },
-    ],
-  };
-  service.client = { rpc: async (name) => ({ data: responses[name], error: null }) };
-  const merged = await service.getDashboardActivity();
-  assert.deepEqual(merged.active_tournaments.map((item) => item.id).sort(), ['archive-live', 'shared']);
-  assert.deepEqual(merged.archived_tournaments.map((item) => item.id).sort(), ['archive-done', 'archive-stale']);
 });
