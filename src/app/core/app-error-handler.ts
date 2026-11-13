@@ -1,16 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorHandler, inject, Injectable, Provider } from '@angular/core';
-import { PostHogService } from './posthog.service';
+import { ERROR_REPORTER } from './ports/analytics.port';
 
 @Injectable({ providedIn: 'root' })
-class PostHogErrorHandler implements ErrorHandler {
-  private readonly posthogService = inject(PostHogService);
+class AppErrorHandler implements ErrorHandler {
+  private readonly reporter = inject(ERROR_REPORTER);
 
   handleError(error: unknown): void {
     const extractedError = this.extractError(error);
 
     if (extractedError) {
-      this.posthogService.posthog.captureException(extractedError);
+      this.reporter.report(extractedError);
     }
 
     console.error('ERROR', error);
@@ -67,9 +67,10 @@ function isErrorLike(value: unknown): value is Error {
   return 'name' in value && 'message' in value && 'stack' in value;
 }
 
-export function providePostHogErrorHandler(): Provider {
+/** Sends unexpected errors to whichever ErrorReporter is bound in app.config.ts. */
+export function provideAppErrorHandler(): Provider {
   return {
     provide: ErrorHandler,
-    useExisting: PostHogErrorHandler,
+    useExisting: AppErrorHandler,
   };
 }
