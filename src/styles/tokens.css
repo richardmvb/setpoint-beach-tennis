@@ -17,7 +17,7 @@
   --surface: #fff;
   --surface-soft: #f7f5f0;
   --text: #14211c;
-  --muted: #6f7a74;
+  --muted: #56615c;
   --border: #e6e2d9;
 
   /* Color: brand */
@@ -26,17 +26,44 @@
   --green-soft: #e6efea;
   --orange: #b98a3e;
   --orange-soft: #f6ecd8;
-  --danger: #b8463b;
+  --danger: #9f3a30;
+  --accent-text: #7d5c28;
+  --success-text: #276b4d;
+  --focus: #1d5a49;
 
   /* Color: ranking podium rows */
   --rank-gold: #fff1b8;
   --rank-silver: #e7eaed;
   --rank-bronze: #f0d7c2;
 
-  /* Shape, elevation and motion */
+  /* Spacing, on a 4px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
   --radius: 18px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgb(20 33 28 / 8%);
+  --shadow-md: var(--shadow);
+  --shadow-lg: 0 24px 60px -20px rgb(20 33 28 / 35%);
   --shadow: 0 1px 2px rgb(20 33 28 / 4%), 0 12px 32px -12px rgb(20 33 28 / 12%);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
 }
 
 :root[data-theme='dark'] {
@@ -57,6 +84,9 @@
   --orange: #d9ae62;
   --orange-soft: #33291a;
   --danger: #ff8c7d;
+  --accent-text: #d9ae62;
+  --success-text: #5cc99a;
+  --focus: #bfe3d0;
 
   /* Color: ranking podium rows */
   --rank-gold: #51431a;
@@ -65,4 +95,6 @@
 
   /* Shape, elevation and motion */
   --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 16px 36px -16px rgb(0 0 0 / 50%);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 70%);
 }
