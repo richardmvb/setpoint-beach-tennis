@@ -1,6 +1,6 @@
 # Plan: Make Setpoint Beach Tennis a professional, scalable, maintainable project
 
-Status: approved. Phases 0 to 3 done. Next step is Phase 4. Reviewed 2026-11-11: phases 1 and 2 swapped (safety net before upgrade), and two sections added: engineering standards enforced on every PR, and release and delivery.
+Status: approved. Phases 0 to 3 done. Before Phase 4: ADRs 0004 to 0006 written (2026-11-13), e2e for the live viewer and shared invite added; saved tournaments, offline sync and dashboard e2e still open. Reviewed 2026-11-11: phases 1 and 2 swapped (safety net before upgrade), and two sections added: engineering standards enforced on every PR, and release and delivery.
 
 ## Context
 

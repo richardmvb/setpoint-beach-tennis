@@ -63,7 +63,7 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 | `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
 | Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
 | Axe baseline: color-contrast (up to 62 nodes per page), label-content-name-mismatch, unnamed buttons in the profile panel | 5 (design system and accessibility)  |
-| E2E for shared invite and live viewer (mocked Supabase), saved tournaments, offline sync                                  | Phase 1 follow-ups                   |
+| E2E for saved tournaments, offline sync, dashboard; fixtures for offline queue and shared snapshot                        | Phase 1 follow-ups                   |
 | `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
 
 ## Unit tests (Vitest)
