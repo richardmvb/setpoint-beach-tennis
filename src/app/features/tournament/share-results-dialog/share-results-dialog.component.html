@@ -1,0 +1,91 @@
+<ng-container *transloco="let t; prefix: 'tournament'">
+  <header class="share-preview-header">
+    <div>
+      <span class="card-kicker">{{ t('shareResults.kicker') }}</span>
+      <h2 [id]="titleId">{{ t('shareResults.title') }}</h2>
+    </div>
+    <button class="share-preview-close" type="button" (click)="close()" [attr.aria-label]="t('shareResults.close')">×</button>
+  </header>
+  <div class="share-preview-controls">
+    <div class="share-layout-control">
+      <span>{{ t('shareResults.layout') }}</span>
+      <div class="share-layout-options" role="group" [attr.aria-label]="t('shareResults.layoutGroup')">
+        @for (layout of layouts; track layout) {
+          <button type="button" [class.active]="session.layout() === layout" [attr.aria-pressed]="session.layout() === layout" (click)="chooseLayout(layout)">
+            @switch (layout) {
+              @case ('podium') {
+                {{ t('shareResults.layouts.podium') }}
+              }
+              @case ('editorial') {
+                {{ t('shareResults.layouts.editorial') }}
+              }
+              @case ('scoreboard') {
+                {{ t('shareResults.layouts.scoreboard') }}
+              }
+            }
+          </button>
+        }
+      </div>
+    </div>
+    <div class="share-background-control">
+      <label class="button secondary share-upload-button">
+        {{ session.background() ? t('shareResults.changePhoto') : t('shareResults.addPhoto') }}
+        <input type="file" accept="image/*" (change)="selectBackground($event)" hidden />
+      </label>
+      @if (session.background(); as background) {
+        <button class="button secondary" type="button" (click)="clearBackground()">{{ t('shareResults.removePhoto') }}</button>
+        <small class="muted">{{ background.name }}</small>
+      } @else {
+        <small class="muted">{{ t('shareResults.photoHint') }}</small>
+      }
+    </div>
+  </div>
+  <div class="share-preview-frame" aria-live="polite">
+    @if (loading() || !previewUrl()) {
+      <div class="share-preview-skeleton" role="img" [attr.aria-label]="t('shareResults.preparing')">
+        <div class="skeleton-brand"></div>
+        <div class="skeleton-title"></div>
+        <div class="skeleton-name"></div>
+        <div class="skeleton-podium"><i></i><i></i><i></i></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row short"></div>
+        <span>{{ loading() ? t('shareResults.building') : t('shareResults.placeholder') }}</span>
+      </div>
+    } @else {
+      <img [src]="previewUrl()" [alt]="t('shareResults.previewAlt')" />
+    }
+  </div>
+  @if (message(); as message) {
+    <p class="share-preview-message" role="status">
+      @if ('text' in message) {
+        {{ message.text }}
+      } @else {
+        @switch (message.key) {
+          @case ('notAnImage') {
+            {{ t('shareResults.messages.notAnImage') }}
+          }
+          @case ('tooLarge') {
+            {{ t('shareResults.messages.tooLarge') }}
+          }
+          @case ('downloaded') {
+            {{ t('shareResults.messages.downloaded') }}
+          }
+          @case ('shared') {
+            {{ t('shareResults.messages.shared') }}
+          }
+          @case ('previewFailed') {
+            {{ t('shareResults.messages.previewFailed') }}
+          }
+          @case ('shareFailed') {
+            {{ t('shareResults.messages.shareFailed') }}
+          }
+        }
+      }
+    </p>
+  }
+  <footer class="share-preview-actions">
+    <button class="button secondary" type="button" (click)="close()">{{ t('shareResults.back') }}</button>
+    <button class="button secondary" type="button" (click)="share()" [disabled]="!image() || loading()">{{ t('shareResults.share') }}</button>
+    <button class="button primary" type="button" (click)="download()" [disabled]="!image() || loading()">{{ t('shareResults.download') }}</button>
+  </footer>
+</ng-container>

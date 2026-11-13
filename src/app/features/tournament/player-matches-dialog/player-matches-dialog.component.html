@@ -1,0 +1,60 @@
+<ng-container *transloco="let t; prefix: 'tournament'">
+  <div class="batch-modal-header">
+    <div>
+      <span class="card-kicker">{{ t('playerMatches.kicker') }}</span>
+      <h2 [id]="titleId">{{ player?.name }}</h2>
+    </div>
+    <button type="button" class="modal-close" (click)="close()" [attr.aria-label]="t('playerMatches.close')">×</button>
+  </div>
+  @if (player) {
+    <div class="player-match-summary">
+      <app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" />
+      <span>{{ t('playerMatches.qualifying', { played, total }) }}</span>
+    </div>
+  }
+  <div class="player-match-list">
+    @for (item of matches; track $index) {
+      <article class="player-match-detail">
+        <span class="card-kicker">
+          @if (item.roundNumber !== null) {
+            {{ t('playerMatches.round', { number: item.roundNumber }) }}
+          } @else {
+            @switch (item.finalKind) {
+              @case ('quarterfinal') {
+                {{ t('finalKind.quarterfinal') }}
+              }
+              @case ('semifinal') {
+                {{ t('finalKind.semifinal') }}
+              }
+              @case ('championship') {
+                {{ t('finalKind.championship') }}
+              }
+              @default {
+                {{ t('finalKind.thirdPlace') }}
+              }
+            }
+          }
+        </span>
+        <b>{{ t('playerMatches.partner', { name: item.partnerName ?? t('playerMatches.removedPlayer') }) }}</b>
+        <span>{{ t('playerMatches.opponents', { names: joinNames(item.opponentNames, t('playerMatches.removedPlayer')) }) }}</span>
+        <strong [class.positive]="item.result === 'win'" [class.negative]="item.result === 'loss'">
+          @if (item.scoreFor === null || item.scoreAgainst === null) {
+            {{ t('playerMatches.pending') }}
+          } @else if (item.tieBreak) {
+            @if (item.result) {
+              {{ t('playerMatches.withResult', { score: t('playerMatches.scoreWithTieBreak', { for: item.scoreFor, against: item.scoreAgainst, tieBreakFor: item.tieBreak.for, tieBreakAgainst: item.tieBreak.against }), result: item.result === 'win' ? t('playerMatches.win') : t('playerMatches.loss') }) }}
+            } @else {
+              {{ t('playerMatches.scoreWithTieBreak', { for: item.scoreFor, against: item.scoreAgainst, tieBreakFor: item.tieBreak.for, tieBreakAgainst: item.tieBreak.against }) }}
+            }
+          } @else {
+            @if (item.result) {
+              {{ t('playerMatches.withResult', { score: t('playerMatches.score', { for: item.scoreFor, against: item.scoreAgainst }), result: item.result === 'win' ? t('playerMatches.win') : t('playerMatches.loss') }) }}
+            } @else {
+              {{ t('playerMatches.score', { for: item.scoreFor, against: item.scoreAgainst }) }}
+            }
+          }
+        </strong>
+      </article>
+    }
+  </div>
+</ng-container>

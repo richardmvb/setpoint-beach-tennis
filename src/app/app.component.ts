@@ -40,7 +40,7 @@ import {
   finalLiveMatchScore,
   MAX_FINAL_LIVE_POINTS,
 } from './core/final-live-score';
-import { ShareCardLayout, ShareCardService } from './core/share-card.service';
+import { ShareCardService } from './core/share-card.service';
 import type { FinalWinnerSide } from './domain/tournament-view/scoring';
 import { isScored } from './domain/tournament-view/scoring';
 import * as tournamentFormat from './domain/tournament-view/format';
@@ -49,8 +49,16 @@ import * as roundsView from './domain/tournament-view/rounds';
 import { qualificationEnabled, qualificationSupported } from './domain/tournament-view/qualification';
 import { createStandingsMemo, type StandingsView, storedTieDrawOrder } from './domain/tournament-view/standings';
 import { type GroupStandingTable, groupTables } from './domain/tournament-view/group-tables';
-import { playerMatches, scheduledGroupMatches } from './domain/tournament-view/player-matches';
 import { normalizeSharedState } from './domain/tournament-view/shared-state';
+import type {
+  PlayerMatchesDialogComponent,
+  PlayerMatchesDialogData,
+} from './features/tournament/player-matches-dialog/player-matches-dialog.component';
+import type {
+  ShareResultsDialogComponent,
+  ShareResultsDialogData,
+} from './features/tournament/share-results-dialog/share-results-dialog.component';
+import { ShareResultsSession } from './features/tournament/share-results-dialog/share-results-session';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { RoundNavigationComponent } from './features/round-navigation.component';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
@@ -115,14 +123,6 @@ interface BatchPlayerDraft {
   error?: string;
 }
 
-interface PlayerMatchDetail {
-  phase: string;
-  opponent: string;
-  partner: string;
-  score: string;
-  result: string;
-}
-
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
 const LANDING_SEEN_KEY = 'setpoint.landing.seen';
@@ -180,6 +180,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly analytics = inject(ANALYTICS);
   private readonly surveys = inject(SURVEYS);
   private readonly dialog = inject(DialogService);
+  private readonly shareSession = inject(ShareResultsSession);
   private readonly pathCard = inject(PathCardService);
   private readonly authCallback: boolean;
   private readonly syncQueue = new OfflineSyncQueue(this.local);
@@ -238,7 +239,6 @@ export class AppComponent implements OnInit, OnDestroy {
   batchModalOpen = false;
   batchText = '';
   batchPlayers: BatchPlayerDraft[] = [];
-  selectedRankingPlayerId = '';
   notice = '';
   noticeType: 'success' | 'error' = 'success';
   scoreDrafts: Record<
@@ -271,15 +271,6 @@ export class AppComponent implements OnInit, OnDestroy {
   guestUpdateCount = 0;
   private firstGuestUpdateTargetId = '';
   sharePlayerId = '';
-  sharingResults = false;
-  shareMessage = '';
-  sharePreviewOpen = false;
-  sharePreviewLoading = false;
-  sharePreviewUrl = '';
-  sharePreviewBlob: Blob | null = null;
-  shareLayout: ShareCardLayout = 'podium';
-  shareBackgroundUrl = '';
-  shareBackgroundName = '';
   private syncTimeout: number | null = null;
   private syncInFlight = false;
   private syncRetryAfter = 0;
@@ -555,8 +546,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
     if (this.syncTimeout !== null) window.clearTimeout(this.syncTimeout);
     this.authStateUnsubscribe?.();
-    if (this.sharePreviewUrl) URL.revokeObjectURL(this.sharePreviewUrl);
-    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
   }
 
   private async identifyCurrentUser(): Promise<void> {
@@ -606,35 +595,19 @@ export class AppComponent implements OnInit, OnDestroy {
       (this.state.sharedStatus === 'registration' || this.state.sharedStatus === 'ready')
     );
   }
-  openPlayerMatches(playerId: string): void {
-    this.selectedRankingPlayerId = playerId;
+  /** The dialogs are lazy chunks: they load on the first click, not with the app. */
+  async openPlayerMatches(playerId: string): Promise<void> {
+    const { PlayerMatchesDialogComponent: component, PLAYER_MATCHES_TITLE_ID: labelledBy } =
+      await import('./features/tournament/player-matches-dialog/player-matches-dialog.component');
+    await this.dialog.open<void, PlayerMatchesDialogData, PlayerMatchesDialogComponent>(component, {
+      data: { state: this.state, playerId },
+      labelledBy,
+      sheetBelow: 620,
+    });
   }
-  closePlayerMatches(): void {
-    this.selectedRankingPlayerId = '';
-  }
-  get selectedRankingPlayer(): Player | undefined {
-    return this.state.players.find((player) => player.id === this.selectedRankingPlayerId);
-  }
-  get selectedPlayerQualifyingPlayed(): number {
-    return this.standings.find((row) => row.playerId === this.selectedRankingPlayerId)?.matchesPlayed ?? 0;
-  }
-  get selectedPlayerQualifyingTotal(): number {
-    return scheduledGroupMatches(this.state, this.selectedRankingPlayerId);
-  }
-  get selectedPlayerMatches(): PlayerMatchDetail[] {
-    return playerMatches(this.state, this.selectedRankingPlayerId, this.winnerSide).map((match) => ({
-      phase: match.phase.kind === 'round' ? 'Rodada ' + match.phase.number : this.finalKindText(match.phase.finalKind),
-      partner: this.playerName(match.partnerId),
-      opponent: match.opponentIds.map((id) => this.playerName(id)).join(' + '),
-      score:
-        match.scoreFor === null || match.scoreAgainst === null
-          ? 'Pendente'
-          : match.scoreFor +
-            '–' +
-            match.scoreAgainst +
-            (match.tieBreak ? ` (TB ${match.tieBreak.for}–${match.tieBreak.against})` : ''),
-      result: match.result === 'win' ? 'Vitória' : match.result === 'loss' ? 'Derrota' : '',
-    }));
+  /** The outcome of the last share (for example "Imagem baixada."), shown under the share button. */
+  get shareMessage(): string {
+    return this.shareSession.message();
   }
 
   placeOf(playerId: string): number {
@@ -2429,110 +2402,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async shareResults(): Promise<void> {
     if (!this.state.finals?.complete || !this.sharePlayerId) return;
-    this.sharePreviewOpen = true;
-    await this.refreshSharePreview();
-  }
-
-  async refreshSharePreview(): Promise<void> {
-    if (!this.state.finals?.complete || !this.sharePlayerId) return;
-    this.sharingResults = true;
-    this.sharePreviewLoading = true;
-    this.shareMessage = '';
-    this.sharePreviewBlob = null;
-    if (this.sharePreviewUrl) URL.revokeObjectURL(this.sharePreviewUrl);
-    this.sharePreviewUrl = '';
-    try {
-      this.sharePreviewBlob = await this.shareCard.generatePlayerResultsImage(
-        this.state,
-        this.standings,
-        this.sharePlayerId,
-        { layout: this.shareLayout, backgroundImageUrl: this.shareBackgroundUrl || undefined },
-      );
-      this.sharePreviewUrl = URL.createObjectURL(this.sharePreviewBlob);
-    } catch (error) {
-      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível gerar a prévia.';
-    } finally {
-      this.sharingResults = false;
-      this.sharePreviewLoading = false;
-    }
-  }
-
-  async chooseShareLayout(layout: ShareCardLayout): Promise<void> {
-    if (this.shareLayout === layout) return;
-    this.shareLayout = layout;
-    this.analytics.capture('share_layout_changed', { layout });
-    if (this.sharePreviewOpen) await this.refreshSharePreview();
-  }
-
-  async selectShareBackground(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      this.shareMessage = 'Escolha um arquivo de imagem.';
-      return;
-    }
-    if (file.size > 8_000_000) {
-      this.shareMessage = 'A imagem deve ter até 8 MB.';
-      return;
-    }
-    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
-    this.shareBackgroundUrl = URL.createObjectURL(file);
-    this.shareBackgroundName = file.name;
-    if (this.sharePreviewOpen) await this.refreshSharePreview();
-  }
-
-  async clearShareBackground(): Promise<void> {
-    if (this.shareBackgroundUrl) URL.revokeObjectURL(this.shareBackgroundUrl);
-    this.shareBackgroundUrl = '';
-    this.shareBackgroundName = '';
-    if (this.sharePreviewOpen) await this.refreshSharePreview();
-  }
-
-  closeSharePreview(): void {
-    this.sharePreviewOpen = false;
-  }
-
-  downloadSharePreview(): void {
-    if (!this.sharePreviewBlob || !this.sharePlayerId) return;
-    const player = this.state.players.find((item) => item.id === this.sharePlayerId);
-    if (!player) return;
-    this.shareCard.downloadImage(this.sharePreviewBlob, player.name);
-    this.shareMessage = 'Imagem baixada.';
-    this.analytics.capture('results_shared', {
-      share_method: 'downloaded',
-      share_layout: this.shareLayout,
-      has_custom_background: !!this.shareBackgroundUrl,
-      tournament_mode: this.state.tournamentMode,
-      doubles_format: this.state.doublesFormat ?? 'open',
-      tournament_size: this.state.size,
+    const { ShareResultsDialogComponent: component, SHARE_RESULTS_TITLE_ID: labelledBy } =
+      await import('./features/tournament/share-results-dialog/share-results-dialog.component');
+    await this.dialog.open<void, ShareResultsDialogData, ShareResultsDialogComponent>(component, {
+      data: { state: this.state, standings: this.standings, playerId: this.sharePlayerId },
+      labelledBy,
+      sheetBelow: 600,
     });
-  }
-
-  async sharePreviewImage(): Promise<void> {
-    if (!this.sharePreviewBlob || !this.sharePlayerId) return;
-    const player = this.state.players.find((item) => item.id === this.sharePlayerId);
-    if (!player) return;
-    try {
-      const shared = await this.shareCard.shareImage(this.sharePreviewBlob, player.name, this.state.name);
-      if (!shared) {
-        this.downloadSharePreview();
-        return;
-      }
-      this.shareMessage = 'Imagem compartilhada.';
-      this.analytics.capture('results_shared', {
-        share_method: 'shared',
-        share_layout: this.shareLayout,
-        has_custom_background: !!this.shareBackgroundUrl,
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      this.shareMessage = error instanceof Error ? error.message : 'Não foi possível compartilhar a imagem.';
-    }
   }
 
   private async restoreSharedFlow(): Promise<void> {
@@ -3435,7 +3311,6 @@ export class AppComponent implements OnInit, OnDestroy {
     };
     this.selectedRound = 0;
     this.setupStep = 1;
-    this.selectedRankingPlayerId = '';
     this.setPage('setup');
     this.refreshLibrary();
     if (returnToLanding) this.openLanding();
@@ -3526,7 +3401,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.restoreLocalLiveCredentials();
     this.selectedRound = 0;
     this.sharePlayerId = '';
-    this.shareMessage = '';
+    this.shareSession.message.set('');
     this.initializeScoreDrafts();
     // A local copy of a shared tournament is already stored on the server: do not archive or count it twice.
     this.persist(undefined, !fromShared);
