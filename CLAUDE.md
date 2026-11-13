@@ -24,7 +24,7 @@ npm run db:reset        # re-apply all migrations
 npm run test:db:supabase # pgTAP security and permission tests on the real local stack
 npm run db:lint         # splinter + supabase db lint (fails on any ERROR or unexpected WARN)
 npm run db:migrations   # forward-only and vendor-neutral migration rules
-npm run db:types        # regenerate src/app/core/database.types.ts (never edit it by hand)
+npm run db:types        # regenerate src/app/core/adapters/supabase/database.types.ts (never edit it by hand)
 npm run test:coverage   # unit tests with V8 coverage
 npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
@@ -35,8 +35,10 @@ Local runtime config is `public/runtime-config.js` (tracked, development values)
 
 ## Architecture (current)
 
-- `src/app/app.component.ts` and `.html`: monolith (about 3,000 lines of logic). Being decomposed in Phase 4. Do not add new features here; put new code in the target structure.
-- `src/app/core/`: services and domain logic (`supabase.service.ts`, `storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Unit tests are colocated `*.spec.ts` files run by Vitest.
+- `src/app/app.component.ts` and `.html`: monolith (about 4,000 lines of logic, 1,050 template lines). Being decomposed in Phase 4. Do not add new features here; put new code in the target structure.
+- `src/app/core/ports/`: vendor-neutral interfaces written in the app's terms, each with an `InjectionToken` (`AnalyticsPort`, `ErrorReporter`, `SurveyPort`, `AuthPort`, `SharedTournamentRepository`, `LocalLiveRepository`, `TournamentFeed`, `ArchiveRepository`, `DashboardRepository`). Features and AppComponent inject ports only. `ports/testing/` holds in-memory fakes and the contract suites that both the fake and the real adapter pass.
+- `src/app/core/adapters/<vendor>/`: the only place that imports `@supabase/*` or `posthog-js` (ESLint enforces it). `src/app/app.config.ts` is the composition root that binds ports to adapters; swapping a vendor is a new adapter folder plus one line there. See ADR 0003 and `docs/vendors.md`. Adapter specs use a fake client (`fake-supabase-client.ts`) or an injected SDK; the Angular unit-test builder does not support `vi.mock` on relative imports, so inject what you need to fake.
+- `src/app/core/`: domain logic and the remaining services (`storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Unit tests are colocated `*.spec.ts` files run by Vitest.
 - `src/app/features/`: presentational components (flat for now).
 - `src/styles.css`: one global stylesheet. Split into tokens and components in Phase 5.
 - `supabase/`: `migrations/` (forward-only), `tests/` (pgTAP), `lint/` (splinter), `config.toml` (Supabase CLI). Security findings and rules: `docs/security.md`.

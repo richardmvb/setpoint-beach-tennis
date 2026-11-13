@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { LocalLiveTournamentSnapshot, TournamentState } from '../../models';
 import { publicTournamentState } from '../../public-tournament-state';
 import type { LocalLiveRepository } from '../../ports/tournaments.port';
-import { toJson } from '../../../shared/parsers/json';
+import { toJson } from './to-json';
 import { parseLocalLiveCreated, parseLocalLiveSnapshot } from '../../../shared/parsers/rpc-responses';
 import { SupabaseAuth } from './supabase-auth';
 import { AppSupabaseClient, requireSupabaseClient, SUPABASE_CLIENT } from './supabase-client';

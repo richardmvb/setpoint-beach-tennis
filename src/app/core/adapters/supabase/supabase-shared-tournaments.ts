@@ -1,7 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { PlayerGender, SharedTournamentSnapshot, TournamentState } from '../../models';
 import type { SharedTournamentRepository } from '../../ports/tournaments.port';
-import { isRecord, parseJson, toJson } from '../../../shared/parsers/json';
+import { isRecord, parseJson } from '../../../shared/parsers/json';
+import { toJson } from './to-json';
 import { parseInviteRotation, parseSharedSnapshot } from '../../../shared/parsers/rpc-responses';
 import { AppSupabaseClient, requireSupabaseClient, SUPABASE_CLIENT } from './supabase-client';
 import { SupabaseFeed } from './supabase-feed';

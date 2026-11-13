@@ -29,7 +29,7 @@ Not found: tables readable by `anon`/`authenticated`, a `SECURITY DEFINER` funct
 - `squawk` on added migrations (lock and timeout safety).
 - `scripts/db-lint.cjs`: splinter (`supabase/lint/splinter.sql`, copied from the supabase/splinter repo; refresh it when upgrading the Supabase CLI) and `supabase db lint`. Any ERROR fails; a WARN fails unless it is one of the two design lints above.
 - `supabase test db`: `supabase/tests/security.test.sql` (pgTAP) on the real roles, grants and JWT claims.
-- Generated types (`src/app/core/database.types.ts`) match the schema.
+- Generated types (`src/app/core/adapters/supabase/database.types.ts`) match the schema.
 
 ## Content-Security-Policy
 

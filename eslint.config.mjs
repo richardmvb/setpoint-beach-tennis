@@ -24,7 +24,14 @@ const legacyVendorFiles = [];
 
 export default tseslint.config(
   {
-    ignores: ['dist/', '.angular/', 'node_modules/', 'public/', 'coverage/', 'src/app/core/database.types.ts'],
+    ignores: [
+      'dist/',
+      '.angular/',
+      'node_modules/',
+      'public/',
+      'coverage/',
+      'src/app/core/adapters/supabase/database.types.ts',
+    ],
   },
 
   // Application TypeScript: type-aware rules over everything in tsconfig.eslint.json.

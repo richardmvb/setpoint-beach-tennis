@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ValiError } from 'valibot';
-import { parseJson, toJson } from './json';
+import { parseJson } from './json';
 import {
   parseDashboardMetrics,
   parseInviteRotation,
@@ -49,9 +49,5 @@ describe('JSON helpers', () => {
     expect(parseJson('{oops')).toBeUndefined();
     expect(parseJson(null)).toBeUndefined();
     expect(parseJson('{"a":1}')).toEqual({ a: 1 });
-  });
-
-  it('toJson drops undefined fields like the network does', () => {
-    expect(toJson({ a: 1, b: undefined })).toEqual({ a: 1 });
   });
 });
