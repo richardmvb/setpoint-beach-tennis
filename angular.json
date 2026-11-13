@@ -34,6 +34,7 @@
               "node_modules/driver.js/dist/driver.css",
               "node_modules/sweetalert2/dist/sweetalert2.min.css",
               "src/fonts.css",
+              "src/styles/tokens.css",
               "src/styles.css"
             ]
           },
