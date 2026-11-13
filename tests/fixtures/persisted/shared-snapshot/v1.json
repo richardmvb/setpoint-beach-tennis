@@ -1,0 +1,218 @@
+{
+  "id": "11111111-1111-4111-8111-111111111111",
+  "status": "active",
+  "capacity": 8,
+  "state": {
+    "version": 1,
+    "name": "Fixture v1",
+    "size": 8,
+    "courts": 2,
+    "gamesToWin": 4,
+    "roundCount": 7,
+    "players": [
+      {
+        "id": "44200cf2-4b28-4fe2-b00d-5d2544588884",
+        "name": "Ana"
+      },
+      {
+        "id": "1527dc79-676d-4dc4-8c27-ead19bec2088",
+        "name": "Bruno"
+      },
+      {
+        "id": "dcd6a72b-11b4-4d69-84d9-ce9fb639200b",
+        "name": "Carla"
+      },
+      {
+        "id": "06fd12a2-195d-47c6-b7cd-edffc135e60f",
+        "name": "Diego"
+      },
+      {
+        "id": "309d8a49-fcbe-42d8-a94c-e63cc19a1f5f",
+        "name": "Elisa"
+      },
+      {
+        "id": "eaeb6e0f-2717-455b-bf45-a816610be719",
+        "name": "Fabio"
+      },
+      {
+        "id": "d2f486b3-8b91-4d8f-b116-c2f853f5ed68",
+        "name": "Gabi"
+      },
+      {
+        "id": "91c90491-2057-46ad-8566-e09df2b1cfd1",
+        "name": "Hugo"
+      }
+    ],
+    "rounds": [
+      {
+        "number": 1,
+        "matches": [
+          {
+            "id": "r1-m1",
+            "court": 1,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "dcd6a72b-11b4-4d69-84d9-ce9fb639200b"],
+            "teamB": ["44200cf2-4b28-4fe2-b00d-5d2544588884", "1527dc79-676d-4dc4-8c27-ead19bec2088"],
+            "scoreA": 4,
+            "scoreB": 2
+          },
+          {
+            "id": "r1-m2",
+            "court": 2,
+            "teamA": ["309d8a49-fcbe-42d8-a94c-e63cc19a1f5f", "91c90491-2057-46ad-8566-e09df2b1cfd1"],
+            "teamB": ["d2f486b3-8b91-4d8f-b116-c2f853f5ed68", "06fd12a2-195d-47c6-b7cd-edffc135e60f"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 2,
+        "matches": [
+          {
+            "id": "r2-m1",
+            "court": 1,
+            "teamA": ["dcd6a72b-11b4-4d69-84d9-ce9fb639200b", "1527dc79-676d-4dc4-8c27-ead19bec2088"],
+            "teamB": ["309d8a49-fcbe-42d8-a94c-e63cc19a1f5f", "06fd12a2-195d-47c6-b7cd-edffc135e60f"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r2-m2",
+            "court": 2,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "91c90491-2057-46ad-8566-e09df2b1cfd1"],
+            "teamB": ["44200cf2-4b28-4fe2-b00d-5d2544588884", "d2f486b3-8b91-4d8f-b116-c2f853f5ed68"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 3,
+        "matches": [
+          {
+            "id": "r3-m1",
+            "court": 1,
+            "teamA": ["d2f486b3-8b91-4d8f-b116-c2f853f5ed68", "91c90491-2057-46ad-8566-e09df2b1cfd1"],
+            "teamB": ["06fd12a2-195d-47c6-b7cd-edffc135e60f", "1527dc79-676d-4dc4-8c27-ead19bec2088"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r3-m2",
+            "court": 2,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "309d8a49-fcbe-42d8-a94c-e63cc19a1f5f"],
+            "teamB": ["44200cf2-4b28-4fe2-b00d-5d2544588884", "dcd6a72b-11b4-4d69-84d9-ce9fb639200b"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 4,
+        "matches": [
+          {
+            "id": "r4-m1",
+            "court": 1,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "06fd12a2-195d-47c6-b7cd-edffc135e60f"],
+            "teamB": ["91c90491-2057-46ad-8566-e09df2b1cfd1", "44200cf2-4b28-4fe2-b00d-5d2544588884"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r4-m2",
+            "court": 2,
+            "teamA": ["1527dc79-676d-4dc4-8c27-ead19bec2088", "d2f486b3-8b91-4d8f-b116-c2f853f5ed68"],
+            "teamB": ["dcd6a72b-11b4-4d69-84d9-ce9fb639200b", "309d8a49-fcbe-42d8-a94c-e63cc19a1f5f"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 5,
+        "matches": [
+          {
+            "id": "r5-m1",
+            "court": 1,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "44200cf2-4b28-4fe2-b00d-5d2544588884"],
+            "teamB": ["d2f486b3-8b91-4d8f-b116-c2f853f5ed68", "309d8a49-fcbe-42d8-a94c-e63cc19a1f5f"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r5-m2",
+            "court": 2,
+            "teamA": ["06fd12a2-195d-47c6-b7cd-edffc135e60f", "dcd6a72b-11b4-4d69-84d9-ce9fb639200b"],
+            "teamB": ["1527dc79-676d-4dc4-8c27-ead19bec2088", "91c90491-2057-46ad-8566-e09df2b1cfd1"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 6,
+        "matches": [
+          {
+            "id": "r6-m1",
+            "court": 1,
+            "teamA": ["91c90491-2057-46ad-8566-e09df2b1cfd1", "06fd12a2-195d-47c6-b7cd-edffc135e60f"],
+            "teamB": ["dcd6a72b-11b4-4d69-84d9-ce9fb639200b", "d2f486b3-8b91-4d8f-b116-c2f853f5ed68"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r6-m2",
+            "court": 2,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "1527dc79-676d-4dc4-8c27-ead19bec2088"],
+            "teamB": ["309d8a49-fcbe-42d8-a94c-e63cc19a1f5f", "44200cf2-4b28-4fe2-b00d-5d2544588884"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      },
+      {
+        "number": 7,
+        "matches": [
+          {
+            "id": "r7-m1",
+            "court": 1,
+            "teamA": ["1527dc79-676d-4dc4-8c27-ead19bec2088", "309d8a49-fcbe-42d8-a94c-e63cc19a1f5f"],
+            "teamB": ["91c90491-2057-46ad-8566-e09df2b1cfd1", "dcd6a72b-11b4-4d69-84d9-ce9fb639200b"],
+            "scoreA": null,
+            "scoreB": null
+          },
+          {
+            "id": "r7-m2",
+            "court": 2,
+            "teamA": ["eaeb6e0f-2717-455b-bf45-a816610be719", "d2f486b3-8b91-4d8f-b116-c2f853f5ed68"],
+            "teamB": ["06fd12a2-195d-47c6-b7cd-edffc135e60f", "44200cf2-4b28-4fe2-b00d-5d2544588884"],
+            "scoreA": null,
+            "scoreB": null
+          }
+        ],
+        "restingPlayerIds": []
+      }
+    ],
+    "createdAt": "2026-11-12T12:36:48.546Z",
+    "tournamentMode": "super",
+    "groupFormat": "rotating",
+    "groups": [],
+    "fixedPairs": [],
+    "finals": null,
+    "doublesFormat": "open",
+    "hostingMode": "shared",
+    "tieBreakDraws": [],
+    "startedAt": "2026-11-12T12:36:50.391Z",
+    "sharedTournamentId": "11111111-1111-4111-8111-111111111111",
+    "sharedStatus": "active"
+  },
+  "inviteExpiresAt": "2026-11-12T18:00:00+00:00",
+  "expiresAt": "2026-11-19T12:00:00+00:00",
+  "canJoin": false
+}
