@@ -17,6 +17,7 @@ npm run lint:styles     # Stylelint
 npm run format:check    # Prettier (src/**/*.html and src/styles.css are excluded, see below)
 npm run typecheck       # tsc over src/**/*.ts
 npm run knip            # unused files, exports, dependencies
+npm run i18n:check      # translation keys: none missing from public/i18n, none unused
 npm test                # unit tests (Vitest through the Angular unit-test builder, src/**/*.spec.ts)
 npm run test:db         # SQL tests on PGlite (node:test, tests/), fast, no Docker
 npm run db:start        # local Supabase in Docker (applies every migration from empty)
@@ -45,6 +46,7 @@ Local runtime config is `public/runtime-config.js` (tracked, development values)
 - `src/app/ui/`: the design system (`@ui/*` alias). `uiButton` and `uiCard` render the same `.button` and `.surface-card` classes templates still use; `ConfirmDialog` is opened through `DialogService` (core) on `@angular/cdk/dialog`. `ui/` imports only Angular, the CDK and itself (ESLint enforces it). New features use these instead of copying markup; migrate `class="button …"` and `class="surface-card"` as each feature is extracted.
 - `supabase/`: `migrations/` (forward-only), `tests/` (pgTAP), `lint/` (splinter), `config.toml` (Supabase CLI). Security findings and rules: `docs/security.md`.
 - `src/app/shared/parsers/`: Valibot parsers for everything that comes from outside (RPC responses today). Do not cast RPC data with `as`; add a parser.
+- `src/app/core/i18n/` sets up Transloco (ADR 0004). Text lives in `public/i18n/<scope>/pt-BR.json`, loaded at runtime; the root `public/i18n/pt-BR.json` holds the app shell (`shell.*` keys). An extracted feature provides its scope with `provideTranslocoScope` and has no raw text in its template. Specs import `translocoTesting()` from `src/app/testing/` to get the real pt-BR text.
 - `src/index.html` holds the Content-Security-Policy. A new external host needs a CSP change and a test; fonts are self-hosted (`src/fonts/`).
 
 Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 in `docs/adr/`.
@@ -73,7 +75,7 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 
 Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. Property tests use `fast-check` in `*.property.spec.ts` next to the module (schedule shuffle, scenario engine, qualification); failures print a seed, so rerun with `fc.assert(..., { seed, path })` to reproduce. Use `seededRandom` for the code's own random source. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
 
-Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Measured on 2026-11-13 after the UI work: statements 73.31, branches 71.45, functions 82.13, lines 72.96 (the thresholds are the floors, rounded down). New code must be covered.
+Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Measured on 2026-11-13 after the Transloco setup: statements 74.03, branches 72.02, functions 82.97, lines 73.71 (the thresholds are the floors, rounded down). New code must be covered.
 
 ## End-to-end tests (e2e/)
 

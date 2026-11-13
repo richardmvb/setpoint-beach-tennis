@@ -4,6 +4,7 @@ import { provideBrowserAdapters } from './core/adapters/browser/provide-browser-
 import { providePostHogAdapters } from './core/adapters/posthog/posthog-adapters';
 import { provideSupabaseAdapters } from './core/adapters/supabase/provide-supabase-adapters';
 import { provideAppErrorHandler } from './core/app-error-handler';
+import { provideI18n } from './core/i18n/provide-i18n';
 
 /**
  * Composition root: the only place that decides which implementation serves each capability
@@ -18,6 +19,7 @@ export function buildAppConfig(urlProviders: ApplicationConfig['providers']): Ap
       providePostHogAdapters(),
       provideSupabaseAdapters(),
       provideAppErrorHandler(),
+      provideI18n(),
       ...urlProviders,
     ],
   };
