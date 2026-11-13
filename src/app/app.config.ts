@@ -1,6 +1,7 @@
 import type { ApplicationConfig } from '@angular/core';
 import { provideZoneChangeDetection } from '@angular/core';
 import { providePostHogAdapters } from './core/adapters/posthog/posthog-adapters';
+import { provideSupabaseAdapters } from './core/adapters/supabase/supabase-auth';
 import { provideAppErrorHandler } from './core/app-error-handler';
 
 /**
@@ -8,5 +9,10 @@ import { provideAppErrorHandler } from './core/app-error-handler';
  * (docs/adr/0003-ports-and-adapters.md). Vendor providers are added here as they move behind ports.
  */
 export const appConfig: ApplicationConfig = {
-  providers: [provideZoneChangeDetection(), providePostHogAdapters(), provideAppErrorHandler()],
+  providers: [
+    provideZoneChangeDetection(),
+    providePostHogAdapters(),
+    provideSupabaseAdapters(),
+    provideAppErrorHandler(),
+  ],
 };

@@ -45,7 +45,6 @@ import {
   DashboardTournamentSource,
   SupabaseService,
 } from './core/supabase.service';
-import type { User } from '@supabase/supabase-js';
 import { ShareCardLayout, ShareCardService, formatElapsed } from './core/share-card.service';
 import { GroupStandingTable } from './features/ranking-view.component';
 import { RankingViewComponent } from './features/ranking-view.component';
@@ -81,6 +80,7 @@ import {
 import { GoalPlace } from './core/scenario-engine';
 import { QualificationStatsComponent } from './features/qualification-stats.component';
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
+import { AppUser, AUTH } from './core/ports/auth.port';
 import { DialogService } from './core/dialog.service';
 import { environment } from '../environments/environment';
 import { errorMessage } from './shared/parsers/error-message';
@@ -152,6 +152,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
   private supabase = inject(SupabaseService);
+  private readonly auth = inject(AUTH);
   private shareCard = inject(ShareCardService);
   private qualification = inject(QualificationService);
 
@@ -482,7 +483,7 @@ export class AppComponent implements OnInit, OnDestroy {
     window.addEventListener('offline', this.onConnectionChange);
     this.applyTheme();
     // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
-    if (this.authCallback) await this.supabase.finishUrlSignIn();
+    if (this.authCallback) await this.auth.finishUrlSignIn();
     this.analytics.start();
     this.analytics.logInfo('setpoint application initialized', {
       hosting_mode: this.state.hostingMode,
@@ -497,15 +498,15 @@ export class AppComponent implements OnInit, OnDestroy {
     this.trackFeatureViewed(this.page);
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
     window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 600);
-    this.authStateUnsubscribe = this.supabase.onAuthStateChange((event, user) => {
-      if (event === 'SIGNED_IN' && user) {
+    this.authStateUnsubscribe = this.auth.onAuthStateChange((change, user) => {
+      if (change === 'signed-in' && user) {
         this.identifyUser(user);
         if (this.isDashboardRoute) {
           this.dashboardAuthenticated = true;
           void this.loadDashboardMetrics();
         }
       }
-      if (event === 'SIGNED_OUT') {
+      if (change === 'signed-out') {
         this.analytics.reset();
         this.identifiedUserId = null;
         if (this.isDashboardRoute) {
@@ -541,7 +542,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async identifyCurrentUser(): Promise<void> {
-    const user = await this.supabase.currentUser();
+    const user = await this.auth.currentUser();
     if (user) {
       this.identifyUser(user);
       if (this.isDashboardRoute) {
@@ -551,7 +552,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  private identifyUser(user: User): void {
+  private identifyUser(user: AppUser): void {
     if (this.identifiedUserId && this.identifiedUserId !== user.id) {
       this.analytics.reset();
     }
@@ -691,7 +692,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sharedConfigured(): boolean {
-    return this.supabase.isConfigured;
+    return this.auth.configured;
   }
   private get syncTarget(): { kind: SyncKind; id: string } | null {
     if (this.isGuestView || this.isDashboardRoute || !this.state) return null;
@@ -1443,7 +1444,7 @@ export class AppComponent implements OnInit, OnDestroy {
       redirect.pathname = `${this.appBasePath}/dashboard`;
       redirect.search = '';
       redirect.hash = '';
-      await this.supabase.requestModeratorLogin(email, redirect.toString());
+      await this.auth.requestModeratorLogin(email, redirect.toString());
       this.dashboardMagicLinkSent = true;
     } catch (error) {
       this.dashboardError = error instanceof Error ? error.message : 'Não foi possível enviar o link de acesso.';
@@ -2431,13 +2432,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.state.name = this.state.name.trim() || 'Meu torneio';
       this.state.roundCount = this.requiredRounds;
       this.state.courts = this.requiredCourts;
-      const user = await this.supabase.currentUser();
+      const user = await this.auth.currentUser();
       const reusableSession = !!user;
       if (reusableSession) {
         await this.createSharedTournamentOnServer();
         return;
       }
-      await this.supabase.signInAnonymously();
+      await this.auth.signInAnonymously();
       await this.createSharedTournamentOnServer();
     } catch (error) {
       this.sharedError = this.moderatorAuthErrorMessage(error);
@@ -2558,7 +2559,7 @@ export class AppComponent implements OnInit, OnDestroy {
   async createOrCopyLocalLiveLink(): Promise<void> {
     if (this.state.finishedAt) return;
     if (this.localLiveReadToken) return this.copyLocalLiveLink();
-    if (!this.supabase.isConfigured) {
+    if (!this.auth.configured) {
       this.localLiveError = 'A publicação ao vivo não está configurada neste deploy.';
       return;
     }
@@ -2769,7 +2770,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async restoreSharedFlow(): Promise<void> {
     if (this.isDashboardViewer) {
-      if (!this.supabase.isConfigured || !this.dashboardViewerSource) {
+      if (!this.auth.configured || !this.dashboardViewerSource) {
         this.sharedError = 'Visualização administrativa indisponível.';
         return;
       }
@@ -2788,7 +2789,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.isLiveViewer) {
-      if (!this.supabase.isConfigured) {
+      if (!this.auth.configured) {
         this.sharedError = 'O acompanhamento ao vivo não está configurado neste deploy.';
         return;
       }
@@ -2803,7 +2804,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
       return;
     }
-    if (!this.supabase.isConfigured) {
+    if (!this.auth.configured) {
       if (this.sharedInviteToken) this.sharedError = 'O modo compartilhado não está configurado neste deploy.';
       return;
     }
@@ -2831,7 +2832,7 @@ export class AppComponent implements OnInit, OnDestroy {
     localStorage.removeItem(SHARED_SETUP_KEY);
     sessionStorage.removeItem(SHARED_SETUP_KEY);
 
-    if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.supabase.currentUser())) {
+    if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
       try {
         const snapshot = await this.supabase.getOwnedSharedTournament(this.state.sharedTournamentId);
         this.isSharedModerator = true;
@@ -3907,7 +3908,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.archiveInFlight ||
       Date.now() < this.archiveRetryAfter ||
       !this.connectionOnline ||
-      !this.supabase.isConfigured ||
+      !this.auth.configured ||
       this.isGuestView ||
       this.isDashboardRoute
     )

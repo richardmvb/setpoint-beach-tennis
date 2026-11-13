@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
-import { createClient, REALTIME_SUBSCRIBE_STATES, RealtimeChannel, SupabaseClient, User } from '@supabase/supabase-js';
-import type { Database } from './database.types';
+import { inject, Injectable } from '@angular/core';
+import { REALTIME_SUBSCRIBE_STATES, RealtimeChannel } from '@supabase/supabase-js';
+import { SupabaseAuth } from './adapters/supabase/supabase-auth';
+import { AppSupabaseClient, requireSupabaseClient, SUPABASE_CLIENT } from './adapters/supabase/supabase-client';
 import { isRecord, parseJson, toJson } from '../shared/parsers/json';
 import {
   parseDashboardActivity,
@@ -73,66 +74,9 @@ export interface DashboardActivity {
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {
-  private readonly client: SupabaseClient<Database> | null;
+  private readonly client: AppSupabaseClient | null = inject(SUPABASE_CLIENT);
+  private readonly auth = inject(SupabaseAuth);
   private readonly channels = new Map<string, RealtimeChannel>();
-
-  constructor() {
-    const config = window.__SETPOINT_CONFIG__;
-    const supabaseUrl = config?.supabaseUrl?.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
-    const publishableKey = config?.publishableKey;
-    if (!supabaseUrl || !publishableKey) {
-      this.client = null;
-      return;
-    }
-    this.client = createClient<Database>(supabaseUrl, publishableKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
-    });
-  }
-
-  get isConfigured(): boolean {
-    return this.client !== null;
-  }
-
-  async finishUrlSignIn(): Promise<void> {
-    try {
-      await this.client?.auth.initialize();
-    } finally {
-      if (window.location.hash)
-        history.replaceState(history.state, '', window.location.pathname + window.location.search);
-    }
-  }
-
-  async currentUser(): Promise<User | null> {
-    if (!this.client) return null;
-    const { data, error } = await this.client.auth.getUser();
-    if (error) return null;
-    return data.user;
-  }
-
-  onAuthStateChange(callback: (event: string, user: User | null) => void): () => void {
-    if (!this.client) return () => undefined;
-    const { data } = this.client.auth.onAuthStateChange((event, session) => {
-      callback(event, session?.user ?? null);
-    });
-    return () => data.subscription.unsubscribe();
-  }
-
-  async requestModeratorLogin(email: string, redirectTo: string): Promise<void> {
-    const client = this.requireClient();
-    const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
-    if (error) throw error;
-  }
-
-  async signInAnonymously(): Promise<void> {
-    const { error } = await this.requireClient().auth.signInAnonymously();
-    if (error) throw error;
-  }
-
-  async signOut(): Promise<void> {
-    if (!this.client) return;
-    const { error } = await this.client.auth.signOut();
-    if (error) throw error;
-  }
 
   async createSharedTournament(
     state: TournamentState,
@@ -201,7 +145,7 @@ export class SupabaseService {
     state: TournamentState,
   ): Promise<{ id: string; readToken: string; writeToken: string }> {
     const client = this.requireClient();
-    if (!(await this.currentUser())) {
+    if (!(await this.auth.currentUser())) {
       const { error: authError } = await client.auth.signInAnonymously();
       if (authError) throw authError;
     }
@@ -361,7 +305,7 @@ export class SupabaseService {
 
   async recordLocalTournamentMetrics(state: TournamentState, abandoned = false): Promise<void> {
     if (!this.client || state.hostingMode === 'shared' || !state.analyticsId || !state.startedAt) return;
-    if (!(await this.currentUser())) await this.signInAnonymously();
+    if (!(await this.auth.currentUser())) await this.auth.signInAnonymously();
     const { error } = await this.requireClient().rpc('record_local_tournament_metrics', {
       p_tournament_id: state.analyticsId,
       p_tournament_mode: state.tournamentMode ?? 'super',
@@ -385,7 +329,7 @@ export class SupabaseService {
     liveTournamentId?: string,
   ): Promise<void> {
     const client = this.requireClient();
-    if (!(await this.currentUser())) await this.signInAnonymously();
+    if (!(await this.auth.currentUser())) await this.auth.signInAnonymously();
     const { error } = await client.rpc('save_local_tournament_archive', {
       p_tournament_id: tournamentId,
       p_state: toJson(this.publicTournamentState(state)),
@@ -531,9 +475,8 @@ export class SupabaseService {
     });
   }
 
-  private requireClient(): SupabaseClient<Database> {
-    if (!this.client) throw new Error('O modo compartilhado ainda não está configurado neste deploy.');
-    return this.client;
+  private requireClient(): AppSupabaseClient {
+    return requireSupabaseClient(this.client);
   }
 
   private async getOrCreateJoinId(inviteToken: string): Promise<string> {

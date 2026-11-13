@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
 
 import { TournamentState } from '../core/models';
+import { AUTH } from '../core/ports/auth.port';
 import { SupabaseService } from '../core/supabase.service';
 import { TournamentReportService } from '../core/tournament-report.service';
 
@@ -158,6 +159,7 @@ import { TournamentReportService } from '../core/tournament-report.service';
 export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly report = inject(TournamentReportService);
   private readonly supabase = inject(SupabaseService);
+  private readonly auth = inject(AUTH);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private alive = true;
   private image: Blob | null = null;
@@ -291,7 +293,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
         }
       }
       if (!this.finalLink) {
-        if (state.hostingMode === 'shared' && !(await this.supabase.currentUser())) {
+        if (state.hostingMode === 'shared' && !(await this.auth.currentUser())) {
           throw new Error('Conecte-se com a sessão do moderador para gerar o link final.');
         }
         const snapshot: TournamentState = {
