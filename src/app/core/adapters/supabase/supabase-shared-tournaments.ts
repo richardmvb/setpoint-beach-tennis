@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { PlayerGender, SharedTournamentSnapshot, TournamentState } from '../../models';
 import { LOCAL_STORE, SESSION_STORE } from '../../ports/key-value-store.port';
+import { RANDOM } from '../../ports/random.port';
 import type { SharedTournamentRepository } from '../../ports/tournaments.port';
 import { isRecord, parseJson } from '../../../shared/parsers/json';
 import { toJson } from './to-json';
@@ -17,6 +18,7 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
   private readonly client: AppSupabaseClient | null = inject(SUPABASE_CLIENT);
   private readonly feed = inject(SupabaseFeed);
   private readonly local = inject(LOCAL_STORE);
+  private readonly random = inject(RANDOM);
   private readonly session = inject(SESSION_STORE);
 
   async createSharedTournament(
@@ -164,11 +166,11 @@ export class SupabaseSharedTournaments implements SharedTournamentRepository {
       const saved = this.local.getItem(key) ?? this.session.getItem(key);
       const current = saved ? readString(parseJson(saved), 'joinId') || null : null;
       if (current) return current;
-      const created = globalThis.crypto.randomUUID();
+      const created = this.random.uuid();
       this.writeGuestRecord(key, { joinId: created });
       return created;
     } catch {
-      return globalThis.crypto.randomUUID();
+      return this.random.uuid();
     }
   }
 

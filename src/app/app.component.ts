@@ -77,6 +77,7 @@ import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
 import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
+import { RANDOM } from './core/ports/random.port';
 import {
   DASHBOARD,
   type DashboardActiveTournament,
@@ -157,6 +158,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly local = inject(LOCAL_STORE);
   private readonly session = inject(SESSION_STORE);
   private readonly clock = inject(CLOCK);
+  private readonly random = inject(RANDOM);
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -362,6 +364,9 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly npsSurveyName = 'Net promoter score (NPS) (2026-11-01 20:44)';
 
   constructor() {
+    // The schedule services default to Math.random; production draws go through the Random port instead.
+    this.scheduler.random = () => this.random.next();
+    this.groupScheduler.random = () => this.random.next();
     const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
     const liveToken = new URLSearchParams(window.location.search).get('live') ?? '';
     this.dashboardViewerId = new URLSearchParams(window.location.search).get('dashboardTournament') ?? '';
@@ -3255,7 +3260,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!this.tieDrawModalOpen || this.activeTiePlayerIds.length < 2 || this.activeTieDrawResult.length) return;
     const order = [...this.activeTiePlayerIds];
     for (let index = order.length - 1; index > 0; index--) {
-      const swapIndex = this.secureRandomIndex(index + 1);
+      const swapIndex = this.random.int(index + 1);
       [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
     }
     this.state.tieBreakDraws ??= [];
@@ -3312,18 +3317,6 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       this.message(error instanceof Error ? error.message : 'Não foi possível gerar a final.', 'error');
     }
-  }
-
-  private secureRandomIndex(max: number): number {
-    const cryptoApi = globalThis.crypto;
-    if (!cryptoApi?.getRandomValues) return Math.floor(Math.random() * max);
-    const range = 0x1_0000_0000;
-    const limit = Math.floor(range / max) * max;
-    const sample = new Uint32Array(1);
-    do {
-      cryptoApi.getRandomValues(sample);
-    } while (sample[0] >= limit);
-    return sample[0] % max;
   }
 
   scoreChanged(match: Match, side: 'a' | 'b', value: number | null): void {
@@ -4064,6 +4057,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notice = '';
   }
   private id(): string {
-    return globalThis.crypto?.randomUUID?.() ?? `${this.clock.now()}-${Math.random().toString(16).slice(2)}`;
+    return this.random.uuid();
   }
 }

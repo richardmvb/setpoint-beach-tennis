@@ -126,6 +126,11 @@ export default tseslint.config(
       'no-restricted-properties': [
         'error',
         { object: 'Date', property: 'now', message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.now().' },
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.next().',
+        },
       ],
       'no-restricted-syntax': [
         'error',
@@ -133,6 +138,30 @@ export default tseslint.config(
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
           message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.date() or clock.iso().',
         },
+        {
+          selector: "MemberExpression[property.name='randomUUID']",
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.uuid().',
+        },
+        {
+          selector: "MemberExpression[property.name='getRandomValues']",
+          message: 'Inject RANDOM (core/ports/random.port.ts) and call random.int().',
+        },
+      ],
+    },
+  },
+
+  // Ratchet: the schedule code still defaults its random source to Math.random (the production draw is wired to the
+  // Random port in AppComponent). Remove these files when the schedule moves into domain/ with an injected source.
+  {
+    files: [
+      'src/app/core/schedule.service.ts',
+      'src/app/core/group-schedule.service.ts',
+      'src/app/core/schedule-shuffle.ts',
+    ],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { object: 'Date', property: 'now', message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.now().' },
       ],
     },
   },
