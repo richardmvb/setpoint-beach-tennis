@@ -4,6 +4,8 @@ import { provideBrowserAdapters } from './core/adapters/browser/provide-browser-
 import { providePostHogAdapters } from './core/adapters/posthog/posthog-adapters';
 import { provideSupabaseAdapters } from './core/adapters/supabase/provide-supabase-adapters';
 import { provideAppErrorHandler } from './core/app-error-handler';
+import { LegacyUrlState } from './core/routing/legacy-url-state';
+import { URL_STATE } from './core/routing/url-state';
 
 /**
  * Composition root: the only place that decides which implementation serves each capability
@@ -16,5 +18,6 @@ export const appConfig: ApplicationConfig = {
     providePostHogAdapters(),
     provideSupabaseAdapters(),
     provideAppErrorHandler(),
+    { provide: URL_STATE, useExisting: LegacyUrlState },
   ],
 };

@@ -22,6 +22,8 @@ export interface SupabaseMock {
   fail(name: string, message: string): void;
   /** Parameters of every call made to an RPC, in order. */
   calls(name: string): Json[];
+  /** Every email sign-in link requested: the address and the page Supabase should send the person back to. */
+  loginRequests(): { email: string; redirectTo: string | null }[];
 }
 
 const SUPABASE_HOST = /\.supabase\.co(?::\d+)?$/;
@@ -37,6 +39,7 @@ const cors = (origin: string, requested: string | undefined): Record<string, str
 export async function mockSupabase(page: Page): Promise<SupabaseMock> {
   const replies = new Map<string, RpcReply | RpcFailure>();
   const calls = new Map<string, Json[]>();
+  const logins: { email: string; redirectTo: string | null }[] = [];
 
   await page.route(
     (url) => SUPABASE_HOST.test(url.host),
@@ -70,6 +73,14 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
         return json(200, body);
       }
 
+      // Email sign-in link: accept it and remember where it should return to.
+      if (url.pathname.endsWith('/auth/v1/otp')) {
+        const body = (request.postDataJSON() ?? {}) as Json;
+        const email = body['email'];
+        logins.push({ email: typeof email === 'string' ? email : '', redirectTo: url.searchParams.get('redirect_to') });
+        return json(200, {});
+      }
+
       // Anonymous sign-in: a session that lasts for the whole test.
       if (url.pathname.endsWith('/auth/v1/signup')) {
         const user = { id: 'e2e-anon-user', aud: 'authenticated', role: 'authenticated', is_anonymous: true };
@@ -96,6 +107,7 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
     rpc: (name, reply) => void replies.set(name, reply),
     fail: (name, message) => void replies.set(name, { message }),
     calls: (name) => calls.get(name) ?? [],
+    loginRequests: () => logins,
   };
 }
 
