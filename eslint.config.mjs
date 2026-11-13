@@ -123,6 +123,17 @@ export default tseslint.config(
           message: 'Inject SESSION_STORE (core/ports/key-value-store.port.ts) instead of using sessionStorage.',
         },
       ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'Date', property: 'now', message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.now().' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+          message: 'Inject CLOCK (core/ports/clock.port.ts) and call clock.date() or clock.iso().',
+        },
+      ],
     },
   },
 

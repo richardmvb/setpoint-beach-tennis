@@ -70,7 +70,7 @@ export class TournamentLibrary {
       }
     },
     private readonly maxEntries = MAX_LIBRARY_ENTRIES,
-    private readonly clock: () => Date = () => new Date(),
+    private readonly clock: () => Date,
     private readonly maxBytes = MAX_LIBRARY_BYTES,
   ) {}
 

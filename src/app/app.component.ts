@@ -75,6 +75,7 @@ import { QualificationStatsComponent } from './features/qualification-stats.comp
 import { ANALYTICS, SURVEYS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
+import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import {
   DASHBOARD,
@@ -155,6 +156,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private storage = inject(StorageService);
   private readonly local = inject(LOCAL_STORE);
   private readonly session = inject(SESSION_STORE);
+  private readonly clock = inject(CLOCK);
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -174,7 +176,12 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly authCallback: boolean;
   private readonly syncQueue = new OfflineSyncQueue(this.local);
 
-  private readonly library = new TournamentLibrary(this.local, (raw) => this.storage.parseTournament(raw));
+  private readonly library = new TournamentLibrary(
+    this.local,
+    (raw) => this.storage.parseTournament(raw),
+    undefined,
+    () => this.clock.date(),
+  );
   private archiveInFlight = false;
   private archiveRetryAfter = 0;
   private versionResetKeptTournament = false;
@@ -241,7 +248,7 @@ export class AppComponent implements OnInit, OnDestroy {
   manualParticipantName = '';
   manualParticipantGender: PlayerGender | '' = '';
   manualParticipantAvatar = '';
-  now = Date.now();
+  now = this.clock.now();
   private clockTimer: number | null = null;
   guestName = '';
   guestGender: PlayerGender | '' = '';
@@ -399,7 +406,7 @@ export class AppComponent implements OnInit, OnDestroy {
       roundCount: 7,
       players: [],
       rounds: [],
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
       tournamentMode: 'super',
       groupFormat: 'rotating',
       groups: [],
@@ -435,7 +442,7 @@ export class AppComponent implements OnInit, OnDestroy {
         roundCount: 7,
         players: [],
         rounds: [],
-        createdAt: new Date().toISOString(),
+        createdAt: this.clock.iso(),
         tournamentMode: 'super',
         groupFormat: 'rotating',
         groups: [],
@@ -522,7 +529,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.archiveCurrent();
     }
     this.clockTimer = window.setInterval(() => {
-      if (this.timerRunning) this.now = Date.now();
+      if (this.timerRunning) this.now = this.clock.now();
     }, 1000);
     this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
     void this.restoreSharedFlow();
@@ -788,7 +795,7 @@ export class AppComponent implements OnInit, OnDestroy {
             detail.includes('tournament_archived')
           ? 'O torneio no servidor expirou, foi arquivado ou já foi finalizado. Exporte um backup dos dados locais.'
           : 'Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente.';
-      this.syncRetryAfter = Date.now() + 15000;
+      this.syncRetryAfter = this.clock.now() + 15000;
     } finally {
       this.syncInFlight = false;
     }
@@ -1465,7 +1472,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.dashboardMetrics = metrics;
       this.dashboardActivity = activity;
       await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = new Date();
+      this.dashboardUpdatedAt = this.clock.date();
     } catch {
       this.dashboardError =
         'Acesso não autorizado ou métricas indisponíveis. Entre com uma conta moderadora autorizada.';
@@ -1493,7 +1500,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dashboardLoading = true;
     try {
       await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = new Date();
+      this.dashboardUpdatedAt = this.clock.date();
     } finally {
       this.dashboardLoading = false;
     }
@@ -3043,7 +3050,7 @@ export class AppComponent implements OnInit, OnDestroy {
   // Garante a atualização mesmo quando o Realtime não entrega o aviso.
   private pollShared(): void {
     if (document.hidden || this.sharedLoading) return;
-    if (!this.isGuestView && this.hasPendingSync && Date.now() >= this.syncRetryAfter) void this.syncPending();
+    if (!this.isGuestView && this.hasPendingSync && this.clock.now() >= this.syncRetryAfter) void this.syncPending();
     if (this.isDashboardViewer) {
       if (!this.sharedSnapshot || this.sharedSnapshot.status === 'active') void this.refreshDashboardViewer();
       return;
@@ -3178,13 +3185,13 @@ export class AppComponent implements OnInit, OnDestroy {
         );
       }
       if (this.isSharedMode && this.state.sharedTournamentId) {
-        this.state.startedAt = new Date().toISOString();
+        this.state.startedAt = this.clock.iso();
         const snapshot = await this.sharedTournaments.startSharedTournament(this.state.sharedTournamentId, this.state);
         this.applySharedSnapshot(snapshot);
       }
-      this.state.startedAt ??= new Date().toISOString();
+      this.state.startedAt ??= this.clock.iso();
       if (!this.isSharedMode) this.state.analyticsId ??= this.id();
-      this.now = Date.now();
+      this.now = this.clock.now();
       this.selectedRound = 0;
       this.initializeScoreDrafts();
       this.persist('Todas as rodadas foram geradas e salvas.');
@@ -3255,7 +3262,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.state.tieBreakDraws.push({
       playerIds: [...this.activeTiePlayerIds].sort(),
       order,
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
     });
     this.activeTieDrawResult = order;
     this.persist('Sorteio registrado; a classificação foi atualizada.');
@@ -3489,7 +3496,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.canFinalizeTournament) return;
-    const finishedAt = new Date().toISOString();
+    const finishedAt = this.clock.iso();
     this.state.finishedAt = finishedAt;
     this.persist('Torneio finalizado.');
     this.setPage('settings');
@@ -3685,7 +3692,7 @@ export class AppComponent implements OnInit, OnDestroy {
       roundCount: 7,
       players: [],
       rounds: [],
-      createdAt: new Date().toISOString(),
+      createdAt: this.clock.iso(),
       tournamentMode: 'super',
       hostingMode: 'local',
       groupFormat: 'rotating',
@@ -3909,7 +3916,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private async flushArchives(): Promise<void> {
     if (
       this.archiveInFlight ||
-      Date.now() < this.archiveRetryAfter ||
+      this.clock.now() < this.archiveRetryAfter ||
       !this.connectionOnline ||
       !this.auth.configured ||
       this.isGuestView ||
@@ -3927,7 +3934,7 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } catch {
       // Data stays on the device. Back off so a missing migration or an outage does not fire a request per score.
-      this.archiveRetryAfter = Date.now() + 60_000;
+      this.archiveRetryAfter = this.clock.now() + 60_000;
     } finally {
       this.archiveInFlight = false;
     }
@@ -3962,7 +3969,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `setpoint-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `setpoint-${this.clock.iso().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     this.message('Backup JSON exportado.');
@@ -4057,6 +4064,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.notice = '';
   }
   private id(): string {
-    return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    return globalThis.crypto?.randomUUID?.() ?? `${this.clock.now()}-${Math.random().toString(16).slice(2)}`;
   }
 }
