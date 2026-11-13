@@ -37,7 +37,7 @@ export interface GroupStandingTable {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
-    @for (group of groupTables(); track group) {
+    @for (group of groupTables(); track group.id) {
       <article class="surface-card full-card group-ranking-card">
         <div class="card-title-row">
           <div>
@@ -59,7 +59,7 @@ export interface GroupStandingTable {
               </tr>
             </thead>
             <tbody>
-              @for (entry of group.entries; track entry; let i = $index) {
+              @for (entry of group.entries; track entry.playerIds.join('+'); let i = $index) {
                 <tr
                   [class.me-row]="isMine(entry)"
                   [class.rank-gold]="i === 0"
@@ -146,7 +146,7 @@ export interface GroupStandingTable {
               </tr>
             </thead>
             <tbody>
-              @for (row of rows.slice(0, limit); track row; let i = $index) {
+              @for (row of rows.slice(0, limit); track row.playerId; let i = $index) {
                 <tr
                   [class.gender-cut]="i === limit - 1"
                   [class.rank-gold]="i === 0"
@@ -230,7 +230,7 @@ export interface GroupStandingTable {
               </tr>
             </thead>
             <tbody>
-              @for (row of standings(); track row; let i = $index) {
+              @for (row of standings(); track row.playerId; let i = $index) {
                 <tr
                   [class.rank-gold]="i === 0"
                   [class.rank-silver]="i === 1"

@@ -21,7 +21,7 @@ export interface ChoiceOption {
       [attr.aria-label]="labelledBy() ? null : label()"
       (keydown)="onKey($event)"
     >
-      @for (option of options(); track option; let i = $index) {
+      @for (option of options(); track option.value; let i = $index) {
         <button
           type="button"
           role="radio"

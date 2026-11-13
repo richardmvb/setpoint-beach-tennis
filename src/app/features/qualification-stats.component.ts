@@ -24,7 +24,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
 
       @if (!isGuest() && rows.length) {
         <div class="qual-athletes" role="radiogroup" aria-label="Atleta">
-          @for (row of rows; track row) {
+          @for (row of rows; track row.playerId) {
             <button
               type="button"
               role="radio"
@@ -102,7 +102,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
               >
             </div>
             <ul>
-              @for (m of path.forcedMatches; track m) {
+              @for (m of path.forcedMatches; track m.id) {
                 <li>
                   <span>R{{ m.round }} · {{ m.forced === 'A' ? m.teamA : m.teamB }} vence</span
                   ><button
@@ -121,7 +121,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         <section class="qual-section">
           <h3>Onde você pode terminar</h3>
           <div class="qual-bars" role="list">
-            @for (bar of distribution; track bar; let i = $index) {
+            @for (bar of distribution; track $index; let i = $index) {
               <div
                 class="qual-bar"
                 role="listitem"
@@ -154,7 +154,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
               [attr.aria-label]="'Chance de ' + trendDots[trendDots.length - 1].text + ' agora'"
             >
               <polyline [attr.points]="trendLine" class="trend-line"></polyline>
-              @for (dot of trendDots; track dot; let last = $last) {
+              @for (dot of trendDots; track $index; let last = $last) {
                 <g>
                   <circle [attr.cx]="dot.x" [attr.cy]="dot.y" [attr.r]="last ? 5 : 3" [class.trend-now]="last"></circle>
                 </g>
@@ -170,7 +170,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         @if (g.myMatches.length) {
           <section class="qual-section">
             <h3>Seus próximos jogos</h3>
-            @for (m of g.myMatches; track m) {
+            @for (m of g.myMatches; track m.id) {
               <article class="qual-match">
                 <small>RODADA {{ m.round }}</small>
                 <b>{{ m.teamA }} <span>×</span> {{ m.teamB }}</b>
@@ -194,7 +194,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         @if (g.watchMatches.length) {
           <section class="qual-section">
             <h3>Jogos dos outros que mexem na sua chance</h3>
-            @for (m of g.watchMatches; track m) {
+            @for (m of g.watchMatches; track m.id) {
               <article class="qual-match">
                 <small
                   >RODADA {{ m.round }} · MOVE {{ points(m.swing) }} {{ points(m.swing) === 1 ? 'PT' : 'PTS' }}</small
@@ -226,7 +226,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
         @if (g.rivals.length) {
           <section class="qual-section">
             <h3>Quem acompanhar</h3>
-            @for (rival of g.rivals; track rival) {
+            @for (rival of g.rivals; track rival.playerId) {
               <article class="qual-rival">
                 <span class="qual-rank">{{ rival.position }}º</span>
                 <div>
@@ -245,7 +245,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
           <section class="qual-section">
             <h3>Quanto cada vitória vale</h3>
             <div class="qual-wins">
-              @for (row of g.byMyWins; track row) {
+              @for (row of g.byMyWins; track row.wins) {
                 <div>
                   <span>{{ row.wins }} de {{ path.remainingMatches }}</span>
                   <div class="qual-wins-bar"><i [style.width.%]="row.probability * 100"></i></div>
