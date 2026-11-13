@@ -89,6 +89,12 @@ On a shared view (`is_guest_view: true`: live link, invite or admin viewer), `ho
 | `results_shared`                                            | Podium image shared              | —                   |
 | `share_layout_changed`                                      | Share card layout switched       | `layout`            |
 
+## Web Vitals and release properties
+
+- **`$web_vitals`** is PostHog's own event, sent by `posthog-js` because `capture_performance.web_vitals` is on. It carries the LCP, CLS, FCP and INP values from real users; attribution (which element or interaction) is collected for INP and LCP only. `$current_url` is masked like on every other event.
+- **`app_version`** and **`build_id`** are super properties registered after init, so every event carries them. `app_version` is the runtime-config `buildVersion` as a string, or `dev` when there is none; `build_id` is the short commit sha. Break Web Vitals down by them to compare releases.
+- `?live=` tokens are masked like `?invite=` (`custom_personal_data_properties`), so neither reaches PostHog in `$current_url` or the initial URL.
+
 ## Suggested PostHog insights
 
 Build these once; they map to the questions the dashboard cannot answer on its own.

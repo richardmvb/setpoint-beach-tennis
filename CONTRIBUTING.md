@@ -34,6 +34,13 @@ Git hooks are installed by `npm ci` (`husky`):
 - Database changes: add a new migration in `supabase/migrations/`. Never edit a migration that is already on `main`. Keep the previous release working (expand, then contract).
 - Changes to stored data (localStorage keys, offline queue, shared snapshots) need a migrator from the old version and a fixture for it under `tests/fixtures/` (from Phase 4).
 
+## Performance
+
+Bundle budgets (`angular.json`: initial, anyScript, and one per named lazy chunk) and the Lighthouse thresholds (`lighthouserc.cjs`) are a ratchet: they only get stricter. When a change makes a number better, lower the limit in the same PR. A `bundle` budget whose chunk no longer exists measures 0 and passes, so when you rename or merge a lazy component, rename its budget too.
+
+- `npm run analyze` shows what is inside each chunk (`dist/bundle-report.html`).
+- `npm run perf:lighthouse` runs after a build and writes reports to `.lighthouseci/reports`. CI uploads them as an artifact.
+
 ## Releases
 
 Merges to `main` run the CI checks, then deploy to GitHub Pages. Deploy stops if the Supabase settings are missing. Release and rollback steps: `docs/releasing.md`.
