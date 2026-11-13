@@ -16,6 +16,8 @@ interface Fixtures {
   onboarding: Onboarding;
   /** Seed for Math.random so the draw is the same on every run. Use null to keep real randomness. */
   randomSeed: number | null;
+  /** Run the app with the Angular Router handling the address (the `routerEnabled` runtime flag). */
+  routerEnabled: boolean;
   /** External requests that were attempted and blocked during the test. */
   blockedRequests: string[];
 }
@@ -27,10 +29,11 @@ interface Fixtures {
 export const test = base.extend<Fixtures>({
   onboarding: [{ skipLanding: true, disableTour: true, skipProfilePrompt: true }, { option: true }],
   randomSeed: [20261112, { option: true }],
+  routerEnabled: [false, { option: true }],
   blockedRequests: async ({}, use) => {
     await use([]);
   },
-  page: async ({ page, onboarding, randomSeed, blockedRequests }, use) => {
+  page: async ({ page, onboarding, randomSeed, routerEnabled, blockedRequests }, use) => {
     await page.route(
       (url) => !LOCAL_HOSTS.has(url.hostname),
       (route) => {
@@ -38,6 +41,17 @@ export const test = base.extend<Fixtures>({
         return route.abort();
       },
     );
+    // The runtime config script assigns window.__SETPOINT_CONFIG__ once; merge the flag into whatever it assigns.
+    await page.addInitScript((enabled: boolean) => {
+      let current: Record<string, unknown> | undefined;
+      Object.defineProperty(window, '__SETPOINT_CONFIG__', {
+        configurable: true,
+        get: () => current,
+        set: (value: Record<string, unknown>) => {
+          current = { ...value, routerEnabled: enabled };
+        },
+      });
+    }, routerEnabled);
     await page.addInitScript((flags: Onboarding) => {
       try {
         if (flags.skipLanding) localStorage.setItem('setpoint.landing.seen', 'true');

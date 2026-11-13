@@ -5,6 +5,7 @@ interface SetpointRuntimeConfig {
   buildVersion?: number;
   production?: boolean;
   lockScreenEnabled?: boolean;
+  routerEnabled?: boolean;
   posthogKey?: string;
   posthogHost?: string;
 }

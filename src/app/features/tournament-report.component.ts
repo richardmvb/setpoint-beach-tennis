@@ -3,6 +3,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { TournamentState } from '../core/models';
 import { AUTH } from '../core/ports/auth.port';
 import { LOCAL_STORE } from '../core/ports/key-value-store.port';
+import { liveTokenOf } from '../core/routing/app-url';
+import { URL_STATE } from '../core/routing/url-state';
 import { LOCAL_LIVE } from '../core/ports/tournaments.port';
 import { TournamentReportService } from '../core/tournament-report.service';
 import { ButtonComponent } from '@ui/button/button.component';
@@ -164,6 +166,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly localLive = inject(LOCAL_LIVE);
   private readonly auth = inject(AUTH);
   private readonly store = inject(LOCAL_STORE);
+  private readonly urlState = inject(URL_STATE);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private alive = true;
   private image: Blob | null = null;
@@ -281,7 +284,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     try {
       const existingLiveUrl = this.existingLiveUrl();
       if (existingLiveUrl) {
-        const token = new URL(existingLiveUrl).searchParams.get('live');
+        const token = liveTokenOf(existingLiveUrl);
         if (token) {
           try {
             const existing = await this.localLive.getLocalLiveTournament(token);
@@ -308,11 +311,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
           sharedStatus: undefined,
         };
         const credentials = await this.localLive.createLocalLiveTournament(snapshot);
-        const url = new URL(document.baseURI);
-        url.search = '';
-        url.hash = '';
-        url.searchParams.set('live', credentials.readToken);
-        this.finalLink = url.toString();
+        this.finalLink = this.urlState.baseLiveUrl(credentials.readToken);
       }
       try {
         this.store.setItem(this.linkKey(), this.finalLink);

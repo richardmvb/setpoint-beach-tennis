@@ -9,7 +9,7 @@ const port = 4200;
  * Locally, set E2E_BROWSER_CHANNEL=chrome to use the installed Google Chrome instead of
  * downloading a Playwright browser. CI installs Chromium with `npx playwright install`.
  */
-export default defineConfig({
+export default defineConfig<{ routerEnabled: boolean }>({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
@@ -26,6 +26,16 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], channel: process.env['E2E_BROWSER_CHANNEL'] || undefined },
+    },
+    {
+      // The same journeys that depend on the address, with the Angular Router handling it (the routerEnabled flag).
+      name: 'chromium-router',
+      testMatch: ['url-contract.spec.ts', 'live-viewer.spec.ts', 'shared-invite.spec.ts', 'tournament-flow.spec.ts'],
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: process.env['E2E_BROWSER_CHANNEL'] || undefined,
+        routerEnabled: true,
+      },
     },
   ],
   webServer: {

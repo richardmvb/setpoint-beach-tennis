@@ -8,6 +8,7 @@ export function readRuntimeConfig(): AppConfig {
     buildVersion: config?.buildVersion,
     production: config?.production ?? false,
     lockScreenEnabled: config?.lockScreenEnabled ?? false,
+    routerEnabled: config?.routerEnabled ?? false,
     posthogKey: config?.posthogKey,
     posthogHost: config?.posthogHost,
     supabaseUrl: config?.supabaseUrl,

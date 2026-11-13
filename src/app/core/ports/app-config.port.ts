@@ -8,6 +8,8 @@ export interface AppConfig {
   readonly production: boolean;
   /** When true the app asks for the access code before opening. */
   readonly lockScreenEnabled: boolean;
+  /** When true the Angular Router handles the address; otherwise the original URL code does. */
+  readonly routerEnabled: boolean;
   readonly posthogKey?: string;
   readonly posthogHost?: string;
   readonly supabaseUrl?: string;

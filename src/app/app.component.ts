@@ -79,6 +79,7 @@ import { APP_CONFIG } from './core/ports/app-config.port';
 import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import { RANDOM } from './core/ports/random.port';
+import { URL_STATE } from './core/routing/url-state';
 import {
   DASHBOARD,
   type DashboardActiveTournament,
@@ -160,6 +161,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly clock = inject(CLOCK);
   private readonly random = inject(RANDOM);
   private readonly config = inject(APP_CONFIG);
+  private readonly urlState = inject(URL_STATE);
+  private stopPathWatch: (() => void) | null = null;
   private scheduler = inject(ScheduleService);
   private groupScheduler = inject(GroupScheduleService);
   private finalsScheduler = inject(FinalsService);
@@ -368,16 +371,15 @@ export class AppComponent implements OnInit, OnDestroy {
     // The schedule services default to Math.random; production draws go through the Random port instead.
     this.scheduler.random = () => this.random.next();
     this.groupScheduler.random = () => this.random.next();
-    const inviteToken = new URLSearchParams(window.location.search).get('invite') ?? '';
-    const liveToken = new URLSearchParams(window.location.search).get('live') ?? '';
-    this.dashboardViewerId = new URLSearchParams(window.location.search).get('dashboardTournament') ?? '';
-    const dashboardSource = new URLSearchParams(window.location.search).get('source');
-    this.dashboardViewerSource = dashboardSource === 'shared' || dashboardSource === 'local' ? dashboardSource : null;
+    const url = this.urlState.snapshot();
+    const inviteToken = url.inviteToken;
+    const liveToken = url.liveToken;
+    this.dashboardViewerId = url.dashboardViewerId;
+    this.dashboardViewerSource = url.dashboardViewerSource;
     this.isDashboardViewer = !!this.dashboardViewerId;
-    this.authCallback =
-      new URLSearchParams(window.location.search).has('code') || window.location.hash.includes('access_token=');
-    this.appBasePath = new URL(document.baseURI).pathname.replace(/\/+$/, '');
-    this.isDashboardRoute = this.isDashboardPath(window.location.pathname);
+    this.authCallback = url.authCallback;
+    this.appBasePath = this.urlState.basePath;
+    this.isDashboardRoute = url.dashboardPath;
     this.isLiveViewer = !!liveToken || this.isDashboardViewer;
     this.isGuestView = !!inviteToken || this.isLiveViewer;
     this.sharedInviteToken = inviteToken;
@@ -491,12 +493,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async startApp(): Promise<void> {
-    window.addEventListener('popstate', this.onPopState);
+    this.stopPathWatch = this.urlState.onPathChange(this.onPopState);
     window.addEventListener('online', this.onConnectionChange);
     window.addEventListener('offline', this.onConnectionChange);
     this.applyTheme();
     // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
-    if (this.authCallback) await this.auth.finishUrlSignIn();
+    if (this.authCallback) {
+      await this.auth.finishUrlSignIn();
+      await this.urlState.clearAuthFragment();
+    }
     this.analytics.start();
     this.analytics.logInfo('setpoint application initialized', {
       hosting_mode: this.state.hostingMode,
@@ -543,7 +548,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    window.removeEventListener('popstate', this.onPopState);
+    this.stopPathWatch?.();
     window.removeEventListener('online', this.onConnectionChange);
     window.removeEventListener('offline', this.onConnectionChange);
     if (this.clockTimer !== null) window.clearInterval(this.clockTimer);
@@ -1096,11 +1101,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   get sharedInviteUrl(): string {
     if (!this.sharedInviteToken) return '';
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('invite', this.sharedInviteToken);
-    return url.toString();
+    return this.urlState.inviteUrl(this.sharedInviteToken);
   }
   get sharedCapacityReached(): boolean {
     return this.state.players.length >= this.state.size;
@@ -1451,11 +1452,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dashboardError = '';
     this.dashboardMagicLinkSent = false;
     try {
-      const redirect = new URL(document.baseURI);
-      redirect.pathname = `${this.appBasePath}/dashboard`;
-      redirect.search = '';
-      redirect.hash = '';
-      await this.auth.requestModeratorLogin(email, redirect.toString());
+      await this.auth.requestModeratorLogin(email, this.urlState.dashboardUrl());
       this.dashboardMagicLinkSent = true;
     } catch (error) {
       this.dashboardError = error instanceof Error ? error.message : 'Não foi possível enviar o link de acesso.';
@@ -1635,10 +1632,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   dashboardViewerUrl(tournament: DashboardActiveTournament): string {
-    const url = new URL(document.baseURI);
-    url.searchParams.set('dashboardTournament', tournament.id);
-    url.searchParams.set('source', tournament.source);
-    return url.toString();
+    return this.urlState.dashboardViewerUrl(tournament.id, tournament.source);
   }
 
   scrollGuestTo(id: string): void {
@@ -2013,23 +2007,19 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.page === page && (page !== 'dashboard' || this.isDashboardRoute)) return;
     if (page === 'dashboard') {
       this.isDashboardRoute = true;
-      window.history.pushState({}, '', `${this.appBasePath}/dashboard`);
+      this.urlState.goToDashboard();
       if (this.dashboardAuthenticated) void this.loadDashboardMetrics();
     } else if (this.isDashboardRoute) {
       this.isDashboardRoute = false;
-      window.history.pushState({}, '', `${this.appBasePath}/`);
+      this.urlState.goHome();
     }
     if (this.page === 'projection') this.leaveProjection();
     this.page = page;
     this.trackFeatureViewed(page);
   }
 
-  private isDashboardPath(path: string): boolean {
-    return path.replace(/\/+$/, '').endsWith('/dashboard');
-  }
-
   private restorePageFromPath(): void {
-    const dashboard = this.isDashboardPath(window.location.pathname);
+    const dashboard = this.urlState.snapshot().dashboardPath;
     if (dashboard === this.isDashboardRoute) return;
     this.isDashboardRoute = dashboard;
     if (dashboard) {
@@ -2613,11 +2603,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private createLocalLiveUrl(token: string): string {
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('live', token);
-    return url.toString();
+    return this.urlState.liveUrl(token);
   }
 
   private restoreLocalLiveCredentials(): void {

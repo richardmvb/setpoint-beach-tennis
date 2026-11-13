@@ -22,3 +22,22 @@ Apply with the Supabase CLI: `npx supabase link --project-ref <ref>` once, then 
 3. Do not roll back a migration that drops or renames things; the expand-first rule keeps the previous frontend working against the current database.
 
 Rollback is rehearsed once on purpose before Phase 4 (see the plan, Verification).
+
+## Router flag
+
+The Angular Router handles the app's address only when the runtime flag `routerEnabled` is on (ADR 0005). It is off by default, and with it off the router is never downloaded, so production behaves exactly as before.
+
+**Turn it on:** GitHub, Settings, Secrets and variables, Actions, Variables: add `NG_APP_ROUTER_ENABLED` with the value `true`, then run the deploy workflow (Actions, "Deploy Angular to GitHub Pages", Run workflow). The flag is written into `runtime-config.js` at build time, so a deploy is required.
+
+**Turn it off (rollback):** delete the variable or set it to `false`, run the deploy workflow again. No code revert is needed.
+
+**Check after turning it on** (the real e-mail sign-in cannot run in CI):
+
+1. Open `<site>/dashboard` and `<site>/dashboard/` (with the trailing slash): both show the admin sign-in. Open an unknown path such as `<site>/nowhere`: it opens the app.
+2. Open an invite link (`?invite=`), a live link (`?live=`) and an admin link (`?dashboardTournament=...&source=...`): each opens as before.
+3. Sign in on the dashboard with your authorized e-mail and follow the link in the message. The address must end up as `<site>/dashboard` with **no `#access_token=` or `?code=`** in it, and the dashboard must open. Check the browser history too: pressing Back must not land on an address with a token in it.
+4. In the browser network tab, confirm a separate router script (about 73 kB) is downloaded only when the flag is on.
+
+If any step fails, turn the flag off as above and tell the team which step.
+
+The follow-up that makes the router the default (and deletes the original URL code) should wait until these checks have passed in production for a while.
