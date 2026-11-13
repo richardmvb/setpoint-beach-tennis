@@ -42,7 +42,7 @@ Limits of a meta CSP: `frame-ancestors`, `report-to` and `Permissions-Policy` ne
 - **Anonymous sign-ins:** limited per IP by Supabase Auth (`[auth.rate_limit]`, 30 per hour locally; verify the hosted value). Recommended in the hosted project: enable CAPTCHA for anonymous sign-ins if abuse appears.
 - **Storage growth:** per-owner quotas (finding 4) plus the existing cleanup of expired and inactive tournaments.
 - **Magic link:** the dashboard allowlist is `setpoint_dashboard_admins`; anyone can request a link, but without a row in that table every dashboard RPC raises `dashboard_admin_required`. Hosted settings to confirm: the email rate limit, and that redirect URLs only list the app.
-- **PostHog privacy:** events carry enums and counts only (see `docs/analytics.md`); invite tokens are masked; URL hashes are not captured (they hold magic-link tokens).
+- **PostHog privacy:** events carry enums and counts only (see `docs/analytics.md`); invite and live tokens are masked (live tokens only from the release that added Web Vitals; earlier events and stored initial URLs can still hold them); URL hashes are not captured (they hold magic-link tokens).
 
 ## Input validation
 

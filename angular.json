@@ -47,7 +47,54 @@
                 {
                   "type": "initial",
                   "maximumWarning": "1.5MB",
-                  "maximumError": "2MB"
+                  "maximumError": "1.6MB"
+                },
+                {
+                  "type": "anyScript",
+                  "maximumWarning": "1030kB",
+                  "maximumError": "1130kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "provide-router-url-state",
+                  "maximumWarning": "73kB",
+                  "maximumError": "84kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "dashboard-component",
+                  "maximumWarning": "51kB",
+                  "maximumError": "59kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "shared-view-component",
+                  "maximumWarning": "49kB",
+                  "maximumError": "57kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "driver-js",
+                  "maximumWarning": "47kB",
+                  "maximumError": "54kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "qualification-stats-component",
+                  "maximumWarning": "14kB",
+                  "maximumError": "16kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "share-results-dialog-component",
+                  "maximumWarning": "9kB",
+                  "maximumError": "11kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "player-matches-dialog-component",
+                  "maximumWarning": "7kB",
+                  "maximumError": "8kB"
                 },
                 {
                   "type": "anyComponentStyle",

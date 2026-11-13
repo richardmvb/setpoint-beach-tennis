@@ -29,6 +29,8 @@ npm run db:types        # regenerate src/app/core/adapters/supabase/database.typ
 npm run test:coverage   # unit tests with V8 coverage
 npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
+npm run analyze         # production build with stats (dist/setpoint/browser-stats.json, for esbuild's analyzer) and dist/bundle-report.html (source-map-explorer); overwrites dist/
+npm run perf:lighthouse # Lighthouse CI on dist/; build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
 npm run check           # lint, styles, format, typecheck, knip, tests, build
 ```
 

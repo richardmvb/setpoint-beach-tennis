@@ -7,6 +7,9 @@ export interface PostHogSettings {
   apiKey?: string;
   apiHost?: string;
   production: boolean;
+  /** Sent with every event as `build_id` and `app_version`, so numbers (Web Vitals included) compare per release. */
+  buildId: string;
+  buildVersion?: number;
 }
 
 /** The SDK instance. Provided by default from `posthog-js`; tests replace it with a fake. */
@@ -19,7 +22,13 @@ export const POSTHOG_SETTINGS = new InjectionToken<PostHogSettings>('PostHogSett
   providedIn: 'root',
   factory: () => {
     const config = inject(APP_CONFIG);
-    return { apiKey: config.posthogKey, apiHost: config.posthogHost, production: config.production };
+    return {
+      apiKey: config.posthogKey,
+      apiHost: config.posthogHost,
+      production: config.production,
+      buildId: config.buildId,
+      buildVersion: config.buildVersion,
+    };
   },
 });
 
@@ -46,7 +55,7 @@ export class PostHogClient {
 
   start(): void {
     if (!this.browser || this.running) return;
-    const { apiKey, apiHost, production } = this.settings;
+    const { apiKey, apiHost, production, buildId, buildVersion } = this.settings;
     if (!apiKey || !apiHost) {
       if (isDevMode()) {
         const variableName = apiKey ? 'NG_APP_POSTHOG_HOST' : 'NG_APP_POSTHOG_PROJECT_TOKEN';
@@ -58,13 +67,19 @@ export class PostHogClient {
       api_host: apiHost,
       capture_exceptions: true,
       disable_capture_url_hashes: true,
-      // O token do convite fica em ?invite= na URL; o PostHog envia <masked> no lugar dele.
+      // Os tokens do convite (?invite=) e do link ao vivo (?live=) ficam na URL; o PostHog envia <masked> no lugar deles.
       mask_personal_data_properties: true,
-      custom_personal_data_properties: ['invite'],
+      custom_personal_data_properties: ['invite', 'live'],
+      // Web Vitals (LCP, CLS, FCP, INP) de usuários reais, como eventos $web_vitals.
+      capture_performance: { web_vitals: true },
       logs: {
         serviceName: 'setpoint-web',
         environment: production ? 'production' : 'development',
       },
+    });
+    this.posthog.register({
+      app_version: buildVersion === undefined ? 'dev' : String(buildVersion),
+      build_id: buildId,
     });
     this.running = true;
   }

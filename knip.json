@@ -1,4 +1,5 @@
 {
+  "entry": ["lighthouserc.cjs"],
   "ignore": ["public/**", "src/app/core/adapters/supabase/database.types.ts"],
   "ignoreIssues": {
     "src/app/core/dashboard-insights.ts": ["exports"],
