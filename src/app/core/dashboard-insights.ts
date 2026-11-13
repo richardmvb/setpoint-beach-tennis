@@ -76,6 +76,24 @@ interface Delta {
   label: string;
 }
 
+/** Where an abandoned tournament stopped (the dashboard's "Onde os torneios pararam" list). */
+export type AbandonmentStageId =
+  'registration' | 'noScores' | 'underHalf' | 'overHalf' | 'roundsComplete' | 'finals' | 'unknown';
+
+/**
+ * The stage names inside the insight sentences below. The dashboard's own list translates the same ids
+ * (`dashboard.abandonment.*`); this pt-BR copy goes when the insights move to keys (Phase 6).
+ */
+export const ABANDONMENT_STAGE_LABEL: Readonly<Record<AbandonmentStageId, string>> = {
+  registration: 'Durante a inscrição',
+  noScores: 'Antes do primeiro placar',
+  underHalf: 'Menos da metade das partidas',
+  overHalf: 'Metade ou mais das partidas',
+  roundsComplete: 'Após as rodadas',
+  finals: 'Durante as finais',
+  unknown: 'Etapa desconhecida',
+};
+
 const WEEKDAYS = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
 
 export function formatLabel(mode: string, size: number | string, doubles: string): string {

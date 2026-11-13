@@ -66,24 +66,7 @@ import { NumberRangeComponent } from './features/number-range.component';
 import { FinalLiveScoreComponent } from './features/final-live-score.component';
 import { TournamentReportComponent } from './features/tournament-report.component';
 import { PodiumComponent } from './features/podium.component';
-import { BattleCardComponent } from './features/battle-card.component';
 import { ChoiceCardsComponent, ChoiceOption } from './features/choice-cards.component';
-import {
-  DashboardInsights,
-  FunnelStep,
-  funnelSteps,
-  HeatmapGrid,
-  heatmapGrid,
-  Insight,
-  buildInsights,
-  KpiCard,
-  kpiCards,
-  trendChart,
-  TrendChart,
-  formatLabel,
-  formatDuration,
-  share as sharePercent,
-} from './core/dashboard-insights';
 import { ANALYTICS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
@@ -92,12 +75,6 @@ import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import { RANDOM } from './core/ports/random.port';
 import { URL_STATE } from './core/routing/url-state';
-import {
-  DASHBOARD,
-  type DashboardActiveTournament,
-  type DashboardActivity,
-  type DashboardMetrics,
-} from './core/ports/dashboard.port';
 import { TOURNAMENT_FEED } from './core/ports/live-feed.port';
 import { LOCAL_LIVE, SHARED_TOURNAMENTS } from './core/ports/tournaments.port';
 import { publicTournamentState } from './core/public-tournament-state';
@@ -107,6 +84,7 @@ import { NpsFeedbackService } from './core/nps-feedback.service';
 import { ProjectionController } from './features/tournament/projection/projection-controller';
 import { ProjectionPanelComponent } from './features/tournament/projection/projection-panel.component';
 import { SharedViewComponent } from './features/shared-view/shared-view.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { errorMessage } from './shared/parsers/error-message';
 
 interface TourStep {
@@ -143,11 +121,11 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
     PodiumComponent,
     ProjectionPanelComponent,
     SharedViewComponent,
+    DashboardComponent,
     GenderIconComponent,
     NumberRangeComponent,
     FinalLiveScoreComponent,
     TournamentReportComponent,
-    BattleCardComponent,
     ChoiceCardsComponent,
     TranslocoPipe,
   ],
@@ -171,7 +149,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly localLive = inject(LOCAL_LIVE);
   private readonly feed = inject(TOURNAMENT_FEED);
   private readonly archive = inject(ARCHIVE);
-  private readonly dashboardData = inject(DASHBOARD);
   private readonly auth = inject(AUTH);
   private shareCard = inject(ShareCardService);
 
@@ -280,33 +257,6 @@ export class AppComponent implements OnInit, OnDestroy {
   /** The athlete the host picked in the projection; empty means the leader. */
   private qualificationTargetPlayerId = '';
   isDashboardRoute = false;
-  dashboardAuthenticated = false;
-  dashboardEmail = '';
-  dashboardMagicLinkSent = false;
-  dashboardError = '';
-  dashboardLoading = false;
-  dashboardMetrics: DashboardMetrics | null = null;
-  dashboardActivity: DashboardActivity | null = null;
-  dashboardListMode: 'active' | 'archived' = 'active';
-  dashboardSearch = '';
-  dashboardUpdatedAt: Date | null = null;
-  dashboardInsights: DashboardInsights | null = null;
-  dashboardInsightsMissing = false;
-  dashboardDays = 30;
-  dashboardTab: 'summary' | 'usage' | 'tournaments' = 'summary';
-  dashboardView: {
-    cards: KpiCard[];
-    insights: Insight[];
-    funnel: FunnelStep[];
-    chart: TrendChart;
-    grid: HeatmapGrid;
-    formats: { label: string; started: number; finished: number; rate: number }[];
-    mixes: { title: string; rows: { label: string; count: number; percent: number }[] }[];
-    adoption: { label: string; hint: string; used: number; of: number; percent: number }[];
-    retention: { label: string; count: number; percent: number }[];
-  } | null = null;
-  readonly dashboardWeekdays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-  readonly dashboardHours = Array.from({ length: 24 }, (_, hour) => hour);
   localLiveLoading = false;
   localLiveError = '';
   localLiveNotice = '';
@@ -459,21 +409,10 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
     if (!this.isSharedView) window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 600);
     this.authStateUnsubscribe = this.auth.onAuthStateChange((change, user) => {
-      if (change === 'signed-in' && user) {
-        this.identifyUser(user);
-        if (this.isDashboardRoute) {
-          this.dashboardAuthenticated = true;
-          void this.loadDashboardMetrics();
-        }
-      }
+      if (change === 'signed-in' && user) this.identifyUser(user);
       if (change === 'signed-out') {
         this.analytics.reset();
         this.identifiedUserId = null;
-        if (this.isDashboardRoute) {
-          this.dashboardAuthenticated = false;
-          this.dashboardMetrics = null;
-          this.dashboardActivity = null;
-        }
       }
     });
     void this.identifyCurrentUser();
@@ -504,13 +443,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private async identifyCurrentUser(): Promise<void> {
     const user = await this.auth.currentUser();
-    if (user) {
-      this.identifyUser(user);
-      if (this.isDashboardRoute) {
-        this.dashboardAuthenticated = true;
-        void this.loadDashboardMetrics();
-      }
-    }
+    if (user) this.identifyUser(user);
   }
 
   private identifyUser(user: AppUser): void {
@@ -1050,196 +983,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncLocalTournamentMetrics();
   }
 
-  async requestDashboardMagicLink(): Promise<void> {
-    const email = this.dashboardEmail.trim();
-    if (!email || this.dashboardLoading) return;
-    this.dashboardLoading = true;
-    this.dashboardError = '';
-    this.dashboardMagicLinkSent = false;
-    try {
-      await this.auth.requestModeratorLogin(email, this.urlState.dashboardUrl());
-      this.dashboardMagicLinkSent = true;
-    } catch (error) {
-      this.dashboardError = error instanceof Error ? error.message : 'Não foi possível enviar o link de acesso.';
-    } finally {
-      this.dashboardLoading = false;
-    }
-  }
-
-  async loadDashboardMetrics(): Promise<void> {
-    if (this.dashboardLoading) return;
-    this.dashboardLoading = true;
-    this.dashboardError = '';
-    try {
-      const [metrics, activity] = await Promise.all([
-        this.dashboardData.getDashboardMetrics(),
-        this.dashboardData.getDashboardActivity(),
-      ]);
-      this.dashboardMetrics = metrics;
-      this.dashboardActivity = activity;
-      await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = this.clock.date();
-    } catch {
-      this.dashboardError =
-        'Acesso não autorizado ou métricas indisponíveis. Entre com uma conta moderadora autorizada.';
-    } finally {
-      this.dashboardLoading = false;
-    }
-  }
-
-  /** Insights are optional: an older database simply hides the new panels. */
-  private async loadDashboardInsights(): Promise<void> {
-    try {
-      const insights = await this.dashboardData.getDashboardInsights(this.dashboardDays);
-      this.dashboardInsightsMissing = insights === null;
-      this.dashboardInsights = insights;
-      this.dashboardView = insights ? this.buildDashboardView(insights) : null;
-    } catch {
-      this.dashboardInsights = null;
-      this.dashboardView = null;
-    }
-  }
-
-  async setDashboardDays(days: number): Promise<void> {
-    if (days === this.dashboardDays || this.dashboardLoading) return;
-    this.dashboardDays = days;
-    this.dashboardLoading = true;
-    try {
-      await this.loadDashboardInsights();
-      this.dashboardUpdatedAt = this.clock.date();
-    } finally {
-      this.dashboardLoading = false;
-    }
-  }
-
-  setDashboardTab(tab: 'summary' | 'usage' | 'tournaments'): void {
-    this.dashboardTab = tab;
-  }
-
-  private buildDashboardView(data: DashboardInsights): NonNullable<AppComponent['dashboardView']> {
-    const mixRows = (record: Record<string, number>, label: (key: string) => string) => {
-      const total = Object.values(record).reduce((sum, count) => sum + count, 0);
-      return Object.entries(record)
-        .sort((a, b) => b[1] - a[1])
-        .map(([key, count]) => ({ label: label(key), count, percent: sharePercent(count, total) }));
-    };
-    const adopt = (label: string, hint: string, value: { used: number; of: number }) => ({
-      label,
-      hint,
-      used: value.used,
-      of: value.of,
-      percent: sharePercent(value.used, value.of),
-    });
-    const r = data.retention;
-    return {
-      cards: kpiCards(data),
-      insights: buildInsights(data, this.dashboardMainDropoff),
-      funnel: funnelSteps(data.funnel),
-      chart: trendChart(data.series),
-      grid: heatmapGrid(data.heatmap),
-      formats: data.formats.map((row) => ({
-        label: formatLabel(row.mode, row.size, row.doubles),
-        started: row.started,
-        finished: row.finished,
-        rate: sharePercent(row.finished, row.started),
-      })),
-      mixes: [
-        { title: 'Formato', rows: mixRows(data.mix.mode, (key) => (key === 'groups' ? 'Grupos' : 'Super')) },
-        { title: 'Tamanho', rows: mixRows(data.mix.size, (key) => `${key} atletas`) },
-        { title: 'Duplas', rows: mixRows(data.mix.doubles, (key) => (key === 'mixed' ? 'Mistas' : 'Abertas')) },
-        {
-          title: 'Onde é gerenciado',
-          rows: mixRows(data.mix.hosting, (key) => (key === 'shared' ? 'Compartilhado' : 'Neste dispositivo')),
-        },
-      ],
-      adoption: [
-        adopt('Acompanhamento ao vivo', 'Compartilhados e locais com link ao vivo', data.adoption.live_link),
-        adopt('Seu caminho', 'Torneios Super compartilhados', data.adoption.qualification),
-        adopt('Final ponto a ponto', 'Torneios que chegaram às finais', data.adoption.point_by_point),
-        adopt('Finais antecipadas', 'Super 24 misto', data.adoption.early_finals),
-        adopt('Duplas mistas', 'Todos os torneios', data.adoption.mixed_doubles),
-        adopt('Duplas fixas', 'Torneios de grupos', data.adoption.fixed_pairs),
-      ],
-      retention: [
-        { label: '1 torneio', count: r.one_time, percent: sharePercent(r.one_time, r.moderators_total) },
-        { label: '2 torneios', count: r.two, percent: sharePercent(r.two, r.moderators_total) },
-        { label: '3 ou mais', count: r.three_plus, percent: sharePercent(r.three_plus, r.moderators_total) },
-      ],
-    };
-  }
-
-  /** Points for a 100x26 sparkline. */
-  sparkPoints(values: number[]): string {
-    const max = Math.max(1, ...values);
-    const step = values.length > 1 ? 100 / (values.length - 1) : 100;
-    return values
-      .map((value, index) => `${(index * step).toFixed(1)},${(24 - (value / max) * 22).toFixed(1)}`)
-      .join(' ');
-  }
-  dashboardCell(count: number): number {
-    return this.dashboardView?.grid.max ? count / this.dashboardView.grid.max : 0;
-  }
-  formatInsightDuration(seconds: number | null): string {
-    return formatDuration(seconds);
-  }
-
-  formatDashboardDuration(seconds: number | null): string {
-    if (seconds === null) return '—';
-    const totalMinutes = Math.round(Math.max(0, seconds) / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return hours ? `${hours}h ${minutes}min` : `${minutes}min`;
-  }
-
-  formatCompletionRate(rate: number | null): string {
-    return rate === null ? '—' : `${rate.toFixed(1)}%`;
-  }
-
-  get dashboardAbandonmentStages(): { label: string; count: number; percent: number }[] {
-    const activity = this.dashboardActivity;
-    if (!activity) return [];
-    const stages = [
-      { label: 'Durante a inscrição', count: activity.abandoned_registration },
-      { label: 'Antes do primeiro placar', count: activity.abandoned_no_scores },
-      { label: 'Menos da metade das partidas', count: activity.abandoned_under_half },
-      { label: 'Metade ou mais das partidas', count: activity.abandoned_over_half },
-      { label: 'Após as rodadas', count: activity.abandoned_rounds_complete },
-      { label: 'Durante as finais', count: activity.abandoned_finals },
-      { label: 'Etapa desconhecida', count: activity.abandoned_unknown },
-    ];
-    const total = stages.reduce((sum, stage) => sum + stage.count, 0);
-    return stages.map((stage) => ({ ...stage, percent: total ? Math.round((stage.count * 100) / total) : 0 }));
-  }
-
-  get dashboardAbandonmentTotal(): number {
-    return this.dashboardAbandonmentStages.reduce((sum, stage) => sum + stage.count, 0);
-  }
-
-  get dashboardMainDropoff(): { label: string; count: number } | null {
-    const stages = this.dashboardAbandonmentStages.filter((stage) => stage.label !== 'Etapa desconhecida');
-    const largest = stages.reduce<{ label: string; count: number } | null>(
-      (best, stage) => (stage.count > (best?.count ?? 0) ? stage : best),
-      null,
-    );
-    return largest;
-  }
-
-  get dashboardVisibleTournaments(): DashboardActiveTournament[] {
-    if (!this.dashboardActivity) return [];
-    const tournaments =
-      this.dashboardListMode === 'active'
-        ? this.dashboardActivity.active_tournaments
-        : this.dashboardActivity.archived_tournaments;
-    const query = this.dashboardSearch.trim().toLocaleLowerCase();
-    return query
-      ? tournaments.filter((tournament) => tournament.name.toLocaleLowerCase().includes(query))
-      : tournaments;
-  }
-
-  dashboardViewerUrl(tournament: DashboardActiveTournament): string {
-    return this.urlState.dashboardViewerUrl(tournament.id, tournament.source);
-  }
-
   /** The landing page's section links. */
   scrollToSection(id: string): void {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1379,7 +1122,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (page === 'dashboard') {
       this.isDashboardRoute = true;
       this.urlState.goToDashboard();
-      if (this.dashboardAuthenticated) void this.loadDashboardMetrics();
     } else if (this.isDashboardRoute) {
       this.isDashboardRoute = false;
       this.urlState.goHome();

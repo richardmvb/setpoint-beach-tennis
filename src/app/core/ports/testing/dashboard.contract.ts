@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { errorMessage } from '../../../shared/parsers/error-message';
+import { dashboardActivity, dashboardInsights, dashboardMetrics } from '../../../testing/dashboard-data';
+import type { DashboardInsights } from '../../dashboard-insights';
 import type { SharedTournamentSnapshot } from '../../models';
-import type { DashboardTournamentSource } from '../dashboard.port';
+import type { DashboardActivity, DashboardMetrics, DashboardTournamentSource } from '../dashboard.port';
 import type { DashboardViewerPort } from './dashboard.fake';
 
 type TournamentCore = Pick<SharedTournamentSnapshot, 'id' | 'status' | 'state'>;
@@ -10,6 +12,10 @@ export interface DashboardHarness {
   port: DashboardViewerPort;
   /** The server has this tournament under this source. */
   given: (source: DashboardTournamentSource, tournament: TournamentCore) => void;
+  /** The server has these product numbers and activity lists. */
+  givenData: (metrics: DashboardMetrics, activity: DashboardActivity) => void;
+  /** The server's insights; `null` is a database without them (an older migration). */
+  givenInsights: (insights: DashboardInsights | null) => void;
   /** The server refuses the next reads with this error code (for example `not_authorized`). */
   fail: (code: string) => void;
 }
@@ -43,6 +49,32 @@ export function dashboardContract(name: string, create: () => DashboardHarness):
         expect(read.state.name).toBe('Torneio t-1');
       });
     }
+
+    it('reads the product numbers and the active and archived tournaments', async () => {
+      const { port, givenData } = create();
+      givenData(dashboardMetrics({ tournaments_total: 7 }), dashboardActivity());
+      expect((await port.getDashboardMetrics()).tournaments_total).toBe(7);
+      const activity = await port.getDashboardActivity();
+      expect(activity.active_tournaments.map((item) => item.id)).toEqual(['t1']);
+      expect(activity.archived_tournaments.map((item) => item.id)).toEqual(['a1']);
+      expect(activity.abandoned_unknown).toBe(5);
+    });
+
+    it('reads the insights of a period, or null when the database does not have them', async () => {
+      const { port, givenInsights } = create();
+      givenInsights(dashboardInsights());
+      expect((await port.getDashboardInsights(30))?.funnel.basis).toBe(10);
+      givenInsights(null);
+      expect(await port.getDashboardInsights(30)).toBeNull();
+    });
+
+    it('a refused metrics read rejects with the server code in the message', async () => {
+      const { port, givenData, fail } = create();
+      givenData(dashboardMetrics(), dashboardActivity());
+      fail('not_authorized');
+      const error: unknown = await port.getDashboardMetrics().catch((caught: unknown) => caught);
+      expect(errorMessage(error)).toContain('not_authorized');
+    });
 
     it('a refused read rejects with the server code in the message', async () => {
       const { port, given, fail } = create();

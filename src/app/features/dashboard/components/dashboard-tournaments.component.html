@@ -1,0 +1,54 @@
+<ng-container *transloco="let t; prefix: 'dashboard'">
+<ng-template #stageName let-id>@switch (id) {
+  @case ('registration') {{{ t('abandonment.registration') }}}
+  @case ('noScores') {{{ t('abandonment.noScores') }}}
+  @case ('underHalf') {{{ t('abandonment.underHalf') }}}
+  @case ('overHalf') {{{ t('abandonment.overHalf') }}}
+  @case ('roundsComplete') {{{ t('abandonment.roundsComplete') }}}
+  @case ('finals') {{{ t('abandonment.finals') }}}
+  @default {{{ t('abandonment.unknown') }}}
+}</ng-template>
+@if (activity(); as activity) {
+  <div class="dashboard-workspace">
+    <section class="dashboard-section dashboard-tournaments" aria-labelledby="dashboardTournamentsTitle">
+      <div class="dashboard-section-heading"><div><span class="dashboard-eyebrow">{{ t('tournaments.eyebrow') }}</span><h2 id="dashboardTournamentsTitle">{{ t('tournaments.title') }}</h2></div></div>
+      <div class="dashboard-list-controls"><div class="dashboard-tabs" role="tablist" [attr.aria-label]="t('tournaments.listLabel')"><button type="button" role="tab" [attr.aria-selected]="listMode() === 'active'" [class.active]="listMode() === 'active'" (click)="listMode.set('active')">{{ t('tournaments.active') }} <span>{{ activity.active_tournaments.length }}</span></button><button type="button" role="tab" [attr.aria-selected]="listMode() === 'archived'" [class.active]="listMode() === 'archived'" (click)="listMode.set('archived')">{{ t('tournaments.archived') }} <span>{{ activity.archived_tournaments.length }}</span></button></div><input type="search" [ngModel]="search()" (ngModelChange)="search.set($event)" [placeholder]="t('tournaments.search')" [attr.aria-label]="t('tournaments.search')"></div>
+      <p class="dashboard-list-note">{{ listMode() === 'active' ? t('tournaments.activeNote') : t('tournaments.archivedNote') }}</p>
+      @if (listMode() === 'archived' && activity.local_archives_available === false) {
+        <p class="shared-error" role="status">{{ t('tournaments.archivesMissing') }}</p>
+      }
+      @if (!tournaments().length) {
+        <p class="dashboard-empty">{{ search() ? t('tournaments.noMatch') : listMode() === 'active' ? t('tournaments.noActive') : t('tournaments.noArchived') }}</p>
+      }
+      @for (tournament of tournaments(); track tournament.source + tournament.id) {
+        <div class="dashboard-tournament-row"><div class="dashboard-tournament-name"><b>{{ tournament.name }}</b><small>{{ tournament.source === 'local' ? t('tournaments.local') : t('tournaments.shared') }} · {{ tournament.mode === 'groups' ? t('tournaments.groupsFormat', { size: tournament.size }) : t('tournaments.superFormat', { size: tournament.size }) }}</small></div><div class="dashboard-tournament-progress"><span>{{ t('tournaments.matches', { done: tournament.matches_completed, total: tournament.matches_total }) }}</span><div class="dashboard-progress-track"><span [style.width.%]="tournament.matches_total ? 100 * tournament.matches_completed / tournament.matches_total : 0"></span></div></div><span class="dashboard-tournament-date">{{ tournament.updated_at | date: 'dd/MM HH:mm' }}</span><a class="button secondary" [href]="tournament.viewerUrl" target="_blank" rel="noopener noreferrer">{{ listMode() === 'active' ? t('tournaments.view') : t('tournaments.consult') }}</a></div>
+      }
+    </section>
+    <section class="dashboard-section dashboard-dropoff" aria-labelledby="dashboardAbandonTitle"><div class="dashboard-section-heading"><div><span class="dashboard-eyebrow">{{ t('tournaments.dropoffEyebrow') }}</span><h2 id="dashboardAbandonTitle">{{ t('tournaments.dropoffTitle') }}</h2></div><span class="dashboard-count">{{ t('tournaments.records', { count: stagesTotal() }) }}</span></div>@if (dropoff(); as dropoff) {
+    <div class="dashboard-insight"><span>{{ t('tournaments.mainStage') }}</span><strong><ng-container *ngTemplateOutlet="stageName; context: { $implicit: dropoff.id }" /></strong><small>{{ dropoff.count === 1 ? t('tournaments.oneTournament') : t('tournaments.tournamentsCount', { count: dropoff.count }) }}</small></div>
+    }<div class="dashboard-stage-list">@for (stage of stages(); track stage.id) {
+    <div class="dashboard-stage"><span><ng-container *ngTemplateOutlet="stageName; context: { $implicit: stage.id }" /></span><b>{{ stage.count }}</b><div class="dashboard-stage-track"><span [style.width.%]="stage.percent"></span></div><small>{{ stagesTotal() ? t('metrics.rate', { rate: stage.percent }) : '—' }}</small></div>
+    }</div><p class="dashboard-method">{{ t('tournaments.method') }}</p></section>
+  </div>
+}
+@if (metrics(); as metrics) {
+  <details class="dashboard-details"><summary>{{ t('tournaments.details') }}</summary><section class="dashboard-metrics-grid" [attr.aria-label]="t('tournaments.detailsLabel')">
+  <article class="dashboard-metric"><span>{{ t('metrics.total') }}</span><strong>{{ metrics.tournaments_total }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.started') }}</span><strong>{{ metrics.tournaments_started }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.completed') }}</span><strong>{{ metrics.tournaments_completed }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.archived') }}</span><strong>{{ metrics.tournaments_archived }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.abandoned') }}</span><strong>{{ metrics.tournaments_abandoned }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.size24') }}</span><strong>{{ metrics.tournaments_size_24 }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.super') }}</span><strong>{{ metrics.super_tournaments }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.groups') }}</span><strong>{{ metrics.group_tournaments }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.mixed') }}</span><strong>{{ metrics.mixed_tournaments }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.open') }}</span><strong>{{ metrics.open_tournaments }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.participants') }}</span><strong>{{ metrics.participants_total }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.invited') }}</span><strong>{{ metrics.participants_invited }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.manual') }}</span><strong>{{ metrics.participants_manual }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.returning') }}</span><strong>{{ metrics.moderators_returned }} <small>/ {{ metrics.moderators_total }}</small></strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.completionRate') }}</span><strong>{{ metrics.completion_rate === null ? '—' : t('metrics.rate', { rate: metrics.completion_rate.toFixed(1) }) }}</strong></article>
+  <article class="dashboard-metric"><span>{{ t('metrics.duration') }}</span><strong>@if (durationParts(metrics.average_duration_seconds); as duration) {{{ duration.hours ? t('metrics.hoursMinutes', duration) : t('metrics.minutes', duration) }}} @else {—}</strong></article>
+</section></details>
+}
+</ng-container>

@@ -1,0 +1,89 @@
+<ng-container *transloco="let t; prefix: 'dashboard.usage'">
+<div class="dash-grid-2">
+  <section class="dash-card" aria-labelledby="dashMixTitle">
+    <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('mixEyebrow') }}</span><h3 id="dashMixTitle">{{ t('mixTitle') }}</h3></div></div>
+    <div class="dash-mixes">@for (mix of view().mixes; track mix.kind) {
+      <div class="dash-mix"><b>@switch (mix.kind) {
+        @case ('mode') {{{ t('mix.mode') }}}
+        @case ('size') {{{ t('mix.size') }}}
+        @case ('doubles') {{{ t('mix.doubles') }}}
+        @default {{{ t('mix.hosting') }}}
+      }</b>@for (row of mix.rows; track row.key) {
+      <div class="dash-bar-row"><span>@switch (mix.kind) {
+        @case ('mode') {{{ row.key === 'groups' ? t('mix.groups') : t('mix.super') }}}
+        @case ('size') {{{ t('mix.athletes', { size: row.key }) }}}
+        @case ('doubles') {{{ row.key === 'mixed' ? t('mix.mixed') : t('mix.open') }}}
+        @default {{{ row.key === 'shared' ? t('mix.shared') : t('mix.local') }}}
+      }</span><div class="dash-bar-track"><span [style.width.%]="row.percent"></span></div><small>{{ t('row', { count: row.count, percent: row.percent }) }}</small></div>
+      }@if (!mix.rows.length) {
+      <p class="dashboard-empty">{{ t('noData') }}</p>
+    }</div>
+  }</div>
+</section>
+<section class="dash-card" aria-labelledby="dashFormatsTitle">
+  <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('formatsEyebrow') }}</span><h3 id="dashFormatsTitle">{{ t('formatsTitle') }}</h3></div></div>
+  <p class="dashboard-list-note">{{ t('formatsNote') }}</p>
+  <div class="dash-formats">@for (row of view().formats; track row) {
+    <div class="dash-format-row"><b>{{ row.label }}</b><div class="dash-bar-track good"><span [style.width.%]="row.rate"></span></div><small>{{ t('formatRow', { finished: row.finished, started: row.started, rate: row.rate }) }}</small></div>
+    }@if (!view().formats.length) {
+    <p class="dashboard-empty">{{ t('noData') }}</p>
+  }</div>
+</section>
+</div>
+<section class="dash-card" aria-labelledby="dashHeatTitle">
+  <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('heatEyebrow') }}</span><h3 id="dashHeatTitle">{{ t('heatTitle') }}</h3></div><span class="dashboard-count">{{ t('timezone', { timezone: insights()?.period?.timezone }) }}</span></div>
+  <div class="dash-heat" role="img" [attr.aria-label]="t('heatLabel')">
+    <div class="dash-heat-hours"><span></span>@for (hour of hours; track hour) {
+    <span>{{ hour % 3 === 0 ? hour : '' }}</span>
+  }</div>
+  <ng-template #heatRow let-row let-name="name"><div class="dash-heat-row"><b>{{ name }}</b>@for (count of row; track $index; let hour = $index) {
+    <i [style.--v]="heatCell(count, view().grid)" [attr.title]="count === 1 ? t('heatOne', { day: name, hour }) : t('heatMany', { day: name, hour, count })"></i>
+  }</div></ng-template>
+  @for (row of view().grid.rows; track row; let day = $index) {
+    @switch (day) {
+      @case (0) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.mon') }" />}
+      @case (1) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.tue') }" />}
+      @case (2) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.wed') }" />}
+      @case (3) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.thu') }" />}
+      @case (4) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.fri') }" />}
+      @case (5) {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.sat') }" />}
+      @default {<ng-container *ngTemplateOutlet="heatRow; context: { $implicit: row, name: t('weekday.sun') }" />}
+    }
+  }
+</div>
+</section>
+<div class="dash-grid-2">
+  <section class="dash-card" aria-labelledby="dashAdoptTitle">
+    <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('adoptionEyebrow') }}</span><h3 id="dashAdoptTitle">{{ t('adoptionTitle') }}</h3></div></div>
+    <div class="dash-adoption">@for (item of view().adoption; track item.id) {
+      <div class="dash-adopt-row"><div>@switch (item.id) {
+        @case ('live_link') {<b>{{ t('adoption.live_link') }}</b><small>{{ t('adoption.live_linkHint') }}</small>}
+        @case ('qualification') {<b>{{ t('adoption.qualification') }}</b><small>{{ t('adoption.qualificationHint') }}</small>}
+        @case ('point_by_point') {<b>{{ t('adoption.point_by_point') }}</b><small>{{ t('adoption.point_by_pointHint') }}</small>}
+        @case ('early_finals') {<b>{{ t('adoption.early_finals') }}</b><small>{{ t('adoption.early_finalsHint') }}</small>}
+        @case ('mixed_doubles') {<b>{{ t('adoption.mixed_doubles') }}</b><small>{{ t('adoption.mixed_doublesHint') }}</small>}
+        @default {<b>{{ t('adoption.fixed_pairs') }}</b><small>{{ t('adoption.fixed_pairsHint') }}</small>}
+      }</div><div class="dash-bar-track"><span [style.width.%]="item.percent"></span></div><strong>{{ item.of ? t('percent', { percent: item.percent }) : '—' }}@if (item.of) {
+      <small>{{ t('usedOf', { used: item.used, of: item.of }) }}</small>
+    }</strong></div>
+  }</div>
+</section>
+<section class="dash-card" aria-labelledby="dashModTitle">
+  <div class="dash-card-head"><div><span class="dashboard-eyebrow">{{ t('moderatorsEyebrow') }}</span><h3 id="dashModTitle">{{ t('moderatorsTitle') }}</h3></div></div>
+  <div class="dash-chips"><span><b>{{ insights()?.retention?.active_new }}</b> {{ t('newInPeriod') }}</span><span><b>{{ insights()?.retention?.active_returning }}</b> {{ t('returning') }}</span></div>
+  <div class="dash-retention">@for (row of view().retention; track row.id) {
+    <div class="dash-bar-row"><span>@switch (row.id) {
+      @case ('one') {{{ t('retention.one') }}}
+      @case ('two') {{{ t('retention.two') }}}
+      @default {{{ t('retention.threePlus') }}}
+    }</span><div class="dash-bar-track"><span [style.width.%]="row.percent"></span></div><small>{{ t('row', { count: row.count, percent: row.percent }) }}</small></div>
+  }</div>
+  <div class="dash-reg"><b>{{ t('registrationTitle') }}</b><div class="dash-reg-steps"><span><strong>{{ insights()?.registration?.created }}</strong>{{ t('created') }}</span><i>→</i><span><strong>{{ insights()?.registration?.started }}</strong>{{ t('started') }}</span><i>→</i><span><strong>{{ insights()?.registration?.expired }}</strong>{{ t('expired') }}</span></div>@if (insights()?.registration?.avg_guests != null) {
+  <small>{{ t('avgGuests', { count: insights()?.registration?.avg_guests }) }}</small>
+}</div>
+</section>
+</div>
+@if (insights(); as data) {
+  <p class="dash-coverage">{{ t('coverage', { detail: data.coverage.local_with_detail, started: data.coverage.local_started }) }}</p>
+}
+</ng-container>

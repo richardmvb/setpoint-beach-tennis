@@ -1,0 +1,69 @@
+<ng-container *transloco="let t; prefix: 'dashboard'">
+@if (!store.authenticated()) {
+  <app-dashboard-login [(email)]="store.email" [busy]="store.loading()" [sent]="store.magicLinkSent()" [error]="store.error()" (sendRequested)="store.requestMagicLink()" />
+} @else {
+  <div class="dashboard-shell">
+    <header class="dashboard-header"><a class="brand" [href]="store.basePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>{{ t('header.brand', { version: store.versionLabel }) }}</small></span></a><h1>{{ t('header.title') }}</h1><button class="button secondary" type="button" (click)="back.emit()">{{ t('header.back') }}</button></header>
+    <div class="dashboard-toolbar">
+      <div><span class="dashboard-eyebrow">{{ t('header.eyebrow') }}</span><h2>{{ t('header.subtitle') }}</h2>@if (store.updatedAt(); as updatedAt) {
+      <p class="muted">{{ t('header.updatedAt', { date: (updatedAt | date: 'dd/MM/yyyy HH:mm') }) }}@if (store.metrics(); as metrics) {
+        <span> · <b class="dash-live"><i></i>{{ t('header.active', { count: metrics.tournaments_active }) }}</b></span>
+      }</p>
+    }</div>
+    <div class="dashboard-actions">
+      <div class="dash-seg" role="radiogroup" [attr.aria-label]="t('header.period')">@for (days of periods; track days) {
+        <button type="button" role="radio" [attr.aria-checked]="store.days() === days" [class.active]="store.days() === days" (click)="store.setDays(days)" [disabled]="store.loading()">{{ t('header.days', { days }) }}</button>
+      }</div>
+      <button class="button secondary" type="button" (click)="store.load()" [disabled]="store.loading()">{{ store.loading() ? t('header.refreshing') : t('header.refresh') }}</button>
+    </div>
+  </div>
+  @if (store.error()) {
+    <p class="shared-error" role="alert">{{ t('errors.unauthorized') }}</p>
+  }
+  @if (store.loading() && !store.metrics()) {
+    <p class="dashboard-empty">{{ t('header.loading') }}</p>
+  }
+  @if (store.metrics()) {
+    <nav class="dash-tabs" role="tablist" [attr.aria-label]="t('tabs.label')">
+      <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'summary'" [class.active]="store.tab() === 'summary'" (click)="store.tab.set('summary')">{{ t('tabs.summary') }}</button>
+      <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'usage'" [class.active]="store.tab() === 'usage'" (click)="store.tab.set('usage')">{{ t('tabs.usage') }}</button>
+      <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'tournaments'" [class.active]="store.tab() === 'tournaments'" (click)="store.tab.set('tournaments')">{{ t('tabs.tournaments') }}</button>
+    </nav>
+  }
+  @if (store.metrics() && store.insightsMissing() && store.tab() !== 'tournaments') {
+    <p class="shared-error" role="status">{{ t('header.insightsMissing') }}</p>
+  }
+  @switch (store.tab()) {
+    @case ('summary') {
+      <div class="dash-pane">
+        @if (store.view(); as view) {
+          <app-dashboard-summary [view]="view" [insights]="store.insights()" [days]="store.days()" />
+        }
+      </div>
+    }
+    @case ('usage') {
+      <div class="dash-pane">
+        @if (store.view(); as view) {
+          <app-dashboard-usage [view]="view" [insights]="store.insights()" />
+        }
+      </div>
+    }
+    @case ('tournaments') {
+      <div class="dash-pane">
+        <app-dashboard-tournaments [activity]="store.activity()" [metrics]="store.metrics()" [tournaments]="store.visibleTournaments()" [stages]="store.stages()" [stagesTotal]="store.stagesTotal()" [dropoff]="store.dropoff()" [(listMode)]="store.listMode" [(search)]="store.search" />
+      </div>
+    }
+  }
+  <footer class="dashboard-footer"><span>SETPOINT · {{ store.versionLabel }}</span>@if (nps.available) {
+  <button class="footer-feedback" type="button" (click)="nps.open()" [disabled]="nps.loading()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>{{ 'shell.footer.feedback' | transloco }}</button>
+  }@switch (nps.message()) {
+  @case ('unavailable') {
+  <span role="status">{{ 'shell.footer.surveyUnavailable' | transloco }}</span>
+  }
+  @case ('failed') {
+  <span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
+  }
+  }</footer>
+  </div>
+}
+</ng-container>

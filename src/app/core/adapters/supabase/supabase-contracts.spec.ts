@@ -56,6 +56,18 @@ dashboardContract('SupabaseDashboard', () => {
   return {
     port: TestBed.inject(DASHBOARD),
     given: (_source, tournament) => supabase.reply('get_dashboard_tournament', { data: tournament }),
-    fail: (code) => refuse(['get_dashboard_tournament'], code),
+    givenData: (metrics, activity) => {
+      supabase.reply('get_dashboard_metrics', { data: metrics });
+      supabase.reply('get_dashboard_activity', { data: activity });
+      supabase.reply('get_dashboard_archived_local_tournaments', { data: [] });
+      supabase.reply('get_dashboard_local_archives', { data: [] });
+    },
+    // An older database answers PGRST202 (no such function): the adapter turns that into null.
+    givenInsights: (insights) =>
+      supabase.reply(
+        'get_dashboard_insights',
+        insights ? { data: insights } : { error: { code: 'PGRST202', message: 'missing' } },
+      ),
+    fail: (code) => refuse(['get_dashboard_tournament', 'get_dashboard_metrics'], code),
   };
 });

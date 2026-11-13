@@ -11,17 +11,12 @@
   </main>
 }
 
-@if (isDashboardRoute && !dashboardAuthenticated) {
-  <main class="lock-screen">
-    <form class="lock-panel" (ngSubmit)="requestDashboardMagicLink()">
-      <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD</small></span></div>
-      <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Dashboard</h1><p>Entre com o e-mail autorizado para receber um link de acesso.</p></div>
-      <label for="dashboardEmail">E-mail</label>
-      <input id="dashboardEmail" name="dashboardEmail" type="email" [(ngModel)]="dashboardEmail" autocomplete="email" required [attr.aria-invalid]="!!dashboardError" aria-describedby="dashboardFeedback">
-      <p id="dashboardFeedback" class="lock-feedback" [class.visible]="!!dashboardError || dashboardMagicLinkSent" aria-live="polite">{{ dashboardError || (dashboardMagicLinkSent ? 'Link enviado. Confira sua caixa de entrada.' : '') }}</p>
-      <button class="button primary" type="submit" [disabled]="!dashboardEmail.trim() || dashboardLoading">{{ dashboardLoading ? 'Enviando…' : dashboardMagicLinkSent ? 'Reenviar link' : 'Enviar link de acesso' }}</button>
-    </form>
-  </main>
+@if (isDashboardRoute) {
+  @defer (on immediate) {
+    <app-dashboard (back)="navigate('overview')" />
+  } @placeholder {
+    <main class="lock-screen"></main>
+  }
 }
 
 @if (showLanding && !isLocked && !isDashboardRoute) {
@@ -551,9 +546,6 @@
 <article class="surface-card full-card data-card"><div><span class="card-kicker">SOBRE O SETPOINT</span><h2>Página inicial</h2><p class="muted">Rever a apresentação do produto e suas funcionalidades.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="openLanding()">Voltar para a página inicial</button></div></article>
 </section>
 }
-@case ('dashboard') {
-  <section class="dashboard-page"></section>
-}
 }
 </main>
 <footer class="app-footer"><span>SETPOINT</span><span class="build-id" [title]="'shell.footer.versionTitle' | transloco">{{ versionLabel }}</span>@if (nps.available) {
@@ -687,219 +679,5 @@
     </section>
   </div>
 }
-</div>
-}
-
-
-@if (isDashboardRoute && dashboardAuthenticated) {
-  <div class="dashboard-shell">
-    <header class="dashboard-header"><a class="brand" [href]="appBasePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>DASHBOARD · {{ versionLabel }}</small></span></a><h1>Visão do produto</h1><button class="button secondary" type="button" (click)="navigate('overview')">Voltar ao app</button></header>
-    <div class="dashboard-toolbar">
-      <div><span class="dashboard-eyebrow">VISÃO DO PRODUTO</span><h2>Como o SETPOINT está sendo usado</h2>@if (dashboardUpdatedAt) {
-      <p class="muted">Atualizado em {{ dashboardUpdatedAt | date:'dd/MM/yyyy HH:mm' }}@if (dashboardMetrics) {
-        <span> · <b class="dash-live"><i></i>{{ dashboardMetrics.tournaments_active }} em andamento</b></span>
-      }</p>
-    }</div>
-    <div class="dashboard-actions">
-      <div class="dash-seg" role="radiogroup" aria-label="Período">@for (days of [7, 30, 90]; track days) {
-        <button type="button" role="radio" [attr.aria-checked]="dashboardDays === days" [class.active]="dashboardDays === days" (click)="setDashboardDays(days)" [disabled]="dashboardLoading">{{ days }} dias</button>
-      }</div>
-      <button class="button secondary" type="button" (click)="loadDashboardMetrics()" [disabled]="dashboardLoading">{{ dashboardLoading ? 'Atualizando…' : 'Atualizar' }}</button>
-    </div>
-  </div>
-  @if (dashboardError) {
-    <p class="shared-error" role="alert">{{ dashboardError }}</p>
-  }
-  @if (dashboardLoading && !dashboardMetrics) {
-    <p class="dashboard-empty">Carregando métricas…</p>
-  }
-  @if (dashboardMetrics) {
-    <nav class="dash-tabs" role="tablist" aria-label="Seções do dashboard">
-      <button type="button" role="tab" [attr.aria-selected]="dashboardTab === 'summary'" [class.active]="dashboardTab === 'summary'" (click)="setDashboardTab('summary')">Resumo</button>
-      <button type="button" role="tab" [attr.aria-selected]="dashboardTab === 'usage'" [class.active]="dashboardTab === 'usage'" (click)="setDashboardTab('usage')">Uso e recursos</button>
-      <button type="button" role="tab" [attr.aria-selected]="dashboardTab === 'tournaments'" [class.active]="dashboardTab === 'tournaments'" (click)="setDashboardTab('tournaments')">Torneios</button>
-    </nav>
-  }
-  @if (dashboardMetrics && dashboardInsightsMissing && dashboardTab !== 'tournaments') {
-    <p class="shared-error" role="status">Os novos indicadores precisam da migration 202611090002_dashboard_insights.sql no Supabase.</p>
-  }
-  @switch (dashboardTab) {
-    @case ('summary') {
-      <div class="dash-pane">
-        @if (dashboardView; as view) {
-          <section class="dash-kpis" aria-label="Indicadores do período">
-            @for (card of view.cards; track card) {
-              <article class="dash-kpi">
-                <span>{{ card.label }}</span>
-                <strong>{{ card.value }}</strong>
-                <div class="dash-kpi-foot"><small>{{ card.hint }}</small>@if (card.delta.direction !== 'none') {
-                <em class="dash-delta" [ngClass]="'is-' + card.delta.direction" [attr.title]="'Comparado aos ' + dashboardDays + ' dias anteriores'">{{ card.delta.direction === 'up' ? '▲ ' : card.delta.direction === 'down' ? '▼ ' : '' }}{{ card.delta.label }}</em>
-              }</div>
-              @if (card.spark) {
-                <svg class="dash-spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><polyline [attr.points]="sparkPoints(card.spark)"></polyline></svg>
-              }
-            </article>
-          }
-        </section>
-        @if (view.insights.length) {
-          <section class="dash-card" aria-labelledby="dashInsightsTitle">
-            <div class="dash-card-head"><div><span class="dashboard-eyebrow">O QUE OS DADOS DIZEM</span><h3 id="dashInsightsTitle">Insights do período</h3></div></div>
-            <div class="dash-insights">
-              @for (insight of view.insights; track insight) {
-                <article class="dash-insight" [ngClass]="'tone-' + insight.tone"><span class="dash-insight-icon" aria-hidden="true">{{ insight.tone === 'good' ? '✓' : insight.tone === 'warn' ? '!' : 'i' }}</span><div><b>{{ insight.title }}</b><p>{{ insight.detail }}</p></div></article>
-              }
-            </div>
-          </section>
-        }
-        <div class="dash-grid-2">
-          <section class="dash-card" aria-labelledby="dashTrendTitle">
-            <div class="dash-card-head"><div><span class="dashboard-eyebrow">TENDÊNCIA</span><h3 id="dashTrendTitle">Torneios por dia</h3></div><div class="dash-legend"><span><i class="bar"></i>Iniciados</span><span><i class="line"></i>Finalizados</span></div></div>
-            <svg class="dash-trend" [attr.viewBox]="'0 0 600 ' + (view.chart.height + 24)" role="img" [attr.aria-label]="'Torneios iniciados e finalizados por dia nos últimos ' + dashboardDays + ' dias'">
-              <line x1="0" [attr.y1]="view.chart.height" x2="600" [attr.y2]="view.chart.height" class="axis"></line>
-              @for (bar of view.chart.bars; track bar) {
-                <rect [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height" rx="2" class="bar"><title>{{ bar.date | date:'dd/MM' }}: {{ bar.started }} iniciados · {{ bar.finished }} finalizados</title></rect>
-              }
-              <polyline [attr.points]="view.chart.finishedLine" class="line"></polyline>
-              @for (label of view.chart.labels; track label) {
-                <text [attr.x]="label.x" [attr.y]="view.chart.height + 18" [attr.text-anchor]="label.anchor" class="tick">{{ label.text }}</text>
-              }
-            </svg>
-          </section>
-          <section class="dash-card" aria-labelledby="dashFunnelTitle">
-            <div class="dash-card-head"><div><span class="dashboard-eyebrow">FUNIL</span><h3 id="dashFunnelTitle">Do início ao pódio</h3></div></div>
-            @if (!dashboardInsights?.funnel?.basis) {
-              <p class="dashboard-empty">Sem torneios com progresso conhecido neste período.</p>
-            }
-            <div class="dash-funnel">@for (step of view.funnel; track step) {
-              <div class="dash-funnel-step"><div class="dash-funnel-label"><span>{{ step.label }}</span><b>{{ step.count }}</b></div><div class="dash-funnel-track"><span [style.width.%]="step.ofStart"></span></div><small>{{ step.ofStart }}% do início@if (step.key !== 'started') {
-              <span> · {{ step.ofPrevious }}% da etapa anterior</span>
-            }</small></div>
-          }</div>
-        </section>
-      </div>
-    }
-  </div>
-}
-@case ('usage') {
-  <div class="dash-pane">
-    @if (dashboardView; as view) {
-      <div class="dash-grid-2">
-        <section class="dash-card" aria-labelledby="dashMixTitle">
-          <div class="dash-card-head"><div><span class="dashboard-eyebrow">FORMATOS</span><h3 id="dashMixTitle">O que as pessoas organizam</h3></div></div>
-          <div class="dash-mixes">@for (mix of view.mixes; track mix) {
-            <div class="dash-mix"><b>{{ mix.title }}</b>@for (row of mix.rows; track row) {
-            <div class="dash-bar-row"><span>{{ row.label }}</span><div class="dash-bar-track"><span [style.width.%]="row.percent"></span></div><small>{{ row.count }} · {{ row.percent }}%</small></div>
-            }@if (!mix.rows.length) {
-            <p class="dashboard-empty">Sem dados.</p>
-          }</div>
-        }</div>
-      </section>
-      <section class="dash-card" aria-labelledby="dashFormatsTitle">
-        <div class="dash-card-head"><div><span class="dashboard-eyebrow">CONCLUSÃO POR FORMATO</span><h3 id="dashFormatsTitle">Quais formatos chegam ao fim</h3></div></div>
-        <p class="dashboard-list-note">Todo o histórico. Taxa de torneios finalizados sobre os iniciados.</p>
-        <div class="dash-formats">@for (row of view.formats; track row) {
-          <div class="dash-format-row"><b>{{ row.label }}</b><div class="dash-bar-track good"><span [style.width.%]="row.rate"></span></div><small>{{ row.finished }}/{{ row.started }} · {{ row.rate }}%</small></div>
-          }@if (!view.formats.length) {
-          <p class="dashboard-empty">Sem dados.</p>
-        }</div>
-      </section>
-    </div>
-    <section class="dash-card" aria-labelledby="dashHeatTitle">
-      <div class="dash-card-head"><div><span class="dashboard-eyebrow">QUANDO USAM</span><h3 id="dashHeatTitle">Início de torneios por dia e hora</h3></div><span class="dashboard-count">Fuso {{ dashboardInsights?.period?.timezone }}</span></div>
-      <div class="dash-heat" role="img" aria-label="Mapa de calor do início de torneios por dia da semana e hora">
-        <div class="dash-heat-hours"><span></span>@for (hour of dashboardHours; track hour) {
-        <span>{{ hour % 3 === 0 ? hour : '' }}</span>
-      }</div>
-      @for (row of view.grid.rows; track row; let day = $index) {
-        <div class="dash-heat-row"><b>{{ dashboardWeekdays[day] }}</b>@for (count of row; track $index; let hour = $index) {
-        <i [style.--v]="dashboardCell(count)" [attr.title]="dashboardWeekdays[day] + ' ' + hour + 'h: ' + count + (count === 1 ? ' torneio' : ' torneios')"></i>
-      }</div>
-    }
-  </div>
-</section>
-<div class="dash-grid-2">
-  <section class="dash-card" aria-labelledby="dashAdoptTitle">
-    <div class="dash-card-head"><div><span class="dashboard-eyebrow">RECURSOS</span><h3 id="dashAdoptTitle">O que está sendo usado</h3></div></div>
-    <div class="dash-adoption">@for (item of view.adoption; track item) {
-      <div class="dash-adopt-row"><div><b>{{ item.label }}</b><small>{{ item.hint }}</small></div><div class="dash-bar-track"><span [style.width.%]="item.percent"></span></div><strong>{{ item.of ? item.percent + '%' : '—' }}@if (item.of) {
-      <small>{{ item.used }}/{{ item.of }}</small>
-    }</strong></div>
-  }</div>
-</section>
-<section class="dash-card" aria-labelledby="dashModTitle">
-  <div class="dash-card-head"><div><span class="dashboard-eyebrow">MODERADORES</span><h3 id="dashModTitle">Quem volta a organizar</h3></div></div>
-  <div class="dash-chips"><span><b>{{ dashboardInsights?.retention?.active_new }}</b> novos no período</span><span><b>{{ dashboardInsights?.retention?.active_returning }}</b> recorrentes ativos</span></div>
-  <div class="dash-retention">@for (row of view.retention; track row) {
-    <div class="dash-bar-row"><span>{{ row.label }}</span><div class="dash-bar-track"><span [style.width.%]="row.percent"></span></div><small>{{ row.count }} · {{ row.percent }}%</small></div>
-  }</div>
-  <div class="dash-reg"><b>Torneios compartilhados criados</b><div class="dash-reg-steps"><span><strong>{{ dashboardInsights?.registration?.created }}</strong>criados</span><i>→</i><span><strong>{{ dashboardInsights?.registration?.started }}</strong>iniciados</span><i>→</i><span><strong>{{ dashboardInsights?.registration?.expired }}</strong>expiraram</span></div>@if (dashboardInsights?.registration?.avg_guests != null) {
-  <small>Média de {{ dashboardInsights?.registration?.avg_guests }} convidados por torneio iniciado.</small>
-}</div>
-</section>
-</div>
-@if (dashboardInsights; as data) {
-  <p class="dash-coverage">Torneios locais com detalhes completos neste período: {{ data.coverage.local_with_detail }} de {{ data.coverage.local_started }}. Funil e adoção só consideram torneios com detalhes.</p>
-}
-}
-</div>
-}
-@case ('tournaments') {
-  <div class="dash-pane">
-    @if (dashboardActivity; as activity) {
-      <div class="dashboard-workspace">
-        <section class="dashboard-section dashboard-tournaments" aria-labelledby="dashboardTournamentsTitle">
-          <div class="dashboard-section-heading"><div><span class="dashboard-eyebrow">ACOMPANHAMENTO</span><h2 id="dashboardTournamentsTitle">Torneios</h2></div></div>
-          <div class="dashboard-list-controls"><div class="dashboard-tabs" role="tablist" aria-label="Lista de torneios"><button type="button" role="tab" [attr.aria-selected]="dashboardListMode === 'active'" [class.active]="dashboardListMode === 'active'" (click)="dashboardListMode = 'active'">Em andamento <span>{{ activity.active_tournaments.length }}</span></button><button type="button" role="tab" [attr.aria-selected]="dashboardListMode === 'archived'" [class.active]="dashboardListMode === 'archived'" (click)="dashboardListMode = 'archived'">Arquivados <span>{{ activity.archived_tournaments.length }}</span></button></div><input type="search" [(ngModel)]="dashboardSearch" placeholder="Buscar torneio" aria-label="Buscar torneio"></div>
-          <p class="dashboard-list-note">{{ dashboardListMode === 'active' ? 'Compartilhados e locais publicados ao vivo; a data indica a última atualização recebida.' : 'Compartilhados e locais publicados ao vivo preservados no banco, com opção de exportar backup.' }}</p>
-          @if (dashboardListMode === 'archived' && activity.local_archives_available === false) {
-            <p class="shared-error" role="status">Arquivos locais indisponíveis; aplique a migration de arquivamento no Supabase.</p>
-          }
-          @if (!dashboardVisibleTournaments.length) {
-            <p class="dashboard-empty">{{ dashboardSearch ? 'Nenhum torneio encontrado.' : dashboardListMode === 'active' ? 'Nenhum torneio disponível para visualização.' : 'Nenhum torneio arquivado.' }}</p>
-          }
-          @for (tournament of dashboardVisibleTournaments; track tournament.source + tournament.id) {
-            <div class="dashboard-tournament-row"><div class="dashboard-tournament-name"><b>{{ tournament.name }}</b><small>{{ tournament.source === 'local' ? 'Local ao vivo' : 'Compartilhado' }} · {{ tournament.mode === 'groups' ? 'Grupos' : 'Super' }} {{ tournament.size }}</small></div><div class="dashboard-tournament-progress"><span>{{ tournament.matches_completed }} / {{ tournament.matches_total }} partidas</span><div class="dashboard-progress-track"><span [style.width.%]="tournament.matches_total ? 100 * tournament.matches_completed / tournament.matches_total : 0"></span></div></div><span class="dashboard-tournament-date">{{ tournament.updated_at | date:'dd/MM HH:mm' }}</span><a class="button secondary" [href]="dashboardViewerUrl(tournament)" target="_blank" rel="noopener noreferrer">{{ dashboardListMode === 'active' ? 'Visualizar ↗' : 'Consultar ↗' }}</a></div>
-          }
-        </section>
-        <section class="dashboard-section dashboard-dropoff" aria-labelledby="dashboardAbandonTitle"><div class="dashboard-section-heading"><div><span class="dashboard-eyebrow">CONTINUIDADE</span><h2 id="dashboardAbandonTitle">Onde os torneios pararam</h2></div><span class="dashboard-count">{{ dashboardAbandonmentTotal }} registros</span></div>@if (dashboardMainDropoff; as dropoff) {
-        <div class="dashboard-insight"><span>MAIOR ETAPA CONHECIDA</span><strong>{{ dropoff.label }}</strong><small>{{ dropoff.count }} {{ dropoff.count === 1 ? 'torneio' : 'torneios' }}</small></div>
-        }<div class="dashboard-stage-list">@for (stage of dashboardAbandonmentStages; track stage.label) {
-        <div class="dashboard-stage"><span>{{ stage.label }}</span><b>{{ stage.count }}</b><div class="dashboard-stage-track"><span [style.width.%]="stage.percent"></span></div><small>{{ dashboardAbandonmentTotal ? stage.percent + '%' : '—' }}</small></div>
-        }</div><p class="dashboard-method">Compartilhados arquivados sem finalizar e locais reiniciados. Fechar a página não é contado; a etapa dos locais é desconhecida.</p></section>
-      </div>
-    }
-    @if (dashboardMetrics; as metrics) {
-      <details class="dashboard-details"><summary>Detalhamento de métricas</summary><section class="dashboard-metrics-grid" aria-label="Métricas detalhadas">
-      <article class="dashboard-metric"><span>TORNEIOS</span><strong>{{ metrics.tournaments_total }}</strong></article>
-      <article class="dashboard-metric"><span>INICIADOS</span><strong>{{ metrics.tournaments_started }}</strong></article>
-      <article class="dashboard-metric"><span>FINALIZADOS</span><strong>{{ metrics.tournaments_completed }}</strong></article>
-      <article class="dashboard-metric"><span>COMPARTILHADOS ARQUIVADOS</span><strong>{{ metrics.tournaments_archived }}</strong></article>
-      <article class="dashboard-metric"><span>ABANDONADOS</span><strong>{{ metrics.tournaments_abandoned }}</strong></article>
-      <article class="dashboard-metric"><span>TORNEIOS COM 24 ATLETAS</span><strong>{{ metrics.tournaments_size_24 }}</strong></article>
-      <article class="dashboard-metric"><span>SUPER</span><strong>{{ metrics.super_tournaments }}</strong></article>
-      <article class="dashboard-metric"><span>GRUPOS</span><strong>{{ metrics.group_tournaments }}</strong></article>
-      <article class="dashboard-metric"><span>DUPLAS MISTAS</span><strong>{{ metrics.mixed_tournaments }}</strong></article>
-      <article class="dashboard-metric"><span>DUPLAS ABERTAS</span><strong>{{ metrics.open_tournaments }}</strong></article>
-      <article class="dashboard-metric"><span>PARTICIPANTES TOTAL</span><strong>{{ metrics.participants_total }}</strong></article>
-      <article class="dashboard-metric"><span>PARTICIPANTES POR LINK</span><strong>{{ metrics.participants_invited }}</strong></article>
-      <article class="dashboard-metric"><span>ADICIONADOS MANUALMENTE</span><strong>{{ metrics.participants_manual }}</strong></article>
-      <article class="dashboard-metric"><span>MODERADORES RECORRENTES</span><strong>{{ metrics.moderators_returned }} <small>/ {{ metrics.moderators_total }}</small></strong></article>
-      <article class="dashboard-metric"><span>TAXA DE CONCLUSÃO</span><strong>{{ formatCompletionRate(metrics.completion_rate) }}</strong></article>
-      <article class="dashboard-metric"><span>DURAÇÃO MÉDIA</span><strong>{{ formatDashboardDuration(metrics.average_duration_seconds) }}</strong></article>
-    </section></details>
-  }
-</div>
-}
-}
-<footer class="dashboard-footer"><span>SETPOINT · {{ versionLabel }}</span>@if (nps.available) {
-<button class="footer-feedback" type="button" (click)="nps.open()" [disabled]="nps.loading()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button>
-}@switch (nps.message()) {
-@case ('unavailable') {
-<span role="status">{{ 'shell.footer.surveyUnavailable' | transloco }}</span>
-}
-@case ('failed') {
-<span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
-}
-}</footer>
 </div>
 }
