@@ -92,61 +92,68 @@ function assertRoundStructure(rounds: Round[], courts: number, idFor: (round: Ro
   });
 }
 
+/** Each test builds several whole schedules (simulated annealing). Coverage instrumentation and parallel files make the default 5 s too tight. */
+const SCHEDULE_TEST_TIMEOUT_MS = 30_000;
+
 describe('schedule randomization', () => {
   for (const [size, courts, mixed] of superFormats) {
-    it(`Super ${size} ${mixed ? 'misto' : 'aberto'} em ${courts} quadras: mantém as regras e alterna quadras`, () => {
-      const players = roster(size, mixed);
-      const formations = new Set<string>();
-      for (let iteration = 0; iteration < 3; iteration++) {
-        const rounds = new ScheduleService().generate(
-          players,
-          size as TournamentSize,
-          courts,
-          expectedRounds(size, courts, mixed),
-          mixed,
-        );
-        assertRoundStructure(rounds, courts, (round, match) => `r${round.number}-m${match.court}`);
-        formations.add(formation(rounds[0]));
+    it(
+      `Super ${size} ${mixed ? 'misto' : 'aberto'} em ${courts} quadras: mantém as regras e alterna quadras`,
+      () => {
+        const players = roster(size, mixed);
+        const formations = new Set<string>();
+        for (let iteration = 0; iteration < 3; iteration++) {
+          const rounds = new ScheduleService().generate(
+            players,
+            size as TournamentSize,
+            courts,
+            expectedRounds(size, courts, mixed),
+            mixed,
+          );
+          assertRoundStructure(rounds, courts, (round, match) => `r${round.number}-m${match.court}`);
+          formations.add(formation(rounds[0]));
 
-        const played = new Map(players.map((player) => [player.id, 0]));
-        const rested = new Map(players.map((player) => [player.id, 0]));
-        const partners = new Map<string, number>();
-        const opponents = new Set<string>();
-        for (const round of rounds) {
-          const present = [
-            ...round.matches.flatMap((match) => [...match.teamA, ...match.teamB]),
-            ...round.restingPlayerIds,
-          ];
-          expect(new Set(present).size, 'cada jogador aparece uma vez por rodada').toBe(size);
-          round.restingPlayerIds.forEach((id) => rested.set(id, rested.get(id)! + 1));
-          for (const match of round.matches) {
-            for (const team of [match.teamA, match.teamB]) {
-              partners.set(pairKey(...team), (partners.get(pairKey(...team)) ?? 0) + 1);
-              team.forEach((id) => played.set(id, played.get(id)! + 1));
+          const played = new Map(players.map((player) => [player.id, 0]));
+          const rested = new Map(players.map((player) => [player.id, 0]));
+          const partners = new Map<string, number>();
+          const opponents = new Set<string>();
+          for (const round of rounds) {
+            const present = [
+              ...round.matches.flatMap((match) => [...match.teamA, ...match.teamB]),
+              ...round.restingPlayerIds,
+            ];
+            expect(new Set(present).size, 'cada jogador aparece uma vez por rodada').toBe(size);
+            round.restingPlayerIds.forEach((id) => rested.set(id, rested.get(id)! + 1));
+            for (const match of round.matches) {
+              for (const team of [match.teamA, match.teamB]) {
+                partners.set(pairKey(...team), (partners.get(pairKey(...team)) ?? 0) + 1);
+                team.forEach((id) => played.set(id, played.get(id)! + 1));
+              }
+              for (const a of match.teamA) for (const b of match.teamB) opponents.add(pairKey(a, b));
             }
-            for (const a of match.teamA) for (const b of match.teamB) opponents.add(pairKey(a, b));
+          }
+          expect(new Set(played.values()).size, 'todos jogam a mesma quantidade de partidas').toBe(1);
+          if (!mixed) {
+            expect(
+              [...partners.values()].every((count) => count === 1),
+              'nenhuma dupla se repete',
+            ).toBe(true);
+            expect(opponents.size, 'todos se enfrentam').toBe((size * (size - 1)) / 2);
+          }
+          if (size === 10 || (size === 12 && courts === 2))
+            expect(new Set(rested.values()).size, 'descansos equilibrados').toBe(1);
+
+          for (const [id, perCourt] of courtSpread(rounds, courts)) {
+            const total = perCourt.reduce((sum, count) => sum + count, 0);
+            expect(Math.max(...perCourt), `${id} concentrado em uma quadra: ${perCourt.join(',')}`).toBeLessThanOrEqual(
+              Math.ceil(total / courts) + 2,
+            );
           }
         }
-        expect(new Set(played.values()).size, 'todos jogam a mesma quantidade de partidas').toBe(1);
-        if (!mixed) {
-          expect(
-            [...partners.values()].every((count) => count === 1),
-            'nenhuma dupla se repete',
-          ).toBe(true);
-          expect(opponents.size, 'todos se enfrentam').toBe((size * (size - 1)) / 2);
-        }
-        if (size === 10 || (size === 12 && courts === 2))
-          expect(new Set(rested.values()).size, 'descansos equilibrados').toBe(1);
-
-        for (const [id, perCourt] of courtSpread(rounds, courts)) {
-          const total = perCourt.reduce((sum, count) => sum + count, 0);
-          expect(Math.max(...perCourt), `${id} concentrado em uma quadra: ${perCourt.join(',')}`).toBeLessThanOrEqual(
-            Math.ceil(total / courts) + 2,
-          );
-        }
-      }
-      expect(formations.size, 'a primeira rodada muda entre gerações').toBeGreaterThan(1);
-    });
+        expect(formations.size, 'a primeira rodada muda entre gerações').toBeGreaterThan(1);
+      },
+      SCHEDULE_TEST_TIMEOUT_MS,
+    );
   }
 
   it('a ordem de cadastro não fixa jogador na quadra 1 nem a formação da primeira rodada', () => {

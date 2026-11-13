@@ -1,5 +1,5 @@
 {
-  "ignore": ["public/**", "src/app/core/database.types.ts"],
+  "ignore": ["public/**", "src/app/core/adapters/supabase/database.types.ts"],
   "ignoreIssues": {
     "src/app/core/dashboard-insights.ts": ["exports"],
     "src/app/core/dialog.service.ts": ["exports"],

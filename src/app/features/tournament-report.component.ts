@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
 
 import { TournamentState } from '../core/models';
-import { SupabaseService } from '../core/supabase.service';
+import { AUTH } from '../core/ports/auth.port';
+import { LOCAL_LIVE } from '../core/ports/tournaments.port';
 import { TournamentReportService } from '../core/tournament-report.service';
 
 @Component({
@@ -157,7 +158,8 @@ import { TournamentReportService } from '../core/tournament-report.service';
 })
 export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly report = inject(TournamentReportService);
-  private readonly supabase = inject(SupabaseService);
+  private readonly localLive = inject(LOCAL_LIVE);
+  private readonly auth = inject(AUTH);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private alive = true;
   private image: Blob | null = null;
@@ -278,7 +280,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
         const token = new URL(existingLiveUrl).searchParams.get('live');
         if (token) {
           try {
-            const existing = await this.supabase.getLocalLiveTournament(token);
+            const existing = await this.localLive.getLocalLiveTournament(token);
             if (
               (existing.status === 'completed' || existing.status === 'archived') &&
               existing.state.finishedAt === state.finishedAt
@@ -291,7 +293,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
         }
       }
       if (!this.finalLink) {
-        if (state.hostingMode === 'shared' && !(await this.supabase.currentUser())) {
+        if (state.hostingMode === 'shared' && !(await this.auth.currentUser())) {
           throw new Error('Conecte-se com a sessão do moderador para gerar o link final.');
         }
         const snapshot: TournamentState = {
@@ -301,7 +303,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
           sharedTournamentId: undefined,
           sharedStatus: undefined,
         };
-        const credentials = await this.supabase.createLocalLiveTournament(snapshot);
+        const credentials = await this.localLive.createLocalLiveTournament(snapshot);
         const url = new URL(document.baseURI);
         url.search = '';
         url.hash = '';

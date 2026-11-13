@@ -8,4 +8,4 @@ src/styles.css
 src/**/*.html
 test-results/
 playwright-report/
-src/app/core/database.types.ts
+src/app/core/adapters/supabase/database.types.ts

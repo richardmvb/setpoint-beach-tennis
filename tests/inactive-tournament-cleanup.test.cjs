@@ -3,8 +3,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { PGlite } = require('@electric-sql/pglite');
-const typescript = require('typescript');
-const { loadTs } = require('./support/load-ts.cjs');
 const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
 const migrationDir = path.join(__dirname, '../supabase/migrations');
@@ -212,34 +210,4 @@ test('o job existente executa a rotina de limpeza a cada cinco minutos', () => {
     initialMigration,
     /cron\.schedule\([\s\S]*?'cleanup-setpoint-shared-tournaments'[\s\S]*?'\*\/5 \* \* \* \*'[\s\S]*?cleanup_expired_shared_tournaments\(\)/,
   );
-});
-
-test('o dashboard mescla arquivos locais e mantém compatibilidade antes da migration', async () => {
-  const exports = loadTs(path.join(__dirname, '../src/app/core/supabase.service.ts'));
-  const service = Object.create(exports.SupabaseService.prototype);
-  const base = { active_tournaments: [], archived_tournaments: [{ id: 'shared', updated_at: '2026-11-07T10:00:00Z' }] };
-  let migrationInstalled = true;
-  service.client = {
-    rpc: async (name) =>
-      name === 'get_dashboard_activity'
-        ? { data: base, error: null }
-        : name === 'get_dashboard_local_archives'
-          ? { data: [], error: null }
-          : migrationInstalled
-            ? { data: [{ id: 'local', updated_at: '2026-11-08T10:00:00Z' }], error: null }
-            : { data: null, error: { code: 'PGRST202' } },
-  };
-  const merged = await service.getDashboardActivity();
-  assert.deepEqual(
-    merged.archived_tournaments.map((item) => item.id),
-    ['local', 'shared'],
-  );
-  assert.equal(merged.local_archives_available, true);
-  migrationInstalled = false;
-  const legacy = await service.getDashboardActivity();
-  assert.deepEqual(
-    legacy.archived_tournaments.map((item) => item.id),
-    ['shared'],
-  );
-  assert.equal(legacy.local_archives_available, false);
 });
