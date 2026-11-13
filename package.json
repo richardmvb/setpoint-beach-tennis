@@ -28,6 +28,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@angular/cdk": "^22.2.7",
     "@angular/common": "^22.2.6",
     "@angular/compiler": "^22.2.6",
     "@angular/core": "^22.2.6",
@@ -38,7 +39,6 @@
     "driver.js": "^1.12.1",
     "posthog-js": "^1.447.15",
     "rxjs": "~7.8.2",
-    "sweetalert2": "^11.26.25",
     "tslib": "^2.9.1",
     "valibot": "^1.5.0",
     "zone.js": "~0.16.3"

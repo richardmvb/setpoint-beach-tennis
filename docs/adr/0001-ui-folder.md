@@ -20,3 +20,7 @@ Storybook was considered for living docs. Its official Angular builder (`@storyb
 - No separate build or publishing step for the UI; changes ship with the app.
 - One test stack (Playwright) covers visual regression and accessibility.
 - If a second consumer appears, `ui/` can be promoted to a library; the boundary rule makes that move mechanical.
+
+## Update 2026-11-13
+
+`ui/` now exists with `uiButton`, `uiCard` and `ConfirmDialog`, exposed through the `@ui/*` path alias, with the ESLint boundary in place (`ui/` imports Angular, the CDK and itself only). Component tests use plain TestBed; `@testing-library/angular` needs `@angular/router` as a peer and is deferred until the router lands. The `/_ui` gallery is still to do (Phase 5).

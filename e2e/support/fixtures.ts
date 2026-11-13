@@ -154,9 +154,10 @@ export async function generateFinals(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 6; attempt++) {
     await expect(tieBreak.or(finals)).toBeVisible();
     if (await finals.isVisible()) return;
-    // Two stages: draw the order, then confirm it. Another tie may follow (for example 6th and 7th).
+    // Two stages: draw the order, then confirm it. Another tie may follow (for example 5th and 6th, then 7th and 8th).
     await tieBreak.getByRole('button', { name: 'Realizar sorteio' }).click();
-    await tieBreak.getByRole('button', { name: 'Confirmar e gerar finais' }).click();
+    // The button reads "gerar finais" for the last tie and "sortear próximo empate" when another tie follows.
+    await tieBreak.getByRole('button', { name: /^Confirmar e (gerar finais|sortear próximo empate)$/ }).click();
   }
   await expect(finals).toBeVisible();
 }

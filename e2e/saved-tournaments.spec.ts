@@ -1,15 +1,12 @@
 import type { Page } from '@playwright/test';
 import { createLocalTournament, expect, test } from './support/fixtures';
-import { tournamentFixture } from './support/supabase-mock';
+import { INDEX_KEY, openLibrary, seedTwoTournaments, STATE_PREFIX } from './support/library';
 
 /**
  * "Meus torneios" is the device-side history: every started tournament is kept in localStorage
  * (`setpoint.library.v1` index plus one state per tournament) so a reset, an import or an app update
  * never loses one. These tests describe the behavior that the Phase 4 library extraction must keep.
  */
-
-const INDEX_KEY = 'setpoint.library.v1';
-const STATE_PREFIX = 'setpoint.library.v1.state.';
 
 interface LibraryIndex {
   version: number;
@@ -21,47 +18,6 @@ const readIndex = (page: Page): Promise<LibraryIndex | null> =>
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as LibraryIndex) : null;
   }, INDEX_KEY);
-
-async function openLibrary(page: Page) {
-  await page.getByRole('button', { name: 'Perfil' }).click();
-  await page.getByRole('button', { name: /Ver todos/ }).click();
-  const dialog = page.getByRole('dialog', { name: 'Meus torneios' });
-  await expect(dialog).toBeVisible();
-  return dialog;
-}
-
-/**
- * The tournament in the active slot ("Fixture v1") plus an older one that only exists in the library.
- * Seeded once, so a reload keeps whatever the test changed.
- */
-async function seedTwoTournaments(page: Page): Promise<void> {
-  const active = tournamentFixture();
-  const older = { ...active, name: 'Torneio antigo', analyticsId: 'older-tournament-id' };
-  const entry = {
-    id: 'older-tournament-id',
-    name: 'Torneio antigo',
-    mode: 'super',
-    hosting: 'local',
-    size: 8,
-    playerCount: 8,
-    phase: 'qualifying',
-    matchesCompleted: 3,
-    matchesTotal: 28,
-    createdAt: '2026-01-01T10:00:00.000Z',
-    updatedAt: '2026-01-01T12:00:00.000Z',
-    bytes: JSON.stringify(older).length,
-    archivePending: false,
-  };
-  await page.addInitScript(
-    ({ activeState, olderState, olderEntry, indexKey, statePrefix }) => {
-      if (localStorage.getItem('setpoint.tournament.v1')) return;
-      localStorage.setItem('setpoint.tournament.v1', JSON.stringify(activeState));
-      localStorage.setItem(statePrefix + olderEntry.id, JSON.stringify(olderState));
-      localStorage.setItem(indexKey, JSON.stringify({ version: 1, entries: [olderEntry] }));
-    },
-    { activeState: active, olderState: older, olderEntry: entry, indexKey: INDEX_KEY, statePrefix: STATE_PREFIX },
-  );
-}
 
 test.describe('saved tournaments (Meus torneios)', () => {
   test('a started tournament is saved on the device and listed as in use', async ({ page }) => {

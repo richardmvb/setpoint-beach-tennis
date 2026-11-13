@@ -6,7 +6,8 @@ import { expect, test } from './support/fixtures';
  *
  * History: the tokens were first pinned as they were in styles.css. The restyle then changed two light-theme values
  * for WCAG AA contrast (`--muted` #6f7a74 to #56615c, `--danger` #b8463b to #9f3a30) and added the spacing, radius,
- * elevation and motion scales plus `--accent-text`, `--success-text` and `--focus`. `--ease`, `--font-display` and
+ * elevation and motion scales plus `--accent-text`, `--success-text` and `--focus`. The dialog added `--on-danger` (text on a solid danger button; dark
+ * theme needs dark text, white on its light red fails contrast). `--ease`, `--font-display` and
  * `--shadow` only changed notation when they moved out of styles.css (Stylelint's modern syntax).
  */
 const LIGHT: Record<string, string> = {
@@ -23,6 +24,7 @@ const LIGHT: Record<string, string> = {
   '--green-2': '#1d5a49',
   '--green-soft': '#e6efea',
   '--muted': '#56615c',
+  '--on-danger': '#fff',
   '--orange': '#b98a3e',
   '--orange-soft': '#f6ecd8',
   '--radius': '18px',
@@ -68,6 +70,7 @@ const DARK: Record<string, string> = {
   '--green-2': '#bfe3d0',
   '--green-soft': '#1d3329',
   '--muted': '#93a39a',
+  '--on-danger': '#2b0e0a',
   '--orange': '#d9ae62',
   '--orange-soft': '#33291a',
   '--radius': '18px',
