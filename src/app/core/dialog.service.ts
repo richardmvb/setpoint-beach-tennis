@@ -1,5 +1,10 @@
-import { Injectable } from '@angular/core';
-import Swal, { SweetAlertOptions } from 'sweetalert2';
+import { Dialog } from '@angular/cdk/dialog';
+import { Overlay } from '@angular/cdk/overlay';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { ConfirmDialogComponent, ConfirmDialogData } from '@ui/dialog/confirm-dialog.component';
+
+export { matchesPhrase } from '@ui/dialog/matches-phrase';
 
 export interface ConfirmOptions {
   title: string;
@@ -16,79 +21,58 @@ export interface TypedConfirmOptions extends ConfirmOptions {
   phrase: string;
 }
 
-/** Normalizes what the user typed so "  Finalizar " matches "finalizar". */
-export function matchesPhrase(typed: string, phrase: string): boolean {
-  return typed.trim().toLocaleLowerCase('pt-BR') === phrase.trim().toLocaleLowerCase('pt-BR');
-}
-
-/** Themed confirmation dialogs (SweetAlert2). Styling lives in styles.css under `.sp-dialog`. */
+/**
+ * Confirmation dialogs, built on the CDK Dialog (focus trap, Escape, scroll lock, focus returns to the opener).
+ * Each call resolves `true` when confirmed and `false` on Cancel, Escape or a click outside.
+ * The dialog itself is src/app/ui/dialog; styling lives in src/styles/components/dialog.css.
+ */
 @Injectable({ providedIn: 'root' })
 export class DialogService {
-  async confirm(options: ConfirmOptions): Promise<boolean> {
-    const result = await Swal.fire(this.base(options));
-    return result.isConfirmed;
+  private static counter = 0;
+  private readonly dialog = inject(Dialog);
+  private readonly overlay = inject(Overlay);
+
+  confirm(options: ConfirmOptions): Promise<boolean> {
+    return this.open(options);
   }
 
-  async confirmTyped(options: TypedConfirmOptions): Promise<boolean> {
-    const config = {
-      ...this.base(options),
-      input: 'text',
-      inputLabel: `Digite “${options.phrase}” para confirmar`,
-      inputPlaceholder: options.phrase,
-      inputAttributes: {
-        autocapitalize: 'off',
-        autocomplete: 'off',
-        autocorrect: 'off',
-        spellcheck: 'false',
-        'aria-label': `Digite ${options.phrase} para confirmar`,
-      },
-      focusCancel: false,
-      focusConfirm: false,
-      didOpen: (popup) => {
-        const confirm = Swal.getConfirmButton();
-        const input = popup.querySelector<HTMLInputElement>('.swal2-input');
-        if (!confirm || !input) return;
-        confirm.disabled = true;
-        input.addEventListener('input', () => {
-          confirm.disabled = !matchesPhrase(input.value, options.phrase);
-        });
-        input.focus();
-      },
-      preConfirm: (value) =>
-        matchesPhrase(String(value ?? ''), options.phrase)
-          ? true
-          : Swal.showValidationMessage(`Digite exatamente “${options.phrase}”.`),
-    } as SweetAlertOptions;
-    const result = await Swal.fire(config);
-    return result.isConfirmed;
+  confirmTyped(options: TypedConfirmOptions): Promise<boolean> {
+    return this.open(options, options.phrase);
   }
 
-  private base(options: ConfirmOptions): SweetAlertOptions {
-    const danger = options.tone === 'danger';
-    return {
+  private async open(options: ConfirmOptions, phrase?: string): Promise<boolean> {
+    const id = `ui-dialog-${++DialogService.counter}`;
+    const data: ConfirmDialogData = {
       title: options.title,
       text: options.text,
-      icon: danger ? 'warning' : 'question',
-      showCancelButton: true,
-      confirmButtonText: options.confirmText ?? 'Confirmar',
-      cancelButtonText: options.cancelText ?? 'Cancelar',
-      reverseButtons: true,
-      focusCancel: danger,
-      buttonsStyling: false,
-      heightAuto: false,
-      returnFocus: true,
-      animation: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
-      customClass: {
-        popup: 'sp-dialog',
-        title: 'sp-dialog-title',
-        htmlContainer: 'sp-dialog-text',
-        actions: 'sp-dialog-actions',
-        confirmButton: `button ${danger ? 'danger' : 'primary'}`,
-        cancelButton: 'button secondary',
-        input: 'sp-dialog-input',
-        inputLabel: 'sp-dialog-label',
-        validationMessage: 'sp-dialog-error',
-      },
+      confirmText: options.confirmText ?? 'Confirmar',
+      cancelText: options.cancelText ?? 'Cancelar',
+      tone: options.tone === 'danger' ? 'danger' : 'primary',
+      phrase,
+      titleId: `${id}-title`,
+      textId: `${id}-text`,
     };
+    const ref = this.dialog.open<boolean, ConfirmDialogData, ConfirmDialogComponent>(ConfirmDialogComponent, {
+      data,
+      role: 'alertdialog',
+      ariaModal: true,
+      ariaLabelledBy: data.titleId,
+      ariaDescribedBy: options.text ? data.textId : null,
+      autoFocus: '[data-autofocus]',
+      restoreFocus: true,
+      hasBackdrop: true,
+      closeOnNavigation: true,
+      panelClass: 'ui-dialog-panel',
+      backdropClass: 'ui-dialog-backdrop',
+      positionStrategy: this.position(),
+    });
+    return (await firstValueFrom(ref.closed)) === true;
+  }
+
+  /** Centered on a large screen, a sheet from the bottom on a phone. */
+  private position() {
+    const phone = typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 520px)').matches;
+    const strategy = this.overlay.position().global().centerHorizontally();
+    return phone ? strategy.bottom('0') : strategy.centerVertically();
   }
 }

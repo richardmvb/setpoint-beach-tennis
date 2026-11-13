@@ -32,8 +32,12 @@
             ],
             "styles": [
               "node_modules/driver.js/dist/driver.css",
-              "node_modules/sweetalert2/dist/sweetalert2.min.css",
+              "node_modules/@angular/cdk/overlay-prebuilt.css",
               "src/fonts.css",
+              "src/styles/tokens.css",
+              "src/styles/components/button.css",
+              "src/styles/components/card.css",
+              "src/styles/components/dialog.css",
               "src/styles.css"
             ]
           },
@@ -93,9 +97,9 @@
             "coverageInclude": ["src/app/core/**/*.ts"],
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
-              "statements": 72,
-              "branches": 70,
-              "functions": 81,
+              "statements": 73,
+              "branches": 71,
+              "functions": 82,
               "lines": 72
             }
           }

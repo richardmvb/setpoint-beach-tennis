@@ -40,7 +40,8 @@ Local runtime config is `public/runtime-config.js` (tracked, development values)
 - `src/app/core/adapters/<vendor>/`: the only place that imports `@supabase/*` or `posthog-js`, and `core/adapters/browser/` is the only place that touches `localStorage`, `sessionStorage`, the real time (`Date.now()`, `new Date()`), `Math.random`/`crypto` or `window.__SETPOINT_CONFIG__` (ESLint enforces both; specs are exempt). Inject `LOCAL_STORE`, `SESSION_STORE`, `CLOCK`, `RANDOM` and `APP_CONFIG` instead. The three schedule files keep a `Math.random` default on a documented ESLint exemption until they move into `domain/`. `src/app/app.config.ts` is the composition root that binds ports to adapters; swapping a vendor is a new adapter folder plus one line there. See ADR 0003 and `docs/vendors.md`. Adapter specs use a fake client (`fake-supabase-client.ts`) or an injected SDK; the Angular unit-test builder does not support `vi.mock` on relative imports, so inject what you need to fake.
 - `src/app/core/`: domain logic and the remaining services (`storage.service.ts`, `state-machines.ts`, `offline-sync-queue.ts`, `scenario-engine.ts`, ...). Unit tests are colocated `*.spec.ts` files run by Vitest.
 - `src/app/features/`: presentational components (flat for now).
-- `src/styles.css`: one global stylesheet. Split into tokens and components in Phase 5.
+- `src/styles/tokens.css`: the design tokens (colors, spacing, radius, elevation, motion; light and dark). Pinned by `e2e/design-tokens.spec.ts`: change a value there in the same commit. `src/styles/components/{button,card,dialog}.css` style the `ui/` components. `src/styles.css` is the remaining global stylesheet (still being split, Phase 5); read colors from tokens, never hard-code a text color (light-theme AA needs `--muted`, `--accent-text`, `--success-text`).
+- `src/app/ui/`: the design system (`@ui/*` alias). `uiButton` and `uiCard` render the same `.button` and `.surface-card` classes templates still use; `ConfirmDialog` is opened through `DialogService` (core) on `@angular/cdk/dialog`. `ui/` imports only Angular, the CDK and itself (ESLint enforces it). New features use these instead of copying markup; migrate `class="button …"` and `class="surface-card"` as each feature is extracted.
 - `supabase/`: `migrations/` (forward-only), `tests/` (pgTAP), `lint/` (splinter), `config.toml` (Supabase CLI). Security findings and rules: `docs/security.md`.
 - `src/app/shared/parsers/`: Valibot parsers for everything that comes from outside (RPC responses today). Do not cast RPC data with `as`; add a parser.
 - `src/index.html` holds the Content-Security-Policy. A new external host needs a CSP change and a test; fonts are self-hosted (`src/fonts/`).
@@ -63,16 +64,15 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | `src/styles.css` excluded from Stylelint and Prettier (structural issues, cascade order)                                  | 5 (split into tokens and components) |
 | `src/**/*.html` excluded from Prettier (whitespace-sensitive templates)                                                   | 4 (per-feature templates)            |
-| Modal focus trap and Escape handling are partial                                                                          | 5 (`@angular/cdk/dialog`)            |
-| Axe baseline: color-contrast (up to 62 nodes per page), label-content-name-mismatch, unnamed buttons in the profile panel | 5 (design system and accessibility)  |
+| Focus trap and Escape handling for the 6 hand-rolled modals (the confirmation dialogs already use the CDK dialog)         | 4 (one per feature extraction)       |
+| Axe baseline: label-content-name-mismatch (1 per page) and unnamed buttons in the profile panel (color-contrast is fixed) | 5 (design system and accessibility)  |
 | E2E for saved tournaments, offline sync, dashboard; fixtures for offline queue and shared snapshot                        | Phase 1 follow-ups                   |
-| `sweetalert2` is CommonJS and bails out tree-shaking (build warning)                                                      | 7                                    |
 
 ## Unit tests (Vitest)
 
 Specs are `src/**/*.spec.ts`, colocated with the code, run by `ng test` (Angular unit-test builder, Vitest, jsdom). Import `describe`, `it` and `expect` from `vitest` (no globals). Import the real modules and build services and components through `TestBed` (`TestBed.inject`, `runInInjectionContext`); never stub `@angular/core`. `src/app/testing/` holds shared test helpers. Property tests use `fast-check` in `*.property.spec.ts` next to the module (schedule shuffle, scenario engine, qualification); failures print a seed, so rerun with `fc.assert(..., { seed, path })` to reproduce. Use `seededRandom` for the code's own random source. The SQL tests in `tests/` stay on `node:test` (`npm run test:db`).
 
-Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Measured on 2026-11-13 after the browser ports: statements 72.78, branches 70.6, functions 81.34, lines 72.38 (the thresholds are the floors, rounded down). New code must be covered.
+Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) and measure `src/app/core/` only; CI runs them through `npm run test:coverage`. They are a ratchet: raise them when coverage rises, never lower them. Measured on 2026-11-13 after the UI work: statements 73.31, branches 71.45, functions 82.13, lines 72.96 (the thresholds are the floors, rounded down). New code must be covered.
 
 ## End-to-end tests (e2e/)
 

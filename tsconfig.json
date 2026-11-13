@@ -12,6 +12,7 @@
     "isolatedModules": true,
     "experimentalDecorators": true,
     "importHelpers": true,
+    "paths": { "@ui/*": ["./src/app/ui/*"] },
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",

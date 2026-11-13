@@ -1,30 +1,22 @@
 {
   "finals": {
-    "color-contrast": 48,
     "label-content-name-mismatch": 1
   },
-  "landing": {
-    "color-contrast": 39
-  },
+  "landing": {},
   "profile-panel": {
     "button-name": 2,
-    "color-contrast": 60,
     "label-content-name-mismatch": 1
   },
   "ranking": {
-    "color-contrast": 41,
     "label-content-name-mismatch": 1
   },
   "rounds": {
-    "color-contrast": 25,
     "label-content-name-mismatch": 1
   },
   "setup-configuration": {
-    "color-contrast": 25,
     "label-content-name-mismatch": 1
   },
   "setup-players": {
-    "color-contrast": 4,
     "label-content-name-mismatch": 1
   }
 }

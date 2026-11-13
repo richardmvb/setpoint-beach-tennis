@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { Player, PlayerStanding, Round } from '../core/models';
 import { PlayerAvatarComponent } from './player-avatar.component';
 import { GenderIconComponent } from './gender-icon.component';
+import { CardComponent } from '@ui/card/card.component';
 
 export interface GroupStandingEntry {
   label: string;
@@ -33,12 +34,12 @@ export interface GroupStandingTable {
 @Component({
   selector: 'app-ranking-view',
   standalone: true,
-  imports: [CommonModule, PlayerAvatarComponent, GenderIconComponent],
+  imports: [CommonModule, PlayerAvatarComponent, GenderIconComponent, CardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
     @for (group of groupTables(); track group.id) {
-      <article class="surface-card full-card group-ranking-card">
+      <article uiCard class="full-card group-ranking-card">
         <div class="card-title-row">
           <div>
             <span class="card-kicker">{{ group.name }}</span>
@@ -123,7 +124,7 @@ export interface GroupStandingTable {
       </section>
     }
     <ng-template #genderRanking let-title="title" let-icon="icon" let-rows="rows" let-limit="limit"
-      ><article class="surface-card gender-ranking-card">
+      ><article uiCard class="gender-ranking-card">
         <div class="card-title-row">
           <div>
             <span class="card-kicker">{{ title }}</span>
@@ -200,7 +201,7 @@ export interface GroupStandingTable {
         </div>
       </article></ng-template
     >
-    <article class="surface-card full-card">
+    <article uiCard class="full-card">
       <div class="card-title-row">
         <div>
           <span class="card-kicker">CLASSIFICAÇÃO GERAL</span>
