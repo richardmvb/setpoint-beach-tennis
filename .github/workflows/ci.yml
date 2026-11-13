@@ -68,6 +68,9 @@ jobs:
       - name: Find unused files, exports and dependencies
         run: npm run knip
 
+      - name: Translation keys (no missing or unused keys)
+        run: npm run i18n:check
+
       - name: Unit tests with coverage
         run: npm run test:coverage
 

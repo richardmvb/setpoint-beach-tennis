@@ -16,7 +16,8 @@
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "resolveJsonModule": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

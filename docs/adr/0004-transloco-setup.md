@@ -21,3 +21,11 @@ ADR 0002 chose Transloco. Phase 4 extracts features out of `AppComponent`, and t
 - Phase 4 extractions create their scope file with pt-BR text as part of the same PR. Text that stays in `AppComponent` is migrated when its feature is extracted.
 - Adding `en` in Phase 6 is a new file per scope, with no component changes.
 - A runtime fetch per scope adds a request. Measured in Phase 7 against the bundle and LCP budgets; scope files are small and cacheable.
+
+## Update 2026-11-13: setup in place
+
+`@jsverse/transloco` 8 is set up by `provideI18n()` (`src/app/core/i18n/`), bound in `app.config.ts`. Three details the decision above left open:
+
+- **Root file for the app shell.** Transloco always loads the root file of the active language before any scope, so `public/i18n/pt-BR.json` exists and holds the strings of the shell that stays in `AppComponent` (keys under `shell.`, for example `shell.footer.feedback`). Features keep their own scopes; `common` is created when a second feature needs the same word.
+- **Loader.** `HttpTranslationLoader` fetches `i18n/<path>.json` with a relative URL, so it follows the base href on GitHub Pages, and adds `?v=<buildId>` so a deploy never pairs new code with a file cached from the previous release. It uses Angular's `HttpClient` (`provideHttpClient(withFetch())`).
+- **Checks.** `npm run i18n:check` (`transloco-keys-manager find`) fails on a key used in `src/app` that is missing from the pt-BR files, and on a key in the files that nothing uses. It runs in CI and in `npm run check`. It also scans spec files, so a spec uses real keys. Specs get the real pt-BR files through `translocoTesting()` (`src/app/testing/transloco-testing.ts`).

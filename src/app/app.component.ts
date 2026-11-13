@@ -1,6 +1,7 @@
 import { Component, HostListener, inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { TranslocoPipe } from '@jsverse/transloco';
 import {
   DoublesFormat,
   LocalLiveTournamentSnapshot,
@@ -150,6 +151,7 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
     TournamentReportComponent,
     BattleCardComponent,
     ChoiceCardsComponent,
+    TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './app.component.html',

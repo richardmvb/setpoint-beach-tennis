@@ -658,8 +658,8 @@
 }</button>
 }<button type="button" (click)="scrollGuestTo('guest-finals')" [disabled]="!state.finals">Finais</button></nav>
 }
-<footer class="app-footer"><span>SETPOINT</span><span class="build-id" title="Versão do aplicativo">{{ versionLabel }}</span>@if (posthogFeedbackEnabled) {
-<button class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>Feedback</button>
+<footer class="app-footer"><span>SETPOINT</span><span class="build-id" [title]="'shell.footer.versionTitle' | transloco">{{ versionLabel }}</span>@if (posthogFeedbackEnabled) {
+<button class="footer-feedback" type="button" (click)="openNpsFeedback()" [disabled]="feedbackLoading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>{{ 'shell.footer.feedback' | transloco }}</button>
 }@if (feedbackMessage) {
 <span role="status">{{ feedbackMessage }}</span>
 }</footer>
