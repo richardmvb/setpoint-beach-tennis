@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   DoublesFormat,
+  FinalMatchKind,
   LocalLiveTournamentSnapshot,
   Match,
   MixedFinalFormat,
@@ -39,8 +40,17 @@ import {
   finalLiveMatchScore,
   MAX_FINAL_LIVE_POINTS,
 } from './core/final-live-score';
-import { ShareCardLayout, ShareCardService, formatElapsed } from './core/share-card.service';
-import { GroupStandingTable } from './features/ranking-view.component';
+import { ShareCardLayout, ShareCardService } from './core/share-card.service';
+import type { FinalWinnerSide } from './domain/tournament-view/scoring';
+import { isScored } from './domain/tournament-view/scoring';
+import * as tournamentFormat from './domain/tournament-view/format';
+import * as tournamentProgress from './domain/tournament-view/progress';
+import * as roundsView from './domain/tournament-view/rounds';
+import { qualificationEnabled, qualificationSupported } from './domain/tournament-view/qualification';
+import { createStandingsMemo, type StandingsView, storedTieDrawOrder } from './domain/tournament-view/standings';
+import { type GroupStandingTable, groupTables } from './domain/tournament-view/group-tables';
+import { playerMatches, scheduledGroupMatches } from './domain/tournament-view/player-matches';
+import { normalizeSharedState } from './domain/tournament-view/shared-state';
 import { RankingViewComponent } from './features/ranking-view.component';
 import { RoundNavigationComponent } from './features/round-navigation.component';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
@@ -111,16 +121,6 @@ interface PlayerMatchDetail {
   partner: string;
   score: string;
   result: string;
-}
-
-interface GroupStandingEntry {
-  label: string;
-  playerIds: string[];
-  setsWon: number;
-  gamesFor: number;
-  gamesAgainst: number;
-  gameBalance: number;
-  matchesPlayed: number;
 }
 
 const ACCESS_PASSWORD = 'bt2026';
@@ -232,11 +232,9 @@ export class AppComponent implements OnInit, OnDestroy {
   newPlayerName = '';
   newPlayerGender: PlayerGender | '' = '';
   newPlayerAvatar = '';
-  private standingsCacheSignature = '';
-  private standingsCache: PlayerStanding[] = [];
-  private standingsGroupCache: PlayerStanding[][] = [];
-  private maleStandingsCache: PlayerStanding[] = [];
-  private femaleStandingsCache: PlayerStanding[] = [];
+  private readonly standingsMemo = createStandingsMemo();
+  /** Decides the winner of a final (the domain gets this rule instead of importing the score engine). */
+  private readonly winnerSide: FinalWinnerSide = (match) => this.finalsScheduler.winnerSide(match);
   batchModalOpen = false;
   batchText = '';
   batchPlayers: BatchPlayerDraft[] = [];
@@ -584,9 +582,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return !!this.state.startedAt && !this.state.finishedAt;
   }
   get elapsedLabel(): string {
-    if (!this.state.startedAt) return '—';
-    const end = this.state.finishedAt ? Date.parse(this.state.finishedAt) : this.now;
-    return formatElapsed(end - Date.parse(this.state.startedAt));
+    return tournamentProgress.elapsedLabel(this.state, this.now);
   }
   get roundsLocked(): boolean {
     return !!this.state.finals;
@@ -623,60 +619,22 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.standings.find((row) => row.playerId === this.selectedRankingPlayerId)?.matchesPlayed ?? 0;
   }
   get selectedPlayerQualifyingTotal(): number {
-    return this.state.rounds.reduce(
-      (total, round) =>
-        total +
-        round.matches.filter(
-          (match) =>
-            match.teamA.includes(this.selectedRankingPlayerId) || match.teamB.includes(this.selectedRankingPlayerId),
-        ).length,
-      0,
-    );
+    return scheduledGroupMatches(this.state, this.selectedRankingPlayerId);
   }
   get selectedPlayerMatches(): PlayerMatchDetail[] {
-    const playerId = this.selectedRankingPlayerId;
-    if (!playerId) return [];
-    const details: PlayerMatchDetail[] = [];
-    const addMatch = (match: Match, phase: string) => {
-      const onA = match.teamA.includes(playerId);
-      const team = onA ? match.teamA : match.teamB;
-      const opponents = onA ? match.teamB : match.teamA;
-      const scoreFor = onA ? match.scoreA : match.scoreB;
-      const scoreAgainst = onA ? match.scoreB : match.scoreA;
-      const finalWinner = match.phase === 'final' ? this.finalWinnerSide(match) : null;
-      const result =
-        match.phase === 'final'
-          ? finalWinner === null
-            ? ''
-            : (finalWinner === 1) === onA
-              ? 'Vitória'
-              : 'Derrota'
-          : scoreFor === null || scoreAgainst === null
-            ? ''
-            : scoreFor > scoreAgainst
-              ? 'Vitória'
-              : 'Derrota';
-      const tieBreak =
-        match.livePoints !== undefined && match.tieBreakA != null && match.tieBreakB != null
-          ? ` (TB ${onA ? match.tieBreakA : match.tieBreakB}–${onA ? match.tieBreakB : match.tieBreakA})`
-          : '';
-      details.push({
-        phase,
-        partner: this.playerName(team.find((id) => id !== playerId) ?? ''),
-        opponent: opponents.map((id) => this.playerName(id)).join(' + '),
-        score: scoreFor === null || scoreAgainst === null ? 'Pendente' : scoreFor + '–' + scoreAgainst + tieBreak,
-        result,
-      });
-    };
-    this.state.rounds.forEach((round) =>
-      round.matches
-        .filter((match) => match.teamA.includes(playerId) || match.teamB.includes(playerId))
-        .forEach((match) => addMatch(match, 'Rodada ' + round.number)),
-    );
-    (this.state.finals?.matches ?? [])
-      .filter((match) => match.teamA.includes(playerId) || match.teamB.includes(playerId))
-      .forEach((match) => addMatch(match, this.finalKindLabel(match)));
-    return details;
+    return playerMatches(this.state, this.selectedRankingPlayerId, this.winnerSide).map((match) => ({
+      phase: match.phase.kind === 'round' ? 'Rodada ' + match.phase.number : this.finalKindText(match.phase.finalKind),
+      partner: this.playerName(match.partnerId),
+      opponent: match.opponentIds.map((id) => this.playerName(id)).join(' + '),
+      score:
+        match.scoreFor === null || match.scoreAgainst === null
+          ? 'Pendente'
+          : match.scoreFor +
+            '–' +
+            match.scoreAgainst +
+            (match.tieBreak ? ` (TB ${match.tieBreak.for}–${match.tieBreak.against})` : ''),
+      result: match.result === 'win' ? 'Vitória' : match.result === 'loss' ? 'Derrota' : '',
+    }));
   }
 
   placeOf(playerId: string): number {
@@ -822,13 +780,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.state.hostingMode === 'shared';
   }
   get qualificationEnabled(): boolean {
-    return (
-      !!this.state.qualificationStats &&
-      this.isSharedMode &&
-      !this.isGroupTournament &&
-      !this.state.finals &&
-      this.completedRounds >= 1
-    );
+    return qualificationEnabled(this.state);
   }
   get qualificationRows(): QualificationRow[] {
     return this.qualificationEnabled ? this.qualification.compute(this.state, this.standings) : [];
@@ -868,13 +820,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   /** The projection exists for this tournament/viewer (it may still be locked until round 1 is done). */
   get projectionConfigured(): boolean {
-    return (
-      !!this.state.qualificationStats &&
-      this.isSharedMode &&
-      !this.isGroupTournament &&
-      !this.state.finals &&
-      (!this.isGuestView || !!this.guestPlayerId)
-    );
+    return qualificationSupported(this.state) && (!this.isGuestView || !!this.guestPlayerId);
   }
   get projectionAvailable(): boolean {
     return this.qualificationEnabled && this.qualificationRows.length > 0;
@@ -1671,11 +1617,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   /** The round on court: the first one with a pending match. Null once every round is played. */
   get spotlightRound() {
-    return this.guestVisibleRounds.find((round) => round.matches.some((match) => !this.isScored(match))) ?? null;
+    return roundsView.spotlightRound(this.guestVisibleRounds);
   }
   get historyRounds() {
-    const spotlight = this.spotlightRound;
-    return this.guestVisibleRounds.filter((round) => round !== spotlight);
+    return roundsView.historyRounds(this.guestVisibleRounds, this.spotlightRound);
   }
   get arenaLive(): boolean {
     return (
@@ -1698,10 +1643,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return TOURNAMENT_PHASE_LABEL[tournamentPhase(this.state)];
   }
   get guestVisibleRounds() {
-    if (!this.state.finishedAt || !this.state.earlyFinalsEnabled) return this.state.rounds;
-    return this.state.rounds
-      .map((round) => ({ ...round, matches: round.matches.filter((match) => this.isScored(match)) }))
-      .filter((round) => round.matches.length > 0);
+    return roundsView.viewerRounds(this.state);
   }
   get canEditScores(): boolean {
     return (
@@ -1712,24 +1654,22 @@ export class AppComponent implements OnInit, OnDestroy {
     return !!this.state.finals;
   }
   get usesMixedFinals(): boolean {
-    return this.isEarlyFinalsOptionAvailable && !!this.state.earlyFinalsEnabled;
+    return tournamentFormat.usesMixedFinals(this.state);
   }
   get usesMixedFinalBracket(): boolean {
-    return this.usesMixedFinals && (this.state.mixedFinalFormat ?? 'knockout') === 'knockout';
+    return tournamentFormat.usesMixedFinalBracket(this.state);
   }
   get mixedFinalistCount(): number {
-    return this.usesMixedFinalBracket ? 8 : 4;
+    return tournamentFormat.mixedFinalistCount(this.state);
   }
   get maleStandings(): PlayerStanding[] {
-    this.refreshStandingsCache();
-    return this.maleStandingsCache;
+    return this.standingsView.male;
   }
   get femaleStandings(): PlayerStanding[] {
-    this.refreshStandingsCache();
-    return this.femaleStandingsCache;
+    return this.standingsView.female;
   }
   get isEarlyFinalsOptionAvailable(): boolean {
-    return !this.isGroupTournament && this.state.size === 24 && this.isMixedDoubles && this.state.courts === 3;
+    return tournamentFormat.isEarlyFinalsOptionAvailable(this.state);
   }
   get earlyFinalsReady(): boolean {
     if (!this.state.earlyFinalsEnabled || !this.isEarlyFinalsOptionAvailable) return false;
@@ -1757,8 +1697,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   get unresolvedFinalTiePlayers(): PlayerStanding[] {
     let position = 0;
-    for (const tiedPlayers of this.rankedStandingGroups()) {
-      if (tiedPlayers.length > 1 && position < 8 && !this.hasStoredTieDraw(tiedPlayers)) return tiedPlayers;
+    for (const tiedPlayers of this.standingsView.groups) {
+      if (tiedPlayers.length > 1 && position < 8 && storedTieDrawOrder(this.state, tiedPlayers) === null)
+        return tiedPlayers;
       position += tiedPlayers.length;
     }
     return [];
@@ -1770,13 +1711,13 @@ export class AppComponent implements OnInit, OnDestroy {
     return positions.length ? positions.map((position) => `${position}º`).join(' e ') : '';
   }
   get isGroupTournament(): boolean {
-    return this.state.tournamentMode === 'groups';
+    return tournamentFormat.isGroupTournament(this.state);
   }
   get isMixedDoubles(): boolean {
-    return this.state.doublesFormat === 'mixed';
+    return tournamentFormat.isMixedDoubles(this.state);
   }
   get fixedPairsMode(): boolean {
-    return this.isGroupTournament && this.state.groupFormat === 'fixed';
+    return tournamentFormat.fixedPairsMode(this.state);
   }
   get availableGamesToWin(): number[] {
     return this.isGroupTournament ? [4, 5, 6] : [3, 4, 5, 6];
@@ -1806,198 +1747,25 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.state.rounds[this.selectedRound] ?? null;
   }
   get totalMatches(): number {
-    return (
-      this.state.rounds.reduce((sum, round) => sum + round.matches.length, 0) + (this.state.finals?.matches.length ?? 0)
-    );
+    return tournamentProgress.totalMatches(this.state);
   }
   get completedMatches(): number {
-    const roundMatches = this.state.rounds.reduce(
-      (sum, round) => sum + round.matches.filter((match) => this.isScored(match)).length,
-      0,
-    );
-    const finalMatches = (this.state.finals?.matches ?? []).filter(
-      (match) => this.finalWinnerSide(match) !== null,
-    ).length;
-    return roundMatches + finalMatches;
+    return tournamentProgress.completedMatches(this.state, this.winnerSide);
   }
   get completedRounds(): number {
-    return this.state.rounds.filter((r) => r.matches.every((m) => this.isScored(m))).length;
+    return tournamentProgress.completedRounds(this.state);
   }
   get progress(): number {
-    return this.totalMatches ? Math.round((this.completedMatches / this.totalMatches) * 100) : 0;
+    return tournamentProgress.progressPercent(this.state, this.winnerSide);
   }
   get groupTables(): GroupStandingTable[] {
-    const standings = new Map(this.standings.map((row) => [row.playerId, row]));
-    return (this.state.groups ?? []).map((group) => {
-      const entries =
-        this.fixedPairsMode && group.fixedPairs
-          ? group.fixedPairs.map((pair) => this.toGroupStandingEntry(pair, standings))
-          : group.playerIds.map((playerId) => this.toGroupStandingEntry([playerId], standings));
-      entries.sort(
-        (a, b) =>
-          b.setsWon - a.setsWon ||
-          b.gameBalance - a.gameBalance ||
-          b.gamesFor - a.gamesFor ||
-          a.label.localeCompare(b.label),
-      );
-      return { id: group.id, name: group.name, entries };
-    });
-  }
-
-  private toGroupStandingEntry(playerIds: string[], standings: Map<string, PlayerStanding>): GroupStandingEntry {
-    const players = playerIds.map((id) => this.state.players.find((player) => player.id === id));
-    const standing = standings.get(playerIds[0]);
-    if (!standing || players.some((player) => !player)) throw new Error('Jogador não encontrado no ranking do grupo.');
-    return {
-      label: players.map((player) => player!.name).join(' + '),
-      playerIds,
-      setsWon: standing.setsWon,
-      gamesFor: standing.gamesFor,
-      gamesAgainst: standing.gamesAgainst,
-      gameBalance: standing.gameBalance,
-      matchesPlayed: standing.matchesPlayed,
-    };
+    return groupTables(this.state, this.standings);
   }
   get standings(): PlayerStanding[] {
-    this.refreshStandingsCache();
-    return this.standingsCache;
+    return this.standingsView.all;
   }
-
-  private refreshStandingsCache(): void {
-    const signature = [
-      this.state.players.map((player) => player.id + ':' + player.name + ':' + (player.gender ?? '')).join('|'),
-      this.state.rounds
-        .map((round) => round.matches.map((match) => match.id + ':' + match.scoreA + ':' + match.scoreB).join(','))
-        .join('|'),
-      (this.state.tieBreakDraws ?? []).map((draw) => draw.playerIds.join(',') + ':' + draw.order.join(',')).join('|'),
-    ].join('~');
-    if (signature === this.standingsCacheSignature) return;
-    this.standingsGroupCache = this.computeRankedStandingGroups();
-    this.standingsCache = this.standingsGroupCache.flat();
-    const genderByPlayerId = new Map(this.state.players.map((player) => [player.id, player.gender]));
-    this.maleStandingsCache = this.standingsCache.filter((row) => genderByPlayerId.get(row.playerId) === 'male');
-    this.femaleStandingsCache = this.standingsCache.filter((row) => genderByPlayerId.get(row.playerId) === 'female');
-    this.standingsCacheSignature = signature;
-  }
-
-  private buildStandings(): PlayerStanding[] {
-    const rows = this.state.players.map((player) => ({
-      playerId: player.id,
-      name: player.name,
-      setsWon: 0,
-      gamesFor: 0,
-      gamesAgainst: 0,
-      gameBalance: 0,
-      rests: this.state.rounds.filter((r) => r.restingPlayerIds.includes(player.id)).length,
-      matchesPlayed: 0,
-    }));
-    const byId = new Map<string, PlayerStanding>();
-    rows.forEach((row) => byId.set(row.playerId, row));
-    for (const round of this.state.rounds)
-      for (const match of round.matches) {
-        if (!this.isScored(match)) continue;
-        const a = match.scoreA!;
-        const b = match.scoreB!;
-        for (const id of match.teamA) {
-          const row = byId.get(id);
-          if (!row) continue;
-          row.gamesFor += a;
-          row.gamesAgainst += b;
-          row.matchesPlayed++;
-          if (a > b) row.setsWon++;
-        }
-        for (const id of match.teamB) {
-          const row = byId.get(id);
-          if (!row) continue;
-          row.gamesFor += b;
-          row.gamesAgainst += a;
-          row.matchesPlayed++;
-          if (b > a) row.setsWon++;
-        }
-      }
-    return rows.map((row) => ({ ...row, gameBalance: row.gamesFor - row.gamesAgainst }));
-  }
-
-  private rankedStandingGroups(): PlayerStanding[][] {
-    this.refreshStandingsCache();
-    return this.standingsGroupCache;
-  }
-
-  private computeRankedStandingGroups(): PlayerStanding[][] {
-    const rows = this.buildStandings().sort(
-      (a, b) => this.compareStandingCriteria(a, b) || a.name.localeCompare(b.name),
-    );
-    const criteriaGroups: PlayerStanding[][] = [];
-    for (const row of rows) {
-      const current = criteriaGroups[criteriaGroups.length - 1];
-      if (current && this.compareStandingCriteria(current[0], row) === 0) current.push(row);
-      else criteriaGroups.push([row]);
-    }
-
-    const rankedGroups: PlayerStanding[][] = [];
-    for (const criteriaGroup of criteriaGroups) {
-      if (criteriaGroup.length === 1) {
-        rankedGroups.push(criteriaGroup);
-        continue;
-      }
-      const withHeadToHead = criteriaGroup
-        .map((row) => ({
-          row,
-          wins: this.directWinsAgainstTiedPlayers(row.playerId, criteriaGroup),
-        }))
-        .sort((a, b) => b.wins - a.wins || a.row.name.localeCompare(b.row.name));
-      const headToHeadGroups: Array<{ wins: number; players: PlayerStanding[] }> = [];
-      for (const item of withHeadToHead) {
-        const current = headToHeadGroups[headToHeadGroups.length - 1];
-        if (current && current.wins === item.wins) current.players.push(item.row);
-        else headToHeadGroups.push({ wins: item.wins, players: [item.row] });
-      }
-      for (const tiedPlayers of headToHeadGroups) {
-        const drawOrder = this.storedTieDrawOrder(tiedPlayers.players);
-        rankedGroups.push(
-          drawOrder
-            ? [...tiedPlayers.players].sort((a, b) => drawOrder.indexOf(a.playerId) - drawOrder.indexOf(b.playerId))
-            : tiedPlayers.players,
-        );
-      }
-    }
-    return rankedGroups;
-  }
-
-  private compareStandingCriteria(a: PlayerStanding, b: PlayerStanding): number {
-    return b.setsWon - a.setsWon || b.gameBalance - a.gameBalance || b.gamesFor - a.gamesFor;
-  }
-
-  private directWinsAgainstTiedPlayers(playerId: string, tiedPlayers: PlayerStanding[]): number {
-    const tiedIds = new Set(tiedPlayers.map((player) => player.playerId).filter((id) => id !== playerId));
-    let wins = 0;
-    for (const round of this.state.rounds)
-      for (const match of round.matches) {
-        if (!this.isScored(match)) continue;
-        const playerOnA = match.teamA.includes(playerId);
-        if (!playerOnA && !match.teamB.includes(playerId)) continue;
-        const opponents = playerOnA ? match.teamB : match.teamA;
-        const directOpponentCount = opponents.filter((id) => tiedIds.has(id)).length;
-        if (!directOpponentCount) continue;
-        const playerSideWon = playerOnA ? match.scoreA! > match.scoreB! : match.scoreB! > match.scoreA!;
-        if (playerSideWon) wins += directOpponentCount;
-      }
-    return wins;
-  }
-
-  private storedTieDrawOrder(players: PlayerStanding[]): string[] | null {
-    const playerIds = players.map((player) => player.playerId).sort();
-    return (
-      this.state.tieBreakDraws?.find(
-        (draw) =>
-          draw.playerIds.length === playerIds.length &&
-          [...draw.playerIds].sort().every((id, index) => id === playerIds[index]),
-      )?.order ?? null
-    );
-  }
-
-  private hasStoredTieDraw(players: PlayerStanding[]): boolean {
-    return this.storedTieDrawOrder(players) !== null;
+  private get standingsView(): StandingsView {
+    return this.standingsMemo(this.state);
   }
 
   navigate(page: Page): void {
@@ -2914,25 +2682,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.syncError = 'Não foi possível preparar a sincronização neste dispositivo.';
       }
     }
-    this.state = {
-      ...snapshot.state,
-      hostingMode: 'shared',
-      sharedTournamentId: snapshot.id,
-      sharedStatus: snapshot.status,
-      tournamentMode: snapshot.state.tournamentMode ?? 'super',
-      groupFormat: snapshot.state.groupFormat ?? 'rotating',
-      groups: snapshot.state.groups ?? [],
-      fixedPairs: snapshot.state.fixedPairs ?? [],
-      finals: snapshot.state.finals ?? null,
-      tieBreakDraws: snapshot.state.tieBreakDraws ?? [],
-    };
-    if (
-      this.fixedPairsMode &&
-      this.state.players.length === this.state.size &&
-      this.state.fixedPairs?.length !== this.state.size / 2
-    )
-      this.syncDefaultFixedPairs();
-    this.state.roundCount = snapshot.state.roundCount;
+    this.state = normalizeSharedState(snapshot);
     if (!keepView) this.setPage(this.isGuestView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup');
     this.initializeScoreDrafts();
     if (this.isGuestView && !this.isLiveViewer && hadPreviousSnapshot && !wasFinished && snapshot.state.finishedAt) {
@@ -3511,11 +3261,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   finalKindLabel(match: Match): string {
-    return match.finalKind === 'quarterfinal'
+    return this.finalKindText(match.finalKind);
+  }
+  private finalKindText(kind: FinalMatchKind | undefined): string {
+    return kind === 'quarterfinal'
       ? 'QUARTAS DE FINAL'
-      : match.finalKind === 'semifinal'
+      : kind === 'semifinal'
         ? 'SEMIFINAL'
-        : match.finalKind === 'championship'
+        : kind === 'championship'
           ? 'FINAL'
           : 'DISPUTA DE 3º LUGAR';
   }
@@ -3575,10 +3328,10 @@ export class AppComponent implements OnInit, OnDestroy {
       .toUpperCase();
   }
   isScored(match: Match): boolean {
-    return match.scoreA !== null && match.scoreB !== null;
+    return isScored(match);
   }
   roundDone(index: number): boolean {
-    return this.state.rounds[index]?.matches.every((m) => this.isScored(m)) ?? false;
+    return tournamentProgress.roundDone(this.state, index);
   }
   roundMatchesDone(index: number): number {
     return this.state.rounds[index]?.matches.filter((m) => this.isScored(m)).length ?? 0;
@@ -3983,27 +3736,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private syncDefaultFixedPairs(): void {
-    if (!this.fixedPairsMode || this.state.players.length !== this.state.size) {
-      this.state.fixedPairs = [];
-      return;
-    }
-    if (this.isMixedDoubles) {
-      const men = this.state.players.filter((player) => player.gender === 'male');
-      const women = this.state.players.filter((player) => player.gender === 'female');
-      if (men.length !== this.state.size / 2 || women.length !== this.state.size / 2) {
-        this.state.fixedPairs = [];
-        return;
-      }
-      this.state.fixedPairs = Array.from({ length: this.state.size / 2 }, (_, index) => [
-        men[index]?.id ?? '',
-        women[index]?.id ?? '',
-      ]);
-      return;
-    }
-    this.state.fixedPairs = Array.from({ length: this.state.size / 2 }, (_, index) => [
-      this.state.players[index * 2].id,
-      this.state.players[index * 2 + 1].id,
-    ]);
+    this.state.fixedPairs = tournamentFormat.defaultFixedPairs(this.state);
   }
 
   private normalizeGamesToWin(): void {
