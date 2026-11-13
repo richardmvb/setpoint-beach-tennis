@@ -1,0 +1,54 @@
+{
+  "finalKind": {
+    "quarterfinal": "QUARTAS DE FINAL",
+    "semifinal": "SEMIFINAL",
+    "championship": "FINAL",
+    "thirdPlace": "DISPUTA DE 3º LUGAR"
+  },
+  "playerMatches": {
+    "kicker": "HISTÓRICO DO ATLETA",
+    "close": "Fechar",
+    "qualifying": "{{ played }} de {{ total }} jogos na classificatória",
+    "round": "Rodada {{ number }}",
+    "partner": "Com {{ name }}",
+    "opponents": "vs {{ names }}",
+    "removedPlayer": "Jogador removido",
+    "pending": "Pendente",
+    "score": "{{ for }}–{{ against }}",
+    "scoreWithTieBreak": "{{ for }}–{{ against }} (TB {{ tieBreakFor }}–{{ tieBreakAgainst }})",
+    "withResult": "{{ score }} · {{ result }}",
+    "win": "Vitória",
+    "loss": "Derrota"
+  },
+  "shareResults": {
+    "kicker": "CARD PARA INSTAGRAM",
+    "title": "Personalize e confira",
+    "close": "Fechar prévia",
+    "layout": "LAYOUT",
+    "layoutGroup": "Escolher layout do card",
+    "layouts": {
+      "podium": "Pódio",
+      "editorial": "Editorial",
+      "scoreboard": "Placar"
+    },
+    "addPhoto": "Adicionar foto de fundo",
+    "changePhoto": "Trocar foto",
+    "removePhoto": "Sem foto",
+    "photoHint": "Opcional · a foto fica neste dispositivo.",
+    "preparing": "Prévia sendo preparada",
+    "building": "Montando sua imagem…",
+    "placeholder": "Sua prévia aparecerá aqui.",
+    "previewAlt": "Prévia do card de resultados",
+    "back": "Voltar",
+    "share": "Compartilhar",
+    "download": "Baixar imagem",
+    "messages": {
+      "notAnImage": "Escolha um arquivo de imagem.",
+      "tooLarge": "A imagem deve ter até 8 MB.",
+      "downloaded": "Imagem baixada.",
+      "shared": "Imagem compartilhada.",
+      "previewFailed": "Não foi possível gerar a prévia.",
+      "shareFailed": "Não foi possível compartilhar a imagem."
+    }
+  }
+}

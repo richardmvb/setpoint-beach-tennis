@@ -426,7 +426,7 @@
 }</div>
 }@if (state.finals.complete) {
 <app-podium [places]="finalPodium" [players]="state.players" [highlightId]="guestPlayerId" />@if (guestPlayerId) {
-<div class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()" [disabled]="sharingResults">{{ sharingResults ? 'Preparando imagem…' : 'Compartilhar minha colocação' }}</button>@if (shareMessage) {
+<div class="share-picker"><p class="muted">Você ficou em <b>{{ guestPlace }}º</b>.</p><button class="button primary share-picker-action" type="button" (click)="shareMyResults()">Compartilhar minha colocação</button>@if (shareMessage) {
 <small class="muted">{{ shareMessage }}</small>
 }</div>
 }
@@ -542,7 +542,7 @@
       <div class="finalize-box"><p class="muted">Após finalizar, nada mais pode ser editado.</p><button class="button primary" type="button" (click)="finalizeTournament()">Finalizar torneio</button></div>
       }<app-podium [places]="finalPodium" [players]="state.players" /><div class="share-picker"><div class="share-picker-head"><span class="card-kicker">COMPARTILHAR</span><p class="muted">Escolha o atleta.</p></div><div class="share-picker-grid" role="radiogroup" aria-label="Atleta para gerar a imagem">@for (candidate of shareCandidates; track trackByPlayerId($index, candidate)) {
       <button type="button" role="radio" class="share-chip" [class.selected]="sharePlayerId === candidate.playerId" [attr.aria-checked]="sharePlayerId === candidate.playerId" (click)="sharePlayerId = candidate.playerId"><app-player-avatar [name]="candidate.name" [photoDataUrl]="playerPhoto(candidate.playerId)" variant="share-chip-avatar" /><span class="share-chip-name">{{ candidate.name }}</span><small class="share-chip-place">{{ candidate.place }}º</small></button>
-      }</div><button class="button primary share-picker-action" type="button" (click)="shareResults()" [disabled]="!sharePlayerId || sharingResults">{{ sharingResults ? 'Preparando imagem…' : sharePlayerId ? 'Gerar imagem de ' + playerName(sharePlayerId) : 'Selecione um atleta' }}</button>@if (shareMessage) {
+      }</div><button class="button primary share-picker-action" type="button" (click)="shareResults()" [disabled]="!sharePlayerId">{{ sharePlayerId ? 'Gerar imagem de ' + playerName(sharePlayerId) : 'Selecione um atleta' }}</button>@if (shareMessage) {
       <small class="muted">{{ shareMessage }}</small>
     }</div></section>
   }
@@ -663,11 +663,6 @@
 }@if (feedbackMessage) {
 <span role="status">{{ feedbackMessage }}</span>
 }</footer>
-@if (selectedRankingPlayer) {
-  <div class="player-matches-backdrop" tabindex="-1" (keydown.escape)="closePlayerMatches()" (click)="$event.target === $event.currentTarget && closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl" /><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list">@for (item of selectedPlayerMatches; track $index) {
-  <article class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article>
-}</div></section></div>
-}
 @if (profileOpen) {
   <div class="profile-backdrop" tabindex="-1" (keydown.escape)="closeProfile()" (click)="$event.target === $event.currentTarget && closeProfile()">
     <section id="profilePanel" class="profile-panel" [class.welcome]="profileWelcome" role="dialog" aria-modal="true" aria-labelledby="profileTitle" [attr.aria-describedby]="profileWelcome ? 'profileWelcomeText' : null" tabindex="-1">
@@ -789,36 +784,6 @@
     </section>
   </div>
 }
-</div>
-}
-
-@if (sharePreviewOpen) {
-  <div class="share-preview-backdrop" tabindex="-1" (keydown.escape)="closeSharePreview()" (click)="$event.target === $event.currentTarget && closeSharePreview()">
-    <section class="share-preview-modal" role="dialog" aria-modal="true" aria-labelledby="sharePreviewTitle">
-      <header class="share-preview-header"><div><span class="card-kicker">CARD PARA INSTAGRAM</span><h2 id="sharePreviewTitle">Personalize e confira</h2></div><button class="share-preview-close" type="button" (click)="closeSharePreview()" aria-label="Fechar prévia">×</button></header>
-      <div class="share-preview-controls">
-        <div class="share-layout-control"><span>LAYOUT</span><div class="share-layout-options" role="group" aria-label="Escolher layout do card"><button type="button" [class.active]="shareLayout === 'podium'" [attr.aria-pressed]="shareLayout === 'podium'" (click)="chooseShareLayout('podium')">Pódio</button><button type="button" [class.active]="shareLayout === 'editorial'" [attr.aria-pressed]="shareLayout === 'editorial'" (click)="chooseShareLayout('editorial')">Editorial</button><button type="button" [class.active]="shareLayout === 'scoreboard'" [attr.aria-pressed]="shareLayout === 'scoreboard'" (click)="chooseShareLayout('scoreboard')">Placar</button></div></div>
-        <div class="share-background-control"><label class="button secondary share-upload-button">{{ shareBackgroundUrl ? 'Trocar foto' : 'Adicionar foto de fundo' }}<input type="file" accept="image/*" (change)="selectShareBackground($event)" hidden></label>@if (shareBackgroundUrl) {
-        <button class="button secondary" type="button" (click)="clearShareBackground()">Sem foto</button>
-        }@if (shareBackgroundName) {
-        <small class="muted">{{ shareBackgroundName }}</small>
-        }@if (!shareBackgroundUrl) {
-        <small class="muted">Opcional · a foto fica neste dispositivo.</small>
-      }</div>
-    </div>
-    <div class="share-preview-frame" aria-live="polite">
-      @if (sharePreviewLoading || !sharePreviewUrl) {
-        <div class="share-preview-skeleton" aria-label="Prévia sendo preparada"><div class="skeleton-brand"></div><div class="skeleton-title"></div><div class="skeleton-name"></div><div class="skeleton-podium"><i></i><i></i><i></i></div><div class="skeleton-row"></div><div class="skeleton-row short"></div><span>{{ sharePreviewLoading ? 'Montando sua imagem…' : 'Sua prévia aparecerá aqui.' }}</span></div>
-      }
-      @if (sharePreviewUrl && !sharePreviewLoading) {
-        <img [src]="sharePreviewUrl" alt="Prévia do card de resultados">
-      }
-    </div>
-    @if (shareMessage) {
-      <p class="share-preview-message" role="status">{{ shareMessage }}</p>
-    }
-    <footer class="share-preview-actions"><button class="button secondary" type="button" (click)="closeSharePreview()">Voltar</button><button class="button secondary" type="button" (click)="sharePreviewImage()" [disabled]="!sharePreviewBlob || sharePreviewLoading">Compartilhar</button><button class="button primary" type="button" (click)="downloadSharePreview()" [disabled]="!sharePreviewBlob || sharePreviewLoading">Baixar imagem</button></footer>
-  </section>
 </div>
 }
 

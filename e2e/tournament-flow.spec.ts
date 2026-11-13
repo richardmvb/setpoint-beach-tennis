@@ -8,7 +8,7 @@ import {
 } from './support/fixtures';
 
 test.describe('tournament from draw to podium', () => {
-  test('creates an 8-player tournament, scores every round, plays the finals and shows the podium', async ({
+  test('creates an 8-player tournament, scores every round, plays the finals, shows the podium and builds a share card', async ({
     page,
   }) => {
     // Seven rounds, finals and podium in one journey: about 25 s alone, so give it more room under load.
@@ -32,6 +32,22 @@ test.describe('tournament from draw to podium', () => {
     for (const place of ['1º', '2º', '3º', '4º']) {
       await expect(page.getByText(place, { exact: true }).first()).toBeVisible();
     }
+
+    // Share card: pick a player, the dialog builds a preview, a layout change rebuilds it, Escape closes it.
+    await page.getByRole('radiogroup', { name: 'Atleta para gerar a imagem' }).getByRole('radio').first().click();
+    const generate = page.getByRole('button', { name: /^Gerar imagem de / });
+    await generate.click();
+    const dialog = page.getByRole('dialog', { name: 'Personalize e confira' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('img', { name: 'Prévia do card de resultados' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Baixar imagem' })).toBeEnabled();
+    const editorial = dialog.getByRole('button', { name: 'Editorial' });
+    await editorial.click();
+    await expect(editorial).toHaveAttribute('aria-pressed', 'true');
+    await expect(dialog.getByRole('img', { name: 'Prévia do card de resultados' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(generate).toBeFocused();
   });
 
   test('a score only saves when it is valid for the games-to-win rule', async ({ page }) => {

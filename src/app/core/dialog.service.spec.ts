@@ -1,5 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DialogService, matchesPhrase } from './dialog.service';
@@ -192,5 +194,69 @@ describe('confirmation dialogs', () => {
       buttonNamed('Cancelar')?.click();
       expect(await result).toBe(false);
     });
+  });
+});
+
+/** A feature dialog in its simplest form: a title, and a button that closes it with a value. */
+@Component({
+  selector: 'app-test-panel',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<h2 id="panel-title">{{ data.title }}</h2>
+    <button type="button" (click)="ref.close('picked')">Escolher</button>`,
+})
+class TestPanelComponent {
+  protected readonly data = inject<{ title: string }>(DIALOG_DATA);
+  protected readonly ref = inject<DialogRef<string>>(DialogRef);
+}
+
+describe('feature dialogs (open)', () => {
+  let service: DialogService;
+  const open = () =>
+    service.open<string, { title: string }, TestPanelComponent>(TestPanelComponent, {
+      data: { title: 'Histórico' },
+      labelledBy: 'panel-title',
+    });
+  const container = () => document.querySelector<HTMLElement>('.cdk-dialog-container');
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    service = TestBed.inject(DialogService);
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('is a modal dialog named by the given title, with the data passed in', async () => {
+    const result = open();
+    await settle();
+    expect(container()?.getAttribute('role')).toBe('dialog');
+    expect(container()?.getAttribute('aria-modal')).toBe('true');
+    expect(container()?.getAttribute('aria-labelledby')).toBe('panel-title');
+    expect(document.getElementById('panel-title')?.textContent).toBe('Histórico');
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await result;
+  });
+
+  it('resolves with what the component closes with', async () => {
+    const result = open();
+    await settle();
+    Array.from(document.querySelectorAll<HTMLButtonElement>('.cdk-dialog-container button'))
+      .find((button) => button.textContent === 'Escolher')
+      ?.click();
+    expect(await result).toBe('picked');
+    expect(container()).toBeNull();
+  });
+
+  it('resolves undefined on Escape or a click outside', async () => {
+    const escaped = open();
+    await settle();
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    expect(await escaped).toBeUndefined();
+
+    const outside = open();
+    await settle();
+    document.querySelector<HTMLElement>('.cdk-overlay-backdrop')?.click();
+    expect(await outside).toBeUndefined();
   });
 });
