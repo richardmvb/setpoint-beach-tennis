@@ -83,6 +83,7 @@ import { QualificationStatsComponent } from './features/qualification-stats.comp
 import { PostHogService } from './core/posthog.service';
 import { DialogService } from './core/dialog.service';
 import { environment } from '../environments/environment';
+import { errorMessage } from './shared/parsers/error-message';
 
 interface TourStep {
   element: string;
@@ -2456,7 +2457,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private moderatorAuthErrorMessage(error: unknown): string {
-    const message = error instanceof Error ? error.message : '';
+    const message = errorMessage(error);
     if (/anonymous/i.test(message)) {
       return 'O login sem e-mail está desativado no Supabase. Ative "Allow anonymous sign-ins" ou escolha o link por e-mail.';
     }
@@ -3088,7 +3089,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private sharedErrorMessage(error: unknown): string {
-    const message = error instanceof Error ? error.message : '';
+    const message = errorMessage(error);
     if (message.includes('invalid_live_link')) return 'Este link de acompanhamento não é válido.';
     if (message.includes('authentication_required'))
       return 'Não foi possível autenticar a publicação. Tente novamente.';
