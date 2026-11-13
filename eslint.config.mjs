@@ -11,6 +11,21 @@ import templateParser from '@angular-eslint/template-parser';
  * cannot pass yet is enabled only for the folders listed in a scoped block below, and the
  * globs widen as code is migrated. Never add eslint-disable comments to make a gate pass.
  */
+const featuresPattern = {
+  group: ['**/features/**'],
+  message: 'core and shared must not import features (docs/professionalization-plan.md, rule #1).',
+};
+const vendorPattern = {
+  group: ['@supabase/*', 'posthog-js', 'posthog-js/*'],
+  message: 'Vendor SDKs are imported only in src/app/core/adapters (docs/adr/0003-ports-and-adapters.md).',
+};
+/** Ratchet: files that still import a vendor SDK directly. Shrinks as each capability moves behind a port. */
+const legacyVendorFiles = [
+  'src/app/app.component.ts',
+  'src/app/core/supabase.service.ts',
+  'src/app/core/posthog.service.ts',
+];
+
 export default tseslint.config(
   {
     ignores: ['dist/', '.angular/', 'node_modules/', 'public/', 'coverage/', 'src/app/core/database.types.ts'],
@@ -71,21 +86,21 @@ export default tseslint.config(
   },
 
   // Layering (plan rule #1): core and shared never depend on feature components.
+  // Vendor boundary (ADR 0003): vendor SDKs are imported only inside core/adapters. Files still using one directly
+  // are listed in `legacyVendorFiles`; each is removed from the list when its capability moves behind a port.
   {
     files: ['src/app/core/**/*.ts', 'src/app/shared/**/*.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: ['**/features/**'],
-              message: 'core and shared must not import features (docs/professionalization-plan.md, rule #1).',
-            },
-          ],
-        },
-      ],
-    },
+    ignores: ['src/app/core/adapters/**', ...legacyVendorFiles],
+    rules: { 'no-restricted-imports': ['error', { patterns: [featuresPattern, vendorPattern] }] },
+  },
+  {
+    files: ['src/app/core/adapters/**/*.ts', ...legacyVendorFiles.filter((file) => file.startsWith('src/app/core/'))],
+    rules: { 'no-restricted-imports': ['error', { patterns: [featuresPattern] }] },
+  },
+  {
+    files: ['src/**/*.ts'],
+    ignores: ['src/app/core/**', 'src/app/shared/**', ...legacyVendorFiles],
+    rules: { 'no-restricted-imports': ['error', { patterns: [vendorPattern] }] },
   },
 
   // Angular templates: accessibility rules from angular-eslint.
