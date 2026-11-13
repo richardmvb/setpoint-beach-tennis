@@ -1,0 +1,13 @@
+<ng-container *transloco="let t; prefix: 'shared.chance'">
+<button type="button" class="chance-toast" [ngClass]="'tone-' + toast().tone" role="status" (click)="opened.emit()"><span aria-hidden="true">@switch (toast().tone) {
+  @case ('up') {▲}
+  @case ('down') {▼}
+  @case ('clinched') {🏆}
+  @default {•}
+}</span><span>@switch (toast().tone) {
+  @case ('clinched') {{{ t('clinched', { headline: toast().headline }) }}}
+  @case ('eliminated') {{{ t('eliminated', { headline: toast().headline, detail: toast().detail }) }}}
+  @case ('up') {{{ toast().goal === 1 ? t('championUp', { from: toast().from, to: toast().to }) : t('topUp', { goal: toast().goal, from: toast().from, to: toast().to }) }}}
+  @default {{{ toast().goal === 1 ? t('championDown', { from: toast().from, to: toast().to }) : t('topDown', { goal: toast().goal, from: toast().from, to: toast().to }) }}}
+}</span><em>{{ t('open') }}</em></button>
+</ng-container>

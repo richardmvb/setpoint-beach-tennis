@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Player } from './models';
+import { seededRandom } from '../testing/seeded-random';
 import { ScheduleService } from './schedule.service';
 
 const women = [
@@ -37,10 +38,14 @@ const players: Player[] = [
 
 describe('super 24 mixed', () => {
   for (const courts of [3, 6]) {
-    it(`Super 24 misto: ${courts} quadras`, async (context) => {
+    // Three full Super 24 draws: about 2 s alone, and several times that under coverage with every spec in parallel.
+    it(`Super 24 misto: ${courts} quadras`, { timeout: 20_000 }, async (context) => {
       for (let iteration = 0; iteration < 3; iteration++) {
         const expectedRounds = courts === 3 ? 24 : 12;
-        const rounds = new ScheduleService().generate(players, 24, courts, expectedRounds, true);
+        // Seeded: the draw searches a random space, so an unseeded run took anywhere from 1 s to over 5 s under load.
+        const scheduler = new ScheduleService();
+        scheduler.random = seededRandom(20261113 + courts * 10 + iteration);
+        const rounds = scheduler.generate(players, 24, courts, expectedRounds, true);
         expect(rounds.length).toBe(expectedRounds);
         const played = new Map(players.map((player) => [player.id, 0]));
         const rested = new Map(players.map((player) => [player.id, 0]));

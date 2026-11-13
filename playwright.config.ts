@@ -30,7 +30,13 @@ export default defineConfig<{ routerEnabled: boolean }>({
     {
       // The same journeys that depend on the address, with the Angular Router handling it (the routerEnabled flag).
       name: 'chromium-router',
-      testMatch: ['url-contract.spec.ts', 'live-viewer.spec.ts', 'shared-invite.spec.ts', 'tournament-flow.spec.ts'],
+      testMatch: [
+        'url-contract.spec.ts',
+        'live-viewer.spec.ts',
+        'shared-invite.spec.ts',
+        'shared-view.spec.ts',
+        'tournament-flow.spec.ts',
+      ],
       use: {
         ...devices['Desktop Chrome'],
         channel: process.env['E2E_BROWSER_CHANNEL'] || undefined,

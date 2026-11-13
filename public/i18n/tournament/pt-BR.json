@@ -50,5 +50,12 @@
       "previewFailed": "Não foi possível gerar a prévia.",
       "shareFailed": "Não foi possível compartilhar a imagem."
     }
+  },
+  "projection": {
+    "calculating": "Calculando projeção…",
+    "lockedTitle": "Projeção ainda bloqueada",
+    "lockedFinals": "A fase de grupos acabou — acompanhe as finais.",
+    "lockedRound": "Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.",
+    "shareError": "Não foi possível gerar a imagem. Tente novamente."
   }
 }

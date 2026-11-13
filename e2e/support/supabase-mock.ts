@@ -24,6 +24,14 @@ export interface SupabaseMock {
   calls(name: string): Json[];
   /** Every email sign-in link requested: the address and the page Supabase should send the person back to. */
   loginRequests(): { email: string; redirectTo: string | null }[];
+  /** Realtime channel messages the app sent, in order: `phx_join` and `phx_leave` per topic. */
+  realtime(): RealtimeMessage[];
+}
+
+interface RealtimeMessage {
+  /** The channel, for example `realtime:local-live:live-1`. */
+  topic: string;
+  event: 'phx_join' | 'phx_leave';
 }
 
 const SUPABASE_HOST = /\.supabase\.co(?::\d+)?$/;
@@ -40,6 +48,7 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
   const replies = new Map<string, RpcReply | RpcFailure>();
   const calls = new Map<string, Json[]>();
   const logins: { email: string; redirectTo: string | null }[] = [];
+  const realtime: RealtimeMessage[] = [];
 
   await page.route(
     (url) => SUPABASE_HOST.test(url.host),
@@ -97,10 +106,26 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
     },
   );
 
-  // Realtime: accept the socket and never push. The app also polls every 4 seconds, which these tests rely on.
+  // Realtime: accept the socket, answer joins and heartbeats like the server, and never push a change. The app also
+  // polls every 4 seconds, which these tests rely on. Frames use the Phoenix v2 shape [joinRef, ref, topic, event, payload].
   await page.routeWebSocket(
     (url) => SUPABASE_HOST.test(url.host),
-    () => undefined,
+    (ws) => {
+      ws.onMessage((message) => {
+        if (typeof message !== 'string') return;
+        let frame: unknown;
+        try {
+          frame = JSON.parse(message);
+        } catch {
+          return;
+        }
+        if (!Array.isArray(frame) || frame.length !== 5) return;
+        const [joinRef, ref, topic, event] = frame as [string | null, string | null, string, string, unknown];
+        if (event === 'phx_join' || event === 'phx_leave') realtime.push({ topic, event });
+        if (event === 'phx_join' || event === 'phx_leave' || event === 'heartbeat')
+          ws.send(JSON.stringify([joinRef, ref, topic, 'phx_reply', { status: 'ok', response: {} }]));
+      });
+    },
   );
 
   return {
@@ -108,6 +133,7 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
     fail: (name, message) => void replies.set(name, { message }),
     calls: (name) => calls.get(name) ?? [],
     loginRequests: () => logins,
+    realtime: () => realtime,
   };
 }
 
