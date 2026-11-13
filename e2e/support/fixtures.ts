@@ -69,6 +69,13 @@ export const test = base.extend<Fixtures>({
         };
       }, randomSeed);
     }
+    // Every test also proves the app raises no list or change-detection problems in dev mode:
+    // NG0100 (expression changed after check), NG0955 (duplicate @for keys), NG0956 (a @for list rebuilt because items are tracked by identity).
+    const framework: string[] = [];
+    page.on('console', (message) => {
+      const found = /NG0(100|955|956)\b/.exec(message.text());
+      if (found) framework.push(message.text().slice(0, 240));
+    });
     // Every test also proves the Content-Security-Policy in index.html does not block anything the app needs.
     await page.addInitScript(() => {
       const violations: string[] = [];
@@ -82,6 +89,7 @@ export const test = base.extend<Fixtures>({
       .evaluate(() => (window as unknown as { __cspViolations?: string[] }).__cspViolations ?? [])
       .catch(() => [] as string[]);
     expect(violations, 'Content-Security-Policy violations').toEqual([]);
+    expect(framework, 'Angular NG0100 / NG0955 / NG0956 warnings').toEqual([]);
   },
 });
 

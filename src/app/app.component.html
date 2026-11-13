@@ -273,7 +273,7 @@
         }@if (!isSharedMode) {
         <button class="batch-entry-button" type="button" (click)="openBatchModal()">＋ Adicionar em lote</button>
       }
-      <div class="wizard-player-list">@for (player of state.players; track player; let i = $index) {
+      <div class="wizard-player-list">@for (player of state.players; track player.id; let i = $index) {
         <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span>@if (isMixedDoubles && player.gender) {
         <app-gender-icon [gender]="player.gender" />
         }@if (isMixedDoubles && !hasSchedule) {
@@ -307,7 +307,7 @@
   <p class="shared-success" role="status">{{ sharedNotice }}</p>
 }
 @if (fixedPairsMode && state.players.length === state.size) {
-  <div class="fixed-pair-list"><span class="card-kicker">FORME AS DUPLAS FIXAS</span>@for (pair of state.fixedPairs; track pair; let i = $index) {
+  <div class="fixed-pair-list"><span class="card-kicker">FORME AS DUPLAS FIXAS</span>@for (pair of state.fixedPairs; track $index; let i = $index) {
   <div class="fixed-pair-row"><b>Dupla {{ i + 1 }}</b><select [name]="'fixedPairA' + i" [ngModel]="pair[0]" (ngModelChange)="updateFixedPair(i, 0, $event)">@for (player of fixedPairOptions(i); track player) {
   <option [ngValue]="player.id">{{ player.name }}</option>
   }</select><span>+</span><select [name]="'fixedPairB' + i" [ngModel]="pair[1]" (ngModelChange)="updateFixedPair(i, 1, $event)">@for (player of fixedPairOptions(i); track player) {
@@ -330,7 +330,7 @@
     <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
     <div id="reviewSummary" class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
     <div class="callout"><b>{{ state.name }}</b><span>{{ reviewDescription }}</span></div>
-    <div class="wizard-roster"><span class="card-kicker">JOGADORES</span><div class="roster-chips">@for (player of state.players; track player) {
+    <div class="wizard-roster"><span class="card-kicker">JOGADORES</span><div class="roster-chips">@for (player of state.players; track player.id) {
     <span class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar" />{{ player.name }}@if (isMixedDoubles && player.gender) {
     <app-gender-icon [gender]="player.gender" />
   }</span>
@@ -389,7 +389,7 @@
       @if (sharedSnapshot && guestTab !== 'projection') {
         <ng-template #matchRow let-match let-label="label" let-live="live"><app-battle-card [match]="match" [players]="state.players" [highlightId]="guestPlayerId" [label]="label ?? ('QUADRA ' + match.court)" [live]="!!live" /></ng-template>
         @if (state.players.length && !state.rounds.length) {
-          <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span>@for (player of state.players; track player) {
+          <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">PARTICIPANTES · {{ state.players.length }} / {{ state.size }}</span>@for (player of state.players; track player.id) {
           <div class="player-row" [class.me-row]="isMe(player.id)"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (isMe(player.id)) {
           <small>você</small>
         }</span></div>
@@ -416,7 +416,7 @@
   <app-ranking-view id="guest-ranking" [groupTables]="groupTables" [standings]="standings" [players]="state.players" [rounds]="state.rounds" [maleStandings]="maleStandings" [femaleStandings]="femaleStandings" [showGenderRankings]="usesMixedFinals" [genderRankingLimit]="mixedFinalistCount" [fixedPairsMode]="fixedPairsMode" [hasSchedule]="true" [highlightId]="guestPlayerId" (playerSelected)="openPlayerMatches($event)" />
 }
 @if (state.finals) {
-  <article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2>@for (match of state.finals.matches; track match) {
+  <article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">FASE FINAL</span><h2>{{ state.finals.complete ? 'Pódio final' : 'Finais em andamento' }}</h2>@for (match of state.finals.matches; track match.id) {
   <div class="shared-final-match"><span class="card-kicker">{{ finalKindLabel(match) }}</span>@if (match.finalKind === 'championship' && match.livePoints !== undefined) {
   <app-final-live-score [match]="match" [players]="state.players" />
 } @else {
@@ -471,7 +471,7 @@
   @if (!state.players.length) {
     <div class="empty-state"><span>♙</span><b>Nenhum jogador cadastrado</b><small>Adicione os participantes para começar.</small></div>
   }
-  @for (player of state.players; track player; let i = $index) {
+  @for (player of state.players; track player.id; let i = $index) {
     <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" (click)="removePlayer(player.id)" [disabled]="hasSchedule" aria-label="Remover jogador">×</button></div>
   }
 </article>
@@ -486,14 +486,14 @@
     @if (hasSchedule && currentRound; as round) {
       <article class="surface-card rounds-header"><div><span class="card-kicker">{{ state.name }}</span><h2>Calendário</h2><p class="muted">{{ roundsLocked ? 'Bloqueadas após as finais.' : 'Lance os resultados em qualquer ordem.' }}</p></div><div class="round-summary"><b>{{ completedRounds }}<small> / {{ state.roundCount }}</small></b><span>rodadas</span></div><div class="round-summary elapsed-summary"><b>{{ elapsedLabel }}</b><span>{{ state.finishedAt ? 'duração' : 'tempo' }}</span></div></article>
       <app-round-navigation [selectedRound]="selectedRound" [roundCount]="state.rounds.length" [completedRounds]="completedRounds" [finalsExist]="!!state.finals" (roundSelect)="selectRound($event)" (ranking)="navigate('ranking')" />
-      <div class="round-tabs" role="tablist" aria-label="Rodadas do torneio">@for (item of state.rounds; track item; let i = $index) {
+      <div class="round-tabs" role="tablist" aria-label="Rodadas do torneio">@for (item of state.rounds; track item.number; let i = $index) {
         <button [attr.id]="'round-tab-' + i" type="button" role="tab" [attr.aria-selected]="selectedRound === i" [class.active]="selectedRound === i" [class.done]="roundDone(i)" (click)="selectRound(i)"><span>RODADA</span><b>{{ item.number }}</b>@if (roundDone(i)) {
         <i>✓</i>
       }</button>
     }</div>
     <div class="round-toolbar"><div><span class="card-kicker">RODADA {{ round.number }} DE {{ state.rounds.length }}</span><h2>{{ round.matches.length }} {{ round.matches.length === 1 ? 'partida' : 'partidas' }}</h2></div><span class="mini-tag">{{ roundMatchesDone(selectedRound) }} / {{ round.matches.length }} resultados</span></div>
     <div class="round-layout"><div class="match-list">
-      @for (match of round.matches; track match) {
+      @for (match of round.matches; track match.id) {
         <article class="surface-card match-card">
           <div class="match-meta"><span class="court-label">{{ match.groupId ? groupName(match.groupId) + ' · ' : '' }}QUADRA {{ match.court }}</span><span class="match-state" [class.done]="isScored(match)">{{ isScored(match) ? '● Registrado' : '○ Pendente' }}</span></div>
           <div class="match-teams"><div class="team"><div class="team-names"><b><app-player-avatar [name]="playerName(match.teamA[0])" [photoDataUrl]="playerPhoto(match.teamA[0])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[0]) }}</span></b><b><app-player-avatar [name]="playerName(match.teamA[1])" [photoDataUrl]="playerPhoto(match.teamA[1])" variant="team-avatar" /><span class="team-player-name">{{ playerName(match.teamA[1]) }}</span></b></div><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].a" (ngModelChange)="scoreChanged(match, 'a', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 1"></div><span class="versus">VS</span><div class="team team-right"><input class="inline-score" type="number" min="0" [max]="state.gamesToWin" step="1" [disabled]="!canEditRoundScores" [ngModel]="scoreDrafts[match.id].b" (ngModelChange)="scoreChanged(match, 'b', $event)" [ngModelOptions]="{standalone: true}" aria-label="Games da dupla 2"><div class="team-names"><b><span class="team-player-name">{{ playerName(match.teamB[0]) }}</span><app-player-avatar [name]="playerName(match.teamB[0])" [photoDataUrl]="playerPhoto(match.teamB[0])" variant="team-avatar" /></b><b><span class="team-player-name">{{ playerName(match.teamB[1]) }}</span><app-player-avatar [name]="playerName(match.teamB[1])" [photoDataUrl]="playerPhoto(match.teamB[1])" variant="team-avatar" /></b></div></div><small class="score-status">{{ scoreStatus(match) }}</small></div>
@@ -664,7 +664,7 @@
 <span role="status">{{ feedbackMessage }}</span>
 }</footer>
 @if (selectedRankingPlayer) {
-  <div class="player-matches-backdrop" tabindex="-1" (keydown.escape)="closePlayerMatches()" (click)="$event.target === $event.currentTarget && closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl" /><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list">@for (item of selectedPlayerMatches; track item) {
+  <div class="player-matches-backdrop" tabindex="-1" (keydown.escape)="closePlayerMatches()" (click)="$event.target === $event.currentTarget && closePlayerMatches()"><section class="player-matches-modal" role="dialog" aria-modal="true" aria-labelledby="playerMatchesTitle"><div class="batch-modal-header"><div><span class="card-kicker">HISTÓRICO DO ATLETA</span><h2 id="playerMatchesTitle">{{ selectedRankingPlayer.name }}</h2></div><button type="button" class="modal-close" (click)="closePlayerMatches()" aria-label="Fechar">×</button></div><div class="player-match-summary"><app-player-avatar [name]="selectedRankingPlayer.name" [photoDataUrl]="selectedRankingPlayer.photoDataUrl" /><span>{{ selectedPlayerQualifyingPlayed }} de {{ selectedPlayerQualifyingTotal }} jogos na classificatória</span></div><div class="player-match-list">@for (item of selectedPlayerMatches; track $index) {
   <article class="player-match-detail"><span class="card-kicker">{{ item.phase }}</span><b>Com {{ item.partner }}</b><span>vs {{ item.opponent }}</span><strong [class.positive]="item.result === 'Vitória'" [class.negative]="item.result === 'Derrota'">{{ item.score }} {{ item.result ? '· ' + item.result : '' }}</strong></article>
 }</div></section></div>
 }
@@ -704,7 +704,7 @@
         }
         @if (libraryEntries.length) {
           <ul class="profile-recent">
-            @for (entry of recentLibraryEntries; track entry) {
+            @for (entry of recentLibraryEntries; track entry.id) {
               <li><button type="button" class="profile-recent-item" [class.current]="isCurrentLibraryEntry(entry)" (click)="openLibraryTournamentFromProfile(entry.id)">
                 <span class="profile-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
                 <span class="profile-recent-text"><b>{{ entry.name }}</b><small>{{ isCurrentLibraryEntry(entry) ? 'Em uso' : libraryPhaseLabel(entry) }} · {{ entry.updatedAt | date:'dd/MM' }}</small></span>
@@ -737,7 +737,7 @@
         <p class="muted">Nenhum torneio salvo ainda. Ele aparece aqui assim que a tabela for gerada.</p>
       }
       <ul class="library-list">
-        @for (entry of libraryEntries; track entry) {
+        @for (entry of libraryEntries; track entry.id) {
           <li class="library-item" [class.current]="isCurrentLibraryEntry(entry)">
             <div class="library-info"><b>{{ entry.name }}</b><small>{{ libraryPhaseLabel(entry) }} · {{ entry.matchesCompleted }}/{{ entry.matchesTotal }} partidas · {{ entry.playerCount }} jogadores · {{ entry.updatedAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
             <div class="library-actions"><button class="button secondary" type="button" (click)="openLibraryTournament(entry.id)">{{ isCurrentLibraryEntry(entry) ? 'Em uso' : 'Abrir' }}</button><button class="button danger" type="button" (click)="deleteLibraryTournament(entry)" [attr.aria-label]="'Excluir ' + entry.name">Excluir</button></div>
@@ -757,7 +757,7 @@
       <span class="mini-tag">{{ batchPlayers.length }} na lista</span>
     }</div>
     @if (batchPlayers.length) {
-      <div class="batch-preview">@for (player of batchPlayers; track player; let i = $index) {
+      <div class="batch-preview">@for (player of batchPlayers; track $index; let i = $index) {
         <div class="batch-player" [class.invalid]="player.error"><span>{{ i + 1 }}</span><input [name]="'batchName' + i" [(ngModel)]="player.name" (ngModelChange)="validateBatchPlayers()" maxlength="40" aria-label="Nome do participante">@if (isMixedDoubles) {
         <app-gender-toggle [compact]="true" [value]="player.gender" (valueChange)="player.gender = $event; validateBatchPlayers()" [label]="'Categoria de ' + player.name" />
         }@if (player.error) {
@@ -961,7 +961,7 @@
         <span>{{ hour % 3 === 0 ? hour : '' }}</span>
       }</div>
       @for (row of view.grid.rows; track row; let day = $index) {
-        <div class="dash-heat-row"><b>{{ dashboardWeekdays[day] }}</b>@for (count of row; track count; let hour = $index) {
+        <div class="dash-heat-row"><b>{{ dashboardWeekdays[day] }}</b>@for (count of row; track $index; let hour = $index) {
         <i [style.--v]="dashboardCell(count)" [attr.title]="dashboardWeekdays[day] + ' ' + hour + 'h: ' + count + (count === 1 ? ' torneio' : ' torneios')"></i>
       }</div>
     }
@@ -1007,13 +1007,13 @@
           @if (!dashboardVisibleTournaments.length) {
             <p class="dashboard-empty">{{ dashboardSearch ? 'Nenhum torneio encontrado.' : dashboardListMode === 'active' ? 'Nenhum torneio disponível para visualização.' : 'Nenhum torneio arquivado.' }}</p>
           }
-          @for (tournament of dashboardVisibleTournaments; track tournament) {
+          @for (tournament of dashboardVisibleTournaments; track tournament.source + tournament.id) {
             <div class="dashboard-tournament-row"><div class="dashboard-tournament-name"><b>{{ tournament.name }}</b><small>{{ tournament.source === 'local' ? 'Local ao vivo' : 'Compartilhado' }} · {{ tournament.mode === 'groups' ? 'Grupos' : 'Super' }} {{ tournament.size }}</small></div><div class="dashboard-tournament-progress"><span>{{ tournament.matches_completed }} / {{ tournament.matches_total }} partidas</span><div class="dashboard-progress-track"><span [style.width.%]="tournament.matches_total ? 100 * tournament.matches_completed / tournament.matches_total : 0"></span></div></div><span class="dashboard-tournament-date">{{ tournament.updated_at | date:'dd/MM HH:mm' }}</span><a class="button secondary" [href]="dashboardViewerUrl(tournament)" target="_blank" rel="noopener noreferrer">{{ dashboardListMode === 'active' ? 'Visualizar ↗' : 'Consultar ↗' }}</a></div>
           }
         </section>
         <section class="dashboard-section dashboard-dropoff" aria-labelledby="dashboardAbandonTitle"><div class="dashboard-section-heading"><div><span class="dashboard-eyebrow">CONTINUIDADE</span><h2 id="dashboardAbandonTitle">Onde os torneios pararam</h2></div><span class="dashboard-count">{{ dashboardAbandonmentTotal }} registros</span></div>@if (dashboardMainDropoff; as dropoff) {
         <div class="dashboard-insight"><span>MAIOR ETAPA CONHECIDA</span><strong>{{ dropoff.label }}</strong><small>{{ dropoff.count }} {{ dropoff.count === 1 ? 'torneio' : 'torneios' }}</small></div>
-        }<div class="dashboard-stage-list">@for (stage of dashboardAbandonmentStages; track stage) {
+        }<div class="dashboard-stage-list">@for (stage of dashboardAbandonmentStages; track stage.label) {
         <div class="dashboard-stage"><span>{{ stage.label }}</span><b>{{ stage.count }}</b><div class="dashboard-stage-track"><span [style.width.%]="stage.percent"></span></div><small>{{ dashboardAbandonmentTotal ? stage.percent + '%' : '—' }}</small></div>
         }</div><p class="dashboard-method">Compartilhados arquivados sem finalizar e locais reiniciados. Fechar a página não é contado; a etapa dos locais é desconhecida.</p></section>
       </div>
