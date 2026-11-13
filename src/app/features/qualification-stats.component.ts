@@ -4,17 +4,19 @@ import { Player } from '../core/models';
 import { GoalPlace } from '../core/scenario-engine';
 import { PathGoal, PathMatch, PathProjection, QualificationRow, TrendPoint } from '../core/qualification.service';
 import { PlayerAvatarComponent } from './player-avatar.component';
+import { ButtonComponent } from '@ui/button/button.component';
+import { CardComponent } from '@ui/card/card.component';
 
 const CIRCUMFERENCE = 2 * Math.PI * 52;
 
 @Component({
   selector: 'app-qualification-stats',
   standalone: true,
-  imports: [CommonModule, PlayerAvatarComponent],
+  imports: [CommonModule, PlayerAvatarComponent, ButtonComponent, CardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   template: `
-    <section class="qual-panel surface-card" aria-labelledby="qualTitle">
+    <section uiCard class="qual-panel" aria-labelledby="qualTitle">
       <header class="qual-panel-header">
         <div>
           <span class="card-kicker">{{ isGuest() ? 'SEU CAMINHO' : 'CAMINHO DE' }}</span>
@@ -256,7 +258,7 @@ const CIRCUMFERENCE = 2 * Math.PI * 52;
           </section>
         }
         <footer class="qual-foot">
-          <button type="button" class="button primary" (click)="share.emit()" [disabled]="sharing()">
+          <button uiButton variant="primary" (click)="share.emit()" [disabled]="sharing()">
             {{ sharing() ? 'Preparando imagem…' : 'Compartilhar meu caminho' }}
           </button>
           @if (shareError) {

@@ -106,6 +106,25 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', { patterns: [vendorPattern] }] },
   },
 
+  // UI boundary (ADR 0001): src/app/ui is the design system. It imports Angular, the CDK and itself, never core or features.
+  {
+    files: ['src/app/ui/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            vendorPattern,
+            {
+              regex: '^\\.{1,2}/(.*/)?(core|features|adapters)(/|$)',
+              message: 'ui/ must not depend on core, features or adapters (docs/adr/0001-ui-folder.md).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Browser boundary (ADR 0003): storage, time, randomness and runtime config are reached through ports.
   // Only core/adapters/browser touches the globals; specs may use them to set up a test.
   {

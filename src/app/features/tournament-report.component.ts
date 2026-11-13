@@ -5,11 +5,13 @@ import { AUTH } from '../core/ports/auth.port';
 import { LOCAL_STORE } from '../core/ports/key-value-store.port';
 import { LOCAL_LIVE } from '../core/ports/tournaments.port';
 import { TournamentReportService } from '../core/tournament-report.service';
+import { ButtonComponent } from '@ui/button/button.component';
+import { CardComponent } from '@ui/card/card.component';
 
 @Component({
   selector: 'app-tournament-report',
   standalone: true,
-  imports: [],
+  imports: [ButtonComponent, CardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -96,22 +98,22 @@ import { TournamentReportService } from '../core/tournament-report.service';
     `,
   ],
   template: `
-    <article class="surface-card report-panel">
+    <article uiCard class="report-panel">
       <div>
         <span class="card-kicker">TORNEIO FINALIZADO</span>
         <h2>Relatório final</h2>
       </div>
       <div class="report-actions">
-        <button class="button primary" type="button" (click)="generateImage()" [disabled]="imageLoading">
+        <button uiButton variant="primary" (click)="generateImage()" [disabled]="imageLoading">
           {{ imageLoading ? 'Gerando imagem…' : 'Gerar imagem' }}
         </button>
-        <button class="button secondary" type="button" (click)="shareText()">Compartilhar texto</button>
-        <button class="button secondary" type="button" (click)="toggleText()">
+        <button uiButton variant="secondary" (click)="shareText()">Compartilhar texto</button>
+        <button uiButton variant="secondary" (click)="toggleText()">
           {{ textVisible ? 'Ocultar texto' : 'Ver texto' }}
         </button>
         <button
-          class="button secondary"
-          type="button"
+          uiButton
+          variant="secondary"
           (click)="generateFinalLink()"
           [disabled]="linkLoading || !sharedConfigured()"
         >
@@ -122,7 +124,7 @@ import { TournamentReportService } from '../core/tournament-report.service';
         <div>
           <textarea class="report-text" aria-label="Texto do relatório final" readonly [value]="reportText"></textarea>
           <div class="report-actions">
-            <button class="button secondary" type="button" (click)="copyText()">Copiar texto</button>
+            <button uiButton variant="secondary" (click)="copyText()">Copiar texto</button>
           </div>
         </div>
       }
@@ -133,15 +135,15 @@ import { TournamentReportService } from '../core/tournament-report.service';
       }
       @if (imageUrl) {
         <div class="report-actions">
-          <button class="button primary" type="button" (click)="shareImage()">Compartilhar imagem</button
-          ><button class="button secondary" type="button" (click)="downloadImage()">Baixar imagem</button>
+          <button uiButton variant="primary" (click)="shareImage()">Compartilhar imagem</button
+          ><button uiButton variant="secondary" (click)="downloadImage()">Baixar imagem</button>
         </div>
       }
       @if (finalLink) {
         <div class="report-link">
           <input aria-label="Link para visualizar o resultado final" readonly [value]="finalLink" /><button
-            class="button secondary"
-            type="button"
+            uiButton
+            variant="secondary"
             (click)="copyLink()"
           >
             Copiar link

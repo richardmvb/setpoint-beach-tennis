@@ -35,6 +35,8 @@
               "node_modules/sweetalert2/dist/sweetalert2.min.css",
               "src/fonts.css",
               "src/styles/tokens.css",
+              "src/styles/components/button.css",
+              "src/styles/components/card.css",
               "src/styles.css"
             ]
           },

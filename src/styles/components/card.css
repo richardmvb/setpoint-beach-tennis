@@ -1,0 +1,20 @@
+/*
+  Card. Shared by the uiCard component (src/app/ui/card) and by templates that still write
+  class="surface-card". Padding variants: .surface-card.card-lg and .surface-card.card-flush.
+*/
+.surface-card {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.surface-card.card-lg {
+  padding: var(--space-6);
+}
+
+.surface-card.card-flush {
+  padding: 0;
+}

@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ButtonComponent } from '@ui/button/button.component';
 
 @Component({
   selector: 'app-round-navigation',
   standalone: true,
-  imports: [],
+  imports: [ButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:block}'],
   template: `
@@ -34,7 +35,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         </button>
       }
       @if (allRoundsComplete && !finalsExist()) {
-        <button class="button primary round-nav-ranking" type="button" (click)="ranking.emit()">
+        <button uiButton variant="primary" class="round-nav-ranking" (click)="ranking.emit()">
           Ranking e finais →
         </button>
       }
