@@ -1,0 +1,32 @@
+<ng-container *transloco="let t; prefix: 'landing'">
+  <div class="path-copy">
+    <div class="path-tags"><span class="card-kicker">{{ t('path.kicker') }}</span><span class="landing-badge">{{ t('path.badge') }}</span></div>
+    <h2>{{ t('path.title') }}</h2>
+    <p>{{ t('path.text') }}</p>
+    <ul class="path-points">
+      <li><b>{{ t('path.chanceTitle') }}</b><span>{{ t('path.chanceText') }}</span></li>
+      <li><b>{{ t('path.whatIfTitle') }}</b><span>{{ t('path.whatIfText') }}</span></li>
+      <li><b>{{ t('path.alertTitle') }}</b><span>{{ t('path.alertText') }}</span></li>
+    </ul>
+    <p class="path-note">{{ t('path.note') }}</p>
+  </div>
+  <div class="path-demo" aria-hidden="true">
+    <div class="path-card">
+      <div class="path-card-head"><div><small>{{ t('path.kicker') }}</small><b>{{ t('path.demoName') }}</b></div><span class="path-status">{{ t('path.demoStatus') }}</span></div>
+      <div class="path-goals"><span>{{ t('path.demoChampion') }} <b>9%</b></span><span>{{ t('path.demoTop2') }} <b>27%</b></span><span class="on">{{ t('path.demoTop3') }} <b>61%</b></span></div>
+      <div class="path-gauge-row">
+        <svg viewBox="0 0 120 120" class="path-gauge"><circle class="gt" cx="60" cy="60" r="52"></circle><circle class="gf" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="127.4" transform="rotate(-90 60 60)"></circle><text x="60" y="64" class="gv">61%</text><text x="60" y="82" class="gl">{{ t('path.demoChance') }}</text></svg>
+        <div class="path-bars">
+          <div class="in"><i style="height:30%"></i><b>{{ t('path.demoPlace', { place: 1 }) }}</b></div>
+          <div class="in"><i style="height:62%"></i><b>{{ t('path.demoPlace', { place: 2 }) }}</b></div>
+          <div class="in"><i style="height:100%"></i><b>{{ t('path.demoPlace', { place: 3 }) }}</b></div>
+          <div><i style="height:58%"></i><b>{{ t('path.demoPlace', { place: 4 }) }}</b></div>
+          <div><i style="height:44%"></i><b>{{ t('path.demoPlace', { place: 5 }) }}</b></div>
+          <div><i style="height:24%"></i><b>{{ t('path.demoPlace', { place: 6 }) }}</b></div>
+        </div>
+      </div>
+      <div class="path-whatif"><span>{{ t('path.demoWhatIf') }}</span><b>→ 74%</b></div>
+    </div>
+    <div class="path-toast"><span>▲</span>{{ t('path.demoToast') }}</div>
+  </div>
+</ng-container>

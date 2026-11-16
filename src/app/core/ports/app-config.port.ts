@@ -16,3 +16,8 @@ export interface AppConfig {
   readonly publishableKey?: string;
 }
 export const APP_CONFIG = new InjectionToken<AppConfig>('AppConfig');
+
+/** The version shown in footers: `v<buildVersion>`, or `dev` when the deploy does not set one. */
+export function versionLabel(config: Pick<AppConfig, 'buildVersion'>): string {
+  return config.buildVersion ? `v${config.buildVersion}` : 'dev';
+}

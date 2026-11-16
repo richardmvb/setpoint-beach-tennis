@@ -6,7 +6,8 @@ import { ButtonComponent } from './button.component';
 @Component({
   imports: [ButtonComponent],
   template: `
-    <button uiButton id="plain">Plain</button>
+    <button uiButton id="default">Default</button>
+    <button uiButton id="plain" variant="plain" class="own-look">Plain</button>
     <button uiButton id="primary" variant="primary" class="extra">Primary</button>
     <button uiButton id="danger" variant="danger" size="sm">Danger</button>
     <button uiButton id="ghost" variant="ghost" [disabled]="true">Ghost</button>
@@ -25,7 +26,7 @@ function render() {
 
 describe('uiButton', () => {
   it('is a secondary medium button by default and never submits a form by accident', () => {
-    const element = render().get('plain');
+    const element = render().get('default');
     expect(element.classList.contains('button')).toBe(true);
     expect(element.classList.contains('secondary')).toBe(true);
     expect(element.classList.contains('sm')).toBe(false);
@@ -49,6 +50,12 @@ describe('uiButton', () => {
     expect(element.disabled).toBe(true);
   });
 
+  it('the plain variant is only the button shape, so the caller styles it', () => {
+    const element = render().get('plain');
+    expect([...element.classList].sort()).toEqual(['button', 'own-look']);
+    expect(element.getAttribute('type')).toBe('button');
+  });
+
   it('lets a button be a submit button when asked', () => {
     expect(render().get('submit').getAttribute('type')).toBe('submit');
   });
@@ -63,6 +70,6 @@ describe('uiButton', () => {
   });
 
   it('shows its content', () => {
-    expect(render().get('plain').textContent).toBe('Plain');
+    expect(render().get('default').textContent).toBe('Default');
   });
 });

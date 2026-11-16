@@ -6,7 +6,7 @@ A feature is one screen or flow of the app, in its own folder, with no code in `
 
 ```
 features/<name>/
-  <name>.component.ts|html      the page: OnPush, provides its store and its Transloco scope
+  <name>.component.ts|html|css  the page: OnPush, provides its store and its Transloco scope
   data/<name>.store.ts          the page's state (signals), provided by the page component
   data/<name>-source.ts         where the data comes from: one small object per mode, each wrapping a port
   data/*.ts                     pure helpers of the feature (error codes to keys, ...), each with a spec
@@ -35,11 +35,22 @@ When one page has several modes (invite, live link, admin), each mode is a sourc
 
 ## Rendering it from AppComponent
 
-Until the router is the default (the follow-up to ADR 0005), a feature page is rendered from `AppComponent`'s `@switch (page)` inside `@defer (on immediate)`, with a `@placeholder` that uses a `shell.*` key. That makes the feature its own lazy chunk in both router modes. `AppComponent` keeps only the shell for it (the `guest-view` class, the footer) and skips every bit of owner startup that the feature does not need; `isSharedView` is the example. When routes get components, the `@defer` becomes `loadComponent` and nothing inside the feature changes.
+Until the router is the default (the follow-up to ADR 0005), a feature page is rendered from `AppComponent`'s `@switch (page)` inside `@defer (on immediate)`, with a `@placeholder` that uses a `shell.*` key. That makes the feature its own lazy chunk in both router modes. `AppComponent` keeps only the shell for it (the `guest-view` class, the footer) and skips every bit of owner startup that the feature does not need; `isSharedView` is the example. A page that shows nothing before its text loads may leave the placeholder empty (`<main></main>`, the landing) instead of showing a `shell.*` text that flashes. When `AppComponent` must decide at startup whether to show the page, it imports only that pure helper from the feature's `data/` (the landing's `landingSeen`), never the component. When routes get components, the `@defer` becomes `loadComponent` and nothing inside the feature changes.
+
+## Styles
+
+A feature's CSS leaves `src/styles.css` for its components' stylesheets (`styleUrl`, the default emulated encapsulation), tokens only (Stylelint lints them, unlike `styles.css`). Move only the rules whose every selector names a class that nothing outside the feature uses, keep their order, and leave shared classes (`.button`, `.card-kicker`, ...) global. Moving is not free, because the cascade changes in two ways:
+
+- Emulation adds an attribute to every compound selector, so each moved rule weighs more and loads after `styles.css`. A moved rule can then beat a global state rule it used to lose to (`.landing .button.primary` over `.button.primary:hover`). Wrap the context in `:where()` to keep the old weight.
+- `:root[data-theme='dark'] .x` becomes a selector that matches nothing; write `:host-context([data-theme='dark']) .x`.
+
+Each component stylesheet has a budget (`anyComponentStyle`: 8 kB warning, 12 kB error, minified, before encapsulation). A page whose CSS is bigger splits into presentational children by section. Make the child the section itself (`selector: 'section[appLandingHero]'`), so the DOM does not change and the page's layout rules (`.landing > *`, `.landing-section`) still reach it: rules on the `<section>` stay in the page's stylesheet, rules on what is inside move to the child, with the section written as `:host` (`.landing-hero p` becomes `:host p`).
+
+The visual baselines do not see hover, focus or every width, so prove a move with a computed-style comparison of every element of the page, before and after, across themes, widths and forced `:hover`/`:focus-visible`/`:active` states (the landing PR, B1, describes the throwaway script). Keyframes are renamed per component; that is the only expected difference.
 
 ## Text
 
-The feature's template has no raw text. Give the page `provideTranslocoScope('<name>')` (add other scopes it reuses, for example `'tournament'` for the final kinds) and read keys with `*transloco="let t; prefix: '<name>.<group>'"`. The keys manager (`npm run i18n:check`) cannot see a key built at runtime or one inside `@let`, so switch on typed values and write each key literally. Keep the pt-BR text identical to what the screen showed before: the e2e tests assert it.
+The feature's template has no raw text. Give the page `provideTranslocoScope('<name>')` (add other scopes it reuses, for example `'tournament'` for the final kinds) and read keys with `*transloco="let t; prefix: '<name>.<group>'"`. The keys manager (`npm run i18n:check`) cannot see a key built at runtime or one inside `@let`, so switch on typed values and write each key literally. Keep the pt-BR text identical to what the screen showed before: the e2e tests assert it. Words are keys, including made-up sample data in mock-ups ("Ana · Bia", "1º"); numbers, symbols, emoji and the `SP` logo mark stay in the template.
 
 ## Tests
 

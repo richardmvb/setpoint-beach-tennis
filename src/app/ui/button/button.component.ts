@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input } from '@angular/core';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+/** `plain` is the bare button shape with no colours, for a caller that styles the button itself. */
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'plain';
 export type ButtonSize = 'md' | 'sm';
 
 /**

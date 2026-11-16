@@ -1,6 +1,6 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import type { DashboardInsights } from '../../../core/dashboard-insights';
-import { APP_CONFIG } from '../../../core/ports/app-config.port';
+import { APP_CONFIG, versionLabel } from '../../../core/ports/app-config.port';
 import { AUTH } from '../../../core/ports/auth.port';
 import { CLOCK } from '../../../core/ports/clock.port';
 import { DASHBOARD, type DashboardActivity, type DashboardMetrics } from '../../../core/ports/dashboard.port';
@@ -37,7 +37,7 @@ export class DashboardStore {
   private readonly config = inject(APP_CONFIG);
 
   readonly basePath = this.urlState.basePath;
-  readonly versionLabel = this.config.buildVersion ? `v${this.config.buildVersion}` : 'dev';
+  readonly versionLabel = versionLabel(this.config);
   readonly authenticated = signal(false);
   readonly email = signal('');
   readonly magicLinkSent = signal(false);

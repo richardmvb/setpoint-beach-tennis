@@ -1,0 +1,84 @@
+<ng-container *transloco="let t; prefix: 'landing'">
+  <main class="landing">
+    <header class="landing-nav">
+      <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>{{ t('brand.name') }}</strong><small>{{ t('brand.sport') }} · {{ store.versionLabel }}</small></span></div>
+      <nav class="landing-links" [attr.aria-label]="t('nav.label')">
+        <button type="button" (click)="scrollTo('landing-formats')">{{ t('nav.formats') }}</button>
+        <button type="button" (click)="scrollTo('landing-live')">{{ t('nav.live') }}</button>
+        <button type="button" (click)="scrollTo('landing-path')">{{ t('nav.path') }}</button>
+        <button type="button" (click)="scrollTo('landing-steps')">{{ t('nav.steps') }}</button>
+      </nav>
+      <div class="landing-nav-actions">
+        @if (savedCount()) {
+          <button uiButton variant="secondary" (click)="resumeTournament()">{{ t('nav.saved') }} <b class="landing-count">{{ savedCount() }}</b></button>
+        }
+        <button uiButton variant="primary" (click)="startTournament()">{{ t('nav.open') }}</button>
+      </div>
+    </header>
+    <section class="landing-hero" appLandingHero [savedCount]="savedCount()" (start)="startTournament()" (resume)="resumeTournament()" (howItWorks)="scrollTo('landing-steps')"></section>
+    <section class="landing-section" id="landing-formats">
+      <div class="landing-heading"><span class="card-kicker">{{ t('formats.kicker') }}</span><h2>{{ t('formats.title') }}</h2><p>{{ t('formats.text') }}</p></div>
+      <div class="landing-bento">
+        <article class="bento-lg"><span class="bento-tag">{{ t('formats.superTag') }}</span><h3>{{ t('formats.superTitle') }}</h3><p>{{ t('formats.superText') }}</p><div class="bento-chips"><span>8</span><span>10</span><span>12</span><span>24</span></div></article>
+        <article><span class="bento-tag">{{ t('formats.groupsTag') }}</span><h3>{{ t('formats.groupsTitle') }}</h3><p>{{ t('formats.groupsText') }}</p></article>
+        <article><span class="bento-tag">{{ t('formats.mixedTag') }}</span><h3>{{ t('formats.mixedTitle') }}</h3><p>{{ t('formats.mixedText') }}</p></article>
+        <article class="bento-wide"><span class="bento-tag">{{ t('formats.super24Tag') }}</span><h3>{{ t('formats.super24Title') }}</h3><p>{{ t('formats.super24Text') }}</p></article>
+      </div>
+    </section>
+    <section class="landing-section landing-split" id="landing-live">
+      <div class="landing-heading"><span class="card-kicker">{{ t('live.kicker') }}</span><h2>{{ t('live.title') }}</h2><p>{{ t('live.text') }}</p></div>
+      <ul class="landing-list">
+        <li><b>{{ t('live.sharedTitle') }}</b><span>{{ t('live.sharedText') }}</span></li>
+        <li><b>{{ t('live.finalTitle') }}</b><span>{{ t('live.finalText') }}</span></li>
+        <li><b>{{ t('live.offlineTitle') }}</b><span>{{ t('live.offlineText') }}</span></li>
+      </ul>
+    </section>
+    <section class="landing-section landing-path" id="landing-path" appLandingPath></section>
+    <section class="landing-section landing-keep">
+      <div class="landing-keep-card">
+        <div class="landing-heading"><span class="card-kicker">{{ t('keep.kicker') }}</span><h2>{{ t('keep.title') }}</h2><p>{{ t('keep.text') }}</p></div>
+        <div class="landing-keep-list" aria-hidden="true">
+          <div><b>{{ t('keep.item1Name') }}</b><small>{{ t('keep.item1Meta') }}</small></div>
+          <div><b>{{ t('keep.item2Name') }}</b><small>{{ t('keep.item2Meta') }}</small></div>
+          <div><b>{{ t('keep.item3Name') }}</b><small>{{ t('keep.item3Meta') }}</small></div>
+        </div>
+      </div>
+    </section>
+    <section class="landing-section">
+      <div class="landing-heading"><span class="card-kicker">{{ t('features.kicker') }}</span><h2>{{ t('features.title') }}</h2></div>
+      <div class="landing-features" [attr.aria-label]="t('features.label')">
+        <article><b>{{ t('features.batchTitle') }}</b><p>{{ t('features.batchText') }}</p></article>
+        <article><b>{{ t('features.drawTitle') }}</b><p>{{ t('features.drawText') }}</p></article>
+        <article><b>{{ t('features.profileTitle') }}</b><p>{{ t('features.profileText') }}</p></article>
+        <article><b>{{ t('features.guidedTitle') }}</b><p>{{ t('features.guidedText') }}</p></article>
+        <article><b>{{ t('features.photosTitle') }}</b><p>{{ t('features.photosText') }}</p></article>
+        <article><b>{{ t('features.rankingTitle') }}</b><p>{{ t('features.rankingText') }}</p></article>
+        <article><b>{{ t('features.finalsTitle') }}</b><p>{{ t('features.finalsText') }}</p></article>
+        <article><b>{{ t('features.cardTitle') }}</b><p>{{ t('features.cardText') }}</p></article>
+        <article><b>{{ t('features.reportTitle') }}</b><p>{{ t('features.reportText') }}</p></article>
+        <article><b>{{ t('features.backupTitle') }}</b><p>{{ t('features.backupText') }}</p></article>
+        <article><b>{{ t('features.themeTitle') }}</b><p>{{ t('features.themeText') }}</p></article>
+      </div>
+    </section>
+    <section class="landing-section landing-steps" id="landing-steps">
+      <div class="landing-heading"><span class="card-kicker">{{ t('steps.kicker') }}</span><h2>{{ t('steps.title') }}</h2></div>
+      <ol>
+        <li><b>{{ t('steps.configureTitle') }}</b><span>{{ t('steps.configureText') }}</span></li>
+        <li><b>{{ t('steps.enrollTitle') }}</b><span>{{ t('steps.enrollText') }}</span></li>
+        <li><b>{{ t('steps.playTitle') }}</b><span>{{ t('steps.playText') }}</span></li>
+        <li><b>{{ t('steps.celebrateTitle') }}</b><span>{{ t('steps.celebrateText') }}</span></li>
+      </ol>
+    </section>
+    <section class="landing-final">
+      <h2>{{ t('final.title') }}</h2>
+      <p>{{ t('final.text') }}</p>
+      <div class="landing-cta">
+        <button uiButton variant="plain" class="landing-light" (click)="startTournament()">{{ t('cta.create') }} <span aria-hidden="true">→</span></button>
+        @if (savedCount()) {
+          <button uiButton variant="plain" class="landing-outline" (click)="resumeTournament()">{{ t('cta.resume') }}</button>
+        }
+      </div>
+    </section>
+    <footer class="landing-footer"><span>{{ t('brand.full') }}</span><span>{{ store.versionLabel }}</span></footer>
+  </main>
+</ng-container>
