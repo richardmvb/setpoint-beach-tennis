@@ -28,9 +28,11 @@ npm run db:migrations   # forward-only and vendor-neutral migration rules
 npm run db:types        # regenerate src/app/core/adapters/supabase/database.types.ts (never edit it by hand)
 npm run test:coverage   # unit tests with V8 coverage
 npm run e2e             # Playwright end-to-end tests (set E2E_BROWSER_CHANNEL=chrome to use installed Chrome)
+npm run e2e:visual      # visual baselines (e2e/visual.spec.ts) in the Playwright Docker image CI uses; needs Docker
+npm run e2e:visual:update # rewrite e2e/__screenshots__ (only for a change that is meant to be visual)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
 npm run analyze         # production build with stats (dist/setpoint/browser-stats.json, for esbuild's analyzer) and dist/bundle-report.html (source-map-explorer); overwrites dist/
-npm run perf:lighthouse # Lighthouse CI on dist/; build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
+npm run perf:lighthouse # Lighthouse CI on dist/ (advisory in CI: its own non-blocking job); build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
 npm run check           # lint, styles, format, typecheck, knip, tests, build
 ```
 
@@ -85,6 +87,7 @@ Coverage thresholds live in `angular.json` (`test.options.coverageThresholds`) a
 
 - Playwright runs the real app. `e2e/support/fixtures.ts` blocks every host except localhost, so tests never reach Supabase, PostHog or Google Fonts, and it starts like a returning user (landing, tour and profile prompt skipped). Use its `test`, never the raw Playwright one.
 - Select elements by role and accessible name. The fixture seeds `Math.random`, so the draw is the same on every run; still prefer asserting structure (counts, headings, saved state) over player names. Ties are resolved by `generateFinals`. Use `test.use({ randomSeed: null })` only to test real randomness.
+- Visual baselines (`e2e/visual.spec.ts`, project `visual`, PNGs in `e2e/__screenshots__/`) are full-page shots of landing, setup, rounds, ranking, finals, the live viewer and the dashboard login, light and dark, compared with zero tolerance. They are expected output, not a suppression baseline: a style refactor must pass them unchanged. Regenerate only with `npm run e2e:visual:update` (CI runs the project in its own `visual` job inside the same Playwright image; a local Chrome or the ubuntu runner renders differently, so `npm run e2e` and the `e2e` job leave it out unless `E2E_VISUAL` is set), only for a change that is meant to be visual, and name each changed image in the PR. If the `visual` job fails, review the diff images in its artifact first.
 - Accessibility is a ratchet: `e2e/a11y-baseline.json` holds today's axe violations and a page fails when a rule appears or grows. Fix violations, then lower the baseline with `A11Y_RECORD=1`, which never raises a count. Do not edit the file by hand upward.
 - Persisted-data fixtures live in `tests/fixtures/persisted/<kind>/v<N>.json` and are never edited. When a stored shape changes, add a new version and keep the old one.
 
