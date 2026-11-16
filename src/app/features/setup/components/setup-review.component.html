@@ -1,0 +1,19 @@
+<ng-container *transloco="let t; prefix: 'setup.review'">
+  <div id="reviewSummary" class="wizard-summary"><div><small>{{ t('format') }}</small><b>@switch (store.review()) {
+    @case ('fixedPairs') {{{ t('formats.fixedPairs') }}}
+    @case ('groups') {{{ t('formats.groups') }}}
+    @case ('super') {{{ t('formats.super') }}}
+  }
+  {{ store.state().size }}</b></div><div><small>{{ t('players') }}</small><b>{{ store.state().players.length }}</b></div><div><small>{{ t('rounds') }}</small><b>{{ store.rounds() }}</b></div><div><small>{{ t('courts') }}</small><b>{{ store.state().courts }}</b></div></div>
+  <div class="callout"><b>{{ store.state().name }}</b><span>@switch (store.review()) {
+    @case ('fixedPairs') {{{ t('descriptions.fixedPairs') }}}
+    @case ('groups') {{{ t('descriptions.groups') }}}
+    @case ('super') {{{ t('descriptions.super') }}}
+  }</span></div>
+  <div class="wizard-roster"><span class="card-kicker">{{ t('players') }}</span><div class="roster-chips">@for (player of store.state().players; track player.id) {
+  <span class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar" />{{ player.name }}@if (store.isMixed() && player.gender) {
+  <app-gender-icon [gender]="player.gender" />
+  }</span>
+  }</div></div>
+  <p class="muted helper-text">{{ t('lockNote') }}</p>
+</ng-container>

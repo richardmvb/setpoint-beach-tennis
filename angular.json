@@ -80,6 +80,12 @@
                 },
                 {
                   "type": "bundle",
+                  "name": "setup-component",
+                  "maximumWarning": "73kB",
+                  "maximumError": "84kB"
+                },
+                {
+                  "type": "bundle",
                   "name": "profile-dialog-component",
                   "maximumWarning": "18kB",
                   "maximumError": "21kB"
@@ -162,10 +168,10 @@
             "coverageInclude": ["src/app/core/**/*.ts", "src/app/domain/**/*.ts"],
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
-              "statements": 77,
-              "branches": 75,
-              "functions": 86,
-              "lines": 77
+              "statements": 80,
+              "branches": 77,
+              "functions": 88,
+              "lines": 80
             }
           }
         }

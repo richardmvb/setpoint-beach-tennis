@@ -1,4 +1,4 @@
-import { Component, DoCheck, effect, inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, DoCheck, inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -8,19 +8,34 @@ import {
   Match,
   MixedFinalFormat,
   Page,
-  Player,
-  PlayerGender,
   PlayerStanding,
   SharedTournamentSnapshot,
   ThemeMode,
   TournamentMode,
   GroupFormat,
-  TournamentHostingMode,
   TournamentSize,
   TournamentState,
 } from './core/models';
 import { StorageService } from './core/storage.service';
-import { profileAutoJoin } from './core/profile';
+import { CurrentTournament } from './core/current-tournament';
+import { OwnedSharedTournament, SHARED_SETUP_KEY } from './core/owned-shared-tournament';
+import { SetupProgress } from './core/setup-progress';
+import {
+  availableCourts,
+  availableGamesToWin,
+  availableSizes,
+  newTournament,
+  requiredRounds,
+  withCourts,
+  withDoublesFormat,
+  withEarlyFinals,
+  withGroupFormat,
+  withMixedFinalFormat,
+  withSize,
+  withTournamentMode,
+} from './domain/tournament-setup/setup-rules';
+import { addPlayer, removePlayer } from './domain/tournament-setup/players';
+import { SetupTourCue } from './features/setup/data/setup-tour-cue';
 import { LocalProfileStore } from './core/local-profile.store';
 import { SavedTournaments } from './core/saved-tournaments';
 import type {
@@ -50,7 +65,6 @@ import * as tournamentFormat from './domain/tournament-view/format';
 import * as tournamentProgress from './domain/tournament-view/progress';
 import { createStandingsMemo, type StandingsView, storedTieDrawOrder } from './domain/tournament-view/standings';
 import { type GroupStandingTable, groupTables } from './domain/tournament-view/group-tables';
-import { normalizeSharedState } from './domain/tournament-view/shared-state';
 import type {
   PlayerMatchesDialogComponent,
   PlayerMatchesDialogData,
@@ -63,14 +77,9 @@ import { ShareResultsSession } from './features/tournament/share-results-dialog/
 import { RankingViewComponent } from './features/ranking-view.component';
 import { RoundNavigationComponent } from './features/round-navigation.component';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
-import { AvatarPickerComponent } from './features/avatar-picker.component';
-import { GenderToggleComponent } from './features/gender-toggle.component';
-import { GenderIconComponent } from './features/gender-icon.component';
-import { NumberRangeComponent } from './features/number-range.component';
 import { FinalLiveScoreComponent } from './features/final-live-score.component';
 import { TournamentReportComponent } from './features/tournament-report.component';
 import { PodiumComponent } from './features/podium.component';
-import { ChoiceCardsComponent, ChoiceOption } from './features/choice-cards.component';
 import { ANALYTICS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
@@ -90,25 +99,11 @@ import { ProjectionPanelComponent } from './features/tournament/projection/proje
 import { SharedViewComponent } from './features/shared-view/shared-view.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LandingComponent } from './features/landing/landing.component';
+import { SetupComponent } from './features/setup/setup.component';
 import { landingSeen } from './features/landing/data/landing-visit';
-import { errorMessage } from './shared/parsers/error-message';
-
-interface TourStep {
-  element: string;
-  popover: { title: string; description: string; side?: 'top' | 'bottom' | 'left' | 'right' };
-}
-
-interface BatchPlayerDraft {
-  name: string;
-  gender: PlayerGender | '';
-  error?: string;
-}
 
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
-const TUTORIAL_KEY = 'setpoint.tutorial.setup';
-const SHARED_SETUP_KEY = 'setpoint.shared.setup';
-const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 const LOCAL_LIVE_KEY = 'setpoint.local.live';
 const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 
@@ -121,18 +116,14 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
     RankingViewComponent,
     RoundNavigationComponent,
     PlayerAvatarComponent,
-    AvatarPickerComponent,
-    GenderToggleComponent,
     PodiumComponent,
     ProjectionPanelComponent,
     SharedViewComponent,
     DashboardComponent,
     LandingComponent,
-    GenderIconComponent,
-    NumberRangeComponent,
+    SetupComponent,
     FinalLiveScoreComponent,
     TournamentReportComponent,
-    ChoiceCardsComponent,
     TranslocoPipe,
   ],
   providers: [ProjectionController],
@@ -163,6 +154,10 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   protected readonly projection = inject(ProjectionController);
   private readonly dialog = inject(DialogService);
   private readonly shareSession = inject(ShareResultsSession);
+  private readonly tournament = inject(CurrentTournament);
+  private readonly owned = inject(OwnedSharedTournament);
+  private readonly setup = inject(SetupProgress);
+  private readonly setupTourCue = inject(SetupTourCue);
   private readonly authCallback: boolean;
   private readonly syncQueue = new OfflineSyncQueue(this.local);
 
@@ -184,43 +179,25 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
         a.sync === b.sync && a.syncWarning === b.syncWarning && a.syncError === b.syncError && a.theme === b.theme,
     },
   );
-  playerFormError = '';
-  readonly hostingOptions: ChoiceOption[] = [
-    { value: 'local', label: 'Neste dispositivo', hint: 'Só você lança os placares. Nada é compartilhado.' },
-    { value: 'shared', label: 'Compartilhado', hint: 'Convite por link e acompanhamento ao vivo.' },
-  ];
-  readonly doublesOptions: ChoiceOption[] = [
-    { value: 'open', label: 'Duplas abertas', hint: 'Qualquer combinação de atletas.' },
-    { value: 'mixed', label: 'Duplas mistas', hint: '1 atleta masculino + 1 feminino.' },
-  ];
-  readonly modeOptions: ChoiceOption[] = [
-    { value: 'super', label: 'Super', hint: 'Duplas rotativas: todos jogam com todos.' },
-    { value: 'groups', label: 'Grupos', hint: 'Grupos pequenos, todos contra todos.' },
-  ];
-  readonly groupFormatOptions: ChoiceOption[] = [
-    { value: 'rotating', label: 'Parceiros rotativos', hint: 'Grupos de 4, cada atleta com todos os outros.' },
-    { value: 'fixed', label: 'Duplas fixas', hint: 'Você define as duplas; todas se enfrentam.' },
-  ];
-
   isLocked = false;
   showLanding = false;
-  tutorialEnabled = true;
   sitePassword = '';
   lockError = '';
   page: Page = 'setup';
   theme: ThemeMode = 'light';
-  state: TournamentState;
+  /** The tournament being run: the one `CurrentTournament` holds, so the features see it too. */
+  get state(): TournamentState {
+    return this.tournament.state();
+  }
+  set state(value: TournamentState) {
+    this.tournament.set(value);
+  }
   selectedRound = 0;
-  setupStep = 1;
+  /** The Jogadores page's form. It is only reachable once the schedule exists, so it is always disabled (B4 removes it). */
   newPlayerName = '';
-  newPlayerGender: PlayerGender | '' = '';
-  newPlayerAvatar = '';
   private readonly standingsMemo = createStandingsMemo();
   /** Decides the winner of a final (the domain gets this rule instead of importing the score engine). */
   private readonly winnerSide: FinalWinnerSide = (match) => this.finalsScheduler.winnerSide(match);
-  batchModalOpen = false;
-  batchText = '';
-  batchPlayers: BatchPlayerDraft[] = [];
   notice = '';
   noticeType: 'success' | 'error' = 'success';
   scoreDrafts: Record<
@@ -230,26 +207,26 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   tieDrawModalOpen = false;
   activeTiePlayerIds: string[] = [];
   activeTieDrawResult: string[] = [];
-  moderatorName = '';
-  moderatorGender: PlayerGender | '' = '';
-  moderatorAvatar = '';
-  manualParticipantName = '';
-  manualParticipantGender: PlayerGender | '' = '';
-  manualParticipantAvatar = '';
   now = this.clock.now();
   private clockTimer: number | null = null;
-  sharedLoading = false;
-  sharedError = '';
-  sharedNotice = '';
   /**
    * The address opens someone else's tournament (live link, invite or admin viewer). The page is then the lazy
    * `SharedViewComponent`, and none of the device's own tournament, sync, library or version reset runs.
    */
   readonly isSharedView: boolean;
-  isSharedModerator = false;
-  sharedSnapshot: SharedTournamentSnapshot | null = null;
-  private stopOwnerWatch: (() => void) | null = null;
-  sharedInviteToken = '';
+  /** The moderator's own shared tournament lives in `OwnedSharedTournament`; these are the shell's views of it. */
+  get isSharedModerator(): boolean {
+    return this.owned.moderator();
+  }
+  set isSharedModerator(value: boolean) {
+    this.owned.setModerator(value);
+  }
+  get sharedSnapshot(): SharedTournamentSnapshot | null {
+    return this.owned.snapshot();
+  }
+  get sharedLoading(): boolean {
+    return this.owned.loading();
+  }
   sharePlayerId = '';
   private syncTimeout: number | null = null;
   private syncInFlight = false;
@@ -260,7 +237,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   private sharedPollTimer: number | null = null;
   private authStateUnsubscribe: (() => void) | null = null;
   private identifiedUserId: string | null = null;
-  private sharedSignature = '';
   /** The athlete the host picked in the projection; empty means the leader. */
   private qualificationTargetPlayerId = '';
   isDashboardRoute = false;
@@ -286,6 +262,12 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     // The schedule services default to Math.random; production draws go through the Random port instead.
     this.scheduler.random = () => this.random.next();
     this.groupScheduler.random = () => this.random.next();
+    this.tournament.connect({
+      save: (success) => this.persist(success),
+      notify: (text, tone) => this.message(text, tone),
+      clearNotice: () => this.clearNotice(),
+    });
+    this.owned.connect({ applied: (snapshot, keepView) => this.onSharedApplied(snapshot, keepView) });
     this.projection.connect({
       state: () => this.state,
       standings: () => this.standings,
@@ -301,7 +283,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.theme = this.storage.loadTheme();
     if (this.isSharedView) {
       // Only a placeholder: the shared view reads its own tournament. Its hosting mode is what analytics reports.
-      this.state = this.newTournament();
+      this.state = newTournament(this.clock.iso());
       this.state.hostingMode = url.dashboardViewerId
         ? (url.dashboardViewerSource ?? 'shared')
         : url.liveToken
@@ -320,8 +302,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       this.isLocked = this.config.lockScreenEnabled && !this.isDashboardRoute && !this.authCallback;
     }
     this.showLanding = !this.isDashboardRoute && !this.authCallback && !landingSeen(this.local);
-    this.tutorialInit();
-    this.state = this.storage.loadTournament() ?? this.newTournament();
+    this.state = this.storage.loadTournament() ?? newTournament(this.clock.iso());
     try {
       this.syncPaused = this.local.getItem(SYNC_PAUSED_KEY) === 'true';
       if (!this.isDashboardRoute) {
@@ -338,7 +319,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     if (!this.isDashboardRoute) this.keepInLibrary(this.state);
     if (!this.hasPendingSync && this.storage.clearCompletedTournamentOnVersionChange(this.buildId, this.state)) {
       this.versionResetKeptTournament = !!libraryId(this.state) && !!this.library.get(libraryId(this.state) ?? '');
-      this.state = this.newTournament();
+      this.state = newTournament(this.clock.iso());
     }
     this.state.tournamentMode ??= 'super';
     this.state.doublesFormat ??= 'open';
@@ -355,12 +336,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       if (!this.availableCourts.includes(this.state.courts)) this.state.courts = Math.floor(this.state.size / 4);
       this.state.roundCount = this.requiredRounds;
     }
-    this.prefillFromProfile();
-    // A saved profile fills the moderator fields of the setup (it never overrides what was typed).
-    effect(() => {
-      this.profileStore.profile();
-      this.prefillFromProfile();
-    });
     this.initializeScoreDrafts();
     this.savedTournaments.refresh();
     if (this.versionResetKeptTournament)
@@ -369,25 +344,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
 
   ngOnInit(): void {
     void this.startApp();
-  }
-
-  private newTournament(): TournamentState {
-    return {
-      version: 1,
-      name: 'Super de sábado',
-      size: 8,
-      courts: 2,
-      gamesToWin: 4,
-      roundCount: 7,
-      players: [],
-      rounds: [],
-      createdAt: this.clock.iso(),
-      tournamentMode: 'super',
-      groupFormat: 'rotating',
-      groups: [],
-      fixedPairs: [],
-      finals: null,
-    };
   }
 
   private async startApp(): Promise<void> {
@@ -412,8 +368,8 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       is_guest_view: this.isSharedView,
     });
     this.trackFeatureViewed(this.page);
-    if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
-    if (!this.isSharedView) window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 600);
+    if (this.page === 'setup') this.setup.viewed();
+    if (!this.isSharedView) window.setTimeout(() => this.welcomeThen(() => this.cueSetupTour()), 600);
     if (!this.isSharedView && !this.isDashboardRoute) window.setTimeout(() => this.prefetchDialogs(), 3000);
     this.authStateUnsubscribe = this.auth.onAuthStateChange((change, user) => {
       if (change === 'signed-in' && user) this.identifyUser(user);
@@ -445,7 +401,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
     if (this.syncTimeout !== null) window.clearTimeout(this.syncTimeout);
     this.authStateUnsubscribe?.();
-    this.stopOwnerWatch?.();
+    this.owned.stopWatching();
   }
 
   private async identifyCurrentUser(): Promise<void> {
@@ -481,13 +437,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
   get canEditFinalScores(): boolean {
     return this.canEditScores && !this.finalsLocked;
-  }
-  get canManageParticipants(): boolean {
-    return (
-      this.isSharedMode &&
-      this.isSharedModerator &&
-      (this.state.sharedStatus === 'registration' || this.state.sharedStatus === 'ready')
-    );
   }
   /** The dialogs are lazy chunks: they load on the first click, not with the app. */
   async openPlayerMatches(playerId: string): Promise<void> {
@@ -602,7 +551,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
         this.syncQueue.acknowledge(target.kind, target.id, record.revision, snapshot.state);
         if (target.kind === 'shared' && this.state.sharedTournamentId === target.id) {
           this.state.sharedStatus = snapshot.status;
-          if (this.sharedSnapshot?.id === snapshot.id) this.sharedSnapshot = snapshot as SharedTournamentSnapshot;
+          if (this.sharedSnapshot?.id === snapshot.id) this.owned.replaceSnapshot(snapshot as SharedTournamentSnapshot);
           this.storage.saveTournament(this.state);
         }
         this.syncError = '';
@@ -649,15 +598,8 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.state.qualificationStats = enabled;
     this.persist();
   }
-  get sharedReadOnly(): boolean {
-    return this.isSharedMode && !this.isSharedModerator;
-  }
   get sharedInviteUrl(): string {
-    if (!this.sharedInviteToken) return '';
-    return this.urlState.inviteUrl(this.sharedInviteToken);
-  }
-  get sharedCapacityReached(): boolean {
-    return this.state.players.length >= this.state.size;
+    return this.owned.inviteUrl();
   }
   get sharedStatusLabel(): string {
     if (this.sharedSnapshot?.status === 'archived') return 'Torneio arquivado';
@@ -679,7 +621,14 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   enterApp(): void {
     this.showLanding = false;
     window.scrollTo({ top: 0 });
-    window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 400);
+    window.setTimeout(() => this.welcomeThen(() => this.cueSetupTour()), 400);
+  }
+
+  /** The setup tour may start now (the shell has checked nothing else is on screen); the setup page runs it. */
+  private cueSetupTour(): void {
+    if (this.isLocked || this.showLanding || this.isDashboardRoute || this.profileOpen) return;
+    if (this.page !== 'setup') return;
+    this.setupTourCue.request();
   }
 
   /**
@@ -690,227 +639,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     if (this.isLocked || this.showLanding || this.isDashboardRoute || this.profileOpen) return next();
     if (!this.profileStore.takeWelcomePrompt()) return next();
     void this.openProfile(true, next);
-  }
-
-  private tourKey(step: number): string {
-    return step === 1 ? TUTORIAL_KEY : `${TUTORIAL_KEY}.step${step}`;
-  }
-
-  private maybeStartSetupTour(): void {
-    if (this.isLocked || this.showLanding || this.isDashboardRoute || this.profileOpen) return;
-    if (this.page !== 'setup' || this.setupStep < 1 || this.setupStep > 3) return;
-    try {
-      if (this.local.getItem(TUTORIAL_KEY) === 'off') return;
-      if (this.local.getItem(this.tourKey(this.setupStep))) return;
-    } catch {
-      return;
-    }
-    void this.startSetupTour();
-  }
-
-  toggleTutorial(): void {
-    this.tutorialEnabled = !this.tutorialEnabled;
-    try {
-      if (this.tutorialEnabled) [1, 2, 3].forEach((step) => this.local.removeItem(this.tourKey(step)));
-      else this.local.setItem(TUTORIAL_KEY, 'off');
-    } catch {
-      /* sem persistência */
-    }
-    this.analytics.capture(this.tutorialEnabled ? 'tutorial_enabled' : 'tutorial_disabled');
-  }
-
-  private setupTourSteps(step: number): TourStep[] {
-    const steps: TourStep[] =
-      step === 1
-        ? [
-            {
-              element: '#setupName',
-              popover: {
-                title: 'Nome do torneio',
-                description:
-                  'Escolha um nome fácil de reconhecer. Ele aparece no ranking, no relatório e em Meus torneios.',
-              },
-            },
-            {
-              element: '#hostingMode',
-              popover: {
-                title: 'Onde gerenciar',
-                description:
-                  'Neste dispositivo: só você lança os placares. Compartilhado: os atletas entram por um link e acompanham ao vivo.',
-              },
-            },
-            {
-              element: '#doublesFormat',
-              popover: {
-                title: 'Tipo de dupla',
-                description: 'Abertas: qualquer combinação. Mistas: sempre 1 atleta masculino + 1 feminino.',
-              },
-            },
-            {
-              element: '#tournamentMode',
-              popover: {
-                title: 'Formato',
-                description:
-                  'Super: as duplas rodam e todos jogam com todos. Grupos: grupos pequenos, todos contra todos.',
-              },
-            },
-            {
-              element: '#setupSize',
-              popover: {
-                title: 'Participantes',
-                description: 'Arraste para escolher quantos atletas jogam. Rodadas e quadras se ajustam sozinhas.',
-              },
-            },
-            {
-              element: '#setupSummary',
-              popover: {
-                title: 'Resumo do formato',
-                description:
-                  'Acompanhe rodadas, quadras e games enquanto escolhe. Nada é definitivo até gerar a tabela.',
-              },
-            },
-            {
-              element: '#setupNext',
-              popover: {
-                title: 'Próximo passo',
-                description: 'Tudo certo? Avance para inscrever os participantes.',
-                side: 'top',
-              },
-            },
-          ]
-        : step === 2
-          ? [
-              {
-                element: '[data-tour="add-player"]',
-                popover: {
-                  title: 'Adicione os atletas',
-                  description:
-                    'Digite o nome e pressione Enter: o campo já fica pronto para o próximo. A foto é opcional.',
-                },
-              },
-              {
-                element: '.batch-entry-button',
-                popover: {
-                  title: 'Cadastro em lote',
-                  description: 'Tem uma lista pronta? Cole todos os nomes de uma vez e revise antes de confirmar.',
-                },
-              },
-              {
-                element: '.shared-invite-panel',
-                popover: {
-                  title: 'Convite por link',
-                  description:
-                    'Copie o link e envie aos atletas. Quem estiver sem celular pode ser adicionado por você.',
-                },
-              },
-              {
-                element: '#enrollProgress',
-                popover: {
-                  title: 'Acompanhe as vagas',
-                  description: 'Mostra quantos atletas faltam. Ao completar a lista, a revisão é liberada.',
-                },
-              },
-              {
-                element: '#setupNext2',
-                popover: {
-                  title: 'Revisar',
-                  description: 'Com a lista completa, avance para conferir tudo antes de começar.',
-                  side: 'top',
-                },
-              },
-            ]
-          : [
-              {
-                element: '#reviewSummary',
-                popover: {
-                  title: 'Confira o formato',
-                  description: 'Formato, jogadores, rodadas e quadras do seu torneio.',
-                },
-              },
-              {
-                element: '.wizard-roster',
-                popover: {
-                  title: 'Confira os atletas',
-                  description: 'Depois de gerar a tabela, a lista fica bloqueada. Volte agora se precisar ajustar.',
-                },
-              },
-              {
-                element: '#generateBtn',
-                popover: {
-                  title: 'Hora de jogar',
-                  description:
-                    'Gera todas as rodadas e abre as partidas. O cronômetro do torneio começa neste momento.',
-                  side: 'top',
-                },
-              },
-            ];
-    return steps.filter((item) => document.querySelector(item.element));
-  }
-
-  async startSetupTour(): Promise<void> {
-    const setupStep = this.setupStep;
-    if (this.page !== 'setup' || setupStep < 1 || setupStep > 3) return;
-    const steps = this.setupTourSteps(setupStep);
-    if (!steps.length) return;
-    const { driver } = await import('driver.js');
-    const mark = (value: string) => {
-      try {
-        this.local.setItem(this.tourKey(setupStep), value);
-      } catch {
-        /* sem persistência */
-      }
-    };
-    let finished = false;
-    const tour = driver({
-      showProgress: true,
-      allowClose: true,
-      allowKeyboardControl: true,
-      smoothScroll: true,
-      animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
-      popoverClass: 'sp-tour',
-      overlayOpacity: 0.58,
-      stagePadding: 8,
-      stageRadius: 14,
-      nextBtnText: 'Próximo',
-      prevBtnText: 'Voltar',
-      doneBtnText: 'Concluir',
-      progressText: '{{current}} de {{total}}',
-      steps,
-      onPopoverRender: (popover) => {
-        const off = document.createElement('button');
-        off.type = 'button';
-        off.textContent = 'Desligar dicas';
-        off.className = 'tour-off';
-        off.onclick = () => {
-          finished = true;
-          this.tutorialEnabled = false;
-          try {
-            this.local.setItem(TUTORIAL_KEY, 'off');
-          } catch {
-            /* sem persistência */
-          }
-          this.analytics.capture('tutorial_disabled', { step: setupStep });
-          tour.destroy();
-        };
-        popover.footer.appendChild(off);
-      },
-      onDestroyed: () => {
-        if (finished) return;
-        finished = true;
-        mark('done');
-        this.analytics.capture('tutorial_finished', { step: setupStep });
-      },
-    });
-    this.analytics.capture('tutorial_started', { step: setupStep });
-    tour.drive();
-  }
-
-  private tutorialInit(): void {
-    try {
-      this.tutorialEnabled = this.local.getItem(TUTORIAL_KEY) !== 'off';
-    } catch {
-      /* mantém ligado */
-    }
   }
 
   handleBrandClick(): void {
@@ -929,6 +657,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
 
   openLanding(): void {
+    this.setupTourCue.take();
     this.showLanding = true;
     window.scrollTo({ top: 0 });
   }
@@ -949,7 +678,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.lockError = '';
     this.backfillLocalTournamentMetrics();
     this.archiveCurrent();
-    if (!this.showLanding) window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 300);
+    if (!this.showLanding) window.setTimeout(() => this.welcomeThen(() => this.cueSetupTour()), 300);
   }
 
   private backfillLocalTournamentMetrics(): void {
@@ -1039,25 +768,16 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     return tournamentFormat.fixedPairsMode(this.state);
   }
   get availableGamesToWin(): number[] {
-    return this.isGroupTournament ? [4, 5, 6] : [3, 4, 5, 6];
+    return availableGamesToWin(this.state);
   }
   get availableSizes(): TournamentSize[] {
-    return this.isGroupTournament ? [8, 12, 24] : [8, 10, 12, 24];
+    return availableSizes(this.state);
   }
   get availableCourts(): number[] {
-    if (this.isGroupTournament) return [this.state.size / 4];
-    if (this.state.size === 24) return this.isMixedDoubles ? [6, 3] : [6];
-    return this.state.size === 12 ? [2, 3] : [2];
+    return availableCourts(this.state);
   }
   get requiredRounds(): number {
-    if (this.isGroupTournament) return this.fixedPairsMode ? this.state.size / 2 - 1 : this.isMixedDoubles ? 2 : 3;
-    if (this.state.size === 24 && this.isMixedDoubles) {
-      return this.state.rounds.length || (this.state.courts === 3 ? 24 : 12);
-    }
-    if (this.state.size === 24 && this.state.courts === 3) return 46;
-    if (this.state.size === 10) return 10;
-    if (this.state.size === 12 && this.state.courts === 2) return 12;
-    return this.state.size - 1;
+    return requiredRounds(this.state);
   }
   get requiredCourts(): number {
     return this.state.courts;
@@ -1126,31 +846,13 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     });
   }
 
-  private trackSetupStepViewed(step: number): void {
-    this.analytics.capture('tournament_setup_step_viewed', {
-      step,
-      hosting_mode: this.state.hostingMode,
-      tournament_mode: this.state.tournamentMode,
-      doubles_format: this.state.doublesFormat ?? 'open',
-      tournament_size: this.state.size,
-    });
-  }
-
-  private trackSetupStepCompleted(step: number): void {
-    this.analytics.capture('tournament_setup_step_completed', {
-      step,
-      hosting_mode: this.state.hostingMode,
-      tournament_mode: this.state.tournamentMode,
-      doubles_format: this.state.doublesFormat ?? 'open',
-      tournament_size: this.state.size,
-    });
-  }
   /**
    * The profile panel, a lazy dialog. `afterWelcome` is what waits for the first-visit panel to close (the setup tour,
    * the saved tournaments), so overlays never stack. From the panel the organizer can go on to "Meus torneios".
    */
   async openProfile(welcome = false, afterWelcome?: () => void): Promise<void> {
     if (this.profileOpen) return;
+    this.setupTourCue.take();
     this.profileOpen = true;
     this.refreshProfileShell();
     let result: ProfileDialogResult | undefined;
@@ -1208,35 +910,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     });
   }
 
-  /** Fill empty moderator fields with the profile; never overrides typed values. */
-  private prefillFromProfile(): void {
-    const { name, gender, photoDataUrl } = this.profileStore.profile();
-    if (!this.moderatorName.trim()) this.moderatorName = name;
-    if (!this.moderatorGender && gender) this.moderatorGender = gender;
-    if (!this.moderatorAvatar && photoDataUrl) this.moderatorAvatar = photoDataUrl;
-  }
-
-  /** Adds the device owner as a player of a fresh local tournament, unless they chose to only manage. */
-  private autoJoinProfile(): void {
-    if (this.isSharedMode || this.hasSchedule || this.state.players.length) return;
-    const result = profileAutoJoin(
-      this.profileStore.profile(),
-      this.state.players,
-      this.state.size,
-      this.isMixedDoubles,
-    );
-    if ('player' in result) {
-      this.state.players.push({ id: this.id(), ...result.player });
-      this.syncDefaultFixedPairs();
-      this.analytics.capture('profile_auto_joined', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-      });
-    } else if (result.skipped === 'needs-gender') {
-      this.message('Defina sua categoria no perfil para entrar automaticamente em torneios mistos.');
-    }
-  }
-
   setTheme(mode: ThemeMode): void {
     if (this.theme === mode) return;
     this.theme = mode;
@@ -1246,131 +919,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
   private applyTheme(): void {
     document.documentElement.dataset['theme'] = this.theme;
-  }
-
-  private playerError(text: string): void {
-    this.playerFormError = text;
-  }
-
-  addPlayer(): void {
-    const name = this.newPlayerName.trim();
-    if (!name) return;
-    if (this.isMixedDoubles && !this.newPlayerGender)
-      return this.playerError('Selecione a categoria do atleta para formar as duplas mistas.');
-    if (this.hasSchedule) return this.playerError('A lista está bloqueada porque a tabela já foi gerada.');
-    if (this.isSharedMode)
-      return this.playerError('No torneio compartilhado, os participantes entram pelo link de convite.');
-    if (this.state.players.length >= this.state.size)
-      return this.playerError(`O Super ${this.state.size} permite ${this.state.size} jogadores.`);
-    if (this.state.players.some((p) => p.name.toLocaleLowerCase() === name.toLocaleLowerCase()))
-      return this.playerError('Já existe um participante com esse nome.');
-    this.state.players.push({
-      id: this.id(),
-      name,
-      ...(this.isMixedDoubles && this.newPlayerGender ? { gender: this.newPlayerGender } : {}),
-      ...(this.newPlayerAvatar ? { photoDataUrl: this.newPlayerAvatar } : {}),
-    });
-    this.syncDefaultFixedPairs();
-    this.newPlayerName = '';
-    this.newPlayerGender = '';
-    this.newPlayerAvatar = '';
-    this.playerFormError = '';
-    this.persist();
-    // Keep the field ready for the next name (keyboard stays open on phones).
-    if (this.state.players.length < this.state.size)
-      window.setTimeout(() => document.getElementById('wizardPlayerName')?.focus());
-    this.analytics.capture('player_added', {
-      tournament_mode: this.state.tournamentMode,
-      doubles_format: this.state.doublesFormat ?? 'open',
-      tournament_size: this.state.size,
-      participant_count: this.state.players.length,
-    });
-  }
-
-  openBatchModal(): void {
-    this.batchModalOpen = true;
-    this.batchText = '';
-    this.batchPlayers = [];
-  }
-
-  parseBatchPlayers(): void {
-    const genderOf = (value: string): PlayerGender | '' => {
-      const normalized = value.trim().toLowerCase();
-      return ['m', 'masculino', 'male'].includes(normalized)
-        ? 'male'
-        : ['f', 'feminino', 'female'].includes(normalized)
-          ? 'female'
-          : '';
-    };
-    this.batchPlayers = this.batchText
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        const parts = line.split(/[\t,;]/).map((part) => part.trim());
-        const last = parts.length > 1 ? genderOf(parts[parts.length - 1]) : '';
-        return { name: last ? parts.slice(0, -1).join(' ').trim() : parts[0], gender: last };
-      });
-    this.validateBatchPlayers();
-  }
-
-  validateBatchPlayers(): void {
-    const names = new Set(this.state.players.map((player) => player.name.trim().toLocaleLowerCase()));
-    const remaining = this.state.size - this.state.players.length;
-    this.batchPlayers.forEach((player, index) => {
-      const name = player.name.trim();
-      const key = name.toLocaleLowerCase();
-      player.error = !name
-        ? 'Informe o nome.'
-        : names.has(key)
-          ? 'Nome duplicado.'
-          : this.isMixedDoubles && !player.gender
-            ? 'Selecione a categoria.'
-            : index >= remaining
-              ? 'Sem vaga disponível.'
-              : '';
-      names.add(key);
-    });
-  }
-
-  get canConfirmBatchPlayers(): boolean {
-    return this.batchPlayers.length > 0 && this.batchPlayers.every((player) => !player.error);
-  }
-
-  confirmBatchPlayers(): void {
-    this.validateBatchPlayers();
-    if (!this.canConfirmBatchPlayers) return;
-    this.state.players.push(
-      ...this.batchPlayers.map((player) => ({
-        id: this.id(),
-        name: player.name.trim(),
-        ...(this.isMixedDoubles ? { gender: player.gender as PlayerGender } : {}),
-      })),
-    );
-    this.syncDefaultFixedPairs();
-    this.batchModalOpen = false;
-    this.batchText = '';
-    this.batchPlayers = [];
-    this.persist('Participantes adicionados em lote.');
-  }
-
-  removePlayer(id: string): void {
-    if (this.hasSchedule) return;
-    if (this.isSharedMode)
-      return this.message('Não é possível remover participantes do torneio compartilhado.', 'error');
-    this.state.players = this.state.players.filter((p) => p.id !== id);
-    this.syncDefaultFixedPairs();
-    this.persist();
-  }
-
-  updatePlayerGender(playerId: string, gender: PlayerGender | ''): void {
-    if (this.hasSchedule || !this.isMixedDoubles) return;
-    const player = this.state.players.find((item) => item.id === playerId);
-    if (!player) return;
-    if (gender) player.gender = gender;
-    else delete player.gender;
-    this.syncDefaultFixedPairs();
-    this.persist();
   }
 
   saveSettings(): void {
@@ -1392,234 +940,57 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     });
   }
 
+  addPlayer(): void {
+    const result = addPlayer(this.state, { name: this.newPlayerName, gender: '', avatar: '' }, this.id());
+    if ('error' in result) return;
+    this.state = result.state;
+    this.newPlayerName = '';
+    this.persist();
+  }
+
+  removePlayer(id: string): void {
+    const result = removePlayer(this.state, id);
+    if ('error' in result) return;
+    this.state = result.state;
+    this.persist();
+  }
+
   changeSize(size: number): void {
-    if (!this.availableSizes.includes(size as TournamentSize)) return;
-    this.state.size = size as TournamentSize;
-    this.state.courts = this.availableCourts[0];
-    this.normalizeGamesToWin();
-    this.state.roundCount = this.requiredRounds;
-    this.syncDefaultFixedPairs();
+    this.state = withSize(this.state, size);
   }
 
   changeCourts(courts: number): void {
-    if (!this.availableCourts.includes(courts)) return;
-    this.state.courts = courts;
-    if (!this.isEarlyFinalsOptionAvailable) this.state.earlyFinalsEnabled = false;
-    this.state.roundCount = this.requiredRounds;
+    this.state = withCourts(this.state, courts);
   }
 
   setEarlyFinals(enabled: boolean): void {
     if (this.hasSchedule || !this.isEarlyFinalsOptionAvailable) return;
-    this.state.earlyFinalsEnabled = enabled;
-    this.state.mixedFinalFormat ??= 'knockout';
+    this.state = withEarlyFinals(this.state, enabled);
     this.persist();
   }
 
   setMixedFinalFormat(format: MixedFinalFormat): void {
     if (this.hasSchedule || !this.isEarlyFinalsOptionAvailable) return;
-    this.state.mixedFinalFormat = format;
+    this.state = withMixedFinalFormat(this.state, format);
     this.persist();
   }
 
   changeTournamentMode(mode: TournamentMode): void {
-    this.state.tournamentMode = mode;
-    if (!this.availableSizes.includes(this.state.size)) this.state.size = 8;
-    this.state.courts = this.availableCourts[0];
-    this.normalizeGamesToWin();
-    this.state.roundCount = this.requiredRounds;
-    this.syncDefaultFixedPairs();
+    this.state = withTournamentMode(this.state, mode);
   }
 
   changeDoublesFormat(format: DoublesFormat): void {
     if (this.hasSchedule) return;
-    this.state.doublesFormat = format;
-    if (!this.availableCourts.includes(this.state.courts)) this.state.courts = this.availableCourts[0];
-    if (!this.isEarlyFinalsOptionAvailable) this.state.earlyFinalsEnabled = false;
-    this.state.roundCount = this.requiredRounds;
-    this.syncDefaultFixedPairs();
-    this.persist();
-  }
-
-  changeHostingMode(mode: TournamentHostingMode): void {
-    if (this.hasSchedule || (mode === 'shared' && !this.sharedConfigured)) return;
-    this.state.hostingMode = mode;
-    this.state.qualificationStats = mode === 'shared' ? (this.state.qualificationStats ?? true) : false;
-    this.sharedError = '';
-    this.sharedNotice = '';
+    this.state = withDoublesFormat(this.state, format);
     this.persist();
   }
 
   changeGroupFormat(format: GroupFormat): void {
-    this.state.groupFormat = format;
-    this.state.courts = this.availableCourts[0];
-    this.state.roundCount = this.requiredRounds;
-    this.syncDefaultFixedPairs();
+    this.state = withGroupFormat(this.state, format);
   }
 
-  fixedPairOptions(pairIndex: number): Player[] {
-    return this.state.fixedPairs?.[pairIndex] ? this.state.players : [];
-  }
-
-  updateFixedPair(pairIndex: number, side: 0 | 1, playerId: string): void {
-    const pairs = (this.state.fixedPairs ?? []).map((pair) => [...pair] as [string, string]);
-    if (!pairs[pairIndex]) return;
-    const previousPlayerId = pairs[pairIndex][side];
-    const otherPairIndex = pairs.findIndex((pair, index) => index !== pairIndex && pair.includes(playerId));
-    if (otherPairIndex >= 0) {
-      const otherSide = pairs[otherPairIndex].findIndex((id) => id === playerId) as 0 | 1;
-      pairs[otherPairIndex][otherSide] = previousPlayerId;
-    }
-    pairs[pairIndex][side] = playerId;
-    if (
-      this.isMixedDoubles &&
-      pairs.some((pair) => {
-        const firstGender = this.state.players.find((player) => player.id === pair[0])?.gender;
-        const secondGender = this.state.players.find((player) => player.id === pair[1])?.gender;
-        return !firstGender || !secondGender || firstGender === secondGender;
-      })
-    ) {
-      this.message('Cada dupla precisa ter um atleta masculino e um feminino.', 'error');
-      return;
-    }
-    this.state.fixedPairs = pairs;
-    this.persist();
-  }
-
-  nextSetupStep(): void {
-    if (this.setupStep === 1) {
-      if (this.isSharedMode) {
-        void this.requestSharedTournamentLogin();
-        return;
-      }
-      this.state.name = this.state.name.trim() || 'Meu torneio';
-      this.state.roundCount = this.requiredRounds;
-      this.state.courts = this.requiredCourts;
-      this.autoJoinProfile();
-      this.persist();
-      this.setupStep = 2;
-      this.trackSetupStepCompleted(1);
-      this.trackSetupStepViewed(2);
-      window.setTimeout(() => this.maybeStartSetupTour(), 450);
-      return;
-    }
-    if (this.state.players.length !== this.state.size) {
-      return this.message(`Cadastre exatamente ${this.state.size} jogadores para continuar.`, 'error');
-    }
-    this.setupStep = 3;
-    this.trackSetupStepCompleted(2);
-    this.trackSetupStepViewed(3);
-    this.clearNotice();
-    window.setTimeout(() => this.maybeStartSetupTour(), 450);
-  }
-
-  async requestSharedTournamentLogin(): Promise<void> {
-    if (!this.sharedConfigured)
-      return this.message('O modo compartilhado ainda não está configurado neste deploy.', 'error');
-    if (!this.moderatorName.trim()) return this.message('Informe seu nome para entrar como moderador.', 'error');
-    if (this.isMixedDoubles && !this.moderatorGender)
-      return this.message('Selecione sua categoria para entrar no torneio misto.', 'error');
-    if (this.isMixedDoubles && !this.moderatorGender)
-      return this.message('Selecione sua categoria para entrar no torneio misto.', 'error');
-    if (this.state.players.length || this.state.rounds.length) {
-      return this.message(
-        'Para compartilhar, comece com um torneio sem lista local. Os participantes entrarão pelo convite.',
-        'error',
-      );
-    }
-    this.sharedLoading = true;
-    this.sharedError = '';
-    try {
-      this.state.hostingMode = 'shared';
-      this.state.name = this.state.name.trim() || 'Meu torneio';
-      this.state.roundCount = this.requiredRounds;
-      this.state.courts = this.requiredCourts;
-      const user = await this.auth.currentUser();
-      const reusableSession = !!user;
-      if (reusableSession) {
-        await this.createSharedTournamentOnServer();
-        return;
-      }
-      await this.auth.signInAnonymously();
-      await this.createSharedTournamentOnServer();
-    } catch (error) {
-      this.sharedError = this.moderatorAuthErrorMessage(error);
-    } finally {
-      this.sharedLoading = false;
-    }
-  }
-
-  private moderatorAuthErrorMessage(error: unknown): string {
-    const message = errorMessage(error);
-    if (/anonymous/i.test(message)) {
-      return 'O login sem e-mail está desativado no Supabase. Ative "Allow anonymous sign-ins" ou escolha o link por e-mail.';
-    }
-    return message || 'Não foi possível entrar como moderador.';
-  }
-
-  async addManualParticipant(): Promise<void> {
-    const name = this.manualParticipantName.trim();
-    if (!name || !this.canManageParticipants || !this.state.sharedTournamentId) return;
-    if (this.isMixedDoubles && !this.manualParticipantGender) {
-      this.sharedError = 'Selecione a categoria do atleta para formar as duplas mistas.';
-      return;
-    }
-    this.sharedLoading = true;
-    this.sharedError = '';
-    try {
-      this.applySharedSnapshot(
-        await this.sharedTournaments.addSharedParticipant(
-          this.state.sharedTournamentId,
-          name,
-          this.manualParticipantGender || 'male',
-          this.manualParticipantAvatar || undefined,
-        ),
-        true,
-      );
-      this.manualParticipantName = '';
-      this.manualParticipantGender = '';
-      this.manualParticipantAvatar = '';
-      this.analytics.capture('shared_participant_added_manually', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-        participant_count: this.state.players.length,
-      });
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    } finally {
-      this.sharedLoading = false;
-    }
-  }
-
-  async removeManualParticipant(playerId: string): Promise<void> {
-    if (!this.canManageParticipants || !this.state.sharedTournamentId) return;
-    this.sharedLoading = true;
-    this.sharedError = '';
-    try {
-      this.applySharedSnapshot(
-        await this.sharedTournaments.removeSharedParticipant(this.state.sharedTournamentId, playerId),
-        true,
-      );
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    } finally {
-      this.sharedLoading = false;
-    }
-  }
-
-  async copySharedInvite(): Promise<void> {
-    if (!this.sharedInviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(this.sharedInviteUrl);
-      this.sharedNotice = 'Link copiado.';
-      this.analytics.capture('shared_invite_copied', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-      });
-    } catch {
-      this.sharedError = 'Não foi possível copiar. Selecione e copie o link manualmente.';
-    }
+  copySharedInvite(): Promise<void> {
+    return this.owned.copyInvite();
   }
 
   async createOrCopyLocalLiveLink(): Promise<void> {
@@ -1704,22 +1075,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
 
   async renewSharedInvite(): Promise<void> {
-    if (!this.isSharedModerator || !this.state.sharedTournamentId) return;
-    this.sharedLoading = true;
-    this.sharedError = '';
-    try {
-      const invite = await this.sharedTournaments.rotateSharedInvite(this.state.sharedTournamentId);
-      this.sharedInviteToken = invite.inviteToken;
-      this.saveOwnerInvite(this.state.sharedTournamentId, invite.inviteToken);
-      this.sharedSnapshot = this.sharedSnapshot
-        ? { ...this.sharedSnapshot, inviteExpiresAt: invite.inviteExpiresAt }
-        : this.sharedSnapshot;
-      this.sharedNotice = 'Novo link de convite criado. O link anterior foi invalidado.';
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    } finally {
-      this.sharedLoading = false;
-    }
+    await this.owned.renewInvite();
   }
 
   async shareResults(): Promise<void> {
@@ -1740,78 +1096,19 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.session.removeItem(SHARED_SETUP_KEY);
 
     if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
-      try {
-        const snapshot = await this.sharedTournaments.getOwnedSharedTournament(this.state.sharedTournamentId);
-        this.isSharedModerator = true;
-        this.sharedInviteToken = this.loadOwnerInvite(snapshot.id);
-        if (this.syncQueue.read('shared', snapshot.id)?.pending) {
-          this.sharedSnapshot = snapshot;
-          this.sharedSignature = JSON.stringify([snapshot.status, snapshot.state]);
-        } else {
-          this.applySharedSnapshot(snapshot);
-        }
-        if (!snapshot.state.rounds?.length) {
-          this.setPage('setup');
-          this.setupStep = 2;
-          this.trackSetupStepViewed(2);
-        }
-        this.subscribeToShared(snapshot.id);
-        void this.syncPending();
-      } catch (error) {
-        this.sharedError = this.sharedErrorMessage(error);
+      const keepLocal = !!this.syncQueue.read('shared', this.state.sharedTournamentId)?.pending;
+      const snapshot = await this.owned.restore(this.state.sharedTournamentId, keepLocal);
+      if (!snapshot) return;
+      if (!snapshot.state.rounds?.length) {
+        this.setPage('setup');
+        this.setup.show(2);
       }
+      void this.syncPending();
     }
   }
 
-  private async createSharedTournamentOnServer(): Promise<void> {
-    try {
-      const draft = {
-        ...this.state,
-        hostingMode: 'shared' as const,
-        players: [],
-        rounds: [],
-        groups: [],
-        fixedPairs: [],
-        finals: null,
-      };
-      const snapshot = await this.sharedTournaments.createSharedTournament(
-        draft,
-        this.moderatorName.trim(),
-        this.moderatorGender || 'male',
-        this.moderatorAvatar || undefined,
-      );
-      this.local.removeItem(SHARED_SETUP_KEY);
-      this.session.removeItem(SHARED_SETUP_KEY);
-      this.isSharedModerator = true;
-      this.sharedInviteToken = snapshot.inviteToken ?? '';
-      if (this.sharedInviteToken) this.saveOwnerInvite(snapshot.id, this.sharedInviteToken);
-      this.applySharedSnapshot(snapshot);
-      this.setupStep = 2;
-      this.persist();
-      this.subscribeToShared(snapshot.id);
-      this.sharedNotice = 'Torneio compartilhado criado. Envie o convite para preencher as vagas.';
-      this.trackSetupStepCompleted(1);
-      this.trackSetupStepViewed(2);
-      this.analytics.capture('tournament_created', {
-        hosting_mode: 'shared',
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-      });
-      this.analytics.capture('shared_tournament_created', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-        moderator_auth_mode: 'anonymous',
-      });
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    }
-  }
-
-  private applySharedSnapshot(snapshot: SharedTournamentSnapshot, keepView = false): void {
-    this.sharedSnapshot = snapshot;
-    this.sharedSignature = JSON.stringify([snapshot.status, snapshot.state]);
+  /** The shared tournament became the current one: what only the shell does with it. */
+  private onSharedApplied(snapshot: SharedTournamentSnapshot, keepView: boolean): void {
     if (this.isSharedModerator && snapshot.status === 'active' && snapshot.state.rounds?.length) {
       try {
         this.syncQueue.refreshBase('shared', snapshot.id, snapshot.state);
@@ -1819,28 +1116,8 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
         this.syncError = 'Não foi possível preparar a sincronização neste dispositivo.';
       }
     }
-    this.state = normalizeSharedState(snapshot);
     if (!keepView) this.setPage(this.state.rounds.length ? 'overview' : 'setup');
     this.initializeScoreDrafts();
-  }
-
-  /** Watches the moderator's tournament (guests joining) until it starts or the moderator leaves it. */
-  private subscribeToShared(id: string): void {
-    this.stopOwnerWatch?.();
-    this.stopOwnerWatch = this.feed.watchShared(id, () => {
-      void this.refreshSharedState(id);
-    });
-  }
-
-  private async refreshSharedState(id: string): Promise<void> {
-    try {
-      const snapshot = await this.sharedTournaments.getOwnedSharedTournament(id);
-      if (JSON.stringify([snapshot.status, snapshot.state]) === this.sharedSignature) return;
-      if (this.state.rounds.length) return;
-      this.applySharedSnapshot(snapshot, true);
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    }
   }
 
   // Garante a atualização mesmo quando o Realtime não entrega o aviso.
@@ -1848,80 +1125,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     if (document.hidden || this.sharedLoading) return;
     if (this.hasPendingSync && this.clock.now() >= this.syncRetryAfter) void this.syncPending();
     if (this.isSharedModerator && this.state.sharedTournamentId && !this.state.rounds.length)
-      void this.refreshSharedState(this.state.sharedTournamentId);
-  }
-
-  private saveOwnerInvite(id: string, token: string): void {
-    try {
-      this.local.setItem(`${OWNER_INVITE_KEY}.${id}`, token);
-    } catch {
-      /* sem armazenamento local */
-    }
-  }
-
-  private loadOwnerInvite(id: string): string {
-    try {
-      return this.local.getItem(`${OWNER_INVITE_KEY}.${id}`) ?? '';
-    } catch {
-      return '';
-    }
-  }
-
-  private sharedErrorMessage(error: unknown): string {
-    const message = errorMessage(error);
-    if (message.includes('invalid_live_link')) return 'Este link de acompanhamento não é válido.';
-    if (message.includes('authentication_required'))
-      return 'Não foi possível autenticar a publicação. Tente novamente.';
-    if (message.includes('tournament_completed')) return 'O torneio já foi finalizado e não pode mais ser atualizado.';
-    if (message.includes('registration_closed') || message.includes('invite_expired'))
-      return 'Este convite expirou ou as inscrições foram encerradas.';
-    if (message.includes('tournament_full')) return 'As vagas deste torneio já foram preenchidas.';
-    if (message.includes('tournament_expired')) return 'Este torneio compartilhado já expirou.';
-    if (message.includes('participant_not_removable'))
-      return 'Só é possível remover participantes adicionados manualmente.';
-    if (message.includes('rounds_locked')) return 'As rodadas ficam bloqueadas depois que as finais são geradas.';
-    if (message.includes('invalid_invite')) return 'Este link de convite não é válido.';
-    return message || 'Não foi possível acessar o torneio compartilhado.';
-  }
-
-  /** Completed steps can be revisited, except in shared mode (the server tournament already exists). */
-  canGoToSetupStep(step: number): boolean {
-    return step < this.setupStep && !this.isSharedMode && !this.hasSchedule;
-  }
-  goToSetupStep(step: number): void {
-    if (!this.canGoToSetupStep(step)) return;
-    this.analytics.capture('tournament_setup_step_back', { from: this.setupStep, to: step });
-    this.setupStep = step;
-    this.clearNotice();
-    this.trackSetupStepViewed(step);
-  }
-  get enrollHint(): string {
-    const missing = this.state.size - this.state.players.length;
-    if (this.isSharedMode)
-      return missing > 0
-        ? `Faltam ${missing} ${missing === 1 ? 'participante' : 'participantes'} entrarem pelo link.`
-        : 'Todas as vagas foram preenchidas.';
-    if (this.isMixedDoubles) {
-      const men = this.state.players.filter((player) => player.gender === 'male').length;
-      const women = this.state.players.filter((player) => player.gender === 'female').length;
-      const half = this.state.size / 2;
-      const detail = `${men}/${half} masculino · ${women}/${half} feminino`;
-      return missing > 0 ? `Faltam ${missing}. ${detail}.` : `Lista completa. ${detail}.`;
-    }
-    return missing > 0
-      ? `Faltam ${missing} ${missing === 1 ? 'jogador' : 'jogadores'}.`
-      : 'Lista completa. Pode revisar o torneio.';
-  }
-  get reviewDescription(): string {
-    if (this.fixedPairsMode) return 'Confira as duplas fixas e os jogadores antes de iniciar.';
-    return this.isGroupTournament
-      ? 'Os grupos e confrontos são sorteados ao gerar a tabela.'
-      : 'Confrontos e descansos são calculados ao gerar a tabela.';
-  }
-
-  previousSetupStep(): void {
-    if (this.setupStep > 1) this.setupStep--;
-    this.clearNotice();
+      void this.owned.refresh(this.state.sharedTournamentId);
   }
 
   async generateSchedule(): Promise<void> {
@@ -1962,10 +1166,12 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
           this.isMixedDoubles,
         );
       }
+      // A new object, so a feature showing the tournament (the setup review) sees the schedule appear.
+      this.state = { ...this.state };
       if (this.isSharedMode && this.state.sharedTournamentId) {
         this.state.startedAt = this.clock.iso();
         const snapshot = await this.sharedTournaments.startSharedTournament(this.state.sharedTournamentId, this.state);
-        this.applySharedSnapshot(snapshot);
+        this.owned.apply(snapshot);
       }
       this.state.startedAt ??= this.clock.iso();
       if (!this.isSharedMode) this.state.analyticsId ??= this.id();
@@ -1975,7 +1181,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       this.persist('Todas as rodadas foram geradas e salvas.');
       this.setPage('rounds');
       if (!this.isSharedMode) this.syncLocalTournamentMetrics();
-      this.trackSetupStepCompleted(3);
+      this.setup.completed(3);
       if (!this.isSharedMode) {
         this.analytics.capture('tournament_created', {
           hosting_mode: this.state.hostingMode,
@@ -2009,8 +1215,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       });
     } catch (error) {
       if (this.isSharedMode) {
-        this.state.rounds = previousRounds;
-        this.state.groups = previousGroups;
+        this.state = { ...this.state, rounds: previousRounds, groups: previousGroups };
       }
       this.message(error instanceof Error ? error.message : 'Erro ao gerar a tabela.', 'error');
     }
@@ -2428,16 +1633,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       }))
     )
       return;
-    this.sharedLoading = true;
-    this.sharedError = '';
-    try {
-      await this.sharedTournaments.cancelSharedTournament(id);
-      this.clearLocalTournament(returnToLanding);
-    } catch (error) {
-      this.sharedError = this.sharedErrorMessage(error);
-    } finally {
-      this.sharedLoading = false;
-    }
+    if (await this.owned.cancel(id)) this.clearLocalTournament(returnToLanding);
   }
 
   private clearLocalTournament(returnToLanding = false): void {
@@ -2452,29 +1648,13 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.leaveSharedTournament();
     this.clearLocalLiveCredentials();
     this.syncError = '';
-    this.state = {
-      version: 1,
-      name: 'Super de sábado',
-      size: 8,
-      courts: 2,
-      gamesToWin: 4,
-      roundCount: 7,
-      players: [],
-      rounds: [],
-      createdAt: this.clock.iso(),
-      tournamentMode: 'super',
-      hostingMode: 'local',
-      groupFormat: 'rotating',
-      groups: [],
-      fixedPairs: [],
-      finals: null,
-    };
+    this.state = newTournament(this.clock.iso());
     this.selectedRound = 0;
-    this.setupStep = 1;
+    this.setup.set(1);
     this.setPage('setup');
     this.savedTournaments.refresh();
     if (returnToLanding) this.openLanding();
-    this.trackSetupStepViewed(1);
+    this.setup.viewed(1);
     this.message('Novo torneio iniciado.');
   }
 
@@ -2699,19 +1879,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
 
   private leaveSharedTournament(): void {
-    this.stopOwnerWatch?.();
-    this.stopOwnerWatch = null;
-    if (this.state.sharedTournamentId) this.feed.stopSharedWatch(this.state.sharedTournamentId);
-    this.isSharedModerator = false;
-    this.sharedSnapshot = null;
-    this.sharedInviteToken = '';
-    this.sharedError = '';
-    this.sharedNotice = '';
-    try {
-      if (this.state.sharedTournamentId) this.local.removeItem(`${OWNER_INVITE_KEY}.${this.state.sharedTournamentId}`);
-    } catch {
-      /* sem armazenamento local */
-    }
+    this.owned.leave();
   }
 
   exportBackup(): void {

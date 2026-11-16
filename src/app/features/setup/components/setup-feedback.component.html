@@ -1,0 +1,32 @@
+<ng-container *transloco="let t; prefix: 'setup.shared'">
+  @if (store.sharedError(); as error) {
+    <p class="shared-error" role="alert">
+      @switch (error.key) {
+        @case ('invalidLiveLink') {{{ t('errors.invalidLiveLink') }}}
+        @case ('authRequired') {{{ t('errors.authRequired') }}}
+        @case ('completed') {{{ t('errors.completed') }}}
+        @case ('registrationClosed') {{{ t('errors.registrationClosed') }}}
+        @case ('full') {{{ t('errors.full') }}}
+        @case ('expired') {{{ t('errors.expired') }}}
+        @case ('notRemovable') {{{ t('errors.notRemovable') }}}
+        @case ('roundsLocked') {{{ t('errors.roundsLocked') }}}
+        @case ('invalidInvite') {{{ t('errors.invalidInvite') }}}
+        @case ('anonymousDisabled') {{{ t('errors.anonymousDisabled') }}}
+        @case ('signInFailed') {{{ t('errors.signInFailed') }}}
+        @case ('unavailable') {{{ t('errors.unavailable') }}}
+        @case ('categoryRequired') {{{ t('errors.categoryRequired') }}}
+        @case ('copyFailed') {{{ t('errors.copyFailed') }}}
+        @case ('raw') {{{ error.detail }}}
+      }
+    </p>
+  }
+  @if (store.sharedNotice(); as notice) {
+    <p class="shared-success" role="status">
+      @switch (notice) {
+        @case ('created') {{{ t('notices.created') }}}
+        @case ('copied') {{{ t('notices.copied') }}}
+        @case ('renewed') {{{ t('notices.renewed') }}}
+      }
+    </p>
+  }
+</ng-container>

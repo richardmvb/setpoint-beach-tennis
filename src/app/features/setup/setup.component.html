@@ -1,0 +1,62 @@
+<ng-container *transloco="let t; prefix: 'setup'">
+  <nav #progress class="wizard-progress" [attr.aria-label]="t('progress.label')">
+    <button
+      type="button"
+      class="wizard-step"
+      [class.current]="store.step() === 1"
+      [class.complete]="store.step() > 1"
+      [disabled]="!store.canGoTo(1)"
+      (click)="store.goTo(1)"
+      [attr.aria-current]="store.step() === 1 ? 'step' : null"
+    ><b>{{ store.step() > 1 ? '✓' : '01' }}</b><span>{{ t('progress.config') }}</span></button>
+    <i></i>
+    <button
+      type="button"
+      class="wizard-step"
+      [class.current]="store.step() === 2"
+      [class.complete]="store.step() > 2"
+      [disabled]="!store.canGoTo(2)"
+      (click)="store.goTo(2)"
+      [attr.aria-current]="store.step() === 2 ? 'step' : null"
+    ><b>{{ store.step() > 2 ? '✓' : '02' }}</b><span>{{ t('progress.players') }}</span></button>
+    <i></i>
+    <button type="button" class="wizard-step" [class.current]="store.step() === 3" disabled [attr.aria-current]="store.step() === 3 ? 'step' : null"
+    ><b>03</b><span>{{ t('progress.start') }}</span></button>
+  </nav>
+  @switch (store.step()) {
+    @case (1) {
+      <article uiCard class="wizard-panel">
+        <span class="card-kicker">{{ t('frame.kicker1') }}</span><h2>{{ t('frame.title1') }}</h2>
+        <div class="tour-bar">@if (store.savedCount()) {
+          <button type="button" (click)="openLibrary.emit()">{{ t('frame.saved', { count: store.savedCount() }) }}</button>
+          }<button type="button" (click)="startTour()">{{ t('frame.tutorial') }}</button><button type="button" (click)="store.toggleTutorial()">{{ store.tutorialEnabled() ? t('frame.tipsOff') : t('frame.tipsOn') }}</button></div>
+        <app-setup-config (advance)="next()" />
+        <div class="wizard-actions"><span></span><button id="setupNext" uiButton variant="primary" type="button" (click)="next()" [disabled]="store.sharedLoading()">{{ store.sharedLoading() ? t('frame.wait') : store.isShared() ? t('frame.createShared') : t('frame.addPlayers') }} @if (!store.sharedLoading()) {
+          <span>→</span>
+        }</button></div>
+      </article>
+    }
+    @case (2) {
+      <article uiCard class="wizard-panel">
+        <span class="card-kicker">{{ t('frame.kicker2') }}</span><h2>{{ t('frame.title2') }}</h2>
+        <div class="tour-bar"><button type="button" (click)="startTour()">{{ t('frame.tutorial') }}</button></div>
+        <app-setup-players />
+        <div class="wizard-actions">@if (!store.isShared()) {
+          <button uiButton variant="secondary" type="button" (click)="store.previous()">← {{ t('frame.back') }}</button>
+          }@if (store.isModerator()) {
+          <button uiButton variant="danger" type="button" (click)="cancelShared.emit()" [disabled]="store.sharedLoading()">{{ t('frame.cancelShared') }}</button>
+          }<button id="setupNext2" uiButton variant="primary" type="button" (click)="next()" [disabled]="!store.complete()">{{ store.complete() ? t('frame.review') : t('frame.missing', { count: store.state().size - store.state().players.length }) }} @if (store.complete()) {
+          <span>→</span>
+        }</button></div>
+      </article>
+    }
+    @case (3) {
+      <article uiCard class="wizard-panel">
+        <span class="card-kicker">{{ t('frame.kicker3') }}</span><h2>{{ t('frame.title3') }}</h2>
+        <div class="tour-bar"><button type="button" (click)="startTour()">{{ t('frame.tutorial') }}</button></div>
+        <app-setup-review />
+        <div class="wizard-actions"><button uiButton variant="secondary" type="button" (click)="store.previous()">← {{ t('frame.back') }}</button><button id="generateBtn" uiButton variant="primary" type="button" (click)="start.emit()" [disabled]="!store.canStart()">{{ store.isShared() ? t('frame.startShared') : t('frame.generate') }} <span>→</span></button></div>
+      </article>
+    }
+  }
+</ng-container>

@@ -1,0 +1,67 @@
+<ng-container *transloco="let t; prefix: 'setup.players'">
+  <div id="enrollProgress" class="enroll-progress" role="status" aria-live="polite"><div class="enroll-head"><span>{{ store.isShared() ? t('enroll.shared') : t('enroll.local') }}</span><b>{{ store.state().players.length }} / {{ store.state().size }}</b></div><div class="enroll-bar"><span [style.width.%]="store.state().players.length / store.state().size * 100"></span></div><small>@switch (hint().key) {
+    @case ('sharedOne') {{{ t('hint.sharedOne', hint().params) }}}
+    @case ('sharedMany') {{{ t('hint.sharedMany', hint().params) }}}
+    @case ('sharedFull') {{{ t('hint.sharedFull') }}}
+    @case ('mixedMissing') {{{ t('hint.mixedMissing', hint().params) }}}
+    @case ('mixedComplete') {{{ t('hint.mixedComplete', hint().params) }}}
+    @case ('openOne') {{{ t('hint.openOne', hint().params) }}}
+    @case ('openMany') {{{ t('hint.openMany', hint().params) }}}
+    @case ('openComplete') {{{ t('hint.openComplete') }}}
+  }</small></div>
+  @if (!store.isShared()) {
+    <form class="participant-form" [class.open-doubles]="!store.isMixed()" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [value]="store.newPlayer().avatar" (valueChange)="store.setNewPlayer({ avatar: $event })" /><input id="wizardPlayerName" name="wizardPlayerName" [ngModel]="store.newPlayer().name" (ngModelChange)="store.setNewPlayer({ name: $event })" maxlength="40" [placeholder]="t('form.placeholder')" [attr.aria-label]="t('form.label')" enterkeyhint="done" autocomplete="off" [attr.aria-invalid]="store.playerError() ? 'true' : null"></div>@if (store.isMixed()) {
+    <app-gender-toggle [compact]="true" [value]="store.newPlayer().gender" (valueChange)="store.setNewPlayer({ gender: $event })" [label]="t('form.category')" />
+    }<button uiButton variant="primary" type="submit" [disabled]="store.full() || !store.newPlayer().name.trim() || (store.isMixed() && !store.newPlayer().gender)">{{ t('form.add') }}</button></form>
+  }
+  @if (store.playerError(); as error) {
+    <p class="shared-error player-form-error" role="alert">@switch (error) {
+      @case ('needsGender') {{{ t('errors.needsGender') }}}
+      @case ('locked') {{{ t('errors.locked') }}}
+      @case ('shared') {{{ t('errors.shared') }}}
+      @case ('full') {{{ t('errors.full', { size: store.state().size }) }}}
+      @case ('duplicate') {{{ t('errors.duplicate') }}}
+    }</p>
+  }
+  @if (!store.isShared()) {
+    <button class="batch-entry-button" type="button" (click)="openBatch()">＋ {{ t('batch.open') }}</button>
+  }
+  <div class="wizard-player-list">@for (player of store.state().players; track player.id; let i = $index) {
+    <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>{{ t('row.participant', { number: pad(i) }) }}</small></span>@if (store.isMixed() && player.gender) {
+    <app-gender-icon [gender]="player.gender" />
+    }@if (store.isMixed() && !store.hasSchedule()) {
+    <select [name]="'playerGender' + i" [ngModel]="player.gender ?? ''" (ngModelChange)="store.setPlayerGender(player.id, $event)" [attr.aria-label]="t('row.categoryOf', { name: player.name })"><option [ngValue]="''" disabled>{{ t('row.category') }}</option><option [ngValue]="'male'">{{ t('row.male') }}</option><option [ngValue]="'female'">{{ t('row.female') }}</option></select>
+    }@if (!store.isShared()) {
+    <button class="remove-button" type="button" (click)="store.removePlayer(player.id)" [attr.aria-label]="t('row.remove')">×</button>
+    }@if (store.canManageParticipants() && player.manual) {
+    <button class="remove-button" type="button" (click)="store.removeManualParticipant(player.id)" [disabled]="store.sharedLoading()" [attr.aria-label]="t('row.removeManual')">×</button>
+  }</div>
+  }</div>
+  @if (store.canManageParticipants() && !store.full()) {
+    <form class="participant-form manual-participant" [class.open-doubles]="!store.isMixed()" (ngSubmit)="store.addManualParticipant()"><span class="card-kicker">{{ t('manual.kicker') }}</span><div class="participant-form-main"><app-avatar-picker [value]="store.manualParticipant().avatar" (valueChange)="store.setManualParticipant({ avatar: $event })" /><input name="manualParticipantName" [ngModel]="store.manualParticipant().name" (ngModelChange)="store.setManualParticipant({ name: $event })" maxlength="40" [placeholder]="t('manual.placeholder')" [attr.aria-label]="t('manual.label')"></div>@if (store.isMixed()) {
+    <app-gender-toggle [compact]="true" [value]="store.manualParticipant().gender" (valueChange)="store.setManualParticipant({ gender: $event })" [label]="t('manual.category')" />
+    }<button uiButton variant="secondary" type="submit" [disabled]="!store.manualParticipant().name.trim() || store.sharedLoading() || (store.isMixed() && !store.manualParticipant().gender)">{{ t('manual.add') }}</button></form>
+  }
+  @if (store.isShared()) {
+    <article class="shared-invite-panel"><div><span class="card-kicker">{{ t('invite.kicker') }}</span><p class="muted">{{ t('invite.count', { count: store.state().players.length, size: store.state().size }) }}</p>@if (store.snapshot()?.expiresAt) {
+    <p class="muted">{{ t('invite.until') }} {{ store.snapshot()?.expiresAt | date:'short' }}.</p>
+    }</div>@if (store.inviteUrl()) {
+    <div class="shared-invite-copy"><input [attr.aria-label]="t('invite.linkLabel')" readonly [value]="store.inviteUrl()"><button uiButton variant="secondary" type="button" (click)="store.copyInvite()">{{ t('invite.copy') }}</button><button uiButton variant="secondary" type="button" (click)="store.renewInvite()" [disabled]="store.sharedLoading()">{{ t('invite.renew') }}</button></div>
+    }@if (!store.inviteUrl() && store.isModerator()) {
+    <button uiButton variant="secondary" type="button" (click)="store.renewInvite()" [disabled]="store.sharedLoading()">{{ store.sharedLoading() ? t('invite.generating') : t('invite.generate') }}</button>
+  }</article>
+  }
+  @if (store.isShared() && store.snapshot()?.status === 'ready') {
+    <p class="shared-success" role="status">{{ t('ready') }}</p>
+  }
+  <app-setup-feedback />
+  @if (store.fixedPairs() && store.complete()) {
+    <div class="fixed-pair-list"><span class="card-kicker">{{ t('pairs.kicker') }}</span>@for (pair of store.state().fixedPairs; track $index; let i = $index) {
+    <div class="fixed-pair-row"><b>{{ t('pairs.pair', { number: i + 1 }) }}</b><select [name]="'fixedPairA' + i" [ngModel]="pair[0]" (ngModelChange)="store.swapFixedPair(i, 0, $event)">@for (player of store.fixedPairOptions(i); track player) {
+    <option [ngValue]="player.id">{{ player.name }}</option>
+    }</select><span>+</span><select [name]="'fixedPairB' + i" [ngModel]="pair[1]" (ngModelChange)="store.swapFixedPair(i, 1, $event)">@for (player of store.fixedPairOptions(i); track player) {
+    <option [ngValue]="player.id">{{ player.name }}</option>
+  }</select></div>
+  }</div>
+  }
+</ng-container>
