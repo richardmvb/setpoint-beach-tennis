@@ -21,7 +21,7 @@
 
 @if (showLanding && !isLocked && !isDashboardRoute) {
   @defer (on immediate) {
-    <app-landing [savedCount]="libraryEntries.length" (start)="enterApp()" (resume)="continueFromLanding()" />
+    <app-landing [savedCount]="savedTournaments.entries().length" (start)="enterApp()" (resume)="continueFromLanding()" />
   } @placeholder {
     <main></main>
   }
@@ -36,16 +36,16 @@
           <span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span>
         </button>
         <div class="top-actions">
-          <button class="profile-trigger" type="button" (click)="toggleProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profile.name ? 'Perfil de ' + profile.name : 'Configurar perfil') + ' · ' + syncLabel">
+          <button class="profile-trigger" type="button" (click)="openProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profileStore.profile().name ? 'Perfil de ' + profileStore.profile().name : 'Configurar perfil') + ' · ' + syncLabel">
             <span class="profile-trigger-avatar">
-              @if (profile.name || profile.photoDataUrl) {
-                <app-player-avatar [name]="profile.name" [photoDataUrl]="profile.photoDataUrl" variant="player-avatar" />
+              @if (profileStore.profile().name || profileStore.profile().photoDataUrl) {
+                <app-player-avatar [name]="profileStore.profile().name" [photoDataUrl]="profileStore.profile().photoDataUrl" variant="player-avatar" />
               } @else {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
               }
               <i class="profile-status" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" aria-hidden="true"></i>
             </span>
-            <span class="profile-trigger-name">{{ profileFirstName || 'Perfil' }}</span>
+            <span class="profile-trigger-name">{{ profileStore.firstName() || 'Perfil' }}</span>
             <svg class="profile-trigger-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </button>
         </div>
@@ -99,8 +99,8 @@
         @if (setupStep === 1) {
           <article class="surface-card wizard-panel">
             <span class="card-kicker">ETAPA 1 DE 3</span><h2>Configure a competição</h2>
-            <div class="tour-bar">@if (libraryEntries.length) {
-              <button type="button" (click)="openLibrary()">Torneios salvos ({{ libraryEntries.length }})</button>
+            <div class="tour-bar">@if (savedTournaments.entries().length) {
+              <button type="button" (click)="openLibrary()">Torneios salvos ({{ savedTournaments.entries().length }})</button>
               }<button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar dicas' : 'Ligar dicas' }}</button></div>
               <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado" enterkeyhint="next" (keydown.enter)="!isSharedMode && nextSetupStep()"></div>
               @if (sharedConfigured) {
@@ -426,8 +426,8 @@
   <p class="shared-error" role="alert">{{ syncError }}</p>
   }</div><div class="button-row"><button class="button secondary" type="button" (click)="syncNow()" [disabled]="!connectionOnline || !hasPendingSync || syncing">{{ syncing ? 'Sincronizando…' : 'Sincronizar agora' }}</button></div></article>
 }
-<article class="surface-card full-card data-card data-card-primary"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Todo torneio iniciado fica salvo neste navegador em Meus torneios. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row">@if (libraryEntries.length) {
-<button class="button secondary" type="button" (click)="openLibrary()">Meus torneios ({{ libraryEntries.length }})</button>
+<article class="surface-card full-card data-card data-card-primary"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Todo torneio iniciado fica salvo neste navegador em Meus torneios. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row">@if (savedTournaments.entries().length) {
+<button class="button secondary" type="button" (click)="openLibrary()">Meus torneios ({{ savedTournaments.entries().length }})</button>
 }<button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><label class="button secondary file-button">↑ Importar backup JSON<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden></label><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
 <article class="surface-card full-card data-card"><div><span class="card-kicker">SOBRE O SETPOINT</span><h2>Página inicial</h2><p class="muted">Rever a apresentação do produto e suas funcionalidades.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="openLanding()">Voltar para a página inicial</button></div></article>
 </section>
@@ -444,85 +444,6 @@
 <span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
 }
 }</footer>
-@if (profileOpen) {
-  <div class="profile-backdrop" tabindex="-1" (keydown.escape)="closeProfile()" (click)="$event.target === $event.currentTarget && closeProfile()">
-    <section id="profilePanel" class="profile-panel" [class.welcome]="profileWelcome" role="dialog" aria-modal="true" aria-labelledby="profileTitle" [attr.aria-describedby]="profileWelcome ? 'profileWelcomeText' : null" tabindex="-1">
-      <div class="profile-head">
-        <app-avatar-picker [value]="profile.photoDataUrl || ''" (valueChange)="updateProfile({ photoDataUrl: $event || undefined })" />
-        <div class="profile-head-text"><span class="card-kicker">{{ profileWelcome ? 'BEM-VINDO AO SETPOINT' : 'SEU PERFIL' }}</span><h2 id="profileTitle">{{ profile.name || 'Quem é você?' }}</h2><small class="profile-sync" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" [title]="syncError || syncLabel"><i aria-hidden="true"></i>{{ syncLabel }}</small></div>
-        <button type="button" class="modal-close" (click)="closeProfile()" aria-label="Fechar">×</button>
-      </div>
-      @if (profileWelcome) {
-        <p id="profileWelcomeText" class="profile-welcome-text">Conte quem você é. Seu nome, foto e categoria entram nos seus torneios e preenchem os convites sozinhos. Fica salvo só neste aparelho.</p>
-      }
-      <div class="profile-section">
-        <label class="form-field profile-name-field"><span>Seu nome</span><input id="profileName" name="profileName" [(ngModel)]="profile.name" (blur)="saveProfileName()" (keydown.enter)="saveProfileName()" [maxlength]="profileNameMax" placeholder="Como você aparece nos torneios" autocomplete="name"></label>
-        <div class="form-field"><span>Categoria <small class="muted">(para duplas mistas)</small></span><app-gender-toggle [compact]="true" [value]="profile.gender || ''" (valueChange)="updateProfile({ gender: $event })" label="Sua categoria" /></div>
-        <label class="profile-switch" [class.disabled]="!profile.name.trim()">
-          <input type="checkbox" role="switch" [checked]="profile.autoJoin" (change)="updateProfile({ autoJoin: $any($event.target).checked })" [disabled]="!profile.name.trim()">
-          <span class="profile-switch-track" aria-hidden="true"><span></span></span>
-          <span class="profile-switch-text"><b>Entrar como jogador nos novos torneios</b><small class="muted">{{ profile.autoJoin ? 'Você será adicionado automaticamente à lista.' : 'Você só vai organizar, sem jogar.' }}</small></span>
-        </label>
-      </div>
-      @if (profileWelcome) {
-        <div class="profile-welcome-actions">
-          <button class="button ghost" type="button" (click)="closeProfile()">Agora não</button>
-          <button class="button primary" type="button" (click)="closeProfile()">{{ profile.name.trim() ? 'Salvar e continuar' : 'Continuar' }}</button>
-        </div>
-      }
-      @if (!profileWelcome) {
-        <div class="profile-section">
-          <div class="profile-section-head"><span class="card-kicker">MEUS TORNEIOS</span>@if (libraryEntries.length) {
-          <button class="link-button" type="button" (click)="openLibraryFromProfile()">Ver todos ({{ libraryEntries.length }})</button>
-        }</div>
-        @if (!libraryEntries.length) {
-          <p class="muted profile-empty">Nenhum torneio salvo ainda. Eles aparecem aqui assim que a tabela for gerada.</p>
-        }
-        @if (libraryEntries.length) {
-          <ul class="profile-recent">
-            @for (entry of recentLibraryEntries; track entry.id) {
-              <li><button type="button" class="profile-recent-item" [class.current]="isCurrentLibraryEntry(entry)" (click)="openLibraryTournamentFromProfile(entry.id)">
-                <span class="profile-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
-                <span class="profile-recent-text"><b>{{ entry.name }}</b><small>{{ isCurrentLibraryEntry(entry) ? 'Em uso' : libraryPhaseLabel(entry) }} · {{ entry.updatedAt | date:'dd/MM' }}</small></span>
-                <svg class="profile-recent-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-              </button></li>
-            }
-          </ul>
-        }
-      </div>
-    }
-    @if (!profileWelcome) {
-      <div class="profile-section profile-prefs">
-        <span class="card-kicker">TEMA</span>
-        <div class="profile-theme" role="radiogroup" aria-label="Tema">
-          <button type="button" role="radio" [class.active]="theme === 'light'" [attr.aria-checked]="theme === 'light'" (click)="theme !== 'light' && toggleTheme()"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>Claro</button>
-          <button type="button" role="radio" [class.active]="theme === 'dark'" [attr.aria-checked]="theme === 'dark'" (click)="theme !== 'dark' && toggleTheme()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>Escuro</button>
-        </div>
-      </div>
-    }
-    <p class="profile-foot"><span>SETPOINT · Beach Tennis</span><span>Versão {{ versionLabel }}</span></p>
-  </section>
-</div>
-}
-@if (libraryModalOpen) {
-  <div class="batch-backdrop" tabindex="-1" (keydown.escape)="libraryModalOpen = false" (click)="$event.target === $event.currentTarget && (libraryModalOpen = false)">
-    <section class="batch-modal library-modal" role="dialog" aria-modal="true" aria-labelledby="libraryTitle">
-      <div class="batch-modal-header"><div><span class="card-kicker">NESTE DISPOSITIVO</span><h2 id="libraryTitle">Meus torneios</h2></div><button type="button" class="modal-close" (click)="libraryModalOpen = false" aria-label="Fechar">×</button></div>
-      <p class="muted">Todo torneio iniciado fica salvo aqui. Abra qualquer um para rever tabela, placares e ranking.</p>
-      @if (!libraryEntries.length) {
-        <p class="muted">Nenhum torneio salvo ainda. Ele aparece aqui assim que a tabela for gerada.</p>
-      }
-      <ul class="library-list">
-        @for (entry of libraryEntries; track entry.id) {
-          <li class="library-item" [class.current]="isCurrentLibraryEntry(entry)">
-            <div class="library-info"><b>{{ entry.name }}</b><small>{{ libraryPhaseLabel(entry) }} · {{ entry.matchesCompleted }}/{{ entry.matchesTotal }} partidas · {{ entry.playerCount }} jogadores · {{ entry.updatedAt | date:'dd/MM/yyyy HH:mm' }}</small></div>
-            <div class="library-actions"><button class="button secondary" type="button" (click)="openLibraryTournament(entry.id)">{{ isCurrentLibraryEntry(entry) ? 'Em uso' : 'Abrir' }}</button><button class="button danger" type="button" (click)="deleteLibraryTournament(entry)" [attr.aria-label]="'Excluir ' + entry.name">Excluir</button></div>
-          </li>
-        }
-      </ul>
-    </section>
-  </div>
-}
 @if (batchModalOpen) {
   <div class="batch-backdrop" tabindex="-1" (keydown.escape)="batchModalOpen = false" (click)="$event.target === $event.currentTarget && (batchModalOpen = false)">
     <section class="batch-modal" role="dialog" aria-modal="true" aria-labelledby="batchTitle">

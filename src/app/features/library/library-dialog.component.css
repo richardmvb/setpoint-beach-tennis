@@ -1,0 +1,70 @@
+:host {
+  display: block;
+  width: min(680px, 100vw - 40px);
+}
+
+/* Meus torneios: history of every tournament started on this device. */
+
+.library-info small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.library-info b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.library-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.library-item.current {
+  border-color: var(--green-2);
+}
+
+.library-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.library-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+@media (width <=620px) {
+  .library-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .library-actions .button {
+    flex: 1;
+  }
+}
+
+@media (width <=620px) {
+  :host {
+    width: 100vw;
+  }
+}

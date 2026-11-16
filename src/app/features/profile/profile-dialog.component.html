@@ -1,0 +1,114 @@
+<ng-container *transloco="let t; prefix: 'profile'">
+  <div class="profile-head">
+    <app-avatar-picker [value]="store.profile().photoDataUrl || ''" (valueChange)="store.update({ photoDataUrl: $event || undefined })" />
+    <div class="profile-head-text">
+      <span class="card-kicker">{{ store.welcome ? t('welcome.kicker') : t('kicker') }}</span>
+      <h2 [id]="titleId">{{ store.name() || t('untitled') }}</h2>
+      <small class="profile-sync" [class.sync-warning]="store.shell().syncWarning" [attr.title]="store.shell().syncError || null"><i aria-hidden="true"></i>@switch (store.shell().sync) {
+        @case ('device-only') {
+          {{ t('sync.deviceOnly') }}
+        }
+        @case ('error') {
+          {{ t('sync.error') }}
+        }
+        @case ('offline') {
+          {{ t('sync.offline') }}
+        }
+        @case ('paused') {
+          {{ t('sync.paused') }}
+        }
+        @case ('syncing') {
+          {{ t('sync.syncing') }}
+        }
+        @case ('pending') {
+          {{ t('sync.pending') }}
+        }
+        @default {
+          {{ t('sync.synced') }}
+        }
+      }</small>
+    </div>
+    <button type="button" class="modal-close" (click)="close()" [attr.aria-label]="t('close')">×</button>
+  </div>
+  @if (store.welcome) {
+    <p [id]="welcomeTextId" class="profile-welcome-text">{{ t('welcome.text') }}</p>
+  }
+  <div class="profile-section">
+    <label class="form-field profile-name-field">
+      <span>{{ t('fields.name') }}</span>
+      <input
+        #nameInput
+        id="profileName"
+        name="profileName"
+        [value]="store.name()"
+        (input)="store.setName($any($event.target).value)"
+        (blur)="store.commitName()"
+        (keydown.enter)="store.commitName()"
+        [attr.maxlength]="store.nameMax"
+        [placeholder]="t('fields.namePlaceholder')"
+        autocomplete="name"
+      />
+    </label>
+    <div class="form-field">
+      <span>{{ t('fields.category') }} <small class="muted">{{ t('fields.categoryHint') }}</small></span>
+      <app-gender-toggle [compact]="true" [value]="store.profile().gender || ''" (valueChange)="store.update({ gender: $event })" [label]="t('fields.categoryLabel')" />
+    </div>
+    <label class="profile-switch" [class.disabled]="!store.hasName()">
+      <input type="checkbox" role="switch" [checked]="store.profile().autoJoin" (change)="store.update({ autoJoin: $any($event.target).checked })" [disabled]="!store.hasName()" />
+      <span class="profile-switch-track" aria-hidden="true"><span></span></span>
+      <span class="profile-switch-text"><b>{{ t('autoJoin.title') }}</b><small class="muted">{{ store.profile().autoJoin ? t('autoJoin.on') : t('autoJoin.off') }}</small></span>
+    </label>
+  </div>
+  @if (store.welcome) {
+    <div class="profile-welcome-actions">
+      <button uiButton variant="ghost" (click)="close()">{{ t('welcome.notNow') }}</button>
+      <button uiButton variant="primary" (click)="close()">{{ store.hasName() ? t('welcome.save') : t('welcome.continue') }}</button>
+    </div>
+  } @else {
+    <div class="profile-section">
+      <div class="profile-section-head">
+        <span class="card-kicker">{{ t('library.kicker') }}</span>
+        @if (store.entries().length) {
+          <button class="link-button" type="button" (click)="showAll()">{{ t('library.viewAll', { count: store.entries().length }) }}</button>
+        }
+      </div>
+      @if (!store.entries().length) {
+        <p class="muted profile-empty">{{ t('library.empty') }}</p>
+      } @else {
+        <ul class="profile-recent">
+          @for (entry of store.recent(); track entry.id) {
+            <li>
+              <button type="button" class="profile-recent-item" [class.current]="store.isCurrent(entry.id)" (click)="openTournament(entry.id)">
+                <span class="profile-recent-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg></span>
+                <span class="profile-recent-text">
+                  <b>{{ entry.name }}</b>
+                  <small>
+                    @if (store.isCurrent(entry.id)) {
+                      {{ t('library.inUse') }}
+                    } @else {
+                      <app-phase-label [phase]="entry.phase" />
+                    }
+                    · {{ entry.updatedAt | date: 'dd/MM' }}
+                  </small>
+                </span>
+                <svg class="profile-recent-go" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+    <div class="profile-section profile-prefs">
+      <span class="card-kicker">{{ t('theme.kicker') }}</span>
+      <div class="profile-theme" role="radiogroup" [attr.aria-label]="t('theme.label')">
+        <button type="button" role="radio" [class.active]="store.shell().theme === 'light'" [attr.aria-checked]="store.shell().theme === 'light'" (click)="store.setTheme('light')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>{{ t('theme.light') }}
+        </button>
+        <button type="button" role="radio" [class.active]="store.shell().theme === 'dark'" [attr.aria-checked]="store.shell().theme === 'dark'" (click)="store.setTheme('dark')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.1A8.5 8.5 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z" /></svg>{{ t('theme.dark') }}
+        </button>
+      </div>
+    </div>
+  }
+  <p class="profile-foot"><span>{{ t('foot.brand') }}</span><span>{{ t('foot.version', { version: store.versionLabel }) }}</span></p>
+</ng-container>

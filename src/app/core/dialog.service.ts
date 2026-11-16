@@ -24,6 +24,22 @@ export interface PanelOptions<D> {
   labelledBy: string;
   /** Below this viewport width (px) the dialog is a sheet at the bottom of the screen, matching its CSS. */
   sheetBelow?: number;
+  /** Open as a popover at this offset from the top-right of the viewport instead of centered (still a sheet on a phone). */
+  anchor?: PanelAnchor;
+  /** Element id for the dialog, so a trigger can point at it with `aria-controls`. */
+  id?: string;
+  /** Id of the element that describes the dialog. */
+  describedBy?: string;
+  /** What gets focus on open: the dialog itself, its first tabbable element (default) or a CSS selector. */
+  autoFocus?: 'dialog' | 'first-tabbable' | (string & {});
+  /** Class of the backdrop (default `ui-dialog-backdrop`). */
+  backdropClass?: string;
+}
+
+export interface PanelAnchor {
+  /** CSS lengths. */
+  top: string;
+  right: string;
 }
 
 export interface TypedConfirmOptions extends ConfirmOptions {
@@ -60,16 +76,19 @@ export class DialogService {
       data: options.data,
       role: 'dialog',
       ariaModal: true,
+      id: options.id,
       ariaLabelledBy: options.labelledBy,
-      autoFocus: 'first-tabbable',
+      ariaDescribedBy: options.describedBy ?? null,
+      autoFocus: options.autoFocus ?? 'first-tabbable',
       restoreFocus: true,
       hasBackdrop: true,
       closeOnNavigation: true,
       // The CDK caps dialogs at 80vw by default; these size themselves (a full-width sheet on a phone).
       maxWidth: '100vw',
-      panelClass: 'ui-panel',
-      backdropClass: 'ui-dialog-backdrop',
-      positionStrategy: this.position(options.sheetBelow),
+      // A dialog that takes focus itself shows no ring on its container; the others keep the global focus ring.
+      panelClass: options.autoFocus === 'dialog' ? ['ui-panel', 'ui-panel-self-focus'] : 'ui-panel',
+      backdropClass: options.backdropClass ?? 'ui-dialog-backdrop',
+      positionStrategy: this.position(options.sheetBelow, options.anchor),
     });
     return firstValueFrom(ref.closed);
   }
@@ -103,10 +122,14 @@ export class DialogService {
     return (await firstValueFrom(ref.closed)) === true;
   }
 
-  /** Centered on a large screen, a sheet from the bottom on a phone. */
-  private position(sheetBelow = 520) {
+  /**
+   * Centered (or anchored to the top-right) on a large screen, a sheet from the bottom on a phone. Chosen when the
+   * dialog opens: resizing across the phone breakpoint while it is open does not move it.
+   */
+  private position(sheetBelow = 520, anchor?: PanelAnchor) {
     const phone = typeof window !== 'undefined' && !!window.matchMedia?.(`(max-width: ${sheetBelow}px)`).matches;
-    const strategy = this.overlay.position().global().centerHorizontally();
-    return phone ? strategy.bottom('0') : strategy.centerVertically();
+    const strategy = this.overlay.position().global();
+    if (phone) return strategy.centerHorizontally().bottom('0');
+    return anchor ? strategy.top(anchor.top).right(anchor.right) : strategy.centerHorizontally().centerVertically();
   }
 }

@@ -248,6 +248,41 @@ describe('feature dialogs (open)', () => {
     expect(container()).toBeNull();
   });
 
+  it('passes the id, description, backdrop class and focus target to the dialog', async () => {
+    const result = service.open<string, { title: string }, TestPanelComponent>(TestPanelComponent, {
+      data: { title: 'Perfil' },
+      labelledBy: 'panel-title',
+      id: 'profilePanel',
+      describedBy: 'panel-text',
+      backdropClass: 'ui-backdrop-light',
+      autoFocus: 'dialog',
+    });
+    await settle();
+    expect(container()?.id).toBe('profilePanel');
+    expect(container()?.getAttribute('aria-describedby')).toBe('panel-text');
+    expect(document.querySelector('.cdk-overlay-backdrop')?.classList.contains('ui-backdrop-light')).toBe(true);
+    expect(document.activeElement).toBe(container());
+    expect(document.querySelector('.cdk-overlay-pane')?.classList.contains('ui-panel-self-focus')).toBe(true);
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await result;
+  });
+
+  it('anchors the dialog to the top-right of the viewport when asked to', async () => {
+    const result = service.open<string, { title: string }, TestPanelComponent>(TestPanelComponent, {
+      data: { title: 'Perfil' },
+      labelledBy: 'panel-title',
+      anchor: { top: '72px', right: '16px' },
+    });
+    await settle();
+    const pane = document.querySelector<HTMLElement>('.cdk-global-overlay-wrapper');
+    const style = pane?.querySelector<HTMLElement>('.cdk-overlay-pane')?.style;
+    expect(style?.marginTop).toBe('72px');
+    expect(style?.marginRight).toBe('16px');
+    expect(pane?.style.justifyContent).toBe('flex-end');
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    await result;
+  });
+
   it('resolves undefined on Escape or a click outside', async () => {
     const escaped = open();
     await settle();

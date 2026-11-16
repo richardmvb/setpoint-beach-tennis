@@ -57,5 +57,13 @@
     "lockedFinals": "A fase de grupos acabou — acompanhe as finais.",
     "lockedRound": "Ela é liberada assim que a 1ª rodada terminar. Avisaremos com um ponto na barra de navegação.",
     "shareError": "Não foi possível gerar a imagem. Tente novamente."
+  },
+  "phase": {
+    "setup": "Configuração",
+    "registration": "Inscrições",
+    "ready": "Pronto para iniciar",
+    "qualifying": "Em andamento",
+    "finals": "Finais",
+    "finished": "Finalizado"
   }
 }

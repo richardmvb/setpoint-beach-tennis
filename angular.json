@@ -80,6 +80,18 @@
                 },
                 {
                   "type": "bundle",
+                  "name": "profile-dialog-component",
+                  "maximumWarning": "18kB",
+                  "maximumError": "21kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "library-dialog-component",
+                  "maximumWarning": "6kB",
+                  "maximumError": "7kB"
+                },
+                {
+                  "type": "bundle",
                   "name": "driver-js",
                   "maximumWarning": "47kB",
                   "maximumError": "54kB"
