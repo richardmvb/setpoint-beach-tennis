@@ -33,10 +33,111 @@
   --success-text: #276b4d;
   --focus: #1d5a49;
 
+  /* Color: qualification chips (secure, out) */
+  --chip-secure-bg: #e1f4ea;
+  --chip-secure-fg: #1c6b49;
+  --chip-secure-border: #b7e0c9;
+  --chip-out-bg: #fbe7e4;
+  --chip-out-fg: #b8463b;
+  --chip-out-border: #f0c4be;
+
   /* Color: ranking podium rows */
   --rank-gold: #fff1b8;
   --rank-silver: #e7eaed;
   --rank-bronze: #f0d7c2;
+
+  /* Palette: the same in both themes. A literal in a rule is theme-constant, so it names a primitive here, never a themed token. */
+
+  /* Palette: white */
+  --white: #fff;
+
+  /* Palette: black */
+  --black: #000;
+
+  /* Palette: gray */
+  --gray-100: #8a8a8a;
+  --gray-200: #9aa6a0;
+  --gray-300: #b9c1c9;
+  --gray-400: #f6f8f9;
+
+  /* Palette: ink */
+  --ink-100: #07140f;
+  --ink-200: #0c1410;
+  --ink-300: #0c1813;
+  --ink-400: #081c15;
+  --ink-500: #081c16;
+  --ink-600: #0a1f19;
+  --ink-700: #10201a;
+  --ink-800: #0b221c;
+  --ink-900: #14211c;
+  --ink-1000: #11241c;
+  --ink-1100: #14281e;
+  --ink-1200: #0e2a23;
+  --ink-1300: #0f2d25;
+  --ink-1400: #0f2f27;
+  --ink-1500: #12362c;
+  --ink-1600: #123b30;
+  --ink-1700: #16413a;
+  --ink-1800: #1b4a3f;
+
+  /* Palette: forest */
+  --forest-100: #1f5a42;
+  --forest-300: #2a7a62;
+  --forest-400: #39a273;
+
+  /* Palette: mint */
+  --mint-100: #42a477;
+  --mint-200: #79b899;
+  --mint-300: #78d3a6;
+  --mint-400: #5fe0a8;
+  --mint-500: #a5edc3;
+  --mint-600: #d2e7dc;
+
+  /* Palette: gold */
+  --gold-100: #b48043;
+  --gold-200: #c0834a;
+  --gold-400: #cd9560;
+  --gold-500: #d4a73e;
+  --gold-600: #e0b768;
+  --gold-700: #e6c36a;
+  --gold-800: #f1c95e;
+  --gold-900: #ffd37a;
+  --gold-1000: #f3d2b3;
+  --gold-1100: #fbe08a;
+  --gold-1200: #f6ecd8;
+
+  /* Palette: copper */
+  --copper-100: #e87938;
+  --copper-200: #f19a62;
+  --copper-300: #e9ad7e;
+
+  /* Palette: brown */
+  --brown-100: #2a2418;
+  --brown-200: #34251c;
+
+  /* Palette: lime */
+  --lime: #c6f432;
+
+  /* Palette: chart blue */
+  --chart-blue: #2476d5;
+
+  /* Palette: chart purple */
+  --chart-purple: #8e55c7;
+
+  /* Palette: chart pink */
+  --chart-pink: #d64e8d;
+
+  /* Palette: translucent. Named when used often (white 14%, black 35%) or in a gradient, where a legacy rgb() value and a computed one round alpha differently. */
+  --white-14: rgb(255 255 255 / 14%);
+  --black-35: rgb(0 0 0 / 35%);
+  --copper-100-38: rgb(232 121 56 / 38%);
+  --copper-100-45: rgb(232 121 56 / 45%);
+  --forest-200-10: rgb(29 90 73 / 10%);
+  --gold-300-10: rgb(185 138 62 / 10%);
+  --gold-300-14: rgb(185 138 62 / 14%);
+  --mint-300-18: rgb(120 211 166 / 18%);
+  --white-20: rgb(255 255 255 / 20%);
+  --white-8: rgb(255 255 255 / 8%);
 
   /* Spacing, on a 4px grid */
   --space-1: 4px;
@@ -91,6 +192,14 @@
   --accent-text: #d9ae62;
   --success-text: #5cc99a;
   --focus: #bfe3d0;
+
+  /* Color: qualification chips (secure, out) */
+  --chip-secure-bg: #173a2b;
+  --chip-secure-fg: #7fe0b0;
+  --chip-secure-border: #24543e;
+  --chip-out-bg: #3b1f1c;
+  --chip-out-fg: #ff9a8c;
+  --chip-out-border: #5a2c27;
 
   /* Color: ranking podium rows */
   --rank-gold: #51431a;
