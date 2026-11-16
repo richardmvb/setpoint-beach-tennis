@@ -59,7 +59,8 @@ test.describe('confirmation dialog', () => {
   test('a click outside cancels it', async ({ page }) => {
     const { library, dialog } = await openDeleteConfirmation(page);
 
-    await page.locator('.cdk-overlay-backdrop').click({ position: { x: 4, y: 4 } });
+    // The list under the confirmation is a dialog too, so name the confirmation's own backdrop.
+    await page.locator('.cdk-overlay-backdrop.ui-dialog-backdrop').click({ position: { x: 4, y: 4 } });
 
     await expect(dialog).toHaveCount(0);
     await expect(library.getByRole('listitem')).toHaveCount(2);

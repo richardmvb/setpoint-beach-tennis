@@ -1,0 +1,37 @@
+<ng-container *transloco="let t; prefix: 'library'">
+  <div class="batch-modal-header">
+    <div>
+      <span class="card-kicker">{{ t('kicker') }}</span>
+      <h2 [id]="titleId">{{ t('title') }}</h2>
+    </div>
+    <button type="button" class="modal-close" (click)="close()" [attr.aria-label]="t('close')">×</button>
+  </div>
+  <p class="muted">{{ t('intro') }}</p>
+  @if (!store.entries().length) {
+    <p class="muted">{{ t('empty') }}</p>
+  }
+  @if (store.deleteBlocked()) {
+    <p class="shared-error" role="alert">{{ t('deleteInUse') }}</p>
+  }
+  <ul class="library-list">
+    @for (entry of store.entries(); track entry.id) {
+      <li class="library-item" [class.current]="store.isCurrent(entry)">
+        <div class="library-info">
+          <b>{{ entry.name }}</b>
+          <small><app-phase-label [phase]="entry.phase" /> · {{ t('progress', { done: entry.matchesCompleted, total: entry.matchesTotal }) }} · {{ t('players', { count: entry.playerCount }) }} · {{ entry.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+        </div>
+        <div class="library-actions">
+          <button uiButton variant="secondary" (click)="open(entry.id)">{{ store.isCurrent(entry) ? t('inUse') : t('open') }}</button>
+          <button
+            uiButton
+            variant="danger"
+            (click)="remove(entry)"
+            [attr.aria-label]="t('deleteLabel', { name: entry.name })"
+          >
+            {{ t('delete') }}
+          </button>
+        </div>
+      </li>
+    }
+  </ul>
+</ng-container>

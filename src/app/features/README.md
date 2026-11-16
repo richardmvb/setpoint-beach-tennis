@@ -37,6 +37,18 @@ When one page has several modes (invite, live link, admin), each mode is a sourc
 
 Until the router is the default (the follow-up to ADR 0005), a feature page is rendered from `AppComponent`'s `@switch (page)` inside `@defer (on immediate)`, with a `@placeholder` that uses a `shell.*` key. That makes the feature its own lazy chunk in both router modes. `AppComponent` keeps only the shell for it (the `guest-view` class, the footer) and skips every bit of owner startup that the feature does not need; `isSharedView` is the example. A page that shows nothing before its text loads may leave the placeholder empty (`<main></main>`, the landing) instead of showing a `shell.*` text that flashes. When `AppComponent` must decide at startup whether to show the page, it imports only that pure helper from the feature's `data/` (the landing's `landingSeen`), never the component. When routes get components, the `@defer` becomes `loadComponent` and nothing inside the feature changes.
 
+## A feature that is a dialog
+
+`profile/` and `library/` are dialogs, not pages. `AppComponent` opens them (`DialogService.open`, lazy `import()` like the player-matches dialog) and the component reads its data from `DIALOG_DATA` and closes through `DialogRef`; its store is still component-scoped and provided by the component. Things that differ from a page:
+
+- **The shell keeps the gating.** When a dialog may open (the first-visit welcome, "nothing stacks on the welcome") stays in `AppComponent`; the dialog owns what it shows. What it hands back is the dialog's result (`ProfileDialogResult`), and the shell acts on it.
+- **State both sides use is a root service in `core/`**, not part of either: `LocalProfileStore` and `SavedTournaments`. They hold signals that change only when something is saved, so a dialog's draft (the profile name) never leaks into the top bar.
+- **Shell state the dialog shows** (the sync status and the theme) is passed as a `Signal` in the data. Until the shell is signal-based (B5), the shell refreshes that signal from `ngDoCheck` while the dialog is open.
+- **The frame can stay global.** The library keeps the shared `.batch-modal` look on its host element; only its list rules moved to its own stylesheet. The backdrops are global classes (`ui-backdrop-light`, `ui-backdrop-plain` in `styles/components/dialog.css`), because the CDK renders them outside the component.
+- **Focus.** The default `autoFocus` finds nothing when the content is behind `*transloco` and has not rendered yet. Ask for `'dialog'` and, where a field must take the cursor, focus it from a `viewChild` effect (the profile's welcome).
+- **Text in TypeScript** (a confirmation's words) is read with `transloco.translate('key', params, '<scope>/pt-BR')` with literal keys: the keys manager does not see keys inside an event binding in a template, nor a scope-prefixed key without that last argument.
+- **While a modal dialog is open the page behind it is out of the accessibility tree**, so an e2e finds the opener by CSS, not by role.
+
 ## Styles
 
 A feature's CSS leaves `src/styles.css` for its components' stylesheets (`styleUrl`, the default emulated encapsulation), tokens only (Stylelint lints them, unlike `styles.css`). Move only the rules whose every selector names a class that nothing outside the feature uses, keep their order, and leave shared classes (`.button`, `.card-kicker`, ...) global. Moving is not free, because the cascade changes in two ways:

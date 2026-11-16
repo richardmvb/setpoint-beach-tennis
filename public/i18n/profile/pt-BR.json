@@ -1,0 +1,49 @@
+{
+  "kicker": "SEU PERFIL",
+  "untitled": "Quem é você?",
+  "close": "Fechar",
+  "sync": {
+    "deviceOnly": "Salvo neste dispositivo",
+    "error": "Sincronização pendente",
+    "offline": "Sem conexão",
+    "paused": "Modo offline",
+    "syncing": "Sincronizando",
+    "pending": "Aguardando sincronização",
+    "synced": "Sincronizado"
+  },
+  "welcome": {
+    "kicker": "BEM-VINDO AO SETPOINT",
+    "text": "Conte quem você é. Seu nome, foto e categoria entram nos seus torneios e preenchem os convites sozinhos. Fica salvo só neste aparelho.",
+    "notNow": "Agora não",
+    "save": "Salvar e continuar",
+    "continue": "Continuar"
+  },
+  "fields": {
+    "name": "Seu nome",
+    "namePlaceholder": "Como você aparece nos torneios",
+    "category": "Categoria",
+    "categoryHint": "(para duplas mistas)",
+    "categoryLabel": "Sua categoria"
+  },
+  "autoJoin": {
+    "title": "Entrar como jogador nos novos torneios",
+    "on": "Você será adicionado automaticamente à lista.",
+    "off": "Você só vai organizar, sem jogar."
+  },
+  "library": {
+    "kicker": "MEUS TORNEIOS",
+    "viewAll": "Ver todos ({{ count }})",
+    "empty": "Nenhum torneio salvo ainda. Eles aparecem aqui assim que a tabela for gerada.",
+    "inUse": "Em uso"
+  },
+  "theme": {
+    "kicker": "TEMA",
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Escuro"
+  },
+  "foot": {
+    "brand": "SETPOINT · Beach Tennis",
+    "version": "Versão {{ version }}"
+  }
+}

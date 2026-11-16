@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DoCheck, effect, inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -20,16 +20,20 @@ import {
   TournamentState,
 } from './core/models';
 import { StorageService } from './core/storage.service';
-import {
-  LocalProfile,
-  PROFILE_NAME_MAX,
-  PROFILE_PROMPTED_KEY,
-  profileAutoJoin,
-  shouldPromptProfile,
-} from './core/profile';
+import { profileAutoJoin } from './core/profile';
+import { LocalProfileStore } from './core/local-profile.store';
+import { SavedTournaments } from './core/saved-tournaments';
+import type {
+  ProfileDialogData,
+  ProfileDialogResult,
+  ProfileShellState,
+} from './features/profile/data/profile-panel.store';
+import type { ProfileDialogComponent } from './features/profile/profile-dialog.component';
+import type { LibraryDialogData } from './features/library/data/library.store';
+import type { LibraryDialogComponent } from './features/library/library-dialog.component';
 import { OfflineSyncQueue, SyncKind } from './core/offline-sync-queue';
-import { LibraryEntry, libraryId, TournamentLibrary } from './core/tournament-library';
-import { SYNC_STATUS_LABEL, syncStatus, TOURNAMENT_PHASE_LABEL } from './core/state-machines';
+import { libraryId } from './core/tournament-library';
+import { SYNC_STATUS_LABEL, syncStatus } from './core/state-machines';
 import { ScheduleService } from './core/schedule.service';
 import { GroupScheduleService } from './core/group-schedule.service';
 import { FinalsService, PodiumPlace } from './core/finals.service';
@@ -135,7 +139,7 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './app.component.html',
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit, DoCheck, OnDestroy {
   private storage = inject(StorageService);
   private readonly local = inject(LOCAL_STORE);
   private readonly session = inject(SESSION_STORE);
@@ -162,22 +166,24 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly authCallback: boolean;
   private readonly syncQueue = new OfflineSyncQueue(this.local);
 
-  private readonly library = new TournamentLibrary(
-    this.local,
-    (raw) => this.storage.parseTournament(raw),
-    undefined,
-    () => this.clock.date(),
-  );
+  protected readonly savedTournaments = inject(SavedTournaments);
+  private readonly library = this.savedTournaments.library;
+  protected readonly profileStore = inject(LocalProfileStore);
   private archiveInFlight = false;
   private archiveRetryAfter = 0;
   private versionResetKeptTournament = false;
-  libraryModalOpen = false;
+  /** The profile dialog is open: setup tours and the saved-tournaments prompt wait for it to close. */
   profileOpen = false;
-  /** First-visit variant of the profile panel: intro text and explicit "save" / "not now" actions. */
-  profileWelcome = false;
-  private afterProfileWelcome: (() => void) | null = null;
-  profile: LocalProfile = { name: '', autoJoin: true };
-  readonly profileNameMax = PROFILE_NAME_MAX;
+  /** The saved-tournaments dialog is open (or loading), so a second click does not stack another. */
+  private libraryOpen = false;
+  /** The shell's state that the profile dialog shows, refreshed on every check while it is open (until B5 makes the shell signal-based). */
+  private readonly profileShell = signal<ProfileShellState>(
+    { sync: 'device-only', syncWarning: false, syncError: '', theme: 'light' },
+    {
+      equal: (a, b) =>
+        a.sync === b.sync && a.syncWarning === b.syncWarning && a.syncError === b.syncError && a.theme === b.theme,
+    },
+  );
   playerFormError = '';
   readonly hostingOptions: ChoiceOption[] = [
     { value: 'local', label: 'Neste dispositivo', hint: 'Só você lança os placares. Nada é compartilhado.' },
@@ -195,7 +201,6 @@ export class AppComponent implements OnInit, OnDestroy {
     { value: 'rotating', label: 'Parceiros rotativos', hint: 'Grupos de 4, cada atleta com todos os outros.' },
     { value: 'fixed', label: 'Duplas fixas', hint: 'Você define as duplas; todas se enfrentam.' },
   ];
-  libraryEntries: LibraryEntry[] = [];
 
   isLocked = false;
   showLanding = false;
@@ -350,10 +355,14 @@ export class AppComponent implements OnInit, OnDestroy {
       if (!this.availableCourts.includes(this.state.courts)) this.state.courts = Math.floor(this.state.size / 4);
       this.state.roundCount = this.requiredRounds;
     }
-    this.profile = this.storage.loadProfile();
     this.prefillFromProfile();
+    // A saved profile fills the moderator fields of the setup (it never overrides what was typed).
+    effect(() => {
+      this.profileStore.profile();
+      this.prefillFromProfile();
+    });
     this.initializeScoreDrafts();
-    this.refreshLibrary();
+    this.savedTournaments.refresh();
     if (this.versionResetKeptTournament)
       this.message('Nova versão do SETPOINT. Seu torneio anterior continua salvo em Meus torneios.');
   }
@@ -405,6 +414,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.trackFeatureViewed(this.page);
     if (this.page === 'setup') this.trackSetupStepViewed(this.setupStep);
     if (!this.isSharedView) window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 600);
+    if (!this.isSharedView && !this.isDashboardRoute) window.setTimeout(() => this.prefetchDialogs(), 3000);
     this.authStateUnsubscribe = this.auth.onAuthStateChange((change, user) => {
       if (change === 'signed-in' && user) this.identifyUser(user);
       if (change === 'signed-out') {
@@ -678,24 +688,8 @@ export class AppComponent implements OnInit, OnDestroy {
    */
   private welcomeThen(next: () => void): void {
     if (this.isLocked || this.showLanding || this.isDashboardRoute || this.profileOpen) return next();
-    let prompted = true;
-    try {
-      prompted = this.local.getItem(PROFILE_PROMPTED_KEY) === 'true';
-    } catch {
-      /* sem persistência: não insiste */
-    }
-    if (!shouldPromptProfile(this.profile, prompted)) return next();
-    try {
-      this.local.setItem(PROFILE_PROMPTED_KEY, 'true');
-    } catch {
-      /* aparece de novo na próxima visita */
-    }
-    this.profileWelcome = true;
-    this.afterProfileWelcome = next;
-    this.profileOpen = true;
-    this.refreshLibrary();
-    window.setTimeout(() => document.getElementById('profileName')?.focus());
-    this.analytics.capture('profile_welcome_shown');
+    if (!this.profileStore.takeWelcomePrompt()) return next();
+    void this.openProfile(true, next);
   }
 
   private tourKey(step: number): string {
@@ -931,7 +925,7 @@ export class AppComponent implements OnInit, OnDestroy {
   continueFromLanding(): void {
     this.showLanding = false;
     window.scrollTo({ top: 0 });
-    this.welcomeThen(() => this.openLibrary());
+    this.welcomeThen(() => void this.openLibrary());
   }
 
   openLanding(): void {
@@ -1151,62 +1145,72 @@ export class AppComponent implements OnInit, OnDestroy {
       tournament_size: this.state.size,
     });
   }
-  toggleProfile(): void {
-    if (this.profileOpen) return this.closeProfile();
+  /**
+   * The profile panel, a lazy dialog. `afterWelcome` is what waits for the first-visit panel to close (the setup tour,
+   * the saved tournaments), so overlays never stack. From the panel the organizer can go on to "Meus torneios".
+   */
+  async openProfile(welcome = false, afterWelcome?: () => void): Promise<void> {
+    if (this.profileOpen) return;
     this.profileOpen = true;
-    this.refreshLibrary();
-    window.setTimeout(() => document.getElementById('profilePanel')?.focus());
-    this.analytics.capture('profile_opened', {
-      has_name: !!this.profile.name,
-      auto_join: this.profile.autoJoin,
+    this.refreshProfileShell();
+    let result: ProfileDialogResult | undefined;
+    try {
+      const {
+        ProfileDialogComponent: component,
+        PROFILE_TITLE_ID: labelledBy,
+        PROFILE_WELCOME_TEXT_ID: welcomeTextId,
+      } = await import('./features/profile/profile-dialog.component');
+      result = await this.dialog.open<ProfileDialogResult, ProfileDialogData, ProfileDialogComponent>(component, {
+        data: {
+          welcome,
+          currentLibraryId: libraryId(this.state),
+          shell: this.profileShell.asReadonly(),
+          setTheme: (mode) => this.setTheme(mode),
+        },
+        labelledBy,
+        describedBy: welcome ? welcomeTextId : undefined,
+        id: 'profilePanel',
+        autoFocus: 'dialog',
+        backdropClass: 'ui-backdrop-light',
+        anchor: { top: '72px', right: 'max(16px, calc((100vw - 1160px) / 2 + 28px))' },
+        sheetBelow: 560,
+      });
+    } catch {
+      // The panel is a lazy chunk: offline or after a deploy it may not load. Whatever waited for it still goes on.
+      this.message('Não foi possível abrir o perfil agora. Verifique a conexão e tente de novo.', 'error');
+      if (welcome && afterWelcome) afterWelcome();
+      return;
+    } finally {
+      this.profileOpen = false;
+    }
+    if (result?.kind === 'library') void this.openLibrary();
+    else if (result?.kind === 'open') await this.openLibraryTournament(result.id);
+    else if (welcome && afterWelcome) window.setTimeout(afterWelcome, 250);
+  }
+
+  /** Loads the profile and library dialogs while online, so they still open at the court without a connection. */
+  private prefetchDialogs(): void {
+    void import('./features/profile/profile-dialog.component').catch(() => undefined);
+    void import('./features/library/library-dialog.component').catch(() => undefined);
+  }
+
+  ngDoCheck(): void {
+    if (this.profileOpen) this.refreshProfileShell();
+  }
+
+  private refreshProfileShell(): void {
+    this.profileShell.set({
+      sync: this.syncStatus,
+      syncWarning:
+        this.hasPendingSync || !!this.syncError || (this.syncAvailable && (!this.connectionOnline || this.syncPaused)),
+      syncError: this.syncError,
+      theme: this.theme,
     });
-  }
-  @HostListener('document:keydown.escape')
-  closeProfile(): void {
-    if (!this.profileOpen) return;
-    this.saveProfileName();
-    this.profileOpen = false;
-    if (!this.profileWelcome) return;
-    this.profileWelcome = false;
-    this.analytics.capture('profile_welcome_closed', {
-      has_name: !!this.profile.name,
-      has_photo: !!this.profile.photoDataUrl,
-      has_gender: !!this.profile.gender,
-      auto_join: this.profile.autoJoin,
-    });
-    const next = this.afterProfileWelcome;
-    this.afterProfileWelcome = null;
-    if (next) window.setTimeout(next, 250);
-  }
-  updateProfile(patch: Partial<LocalProfile>): void {
-    this.profile = { ...this.profile, ...patch };
-    this.storage.saveProfile(this.profile);
-    this.prefillFromProfile();
-  }
-  saveProfileName(): void {
-    const name = this.profile.name.trim();
-    if (name !== this.profile.name) this.profile = { ...this.profile, name };
-    this.storage.saveProfile(this.profile);
-    this.prefillFromProfile();
-  }
-  get profileFirstName(): string {
-    return this.profile.name.trim().split(/\s+/)[0] ?? '';
-  }
-  get recentLibraryEntries(): LibraryEntry[] {
-    return this.libraryEntries.slice(0, 3);
-  }
-  openLibraryFromProfile(): void {
-    this.profileOpen = false;
-    this.openLibrary();
-  }
-  async openLibraryTournamentFromProfile(id: string): Promise<void> {
-    this.profileOpen = false;
-    await this.openLibraryTournament(id);
   }
 
   /** Fill empty moderator fields with the profile; never overrides typed values. */
   private prefillFromProfile(): void {
-    const { name, gender, photoDataUrl } = this.profile;
+    const { name, gender, photoDataUrl } = this.profileStore.profile();
     if (!this.moderatorName.trim()) this.moderatorName = name;
     if (!this.moderatorGender && gender) this.moderatorGender = gender;
     if (!this.moderatorAvatar && photoDataUrl) this.moderatorAvatar = photoDataUrl;
@@ -1215,7 +1219,12 @@ export class AppComponent implements OnInit, OnDestroy {
   /** Adds the device owner as a player of a fresh local tournament, unless they chose to only manage. */
   private autoJoinProfile(): void {
     if (this.isSharedMode || this.hasSchedule || this.state.players.length) return;
-    const result = profileAutoJoin(this.profile, this.state.players, this.state.size, this.isMixedDoubles);
+    const result = profileAutoJoin(
+      this.profileStore.profile(),
+      this.state.players,
+      this.state.size,
+      this.isMixedDoubles,
+    );
     if ('player' in result) {
       this.state.players.push({ id: this.id(), ...result.player });
       this.syncDefaultFixedPairs();
@@ -1228,10 +1237,12 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleTheme(): void {
-    this.theme = this.theme === 'light' ? 'dark' : 'light';
+  setTheme(mode: ThemeMode): void {
+    if (this.theme === mode) return;
+    this.theme = mode;
     this.storage.saveTheme(this.theme);
     this.applyTheme();
+    this.refreshProfileShell();
   }
   private applyTheme(): void {
     document.documentElement.dataset['theme'] = this.theme;
@@ -2461,7 +2472,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.selectedRound = 0;
     this.setupStep = 1;
     this.setPage('setup');
-    this.refreshLibrary();
+    this.savedTournaments.refresh();
     if (returnToLanding) this.openLanding();
     this.trackSetupStepViewed(1);
     this.message('Novo torneio iniciado.');
@@ -2555,7 +2566,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // A local copy of a shared tournament is already stored on the server: do not archive or count it twice.
     this.persist(undefined, !fromShared);
     if (fromShared) this.keepInLibrary(this.state, true);
-    this.refreshLibrary();
+    this.savedTournaments.refresh();
     this.setPage(this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup');
     if (origin === 'backup' && this.state.startedAt) this.syncLocalTournamentMetrics();
     this.message(
@@ -2580,74 +2591,54 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  openLibrary(): void {
-    this.refreshLibrary();
-    this.libraryModalOpen = true;
-    this.analytics.capture('tournament_library_opened', { entries: this.libraryEntries.length });
+  /** "Meus torneios", a lazy dialog. It opens a saved tournament through `openLibraryTournament`. */
+  async openLibrary(): Promise<void> {
+    if (this.libraryOpen) return;
+    this.libraryOpen = true;
+    try {
+      const { LibraryDialogComponent: component, LIBRARY_TITLE_ID: labelledBy } =
+        await import('./features/library/library-dialog.component');
+      await this.dialog.open<void, LibraryDialogData, LibraryDialogComponent>(component, {
+        data: { currentId: libraryId(this.state), open: (id) => this.openLibraryTournament(id) },
+        labelledBy,
+        autoFocus: 'dialog',
+        backdropClass: 'ui-backdrop-plain',
+        sheetBelow: 620,
+      });
+    } catch {
+      this.message('Não foi possível abrir os torneios salvos agora. Verifique a conexão e tente de novo.', 'error');
+    } finally {
+      this.libraryOpen = false;
+    }
   }
 
-  async openLibraryTournament(id: string): Promise<void> {
+  /** True when the saved tournament is now the one in use, so the list can close. */
+  async openLibraryTournament(id: string): Promise<boolean> {
     const entry = this.library.get(id);
     const saved = this.library.load(id);
     if (!entry || !saved) {
       this.message('Não foi possível abrir este torneio salvo.', 'error');
-      return;
+      return false;
     }
-    if (this.isCurrentLibraryEntry(entry)) {
-      this.libraryModalOpen = false;
+    if (libraryId(this.state) === entry.id) {
       this.setPage(this.hasSchedule ? 'overview' : 'setup');
-      return;
+      return true;
     }
-    if (!(await this.adoptTournament(saved, 'library', entry.hosting === 'shared'))) return;
-    this.libraryModalOpen = false;
+    if (!(await this.adoptTournament(saved, 'library', entry.hosting === 'shared'))) return false;
     window.scrollTo({ top: 0 });
     this.analytics.capture('tournament_library_opened_item', {
       phase: entry.phase,
       hosting_mode: entry.hosting,
     });
+    return true;
   }
 
-  async deleteLibraryTournament(entry: LibraryEntry): Promise<void> {
-    if (this.isCurrentLibraryEntry(entry)) {
-      this.message('Este é o torneio em uso. Inicie outro antes de excluí-lo.', 'error');
-      return;
-    }
-    if (
-      !(await this.dialog.confirm({
-        title: 'Excluir este torneio salvo?',
-        text: `“${entry.name}” será removido deste dispositivo. A cópia já enviada à nuvem não é apagada.`,
-        confirmText: 'Excluir',
-        tone: 'danger',
-      }))
-    )
-      return;
-    this.library.remove(entry.id);
-    this.refreshLibrary();
-    this.analytics.capture('tournament_library_deleted', {
-      phase: entry.phase,
-      hosting_mode: entry.hosting,
-    });
-  }
-
-  isCurrentLibraryEntry(entry: LibraryEntry): boolean {
-    return libraryId(this.state) === entry.id;
-  }
-  libraryPhaseLabel(entry: LibraryEntry): string {
-    return TOURNAMENT_PHASE_LABEL[entry.phase];
-  }
   private isSavedInLibrary(): boolean {
     try {
       const id = libraryId(this.state);
       return !!id && !!this.library.get(id);
     } catch {
       return false;
-    }
-  }
-  private refreshLibrary(): void {
-    try {
-      this.libraryEntries = this.library.list();
-    } catch {
-      this.libraryEntries = [];
     }
   }
 
@@ -2665,7 +2656,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private archiveCurrent(): void {
     if (this.isDashboardRoute) return;
     this.keepInLibrary(this.state);
-    this.refreshLibrary();
+    this.savedTournaments.refresh();
     void this.flushArchives();
   }
 

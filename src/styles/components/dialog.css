@@ -159,3 +159,38 @@
     opacity: 0;
   }
 }
+
+/*
+  Backdrops of the profile panel and of the saved-tournaments list (DialogService.open with `backdropClass`). They
+  keep the look of the hand-rolled modals they replaced: a light wash for the popover, a plain dim for the list.
+*/
+.ui-backdrop-light {
+  background: color-mix(in srgb, var(--black) 18%, transparent);
+}
+
+.ui-backdrop-plain {
+  background: rgb(from var(--ink-300) r g b / 54%);
+}
+
+@media (width <= 560px) {
+  .ui-backdrop-light {
+    background: color-mix(in srgb, var(--black) 40%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-backdrop-light {
+    animation: ui-backdrop-fade 0.2s ease both;
+  }
+}
+
+@keyframes ui-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A dialog that takes focus itself (autoFocus: 'dialog') shows no ring on its own container. */
+.ui-panel-self-focus .cdk-dialog-container:focus {
+  outline: 0;
+}

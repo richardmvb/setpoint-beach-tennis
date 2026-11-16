@@ -1,0 +1,19 @@
+{
+  "kicker": "NESTE DISPOSITIVO",
+  "title": "Meus torneios",
+  "close": "Fechar",
+  "intro": "Todo torneio iniciado fica salvo aqui. Abra qualquer um para rever tabela, placares e ranking.",
+  "empty": "Nenhum torneio salvo ainda. Ele aparece aqui assim que a tabela for gerada.",
+  "deleteInUse": "Este é o torneio em uso. Inicie outro antes de excluí-lo.",
+  "progress": "{{ done }}/{{ total }} partidas",
+  "players": "{{ count }} jogadores",
+  "inUse": "Em uso",
+  "open": "Abrir",
+  "delete": "Excluir",
+  "deleteLabel": "Excluir {{ name }}",
+  "confirmDelete": {
+    "title": "Excluir este torneio salvo?",
+    "text": "“{{ name }}” será removido deste dispositivo. A cópia já enviada à nuvem não é apagada.",
+    "confirm": "Excluir"
+  }
+}
