@@ -29,7 +29,9 @@
     "i18n:check": "transloco-keys-manager find --input src/app --translations-path public/i18n --langs pt-BR --emit-error-on-extra-keys",
     "check": "npm run lint && npm run lint:styles && npm run format:check && npm run typecheck && npm run knip && npm run i18n:check && npm test && npm run test:db && npm run build",
     "prepare": "husky",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:visual": "bash scripts/visual-baselines.sh",
+    "e2e:visual:update": "bash scripts/visual-baselines.sh --update-snapshots"
   },
   "dependencies": {
     "@angular/cdk": "^22.2.7",
