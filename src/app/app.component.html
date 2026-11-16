@@ -88,141 +88,15 @@
 <main [class.ranking-mode]="page === 'ranking'">
   @switch (page) {
     @case ('setup') {
-      <section class="setup-wizard">
-        <nav class="wizard-progress" aria-label="Etapas da configuração">
-          <button type="button" class="wizard-step" [class.current]="setupStep === 1" [class.complete]="setupStep > 1" [disabled]="!canGoToSetupStep(1)" (click)="goToSetupStep(1)" [attr.aria-current]="setupStep === 1 ? 'step' : null"><b>{{ setupStep > 1 ? '✓' : '01' }}</b><span>Configuração</span></button>
-          <i></i>
-          <button type="button" class="wizard-step" [class.current]="setupStep === 2" [class.complete]="setupStep > 2" [disabled]="!canGoToSetupStep(2)" (click)="goToSetupStep(2)" [attr.aria-current]="setupStep === 2 ? 'step' : null"><b>{{ setupStep > 2 ? '✓' : '02' }}</b><span>Jogadores</span></button>
-          <i></i>
-          <button type="button" class="wizard-step" [class.current]="setupStep === 3" disabled [attr.aria-current]="setupStep === 3 ? 'step' : null"><b>03</b><span>Início</span></button>
-        </nav>
-        @if (setupStep === 1) {
-          <article class="surface-card wizard-panel">
-            <span class="card-kicker">ETAPA 1 DE 3</span><h2>Configure a competição</h2>
-            <div class="tour-bar">@if (savedTournaments.entries().length) {
-              <button type="button" (click)="openLibrary()">Torneios salvos ({{ savedTournaments.entries().length }})</button>
-              }<button type="button" (click)="startSetupTour()">Ver tutorial</button><button type="button" (click)="toggleTutorial()">{{ tutorialEnabled ? 'Desligar dicas' : 'Ligar dicas' }}</button></div>
-              <div class="form-field"><label for="setupName">Nome do torneio</label><input id="setupName" name="setupName" [(ngModel)]="state.name" maxlength="60" placeholder="Ex.: Super de sábado" enterkeyhint="next" (keydown.enter)="!isSharedMode && nextSetupStep()"></div>
-              @if (sharedConfigured) {
-                <div id="hostingMode" class="form-field"><span class="form-label" id="hostingLabel">Onde será gerenciado?</span><app-choice-cards labelledBy="hostingLabel" [options]="hostingOptions" [value]="state.hostingMode ?? 'local'" (valueChange)="changeHostingMode($event)" /></div>
-              }
-              @if (isSharedMode && !isGroupTournament) {
-                <label class="toggle-field"><input type="checkbox" name="qualificationStats" [ngModel]="!!state.qualificationStats" (ngModelChange)="setQualificationStats($event)"><span><b>Seu caminho (projeção)</b><small>A partir da 1ª rodada concluída, cada atleta vê a chance de ser campeão, top 2 ou top 3.</small></span></label>
-              }
-              <div id="doublesFormat" class="form-field"><span class="form-label" id="doublesLabel">Tipo de dupla</span><app-choice-cards labelledBy="doublesLabel" [options]="doublesOptions" [value]="state.doublesFormat ?? 'open'" (valueChange)="changeDoublesFormat($event)" /></div>
-              @if (isSharedMode) {
-                <div class="shared-moderator-fields"><div class="form-field"><label for="moderatorName">Seu nome no torneio</label><input id="moderatorName" name="moderatorName" [(ngModel)]="moderatorName" maxlength="40" placeholder="Nome do moderador"></div>@if (isMixedDoubles) {
-                <div class="form-field"><span class="form-label">Sua categoria</span><app-gender-toggle [value]="moderatorGender" (valueChange)="moderatorGender = $event" label="Sua categoria" /></div>
-                }<div class="form-field"><span class="form-label">Foto (opcional)</span><app-avatar-picker [(value)]="moderatorAvatar" /></div><p class="muted helper-text">Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga.</p></div>
-              }
-              <div id="tournamentMode" class="form-field"><span class="form-label" id="modeLabel">Formato do torneio</span><app-choice-cards labelledBy="modeLabel" [options]="modeOptions" [value]="state.tournamentMode ?? 'super'" (valueChange)="changeTournamentMode($event)" /></div>@if (isGroupTournament) {
-              <div class="form-field"><span class="form-label" id="groupFormatLabel">Formato dos grupos</span><app-choice-cards labelledBy="groupFormatLabel" [options]="groupFormatOptions" [value]="state.groupFormat ?? 'rotating'" (valueChange)="changeGroupFormat($event)" /></div>
-            }
-            <div class="setup-ranges" [class.single]="isGroupTournament"><app-number-range inputId="setupSize" label="Participantes" [values]="availableSizes" [value]="state.size" suffix="jogadores" (valueChange)="changeSize($event)" />@if (!isGroupTournament) {
-            <app-number-range inputId="setupCourts" label="Quadras por rodada" [values]="availableCourts" [value]="state.courts" suffix="quadras" (valueChange)="changeCourts($event)" />
-          }</div>@if (isEarlyFinalsOptionAvailable) {
-          <label class="toggle-field"><input type="checkbox" name="earlyFinals" [ngModel]="!!state.earlyFinalsEnabled" (ngModelChange)="setEarlyFinals($event)"><span><b>Permitir finais antecipadas</b><small>O moderador poderá encerrar a classificatória quando todos tiverem o mesmo número de partidas.</small></span></label>
-          }@if (isEarlyFinalsOptionAvailable && state.earlyFinalsEnabled) {
-          <div class="form-field"><label for="mixedFinalFormat">Fase final mista</label><select id="mixedFinalFormat" name="mixedFinalFormat" [ngModel]="state.mixedFinalFormat ?? 'knockout'" (ngModelChange)="setMixedFinalFormat($event)"><option [ngValue]="'knockout'">Chave completa · top 8 de cada categoria</option><option [ngValue]="'direct'">Final e 3º lugar · top 4 de cada categoria</option></select><small class="muted">{{ (state.mixedFinalFormat ?? 'knockout') === 'knockout' ? 'Quartas, semifinais, final e disputa de 3º.' : 'Quatro duplas disputam diretamente final e 3º lugar.' }}</small></div>
-        }
-        <div class="setup-ranges single"><app-number-range inputId="setupGames" label="Games para vencer" [values]="availableGamesToWin" [value]="state.gamesToWin" suffix="games" (valueChange)="state.gamesToWin = $event" /></div>
-        <div id="setupSummary" class="setup-summary" role="status" aria-live="polite"><div><b>{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }}</b><small>formato</small></div><div><b>{{ requiredRounds }}</b><small>rodadas</small></div><div><b>{{ requiredCourts }}</b><small>{{ requiredCourts === 1 ? 'quadra' : 'quadras' }}</small></div><div><b>{{ state.gamesToWin }}</b><small>games p/ vencer</small></div></div>
-        @if (state.gamesToWin === 3) {
-          <p class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
-        }
-        @if (sharedError) {
-          <p class="shared-error" role="alert">{{ sharedError }}</p>
-          }@if (sharedNotice) {
-          <p class="shared-success" role="status">{{ sharedNotice }}</p>
-        }
-        <div class="wizard-actions"><span></span><button id="setupNext" class="button primary" type="button" (click)="nextSetupStep()" [disabled]="sharedLoading">{{ sharedLoading ? 'Aguarde…' : isSharedMode ? 'Criar torneio compartilhado' : 'Adicionar jogadores' }} @if (!sharedLoading) {
-        <span>→</span>
-      }</button></div>
-    </article>
-  }
-  @if (setupStep === 2) {
-    <article class="surface-card wizard-panel">
-      <span class="card-kicker">ETAPA 2 DE 3</span><h2>Inscreva os participantes</h2>
-      <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
-      <div id="enrollProgress" class="enroll-progress" role="status" aria-live="polite"><div class="enroll-head"><span>{{ isSharedMode ? 'Convidados entram pelo link' : 'Atletas inscritos' }}</span><b>{{ state.players.length }} / {{ state.size }}</b></div><div class="enroll-bar"><span [style.width.%]="state.players.length / state.size * 100"></span></div><small>{{ enrollHint }}</small></div>
-      @if (!isSharedMode) {
-        <form class="participant-form" [class.open-doubles]="!isMixedDoubles" data-tour="add-player" (ngSubmit)="addPlayer()"><div class="participant-form-main"><app-avatar-picker [(value)]="newPlayerAvatar" /><input id="wizardPlayerName" name="wizardPlayerName" [ngModel]="newPlayerName" (ngModelChange)="newPlayerName = $event; playerFormError = ''" maxlength="40" placeholder="Nome do jogador" aria-label="Nome do jogador" enterkeyhint="done" autocomplete="off" [attr.aria-invalid]="playerFormError ? 'true' : null"></div>@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="newPlayerGender" (valueChange)="newPlayerGender = $event" label="Categoria do jogador" />
-        }<button class="button primary" type="submit" [disabled]="state.players.length >= state.size || !newPlayerName.trim() || (isMixedDoubles && !newPlayerGender)">Adicionar jogador</button></form>
-        }@if (playerFormError) {
-        <p class="shared-error player-form-error" role="alert">{{ playerFormError }}</p>
-        }@if (!isSharedMode) {
-        <button class="batch-entry-button" type="button" (click)="openBatchModal()">＋ Adicionar em lote</button>
+      @defer (on immediate) {
+        <section appSetup (start)="generateSchedule()" (openLibrary)="openLibrary()" (cancelShared)="cancelSharedTournament()"></section>
+      } @placeholder {
+        <section class="setup-wizard"></section>
+      } @error {
+        <section class="setup-wizard"><article class="surface-card shared-loading">{{ 'shell.loadFailed' | transloco }}</article></section>
       }
-      <div class="wizard-player-list">@for (player of state.players; track player.id; let i = $index) {
-        <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span>@if (isMixedDoubles && player.gender) {
-        <app-gender-icon [gender]="player.gender" />
-        }@if (isMixedDoubles && !hasSchedule) {
-        <select [name]="'playerGender' + i" [ngModel]="player.gender ?? ''" (ngModelChange)="updatePlayerGender(player.id, $event)" aria-label="Categoria de {{ player.name }}"><option [ngValue]="''" disabled>Categoria</option><option [ngValue]="'male'">Masculino</option><option [ngValue]="'female'">Feminino</option></select>
-        }@if (!isSharedMode) {
-        <button class="remove-button" type="button" (click)="removePlayer(player.id)" aria-label="Remover jogador">×</button>
-        }@if (canManageParticipants && player.manual) {
-        <button class="remove-button" type="button" (click)="removeManualParticipant(player.id)" [disabled]="sharedLoading" aria-label="Remover participante adicionado manualmente">×</button>
-      }</div>
-    }</div>
-    @if (canManageParticipants && !sharedCapacityReached) {
-      <form class="participant-form manual-participant" [class.open-doubles]="!isMixedDoubles" (ngSubmit)="addManualParticipant()"><span class="card-kicker">ADICIONAR QUEM ESTÁ SEM CELULAR</span><div class="participant-form-main"><app-avatar-picker [(value)]="manualParticipantAvatar" /><input name="manualParticipantName" [(ngModel)]="manualParticipantName" maxlength="40" placeholder="Nome do participante" aria-label="Nome do participante sem celular"></div>@if (isMixedDoubles) {
-      <app-gender-toggle [compact]="true" [value]="manualParticipantGender" (valueChange)="manualParticipantGender = $event" label="Categoria do participante" />
-      }<button class="button secondary" type="submit" [disabled]="!manualParticipantName.trim() || sharedLoading || (isMixedDoubles && !manualParticipantGender)">Adicionar participante</button></form>
     }
-    @if (isSharedMode) {
-      <article class="shared-invite-panel"><div><span class="card-kicker">CONVITE · EXPIRA EM 15 MIN SE INCOMPLETO</span><p class="muted">{{ state.players.length }} de {{ state.size }} participantes.</p>@if (sharedSnapshot?.expiresAt) {
-      <p class="muted">Disponível até {{ sharedSnapshot.expiresAt | date:'short' }}.</p>
-    }</div>@if (sharedInviteUrl) {
-    <div class="shared-invite-copy"><input aria-label="Link de convite" readonly [value]="sharedInviteUrl"><button class="button secondary" type="button" (click)="copySharedInvite()">Copiar link</button><button class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">Novo link</button></div>
-    }@if (!sharedInviteUrl && isSharedModerator) {
-    <button class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">{{ sharedLoading ? 'Gerando…' : 'Gerar link de convite' }}</button>
-  }</article>
-}
-@if (isSharedMode && sharedSnapshot?.status === 'ready') {
-  <p class="shared-success" role="status">Vagas preenchidas. Pode iniciar.</p>
-}
-@if (sharedError) {
-  <p class="shared-error" role="alert">{{ sharedError }}</p>
-  }@if (sharedNotice) {
-  <p class="shared-success" role="status">{{ sharedNotice }}</p>
-}
-@if (fixedPairsMode && state.players.length === state.size) {
-  <div class="fixed-pair-list"><span class="card-kicker">FORME AS DUPLAS FIXAS</span>@for (pair of state.fixedPairs; track $index; let i = $index) {
-  <div class="fixed-pair-row"><b>Dupla {{ i + 1 }}</b><select [name]="'fixedPairA' + i" [ngModel]="pair[0]" (ngModelChange)="updateFixedPair(i, 0, $event)">@for (player of fixedPairOptions(i); track player) {
-  <option [ngValue]="player.id">{{ player.name }}</option>
-  }</select><span>+</span><select [name]="'fixedPairB' + i" [ngModel]="pair[1]" (ngModelChange)="updateFixedPair(i, 1, $event)">@for (player of fixedPairOptions(i); track player) {
-  <option [ngValue]="player.id">{{ player.name }}</option>
-}</select></div>
-}</div>
-}
-<div class="wizard-actions">@if (!isSharedMode) {
-  <button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button>
-  }@if (isSharedModerator) {
-  <button class="button danger" type="button" (click)="cancelSharedTournament()" [disabled]="sharedLoading">Cancelar e recomeçar</button>
-  }<button id="setupNext2" class="button primary" type="button" (click)="nextSetupStep()" [disabled]="state.players.length !== state.size">{{ state.players.length === state.size ? 'Revisar torneio' : 'Faltam ' + (state.size - state.players.length) }} @if (state.players.length === state.size) {
-  <span>→</span>
-}</button></div>
-</article>
-}
-@if (setupStep === 3) {
-  <article class="surface-card wizard-panel">
-    <span class="card-kicker">ETAPA 3 DE 3</span><h2>Revisar e iniciar</h2>
-    <div class="tour-bar"><button type="button" (click)="startSetupTour()">Ver tutorial</button></div>
-    <div id="reviewSummary" class="wizard-summary"><div><small>FORMATO</small><b>{{ isGroupTournament ? 'Grupos · ' + (fixedPairsMode ? 'duplas fixas' : 'rotativas') : 'Super' }} {{ state.size }}</b></div><div><small>JOGADORES</small><b>{{ state.players.length }}</b></div><div><small>RODADAS</small><b>{{ requiredRounds }}</b></div><div><small>QUADRAS</small><b>{{ requiredCourts }}</b></div></div>
-    <div class="callout"><b>{{ state.name }}</b><span>{{ reviewDescription }}</span></div>
-    <div class="wizard-roster"><span class="card-kicker">JOGADORES</span><div class="roster-chips">@for (player of state.players; track player.id) {
-    <span class="roster-chip"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" variant="team-avatar" />{{ player.name }}@if (isMixedDoubles && player.gender) {
-    <app-gender-icon [gender]="player.gender" />
-  }</span>
-}</div></div>
-<p class="muted helper-text">Ao gerar a tabela, a lista de jogadores fica bloqueada e o cronômetro do torneio começa.</p>
-<div class="wizard-actions"><button class="button secondary" type="button" (click)="previousSetupStep()">← Voltar</button><button id="generateBtn" class="button primary" type="button" (click)="generateSchedule()" [disabled]="isSharedMode && (!isSharedModerator || state.sharedStatus !== 'ready')">{{ isSharedMode ? 'Iniciar torneio compartilhado' : 'Gerar tabela e iniciar' }} <span>→</span></button></div>
-</article>
-}
-</section>
-}
-@case ('shared') {
+    @case ('shared') {
   @defer (on immediate) {
     <app-shared-view />
   } @placeholder {
@@ -444,28 +318,6 @@
 <span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
 }
 }</footer>
-@if (batchModalOpen) {
-  <div class="batch-backdrop" tabindex="-1" (keydown.escape)="batchModalOpen = false" (click)="$event.target === $event.currentTarget && (batchModalOpen = false)">
-    <section class="batch-modal" role="dialog" aria-modal="true" aria-labelledby="batchTitle">
-      <div class="batch-modal-header"><div><span class="card-kicker">CADASTRO RÁPIDO</span><h2 id="batchTitle">Adicionar participantes em lote</h2></div><button type="button" class="modal-close" (click)="batchModalOpen = false" aria-label="Fechar">×</button></div>
-      <p class="muted">Cole uma pessoa por linha. No misto, informe a categoria após vírgula, ponto e vírgula ou tab: <b>Ana, F</b> · <b>Bruno, M</b>.</p>
-      <textarea name="batchPlayers" [(ngModel)]="batchText" placeholder="Ana, F&#10;Bruno, M" aria-label="Lista de participantes"></textarea>
-      <div class="batch-actions"><button class="button secondary" type="button" (click)="parseBatchPlayers()">Gerar prévia</button>@if (batchPlayers.length) {
-      <span class="mini-tag">{{ batchPlayers.length }} na lista</span>
-    }</div>
-    @if (batchPlayers.length) {
-      <div class="batch-preview">@for (player of batchPlayers; track $index; let i = $index) {
-        <div class="batch-player" [class.invalid]="player.error"><span>{{ i + 1 }}</span><input [name]="'batchName' + i" [(ngModel)]="player.name" (ngModelChange)="validateBatchPlayers()" maxlength="40" aria-label="Nome do participante">@if (isMixedDoubles) {
-        <app-gender-toggle [compact]="true" [value]="player.gender" (valueChange)="player.gender = $event; validateBatchPlayers()" [label]="'Categoria de ' + player.name" />
-        }@if (player.error) {
-        <small>{{ player.error }}</small>
-      }</div>
-    }</div>
-  }
-  <div class="batch-footer"><small>{{ state.players.length }} de {{ state.size }} vagas já preenchidas</small><button class="button primary" type="button" [disabled]="!canConfirmBatchPlayers" (click)="confirmBatchPlayers()">Adicionar {{ batchPlayers.length || '' }} participante(s)</button></div>
-</section>
-</div>
-}
 @if (tieDrawModalOpen) {
   <div class="tie-draw-backdrop" role="presentation">
     <section class="tie-draw-modal" role="dialog" aria-modal="true" aria-labelledby="tieDrawTitle">

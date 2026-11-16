@@ -1,6 +1,6 @@
 # Features
 
-A feature is one screen or flow of the app, in its own folder, with no code in `AppComponent`. `shared-view/` (the live link, the invite and the admin viewer) is the reference: copy its shape when you extract the next one. The plan is Phase 4 of `docs/professionalization-plan.md`; the boundaries are in ADR 0003.
+A feature is one screen or flow of the app, in its own folder, with no code in `AppComponent`. `shared-view/` (the live link, the invite and the admin viewer) is the reference (`setup/` shows a page of several steps, `profile/` and `library/` dialogs): copy its shape when you extract the next one. The plan is Phase 4 of `docs/professionalization-plan.md`; the boundaries are in ADR 0003.
 
 ## Layout
 
@@ -48,6 +48,14 @@ Until the router is the default (the follow-up to ADR 0005), a feature page is r
 - **Focus.** The default `autoFocus` finds nothing when the content is behind `*transloco` and has not rendered yet. Ask for `'dialog'` and, where a field must take the cursor, focus it from a `viewChild` effect (the profile's welcome).
 - **Text in TypeScript** (a confirmation's words) is read with `transloco.translate('key', params, '<scope>/pt-BR')` with literal keys: the keys manager does not see keys inside an event binding in a template, nor a scope-prefixed key without that last argument.
 - **While a modal dialog is open the page behind it is out of the accessibility tree**, so an e2e finds the opener by CSS, not by role.
+
+## A page of several steps
+
+`setup/` (the wizard) is a page whose steps are children. The page is `section[appSetup]` with the page's class as `host`, so the DOM keeps its shape, and it renders the frame of each step (progress, panel, tour bar, actions); the three step bodies (`app-setup-config`, `-players`, `-review`) are `host: { style: 'display: contents' }` children, so they add no box. Children of one page are not reusable parts: they `inject` the page's store instead of passing 15 inputs and outputs (a child that several pages use stays presentational). Each child's CSS holds the rules of the elements in its own template, because emulated encapsulation only reaches the elements of the template that owns the stylesheet. A rule that needs the frame (`.wizard-panel .form-field`) is written `:host-context(.wizard-panel) .form-field`; a rule that reaches into another component's DOM (`.batch-player .gender-toggle button`) stays global.
+
+### State the shell and the feature both edit
+
+The setup edits the same tournament the shell runs, so that tournament is a root service in `core/`: `CurrentTournament` holds it as a signal, `AppComponent.state` is an accessor over it, and a feature **replaces** it (`update` returns a new object) and never edits it in place, or its OnPush views do not refresh. Until the shell is signal-based (B5) it connects the hooks that save and notify (`CurrentTournament.connect`). What the moderator owns on the server is `OwnedSharedTournament` (errors as typed keys, the invite, the realtime watch), the wizard's step is `SetupProgress` (it must outlive the page: the shell shows the landing page and comes back), and a thing only the shell can decide (the setup tour may start now) is a cue the page consumes (`SetupTourCue`). Rules that several screens share (sizes, courts, rounds, the player and batch checks) are pure functions in `domain/tournament-setup/` that return a new tournament or an error as data.
 
 ## Styles
 

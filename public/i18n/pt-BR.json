@@ -6,6 +6,7 @@
       "surveyUnavailable": "Pesquisa indisponível no momento.",
       "surveyFailed": "Não foi possível abrir a pesquisa."
     },
-    "loading": "Carregando torneio…"
+    "loading": "Carregando torneio…",
+    "loadFailed": "Não foi possível carregar esta tela. Verifique a conexão e recarregue a página."
   }
 }

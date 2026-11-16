@@ -90,6 +90,11 @@ export async function mockSupabase(page: Page): Promise<SupabaseMock> {
         return json(200, {});
       }
 
+      // The signed-in user, read after a reload (supabase-js asks the server who the stored session belongs to).
+      if (url.pathname.endsWith('/auth/v1/user')) {
+        return json(200, { id: 'e2e-anon-user', aud: 'authenticated', role: 'authenticated', is_anonymous: true });
+      }
+
       // Anonymous sign-in: a session that lasts for the whole test.
       if (url.pathname.endsWith('/auth/v1/signup')) {
         const user = { id: 'e2e-anon-user', aud: 'authenticated', role: 'authenticated', is_anonymous: true };

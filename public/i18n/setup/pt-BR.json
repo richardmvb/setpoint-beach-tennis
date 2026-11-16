@@ -1,0 +1,328 @@
+{
+  "progress": {
+    "label": "Etapas da configuração",
+    "config": "Configuração",
+    "players": "Jogadores",
+    "start": "Início"
+  },
+  "frame": {
+    "kicker1": "ETAPA 1 DE 3",
+    "title1": "Configure a competição",
+    "saved": "Torneios salvos ({{count}})",
+    "tutorial": "Ver tutorial",
+    "tipsOff": "Desligar dicas",
+    "tipsOn": "Ligar dicas",
+    "wait": "Aguarde…",
+    "createShared": "Criar torneio compartilhado",
+    "addPlayers": "Adicionar jogadores",
+    "kicker2": "ETAPA 2 DE 3",
+    "title2": "Inscreva os participantes",
+    "back": "Voltar",
+    "cancelShared": "Cancelar e recomeçar",
+    "review": "Revisar torneio",
+    "missing": "Faltam {{count}}",
+    "kicker3": "ETAPA 3 DE 3",
+    "title3": "Revisar e iniciar",
+    "startShared": "Iniciar torneio compartilhado",
+    "generate": "Gerar tabela e iniciar"
+  },
+  "config": {
+    "name": {
+      "label": "Nome do torneio",
+      "placeholder": "Ex.: Super de sábado"
+    },
+    "hosting": {
+      "label": "Onde será gerenciado?",
+      "local": {
+        "label": "Neste dispositivo",
+        "hint": "Só você lança os placares. Nada é compartilhado."
+      },
+      "shared": {
+        "label": "Compartilhado",
+        "hint": "Convite por link e acompanhamento ao vivo."
+      }
+    },
+    "qualification": {
+      "title": "Seu caminho (projeção)",
+      "hint": "A partir da 1ª rodada concluída, cada atleta vê a chance de ser campeão, top 2 ou top 3."
+    },
+    "doubles": {
+      "label": "Tipo de dupla",
+      "open": {
+        "label": "Duplas abertas",
+        "hint": "Qualquer combinação de atletas."
+      },
+      "mixed": {
+        "label": "Duplas mistas",
+        "hint": "1 atleta masculino + 1 feminino."
+      }
+    },
+    "moderator": {
+      "name": "Seu nome no torneio",
+      "placeholder": "Nome do moderador",
+      "category": "Sua categoria",
+      "photo": "Foto (opcional)",
+      "help": "Acesso sem e-mail, vinculado a este navegador. O moderador ocupa uma vaga."
+    },
+    "mode": {
+      "label": "Formato do torneio",
+      "super": {
+        "label": "Super",
+        "hint": "Duplas rotativas: todos jogam com todos."
+      },
+      "groups": {
+        "label": "Grupos",
+        "hint": "Grupos pequenos, todos contra todos."
+      }
+    },
+    "groupFormat": {
+      "label": "Formato dos grupos",
+      "rotating": {
+        "label": "Parceiros rotativos",
+        "hint": "Grupos de 4, cada atleta com todos os outros."
+      },
+      "fixed": {
+        "label": "Duplas fixas",
+        "hint": "Você define as duplas; todas se enfrentam."
+      }
+    },
+    "size": {
+      "label": "Participantes",
+      "suffix": "jogadores"
+    },
+    "courts": {
+      "label": "Quadras por rodada",
+      "suffix": "quadras"
+    },
+    "earlyFinals": {
+      "title": "Permitir finais antecipadas",
+      "hint": "O moderador poderá encerrar a classificatória quando todos tiverem o mesmo número de partidas."
+    },
+    "mixedFinal": {
+      "label": "Fase final mista",
+      "knockout": "Chave completa · top 8 de cada categoria",
+      "direct": "Final e 3º lugar · top 4 de cada categoria",
+      "knockoutHint": "Quartas, semifinais, final e disputa de 3º.",
+      "directHint": "Quatro duplas disputam diretamente final e 3º lugar."
+    },
+    "games": {
+      "label": "Games para vencer",
+      "suffix": "games"
+    },
+    "summary": {
+      "groups": "Grupos",
+      "super": "Super",
+      "format": "formato",
+      "rounds": "rodadas",
+      "court": "quadra",
+      "courts": "quadras",
+      "games": "games p/ vencer"
+    },
+    "quickNote": "Modo rápido: final e disputa de 3º lugar continuam em 6 games."
+  },
+  "players": {
+    "enroll": {
+      "shared": "Convidados entram pelo link",
+      "local": "Atletas inscritos"
+    },
+    "hint": {
+      "sharedOne": "Faltam {{missing}} participante entrarem pelo link.",
+      "sharedMany": "Faltam {{missing}} participantes entrarem pelo link.",
+      "sharedFull": "Todas as vagas foram preenchidas.",
+      "mixedMissing": "Faltam {{missing}}. {{men}}/{{half}} masculino · {{women}}/{{half}} feminino.",
+      "mixedComplete": "Lista completa. {{men}}/{{half}} masculino · {{women}}/{{half}} feminino.",
+      "openOne": "Faltam {{missing}} jogador.",
+      "openMany": "Faltam {{missing}} jogadores.",
+      "openComplete": "Lista completa. Pode revisar o torneio."
+    },
+    "form": {
+      "placeholder": "Nome do jogador",
+      "label": "Nome do jogador",
+      "category": "Categoria do jogador",
+      "add": "Adicionar jogador"
+    },
+    "errors": {
+      "needsGender": "Selecione a categoria do atleta para formar as duplas mistas.",
+      "locked": "A lista está bloqueada porque a tabela já foi gerada.",
+      "shared": "No torneio compartilhado, os participantes entram pelo link de convite.",
+      "full": "O Super {{size}} permite {{size}} jogadores.",
+      "duplicate": "Já existe um participante com esse nome."
+    },
+    "batch": {
+      "open": "Adicionar em lote"
+    },
+    "row": {
+      "participant": "Participante {{number}}",
+      "categoryOf": "Categoria de {{name}}",
+      "category": "Categoria",
+      "male": "Masculino",
+      "female": "Feminino",
+      "remove": "Remover jogador",
+      "removeManual": "Remover participante adicionado manualmente"
+    },
+    "manual": {
+      "kicker": "ADICIONAR QUEM ESTÁ SEM CELULAR",
+      "placeholder": "Nome do participante",
+      "label": "Nome do participante sem celular",
+      "category": "Categoria do participante",
+      "add": "Adicionar participante"
+    },
+    "invite": {
+      "kicker": "CONVITE · EXPIRA EM 15 MIN SE INCOMPLETO",
+      "count": "{{count}} de {{size}} participantes.",
+      "until": "Disponível até",
+      "linkLabel": "Link de convite",
+      "copy": "Copiar link",
+      "renew": "Novo link",
+      "generating": "Gerando…",
+      "generate": "Gerar link de convite"
+    },
+    "ready": "Vagas preenchidas. Pode iniciar.",
+    "pairs": {
+      "kicker": "FORME AS DUPLAS FIXAS",
+      "pair": "Dupla {{number}}"
+    }
+  },
+  "review": {
+    "format": "FORMATO",
+    "players": "JOGADORES",
+    "rounds": "RODADAS",
+    "courts": "QUADRAS",
+    "formats": {
+      "fixedPairs": "Grupos · duplas fixas",
+      "groups": "Grupos · rotativas",
+      "super": "Super"
+    },
+    "descriptions": {
+      "fixedPairs": "Confira as duplas fixas e os jogadores antes de iniciar.",
+      "groups": "Os grupos e confrontos são sorteados ao gerar a tabela.",
+      "super": "Confrontos e descansos são calculados ao gerar a tabela."
+    },
+    "lockNote": "Ao gerar a tabela, a lista de jogadores fica bloqueada e o cronômetro do torneio começa."
+  },
+  "batch": {
+    "kicker": "CADASTRO RÁPIDO",
+    "title": "Adicionar participantes em lote",
+    "close": "Fechar",
+    "intro": "Cole uma pessoa por linha. No misto, informe a categoria após vírgula, ponto e vírgula ou tab:",
+    "exampleA": "Ana, F",
+    "exampleB": "Bruno, M",
+    "placeholder": "Ana, F\nBruno, M",
+    "listLabel": "Lista de participantes",
+    "preview": "Gerar prévia",
+    "count": "{{count}} na lista",
+    "nameLabel": "Nome do participante",
+    "categoryOf": "Categoria de {{name}}",
+    "errors": {
+      "name": "Informe o nome.",
+      "duplicate": "Nome duplicado.",
+      "category": "Selecione a categoria.",
+      "full": "Sem vaga disponível."
+    },
+    "filled": "{{filled}} de {{size}} vagas já preenchidas",
+    "confirm": "Adicionar {{count}} participante(s)"
+  },
+  "shared": {
+    "errors": {
+      "invalidLiveLink": "Este link de acompanhamento não é válido.",
+      "authRequired": "Não foi possível autenticar a publicação. Tente novamente.",
+      "completed": "O torneio já foi finalizado e não pode mais ser atualizado.",
+      "registrationClosed": "Este convite expirou ou as inscrições foram encerradas.",
+      "full": "As vagas deste torneio já foram preenchidas.",
+      "expired": "Este torneio compartilhado já expirou.",
+      "notRemovable": "Só é possível remover participantes adicionados manualmente.",
+      "roundsLocked": "As rodadas ficam bloqueadas depois que as finais são geradas.",
+      "invalidInvite": "Este link de convite não é válido.",
+      "anonymousDisabled": "O login sem e-mail está desativado no Supabase. Ative \"Allow anonymous sign-ins\" ou escolha o link por e-mail.",
+      "signInFailed": "Não foi possível entrar como moderador.",
+      "unavailable": "Não foi possível acessar o torneio compartilhado.",
+      "categoryRequired": "Selecione a categoria do atleta para formar as duplas mistas.",
+      "copyFailed": "Não foi possível copiar. Selecione e copie o link manualmente."
+    },
+    "notices": {
+      "created": "Torneio compartilhado criado. Envie o convite para preencher as vagas.",
+      "copied": "Link copiado.",
+      "renewed": "Novo link de convite criado. O link anterior foi invalidado."
+    }
+  },
+  "notices": {
+    "exactPlayers": "Cadastre exatamente {{size}} jogadores para continuar.",
+    "batchAdded": "Participantes adicionados em lote.",
+    "sharedNoRemove": "Não é possível remover participantes do torneio compartilhado.",
+    "mixedPair": "Cada dupla precisa ter um atleta masculino e um feminino.",
+    "sharedNotConfigured": "O modo compartilhado ainda não está configurado neste deploy.",
+    "moderatorName": "Informe seu nome para entrar como moderador.",
+    "moderatorCategory": "Selecione sua categoria para entrar no torneio misto.",
+    "shareFresh": "Para compartilhar, comece com um torneio sem lista local. Os participantes entrarão pelo convite.",
+    "autoJoinNeedsGender": "Defina sua categoria no perfil para entrar automaticamente em torneios mistos."
+  },
+  "tour": {
+    "buttons": {
+      "next": "Próximo",
+      "previous": "Voltar",
+      "done": "Concluir",
+      "off": "Desligar dicas",
+      "progress": "[[current]] de [[total]]"
+    },
+    "name": {
+      "title": "Nome do torneio",
+      "description": "Escolha um nome fácil de reconhecer. Ele aparece no ranking, no relatório e em Meus torneios."
+    },
+    "hosting": {
+      "title": "Onde gerenciar",
+      "description": "Neste dispositivo: só você lança os placares. Compartilhado: os atletas entram por um link e acompanham ao vivo."
+    },
+    "doubles": {
+      "title": "Tipo de dupla",
+      "description": "Abertas: qualquer combinação. Mistas: sempre 1 atleta masculino + 1 feminino."
+    },
+    "mode": {
+      "title": "Formato",
+      "description": "Super: as duplas rodam e todos jogam com todos. Grupos: grupos pequenos, todos contra todos."
+    },
+    "size": {
+      "title": "Participantes",
+      "description": "Arraste para escolher quantos atletas jogam. Rodadas e quadras se ajustam sozinhas."
+    },
+    "summary": {
+      "title": "Resumo do formato",
+      "description": "Acompanhe rodadas, quadras e games enquanto escolhe. Nada é definitivo até gerar a tabela."
+    },
+    "next": {
+      "title": "Próximo passo",
+      "description": "Tudo certo? Avance para inscrever os participantes."
+    },
+    "addPlayer": {
+      "title": "Adicione os atletas",
+      "description": "Digite o nome e pressione Enter: o campo já fica pronto para o próximo. A foto é opcional."
+    },
+    "batch": {
+      "title": "Cadastro em lote",
+      "description": "Tem uma lista pronta? Cole todos os nomes de uma vez e revise antes de confirmar."
+    },
+    "invite": {
+      "title": "Convite por link",
+      "description": "Copie o link e envie aos atletas. Quem estiver sem celular pode ser adicionado por você."
+    },
+    "progress": {
+      "title": "Acompanhe as vagas",
+      "description": "Mostra quantos atletas faltam. Ao completar a lista, a revisão é liberada."
+    },
+    "review": {
+      "title": "Revisar",
+      "description": "Com a lista completa, avance para conferir tudo antes de começar."
+    },
+    "reviewSummary": {
+      "title": "Confira o formato",
+      "description": "Formato, jogadores, rodadas e quadras do seu torneio."
+    },
+    "roster": {
+      "title": "Confira os atletas",
+      "description": "Depois de gerar a tabela, a lista fica bloqueada. Volte agora se precisar ajustar."
+    },
+    "generate": {
+      "title": "Hora de jogar",
+      "description": "Gera todas as rodadas e abre as partidas. O cronômetro do torneio começa neste momento."
+    }
+  }
+}

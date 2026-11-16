@@ -1,0 +1,79 @@
+.setup-summary small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.setup-summary b {
+  font:
+    800 17px var(--font-display),
+    sans-serif;
+}
+
+.shared-moderator-fields {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+:host-context(.wizard-panel) .form-field {
+  margin-bottom: 15px;
+}
+
+/* Dynamic numeric ranges used in tournament setup. */
+
+.setup-ranges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 12px 0;
+  align-items: stretch;
+}
+
+@media (width <=620px) {
+  .setup-ranges {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.setup-summary div {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+
+.form-field .form-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.setup-ranges.single {
+  grid-template-columns: 1fr;
+}
+
+.setup-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0 4px;
+  padding: 12px;
+  border: 1px dashed color-mix(in srgb, var(--green-2) 40%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--green-2) 5%, var(--surface));
+}
+
+@media (width <=620px) {
+  .setup-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <=760px) and (width >=621px) {
+  .setup-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

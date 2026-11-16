@@ -55,6 +55,13 @@ function check(name: string, found: Record<string, number>, baseline: Baseline):
     .map(([rule, count]) => `${name}: ${rule} affects ${count} nodes (baseline ${allowed[rule] ?? 0})`);
 }
 
+async function createLocalPlayers(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /Adicionar em lote/ }).click();
+  await page.locator('textarea[name=batchPlayers]').fill('Ana\nBia\nCaio\nDuda\nEdu\nFabi\nGui\nHana');
+  await page.getByRole('button', { name: 'Gerar prévia' }).click();
+  await page.getByRole('button', { name: /Adicionar 8 participante/ }).click();
+}
+
 test.describe('accessibility (axe, no new violations)', () => {
   test.describe.configure({ mode: 'serial' });
 
@@ -67,6 +74,18 @@ test.describe('accessibility (axe, no new violations)', () => {
     await page.getByRole('button', { name: /Adicionar jogadores/ }).click();
     await expect(page.getByRole('heading', { name: 'Inscreva os participantes' })).toBeVisible();
     problems.push(...check('setup-players', await scan(page), baseline));
+
+    await page.getByRole('button', { name: /Adicionar em lote/ }).click();
+    const dialog = page.getByRole('dialog', { name: 'Adicionar participantes em lote' });
+    await dialog.getByRole('textbox', { name: 'Lista de participantes' }).fill('Ana\nBia');
+    await dialog.getByRole('button', { name: 'Gerar prévia' }).click();
+    problems.push(...check('batch-dialog', await scan(page), baseline));
+    await page.keyboard.press('Escape');
+
+    await createLocalPlayers(page);
+    await page.getByRole('button', { name: /Revisar torneio/ }).click();
+    await expect(page.getByRole('heading', { name: 'Revisar e iniciar' })).toBeVisible();
+    problems.push(...check('setup-review', await scan(page), baseline));
     expect(problems).toEqual([]);
   });
 

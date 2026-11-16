@@ -1,0 +1,220 @@
+.wizard-actions > span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wizard-progress b {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 4px 0 18px;
+}
+
+.wizard-progress div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wizard-progress i {
+  width: 34px;
+  height: 1px;
+  background: var(--border);
+}
+
+.wizard-panel {
+  border-radius: var(--radius);
+}
+
+.wizard-panel h2 {
+  margin: 5px 0 20px;
+}
+
+.wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+@media (width <=600px) {
+  .wizard-progress {
+    gap: 7px;
+  }
+
+  .wizard-progress div {
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .wizard-progress b {
+    width: 26px;
+    height: 26px;
+  }
+
+  .wizard-progress i {
+    width: 18px;
+  }
+
+  .wizard-actions {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .wizard-actions > span {
+    width: 100%;
+  }
+}
+
+.wizard-progress .current {
+  color: var(--text);
+}
+
+.tour-bar button {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.tour-bar button:hover {
+  border-color: var(--green-2);
+  background: var(--green-soft);
+  color: var(--green-2);
+}
+
+.wizard-panel .tour-bar button {
+  min-height: 0;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tutorial controls use the same surfaces, colors and button language as the app. */
+
+.tour-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.wizard-progress .current b {
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--white);
+}
+
+.wizard-progress .complete b {
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+  color: var(--green-2);
+}
+
+.wizard-progress .wizard-step b {
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
+}
+
+/* ───────── Setup wizard polish ───────── */
+
+.wizard-progress .wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wizard-progress .wizard-step:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.wizard-progress .wizard-step.current {
+  color: var(--text);
+}
+
+.wizard-progress .wizard-step:not(:disabled):hover b {
+  border-color: var(--green-2);
+  transform: scale(1.06);
+}
+
+.wizard-progress .wizard-step:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+  border-radius: 99px;
+}
+
+.wizard-panel .tour-bar {
+  justify-content: flex-end;
+  margin: -8px 0 6px;
+}
+
+.wizard-panel .tour-bar button:hover {
+  color: var(--green-2);
+}
+
+@media (width <=620px) {
+  .wizard-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 22px -14px -14px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 0 0 var(--radius, 14px) var(--radius, 14px);
+    background: var(--surface);
+    box-shadow: 0 -10px 20px color-mix(in srgb, var(--surface) 90%, transparent);
+  }
+
+  .wizard-actions .button {
+    flex: 1;
+  }
+
+  .wizard-actions > span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-progress .wizard-step b {
+    transition: none;
+  }
+}

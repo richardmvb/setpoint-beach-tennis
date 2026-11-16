@@ -1,0 +1,140 @@
+.fixed-pair-row > span {
+  text-align: center;
+  color: var(--muted);
+}
+
+.enroll-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--green-2), var(--orange));
+  transition: width 0.35s ease;
+}
+
+.enroll-progress small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.fixed-pair-row > b {
+  font-size: 11px;
+}
+
+.enroll-head b {
+  font:
+    800 18px var(--font-display),
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (width <=760px) {
+  .wizard-player-list {
+    max-height: 280px;
+  }
+}
+
+.fixed-pair-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.fixed-pair-row select {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+@media (width <=600px) {
+  .fixed-pair-row {
+    grid-template-columns: 58px minmax(0, 1fr) 14px minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .fixed-pair-row select {
+    padding: 7px 4px;
+    font-size: 10px;
+  }
+}
+
+.fixed-pair-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.manual-participant {
+  margin-top: 12px;
+}
+
+.participant-form.manual-participant {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Batch participant entry */
+
+.batch-entry-button {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--green-2);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.wizard-player-list {
+  margin-top: 10px;
+  max-height: none;
+  overflow: visible;
+}
+
+.participant-form.manual-participant > .card-kicker {
+  grid-column: 1/-1;
+}
+
+.enroll-progress {
+  display: grid;
+  gap: 7px;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.enroll-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.enroll-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.player-form-error {
+  margin: 8px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enroll-bar span {
+    transition: none;
+  }
+}

@@ -1,0 +1,68 @@
+<ng-container *transloco="let t; prefix: 'setup.batch'">
+  <div class="batch-modal-header">
+    <div>
+      <span class="card-kicker">{{ t('kicker') }}</span>
+      <h2 [id]="titleId">{{ t('title') }}</h2>
+    </div>
+    <button type="button" class="modal-close" (click)="close()" [attr.aria-label]="t('close')">×</button>
+  </div>
+  <p class="muted">{{ t('intro') }} <b>{{ t('exampleA') }}</b> · <b>{{ t('exampleB') }}</b>.</p>
+  <textarea
+    #field
+    name="batchPlayers"
+    [ngModel]="text()"
+    (ngModelChange)="text.set($event)"
+    [placeholder]="t('placeholder')"
+    [attr.aria-label]="t('listLabel')"
+  ></textarea>
+  <div class="batch-actions">
+    <button uiButton variant="secondary" type="button" (click)="preview()">{{ t('preview') }}</button>
+    @if (drafts().length) {
+      <span class="mini-tag">{{ t('count', { count: drafts().length }) }}</span>
+    }
+  </div>
+  @if (drafts().length) {
+    <div class="batch-preview">
+      @for (draft of drafts(); track $index; let i = $index) {
+        <div class="batch-player" [class.invalid]="draft.error">
+          <span>{{ i + 1 }}</span>
+          <input
+            [name]="'batchName' + i"
+            [ngModel]="draft.name"
+            (ngModelChange)="rename(i, $event)"
+            maxlength="40"
+            [attr.aria-label]="t('nameLabel')"
+          />
+          @if (mixed) {
+            <app-gender-toggle
+              [compact]="true"
+              [value]="draft.gender"
+              (valueChange)="setGender(i, $event)"
+              [label]="t('categoryOf', { name: draft.name })"
+            />
+          }
+          @switch (draft.error) {
+            @case ('name') {
+              <small>{{ t('errors.name') }}</small>
+            }
+            @case ('duplicate') {
+              <small>{{ t('errors.duplicate') }}</small>
+            }
+            @case ('category') {
+              <small>{{ t('errors.category') }}</small>
+            }
+            @case ('full') {
+              <small>{{ t('errors.full') }}</small>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+  <div class="batch-footer">
+    <small>{{ t('filled', { filled: filled, size: size }) }}</small>
+    <button uiButton variant="primary" type="button" [disabled]="!canConfirm()" (click)="confirm()">
+      {{ t('confirm', { count: drafts().length || '' }) }}
+    </button>
+  </div>
+</ng-container>
