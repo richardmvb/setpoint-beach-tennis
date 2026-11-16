@@ -11,10 +11,14 @@ image="mcr.microsoft.com/playwright:v${version}-noble"
 port=4200
 
 started=
-if ! curl -fs "http://localhost:${port}" >/dev/null 2>&1; then
-  npx ng serve --port "$port" >/tmp/visual-ng-serve.log 2>&1 &
+if curl -fs "http://localhost:${port}" >/dev/null 2>&1; then
+  # Baselines must come from this checkout, not from whatever else is serving the port.
+  [ -n "${REUSE_SERVER:-}" ] || { echo "Something already serves port ${port}. Stop it, or set REUSE_SERVER=1 if it is this checkout's dev server." >&2; exit 1; }
+else
+  # Own process group, so the exit trap stops ng serve itself and not just the npx wrapper.
+  setsid npx ng serve --port "$port" >/tmp/visual-ng-serve.log 2>&1 &
   started=$!
-  trap '[ -z "$started" ] || kill "$started" 2>/dev/null || true' EXIT
+  trap '[ -z "$started" ] || kill -- -"$started" 2>/dev/null || true' EXIT
   for _ in $(seq 1 180); do
     curl -fs "http://localhost:${port}" >/dev/null 2>&1 && break
     kill -0 "$started" 2>/dev/null || { cat /tmp/visual-ng-serve.log; echo "ng serve exited" >&2; exit 1; }

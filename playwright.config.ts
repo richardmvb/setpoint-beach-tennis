@@ -24,7 +24,10 @@ export default defineConfig<{ routerEnabled: boolean }>({
   workers: process.env['CI'] ? 2 : undefined,
   // One environment, so no platform or project suffix in the file name.
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{arg}{ext}',
+  // Exact by default. Full-page shots allow 32 pixels: 3 to 16 can differ between runs at the edge of the fixed, blurred bars (raster noise).
   expect: { toHaveScreenshot: { threshold: 0, maxDiffPixels: 0 } },
+  // CI never writes a missing baseline: a new or renamed shot must be committed.
+  updateSnapshots: process.env['CI'] ? 'none' : 'missing',
   reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${port}`,
@@ -59,8 +62,10 @@ export default defineConfig<{ routerEnabled: boolean }>({
           {
             // Bundled Chromium on purpose (no channel): the baselines come from the Playwright image CI also uses.
             name: 'visual',
+            // A flaky pixel diff must fail, not pass on a retry.
+            retries: 0,
             testMatch: 'visual.spec.ts',
-            use: { ...devices['Desktop Chrome'], reducedMotion: 'reduce' as const, timezoneId: 'UTC' },
+            use: { ...devices['Desktop Chrome'], timezoneId: 'UTC' },
           },
         ]
       : []),
