@@ -1,0 +1,496 @@
+/* The landing page (features/landing), moved out of styles.css in B1 in its original order. The hero and "Seu caminho"
+   sections are child components with their own stylesheets in components/; rules on their <section> stay here. */
+
+:host {
+  display: contents;
+}
+
+.bento-chips span {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgb(from var(--white) r g b / 16%);
+  font:
+    800 18px var(--font-display),
+    sans-serif;
+}
+
+.landing-list span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.landing-keep-list small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.landing-list b {
+  font-size: 14px;
+}
+
+.landing-keep-list b {
+  font-size: 14px;
+}
+
+.landing-features b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.landing-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.landing-bento p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.landing-features p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.landing-final p {
+  margin: 0;
+  color: rgb(from var(--white) r g b / 78%);
+  font-size: 16px;
+}
+
+.landing > * {
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+.landing-links {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 44px;
+  align-items: center;
+  padding: 64px 0 56px;
+}
+
+.landing-bento .bento-lg {
+  grid-column: span 2;
+  grid-row: span 2;
+  background: linear-gradient(160deg, var(--green), var(--green-2));
+  border-color: transparent;
+  color: var(--white);
+}
+
+.landing-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+}
+
+.landing-heading {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+  margin-bottom: 24px;
+}
+
+/* Landing */
+
+.landing {
+  min-height: 100svh;
+  padding: 20px 20px 28px;
+  background:
+    radial-gradient(1000px 520px at 85% -8%, color-mix(in srgb, var(--orange) 16%, transparent), transparent 62%),
+    radial-gradient(900px 500px at 0% 0%, color-mix(in srgb, var(--green-2) 14%, transparent), transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+.landing-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-bento {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.landing-bento .bento-wide {
+  grid-column: span 4;
+}
+
+.landing-keep-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 32px;
+  align-items: center;
+  padding: 34px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: linear-gradient(135deg, var(--surface), var(--green-soft));
+}
+
+.landing-final {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin-top: 64px;
+  padding: 56px 24px;
+  border-radius: 30px;
+  background:
+    radial-gradient(600px 260px at 80% 0%, color-mix(in srgb, var(--orange) 40%, transparent), transparent 70%),
+    linear-gradient(135deg, var(--green), var(--ink-1200));
+  color: var(--white);
+  text-align: center;
+}
+
+@media (width <=900px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 40px 0 36px;
+  }
+
+  .landing-links {
+    display: none;
+  }
+
+  .landing-nav-actions {
+    margin-left: auto;
+  }
+
+  .landing-split,
+  .landing-keep-card {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-bento {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .landing-bento .bento-lg,
+  .landing-bento .bento-wide {
+    grid-column: span 2;
+  }
+
+  .landing-bento .bento-lg {
+    grid-row: auto;
+  }
+}
+
+.landing-nav .lock-brand {
+  margin-bottom: 0;
+}
+
+.landing-split .landing-heading {
+  margin-bottom: 0;
+}
+
+.landing-keep-card .landing-heading {
+  margin: 0;
+}
+
+.landing-final .landing-cta {
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.landing .landing-light {
+  min-height: 52px;
+  padding-inline: 26px;
+  border-radius: 13px;
+  background: var(--white);
+  color: var(--ink-1500);
+  font-size: 14px;
+}
+
+@media (width <=560px) {
+  .landing {
+    padding: 16px 14px 22px;
+  }
+
+  .landing-nav-actions .button.secondary {
+    display: none;
+  }
+
+  .landing-cta .button {
+    flex: 1 1 100%;
+  }
+
+  .landing-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-bento .bento-lg,
+  .landing-bento .bento-wide {
+    grid-column: auto;
+  }
+
+  .landing-keep-card {
+    padding: 22px;
+  }
+
+  .landing-final {
+    padding: 40px 18px;
+  }
+}
+
+.landing .landing-outline {
+  min-height: 52px;
+  padding-inline: 26px;
+  border-radius: 13px;
+  background: transparent;
+  border: 1px solid rgb(from var(--white) r g b / 40%);
+  color: var(--white);
+  font-size: 14px;
+}
+
+.landing-links button {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.landing-links button:hover {
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.landing-steps li span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.bento-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--accent-text);
+}
+
+.landing-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--green-2);
+  color: var(--surface);
+  font-size: 10px;
+}
+
+.landing-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 4px 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.landing-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-section {
+  padding: 56px 0 8px;
+}
+
+.bento-chips {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.landing-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-keep-list {
+  display: grid;
+  gap: 8px;
+}
+
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.landing-steps li b {
+  font-size: 16px;
+}
+
+.landing-list li {
+  display: grid;
+  gap: 3px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.landing-steps li {
+  display: grid;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  counter-increment: step;
+}
+
+.landing-bento .bento-lg p {
+  color: rgb(from var(--white) r g b / 80%);
+}
+
+.landing-keep-list div {
+  display: grid;
+  gap: 3px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+/* :where() keeps this at the weight it had in styles.css, so the global .button.primary:hover shadow still wins. */
+:where(.landing) .button.primary {
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--green) 32%, transparent);
+}
+
+.landing-heading h2 {
+  margin: 0;
+  font:
+    800 clamp(26px, 4vw, 38px)/1.1 var(--font-display),
+    sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.landing-bento article {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.landing-bento .bento-lg .bento-tag {
+  color: rgb(from var(--white) r g b / 70%);
+}
+
+:host-context([data-theme='dark']) .landing-bento .bento-lg {
+  color: var(--ink-700);
+}
+
+:host-context([data-theme='dark']) .landing-bento .bento-lg p,
+:host-context([data-theme='dark']) .landing-bento .bento-lg .bento-tag {
+  color: rgb(from var(--ink-700) r g b / 78%);
+}
+
+.landing-bento h3 {
+  margin: 0;
+  font:
+    800 19px/1.2 var(--font-display),
+    sans-serif;
+}
+
+.landing-features article {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.landing-steps ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.landing-steps li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--green-2);
+  color: var(--surface);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.landing-final h2 {
+  margin: 0;
+  max-width: 20ch;
+  font:
+    800 clamp(28px, 5vw, 44px)/1.08 var(--font-display),
+    sans-serif;
+  letter-spacing: -0.03em;
+}
+
+/* Landing: Seu caminho */
+
+.landing-path {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 44px;
+  align-items: center;
+}
+
+@media (width <=900px) {
+  .landing-path {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}

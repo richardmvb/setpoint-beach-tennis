@@ -1,0 +1,37 @@
+<ng-container *transloco="let t; prefix: 'landing'">
+  <div class="landing-hero-copy">
+    <span class="landing-pill"><i></i> {{ t('hero.pill') }}</span>
+    <h1>{{ t('hero.title') }}</h1>
+    <p>{{ t('hero.text') }}</p>
+    <div class="landing-cta">
+      <button uiButton variant="primary" class="landing-primary" (click)="start.emit()">{{ t('cta.create') }} <span aria-hidden="true">→</span></button>
+      @if (savedCount()) {
+        <button uiButton variant="secondary" class="landing-primary" (click)="resume.emit()">{{ t('cta.resume') }}</button>
+      } @else {
+        <button uiButton variant="ghost" class="landing-primary" (click)="howItWorks.emit()">{{ t('cta.howItWorks') }}</button>
+      }
+    </div>
+    <ul class="landing-proof">
+      <li><b>{{ t('hero.playersValue') }}</b><span>{{ t('hero.playersLabel') }}</span></li>
+      <li><b>{{ t('hero.courtsValue') }}</b><span>{{ t('hero.courtsLabel') }}</span></li>
+      <li><b>0</b><span>{{ t('hero.sheetsLabel') }}</span></li>
+    </ul>
+  </div>
+  <div class="landing-device" aria-hidden="true">
+    <div class="device-card device-main">
+      <div class="device-head"><div><small>{{ t('device.round') }}</small><b>{{ t('device.name') }}</b></div><span class="device-live"><i></i> {{ t('device.live') }}</span></div>
+      <div class="device-bar"><span style="width:43%"></span></div>
+      <div class="device-match"><div><small>{{ t('device.court1') }}</small><b>{{ t('device.team1') }}</b></div><strong>4<em>×</em>2</strong><div class="right"><small>{{ t('device.finished') }}</small><b>{{ t('device.team2') }}</b></div></div>
+      <div class="device-match pending"><div><small>{{ t('device.court2') }}</small><b>{{ t('device.team3') }}</b></div><strong>3<em>×</em>3</strong><div class="right"><small>{{ t('device.playing') }}</small><b>{{ t('device.team4') }}</b></div></div>
+    </div>
+    <div class="device-card device-rank">
+      <small>{{ t('device.ranking') }}</small>
+      <ol>
+        <li><b>1</b><span>{{ t('device.rank1') }}</span><em>{{ t('device.rank1Stats') }}</em></li>
+        <li><b>2</b><span>{{ t('device.rank2') }}</span><em>{{ t('device.rank2Stats') }}</em></li>
+        <li><b>3</b><span>{{ t('device.rank3') }}</span><em>{{ t('device.rank3Stats') }}</em></li>
+      </ol>
+    </div>
+    <div class="device-card device-podium"><span>🏆</span><div><small>{{ t('device.champion') }}</small><b>{{ t('device.championTeam') }}</b></div></div>
+  </div>
+</ng-container>

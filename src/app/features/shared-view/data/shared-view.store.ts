@@ -6,7 +6,7 @@ import { FinalsService, type PodiumPlace } from '../../../core/finals.service';
 import type { PlayerGender, TournamentState } from '../../../core/models';
 import { NpsFeedbackService } from '../../../core/nps-feedback.service';
 import { ANALYTICS } from '../../../core/ports/analytics.port';
-import { APP_CONFIG } from '../../../core/ports/app-config.port';
+import { APP_CONFIG, versionLabel } from '../../../core/ports/app-config.port';
 import { AUTH } from '../../../core/ports/auth.port';
 import { CLOCK } from '../../../core/ports/clock.port';
 import { DASHBOARD } from '../../../core/ports/dashboard.port';
@@ -111,7 +111,7 @@ export class SharedViewStore {
   readonly mode: SharedViewMode = this.url.dashboardViewerId ? 'admin' : this.url.liveToken ? 'live' : 'invite';
   private readonly source: SharedViewSource | null = this.createSource();
   private readonly invite: InviteSource | null = this.source?.mode === 'invite' ? (this.source as InviteSource) : null;
-  readonly versionLabel = this.config.buildVersion ? `v${this.config.buildVersion}` : 'dev';
+  readonly versionLabel = versionLabel(this.config);
 
   readonly snapshot = signal<ViewSnapshot | null>(null);
   /** The tournament ready to render. Null until the first read: the page never shows another tournament meanwhile. */

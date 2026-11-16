@@ -70,7 +70,7 @@ import { ChoiceCardsComponent, ChoiceOption } from './features/choice-cards.comp
 import { ANALYTICS } from './core/ports/analytics.port';
 import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
-import { APP_CONFIG } from './core/ports/app-config.port';
+import { APP_CONFIG, versionLabel } from './core/ports/app-config.port';
 import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
 import { RANDOM } from './core/ports/random.port';
@@ -85,6 +85,8 @@ import { ProjectionController } from './features/tournament/projection/projectio
 import { ProjectionPanelComponent } from './features/tournament/projection/projection-panel.component';
 import { SharedViewComponent } from './features/shared-view/shared-view.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { LandingComponent } from './features/landing/landing.component';
+import { landingSeen } from './features/landing/data/landing-visit';
 import { errorMessage } from './shared/parsers/error-message';
 
 interface TourStep {
@@ -100,7 +102,6 @@ interface BatchPlayerDraft {
 
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
-const LANDING_SEEN_KEY = 'setpoint.landing.seen';
 const TUTORIAL_KEY = 'setpoint.tutorial.setup';
 const SHARED_SETUP_KEY = 'setpoint.shared.setup';
 const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
@@ -122,6 +123,7 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
     ProjectionPanelComponent,
     SharedViewComponent,
     DashboardComponent,
+    LandingComponent,
     GenderIconComponent,
     NumberRangeComponent,
     FinalLiveScoreComponent,
@@ -312,12 +314,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch {
       this.isLocked = this.config.lockScreenEnabled && !this.isDashboardRoute && !this.authCallback;
     }
-    try {
-      this.showLanding =
-        !this.isDashboardRoute && !this.authCallback && this.local.getItem(LANDING_SEEN_KEY) !== 'true';
-    } catch {
-      this.showLanding = false;
-    }
+    this.showLanding = !this.isDashboardRoute && !this.authCallback && !landingSeen(this.local);
     this.tutorialInit();
     this.state = this.storage.loadTournament() ?? this.newTournament();
     try {
@@ -617,7 +614,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   readonly buildId = this.config.buildId;
-  readonly versionLabel = this.config.buildVersion ? `v${this.config.buildVersion}` : 'dev';
+  readonly versionLabel = versionLabel(this.config);
   get isSharedMode(): boolean {
     return this.state.hostingMode === 'shared';
   }
@@ -668,15 +665,10 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** The landing page's way into the app (the landing has already remembered that it was seen). */
   enterApp(): void {
-    try {
-      this.local.setItem(LANDING_SEEN_KEY, 'true');
-    } catch {
-      /* landing volta na próxima visita */
-    }
     this.showLanding = false;
     window.scrollTo({ top: 0 });
-    this.analytics.capture('landing_cta_clicked');
     window.setTimeout(() => this.welcomeThen(() => this.maybeStartSetupTour()), 400);
   }
 
@@ -937,14 +929,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Returning organizers go straight to their saved tournaments, skipping the first-visit tour. */
   continueFromLanding(): void {
-    try {
-      this.local.setItem(LANDING_SEEN_KEY, 'true');
-    } catch {
-      /* landing volta na próxima visita */
-    }
     this.showLanding = false;
     window.scrollTo({ top: 0 });
-    this.analytics.capture('landing_library_clicked');
     this.welcomeThen(() => this.openLibrary());
   }
 
@@ -981,11 +967,6 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.syncLocalTournamentMetrics();
-  }
-
-  /** The landing page's section links. */
-  scrollToSection(id: string): void {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   get hasSchedule(): boolean {

@@ -74,6 +74,12 @@
                 },
                 {
                   "type": "bundle",
+                  "name": "landing-component",
+                  "maximumWarning": "40kB",
+                  "maximumError": "45kB"
+                },
+                {
+                  "type": "bundle",
                   "name": "driver-js",
                   "maximumWarning": "47kB",
                   "maximumError": "54kB"
