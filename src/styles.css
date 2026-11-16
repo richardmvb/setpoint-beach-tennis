@@ -219,7 +219,6 @@ button:disabled {
   padding: 0 28px;
   background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: saturate(1.4) blur(14px);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--border);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
@@ -7238,7 +7237,6 @@ app-player-avatar .podium-avatar {
   border-radius: 12px;
   background: var(--surface-soft);
   color: var(--text);
-  font: 14px/1.5 inherit;
 }
 
 /* Compact gender standings and distinguish final stages. */
@@ -10364,7 +10362,6 @@ app-player-avatar .podium-avatar {
     border-radius: 18px;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 12px 32px -12px rgb(from var(--ink-900) r g b / 30%);
     transform: translateX(-50%);
   }
@@ -10379,7 +10376,7 @@ app-player-avatar .podium-avatar {
     font-weight: 700;
   }
 
-  .guest-mobile-nav button:hover:not(.active):not(.locked) {
+  .guest-mobile-nav button:hover:not(.active, .locked) {
     background: var(--surface-soft);
   }
 

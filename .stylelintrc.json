@@ -5,6 +5,12 @@
     "color-named": "never",
     "declaration-property-value-disallowed-list": {
       "/^(?!--).+/": ["/#[0-9a-f]{3,8}\\b/i", "/\\brgba?\\((?!from\\b)/i", "/\\bhsla?\\((?!from\\b)/i"]
-    }
+    },
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["box-decoration-break"]
+      }
+    ]
   }
 }
