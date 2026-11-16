@@ -1,6 +1,7 @@
 /*
   Button. Shared by the uiButton component (src/app/ui/button) and by templates that still write
-  class="button primary". Variants: primary, secondary, danger, ghost. Size: add .sm.
+  class="button primary". Variants: primary, secondary, danger, ghost; plain (uiButton variant="plain") is
+  .button alone, coloured by its caller. Size: add .sm.
 */
 .button {
   display: inline-flex;
