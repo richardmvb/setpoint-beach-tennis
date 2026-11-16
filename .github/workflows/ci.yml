@@ -168,3 +168,42 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  # Pixel comparisons only match inside one environment: the Playwright image the baselines are generated in
+  # (npm run e2e:visual:update). The ubuntu runner renders fonts and emoji differently.
+  visual:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --init --ipc=host
+    timeout-minutes: 15
+    env:
+      E2E_VISUAL: '1'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: The image matches the installed Playwright version
+        run: test "$(node -p "require('@playwright/test/package.json').version")" = "1.65.0"
+
+      - name: Visual baselines
+        run: npx playwright test --project visual
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

@@ -4,10 +4,10 @@ const port = 4200;
 
 /**
  * Visual baselines (e2e/visual.spec.ts) compare pixels, which only match inside one environment.
- * They run in CI (ubuntu) and through `npm run e2e:visual`, which uses the same Playwright image as CI.
- * Locally, `npm run e2e` leaves them out so a different Chrome or font stack cannot fail it.
+ * They run in the `visual` CI job and through `npm run e2e:visual`, both inside the same Playwright image.
+ * `npm run e2e` (and the plain e2e CI job) leave them out, because a different Chrome or font stack renders differently.
  */
-const visual = !!process.env['CI'] || !!process.env['E2E_VISUAL'];
+const visual = !!process.env['E2E_VISUAL'];
 
 /**
  * End-to-end tests run against the real app in the browser. All traffic to hosts other than
