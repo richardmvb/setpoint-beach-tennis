@@ -4,7 +4,6 @@ node_modules/
 coverage/
 package-lock.json
 public/runtime-config.js
-src/styles.css
 src/**/*.html
 test-results/
 playwright-report/
