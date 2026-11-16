@@ -4,7 +4,10 @@ import { DASHBOARD } from '../../ports/dashboard.port';
 import { LOCAL_STORE, SESSION_STORE } from '../../ports/key-value-store.port';
 import { dashboardContract } from '../../ports/testing/dashboard.contract';
 import { localLiveContract } from '../../ports/testing/local-live.contract';
-import { sharedTournamentsContract } from '../../ports/testing/shared-tournaments.contract';
+import {
+  ownedSharedTournamentsContract,
+  sharedTournamentsContract,
+} from '../../ports/testing/shared-tournaments.contract';
 import { LOCAL_LIVE, SHARED_TOURNAMENTS } from '../../ports/tournaments.port';
 import { provideBrowserAdapters } from '../browser/provide-browser-adapters';
 import { fakeSupabase } from './fake-supabase-client';
@@ -39,6 +42,26 @@ sharedTournamentsContract('SupabaseSharedTournaments', () => {
       supabase.reply('join_shared_tournament', { data: snapshot });
     },
     fail: (code) => refuse(['get_shared_tournament', 'join_shared_tournament'], code),
+  };
+});
+
+ownedSharedTournamentsContract('SupabaseSharedTournaments', () => {
+  const { supabase, refuse } = setup();
+  const owned = [
+    'create_shared_tournament',
+    'get_owned_shared_tournament',
+    'add_shared_participant',
+    'remove_shared_participant',
+  ];
+  return {
+    port: TestBed.inject(SHARED_TOURNAMENTS),
+    given: (snapshot) => {
+      for (const rpc of owned) supabase.reply(rpc, { data: snapshot });
+      supabase.reply('cancel_shared_tournament', { data: null });
+    },
+    givenRotation: (inviteToken, inviteExpiresAt) =>
+      supabase.reply('rotate_shared_invite', { data: { inviteToken, inviteExpiresAt } }),
+    fail: (code) => refuse([...owned, 'cancel_shared_tournament', 'rotate_shared_invite'], code),
   };
 });
 

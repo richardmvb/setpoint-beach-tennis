@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { errorMessage } from '../../../shared/parsers/error-message';
 import type { SharedTournamentSnapshot } from '../../models';
-import type { SharedTournamentGuestPort } from './shared-tournaments.fake';
+import type { SharedTournamentGuestPort, SharedTournamentOwnerPort } from './shared-tournaments.fake';
 
 export interface SharedTournamentsHarness {
   port: SharedTournamentGuestPort;
@@ -79,6 +79,71 @@ export function sharedTournamentsContract(name: string, create: () => SharedTour
       const error: unknown = await port.joinSharedTournament('invite-1', 'Atrasado').catch((caught: unknown) => caught);
       expect(errorMessage(error)).toContain('tournament_full');
       expect(await port.getGuestName('invite-1')).toBe('');
+    });
+  });
+}
+
+export interface OwnedTournamentsHarness {
+  port: SharedTournamentOwnerPort;
+  /** The server has this tournament for its moderator, and answers the owner calls with it. */
+  given: (snapshot: SharedTournamentSnapshot) => void;
+  /** The server answers a new-invite call with this token and expiry. */
+  givenRotation: (inviteToken: string, inviteExpiresAt: string) => void;
+  /** The server refuses the next owner calls with this error code. */
+  fail: (code: string) => void;
+}
+
+const ownedSnapshot = (): SharedTournamentSnapshot => sharedSnapshot({ inviteToken: 'invite-1' });
+
+/** What the moderator relies on from every SharedTournamentRepository implementation. */
+export function ownedSharedTournamentsContract(name: string, create: () => OwnedTournamentsHarness): void {
+  describe(`SharedTournamentRepository moderator contract: ${name}`, () => {
+    it('creates a tournament and returns it with its invite', async () => {
+      const { port, given } = create();
+      const snapshot = ownedSnapshot();
+      given(snapshot);
+      const created = await port.createSharedTournament(snapshot.state, 'Moderadora', 'female');
+      expect(created.id).toBe('shared-1');
+      expect(created.inviteToken).toBe('invite-1');
+      expect(created.state.hostingMode).toBe('shared');
+    });
+
+    it('reads the tournament the moderator owns', async () => {
+      const { port, given } = create();
+      given(ownedSnapshot());
+      const snapshot = await port.getOwnedSharedTournament('shared-1');
+      expect(snapshot.id).toBe('shared-1');
+      expect(snapshot.status).toBe('registration');
+    });
+
+    it('adds and removes a participant, answering with the tournament', async () => {
+      const { port, given } = create();
+      given(ownedSnapshot());
+      expect((await port.addSharedParticipant('shared-1', 'Sem celular', 'male')).id).toBe('shared-1');
+      expect((await port.removeSharedParticipant('shared-1', 'manual-2')).id).toBe('shared-1');
+    });
+
+    it('gives a new invite link', async () => {
+      const { port, given, givenRotation } = create();
+      given(ownedSnapshot());
+      givenRotation('invite-2', '2099-02-01T00:00:00Z');
+      const invite = await port.rotateSharedInvite('shared-1');
+      expect(invite.inviteToken).toBeTruthy();
+      expect(invite.inviteExpiresAt).toBeTruthy();
+    });
+
+    it('cancels the tournament', async () => {
+      const { port, given } = create();
+      given(ownedSnapshot());
+      await expect(port.cancelSharedTournament('shared-1')).resolves.toBeUndefined();
+    });
+
+    it('a refused call rejects with the server code in the message', async () => {
+      const { port, given, fail } = create();
+      given(ownedSnapshot());
+      fail('rounds_locked');
+      const error: unknown = await port.getOwnedSharedTournament('shared-1').catch((caught: unknown) => caught);
+      expect(errorMessage(error)).toContain('rounds_locked');
     });
   });
 }
