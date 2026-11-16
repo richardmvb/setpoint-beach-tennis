@@ -219,7 +219,6 @@ button:disabled {
   padding: 0 28px;
   background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: saturate(1.4) blur(14px);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--border);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
@@ -1247,7 +1246,11 @@ main {
 }
 
 .criteria > b {
-  font: 800 12px Inter;
+  font:
+    800 12px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   color: var(--accent-text);
   padding-top: 1px;
 }
@@ -1270,7 +1273,11 @@ main {
 
 .round-summary b {
   display: block;
-  font: 800 23px Inter;
+  font:
+    800 23px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 }
 
 .rest-player b {
@@ -1588,7 +1595,11 @@ main {
 }
 
 .rules-list > div > b {
-  font: 800 12px Inter;
+  font:
+    800 12px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   color: var(--accent-text);
   padding-top: 1px;
 }
@@ -2240,7 +2251,11 @@ select {
 }
 
 .rank-number {
-  font: 800 12px Inter;
+  font:
+    800 12px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   color: var(--muted);
 }
 
@@ -3986,7 +4001,11 @@ input {
   color: var(--text);
   text-align: center;
   padding: 8px;
-  font: 800 17px Inter;
+  font:
+    800 17px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   outline: none;
 }
 
@@ -5414,7 +5433,11 @@ app-player-avatar > span:not(.has-photo) {
 }
 
 .counter {
-  font: 800 25px Inter;
+  font:
+    800 25px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
 }
 
 @media (width <=620px) {
@@ -5877,7 +5900,11 @@ tbody tr:last-child td {
 
 .round-tabs button b {
   display: block;
-  font: 800 17px Inter;
+  font:
+    800 17px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   margin-top: 2px;
 }
 
@@ -6060,7 +6087,11 @@ tbody tr:last-child td {
 }
 
 .rest-card h3 {
-  font: 800 14px Inter;
+  font:
+    800 14px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   margin: 7px 0 13px;
 }
 
@@ -6110,7 +6141,11 @@ table {
 }
 
 .settings-info h3 {
-  font: 800 15px Inter;
+  font:
+    800 15px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
   margin: 7px 0 12px;
 }
 
@@ -7238,7 +7273,6 @@ app-player-avatar .podium-avatar {
   border-radius: 12px;
   background: var(--surface-soft);
   color: var(--text);
-  font: 14px/1.5 inherit;
 }
 
 /* Compact gender standings and distinguish final stages. */
@@ -10364,7 +10398,6 @@ app-player-avatar .podium-avatar {
     border-radius: 18px;
     background: color-mix(in srgb, var(--surface) 94%, transparent);
     backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 12px 32px -12px rgb(from var(--ink-900) r g b / 30%);
     transform: translateX(-50%);
   }
@@ -10379,7 +10412,7 @@ app-player-avatar .podium-avatar {
     font-weight: 700;
   }
 
-  .guest-mobile-nav button:hover:not(.active):not(.locked) {
+  .guest-mobile-nav button:hover:not(.active, .locked) {
     background: var(--surface-soft);
   }
 
