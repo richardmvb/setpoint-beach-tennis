@@ -1,4 +1,5 @@
 {
+  "batch-dialog": {},
   "finals": {
     "label-content-name-mismatch": 1
   },
@@ -17,6 +18,9 @@
     "label-content-name-mismatch": 1
   },
   "setup-players": {
+    "label-content-name-mismatch": 1
+  },
+  "setup-review": {
     "label-content-name-mismatch": 1
   }
 }
