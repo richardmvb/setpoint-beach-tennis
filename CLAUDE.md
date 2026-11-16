@@ -32,7 +32,7 @@ npm run e2e:visual      # visual baselines (e2e/visual.spec.ts) in the Playwrigh
 npm run e2e:visual:update # rewrite e2e/__screenshots__ (only for a change that is meant to be visual)
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
 npm run analyze         # production build with stats (dist/setpoint/browser-stats.json, for esbuild's analyzer) and dist/bundle-report.html (source-map-explorer); overwrites dist/
-npm run perf:lighthouse # Lighthouse CI on dist/; build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
+npm run perf:lighthouse # Lighthouse CI on dist/ (advisory in CI: its own non-blocking job); build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
 npm run check           # lint, styles, format, typecheck, knip, tests, build
 ```
 
