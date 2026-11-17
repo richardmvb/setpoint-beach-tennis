@@ -14,6 +14,8 @@ import { FakeSurveys } from './core/ports/testing/analytics.fake';
 import { testConfig } from './core/ports/testing/app-config.fake';
 import { AppNavigation } from './core/routing/app-navigation';
 import { TournamentSync } from './core/sync/tournament-sync';
+import { LocalProfileStore } from './core/local-profile.store';
+import { SetupTourCue } from './features/setup/data/setup-tour-cue';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
 import type { ShellRequest, TournamentShellState } from './features/tournament/data/tournament.store';
 import { ShellDialogs } from './shell/shell-dialogs';
@@ -86,12 +88,16 @@ const STATE_KEY = 'setpoint.tournament.v1';
 const running = (): TournamentState => ({ ...storedTournament(), hostingMode: 'local', analyticsId: 'a1' });
 
 async function show(
-  options: Parameters<typeof shellFakes>[0] & { stored?: TournamentState; landingSeen?: boolean } = {},
+  options: Parameters<typeof shellFakes>[0] & {
+    stored?: TournamentState;
+    landingSeen?: boolean;
+    prompted?: boolean;
+  } = {},
 ) {
   const fakes = shellFakes(options);
   if (options.stored) fakes.local.setItem(STATE_KEY, JSON.stringify(options.stored));
   if (options.landingSeen !== false) fakes.local.setItem('setpoint.landing.seen', 'true');
-  fakes.local.setItem('setpoint.profile.prompted', 'true');
+  if (options.prompted !== false) fakes.local.setItem('setpoint.profile.prompted', 'true');
   const view = await render(AppComponent, {
     imports: [translocoTesting()],
     providers: [
@@ -185,6 +191,7 @@ describe('the lock screen', () => {
       ],
     });
     expect(screen.queryByRole('heading', { name: 'Desbloquear torneio' })).toBeNull();
+    expect(await eventually(() => screen.getByRole('heading', { name: 'Novo torneio' }))).toBeTruthy();
   });
 });
 
@@ -229,10 +236,44 @@ describe('the first visit and the brand button', () => {
   });
 });
 
+describe('the first-visit welcome', () => {
+  it('opens the profile panel once, and starts the setup tour only after it closes', async () => {
+    const { dialogs } = await show({ prompted: false });
+    const cue = TestBed.inject(SetupTourCue);
+    let cueWhenOpened: boolean | null = null;
+    dialogs.open.mockImplementation(() => {
+      cueWhenOpened = cue.pending();
+      return Promise.resolve(undefined);
+    });
+    await vi.waitFor(() => expect(dialogs.open).toHaveBeenCalledOnce(), { timeout: 3000 });
+    expect(cueWhenOpened).toBe(false);
+    await vi.waitFor(() => expect(cue.pending()).toBe(true), { timeout: 3000 });
+  });
+
+  it('starts the tour at once when the profile panel was already offered', async () => {
+    const { dialogs } = await show({ prompted: true });
+    const cue = TestBed.inject(SetupTourCue);
+    await vi.waitFor(() => expect(cue.pending()).toBe(true), { timeout: 3000 });
+    expect(dialogs.open).not.toHaveBeenCalled();
+  });
+
+  it('does not start the tour while the lock screen or the landing page is up', async () => {
+    const { dialogs } = await show({ lockScreen: true, landingSeen: false });
+    const cue = TestBed.inject(SetupTourCue);
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(cue.pending()).toBe(false);
+    expect(dialogs.open).not.toHaveBeenCalled();
+  });
+});
+
 describe('the top bar, the heading and the nav', () => {
-  it('names the profile button after the person and the sync state', async () => {
-    await show();
-    expect(screen.getByRole('button', { name: 'Configurar perfil · Salvo neste dispositivo' })).toBeTruthy();
+  it('says whose profile it is, with braces left out of the name', async () => {
+    const { local } = await show({ stored: running() });
+    local.setItem('setpoint.profile.v1', JSON.stringify({ name: 'Ana {{x}}' }));
+    TestBed.inject(LocalProfileStore).update({ name: 'Ana {{x}}' });
+    expect(
+      await eventually(() => screen.getByRole('button', { name: 'Perfil de Ana x · Salvo neste dispositivo' })),
+    ).toBeTruthy();
   });
 
   it('shows the heading of the page and the nav once there is a schedule', async () => {

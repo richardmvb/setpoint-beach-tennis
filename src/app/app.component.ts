@@ -103,7 +103,8 @@ export class AppComponent implements OnInit, OnDestroy {
   protected readonly shellState = inject(ShellState);
 
   /** The address opens someone else's tournament: the page is the lazy shared view and no owner startup runs. */
-  protected readonly isSharedView = inject(ShellContext).isSharedView;
+  private readonly context = inject(ShellContext);
+  protected readonly isSharedView = this.context.isSharedView;
   protected readonly versionLabel = versionLabel(this.config);
   protected readonly isLocked = signal(false);
   protected readonly showLanding = signal(false);
@@ -144,7 +145,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.stopPathWatch = this.urlState.onPathChange(() => this.restorePageFromPath());
     this.theme.apply();
     // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
-    if (this.urlState.snapshot().authCallback) {
+    if (this.context.authCallback) {
       await this.auth.finishUrlSignIn();
       await this.urlState.clearAuthFragment();
     }

@@ -59,12 +59,14 @@ describe('ShellState', () => {
     expect(state.profile().theme).toBe('dark');
   });
 
-  it('keeps the same object while nothing it shows changed, so the views it feeds stay still', () => {
+  it('keeps the same profile object when only a field it does not show changes', () => {
     const { state, sync } = setup();
-    const tournament = state.tournament();
+    sync.initialize('local', 'a1', storedTournament());
+    sync.fail('conflict');
     const profile = state.profile();
-    sync.clearError();
-    expect(state.tournament()).toBe(tournament);
+    const tournament = state.tournament();
+    sync.setPaused(true);
+    expect(state.tournament()).not.toBe(tournament);
     expect(state.profile()).toBe(profile);
   });
 });
