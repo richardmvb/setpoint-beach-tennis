@@ -67,7 +67,7 @@ export function shellFakes(options: ShellFakeOptions = {}) {
   };
   const dialogs = {
     confirm: vi.fn((_options: unknown) => Promise.resolve(true)),
-    open: vi.fn((_component: unknown) => Promise.resolve(undefined)),
+    open: vi.fn((_component: unknown, _options?: unknown): Promise<unknown> => Promise.resolve(undefined)),
   };
   const url = {
     inviteToken: '',
