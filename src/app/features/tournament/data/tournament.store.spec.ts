@@ -21,8 +21,7 @@ function setup(initial: TournamentState = storedTournament()) {
   });
   const tournament = TestBed.inject(CurrentTournament);
   tournament.set(initial);
-  const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
-  tournament.connect(hooks);
+  const hooks = fakes.hooks;
   const store = TestBed.inject(TournamentStore);
   const events = () => fakes.analytics.calls.map((call) => (call.kind === 'capture' ? call.event : call.kind));
   return { ...fakes, store, tournament, hooks, events };
@@ -488,7 +487,7 @@ describe('TournamentStore: the backup', () => {
     const seen: unknown[] = [];
     store.requests.subscribe((request) => seen.push(request));
     store.request({ kind: 'syncNow' });
-    store.request({ kind: 'projectionTarget', playerId: 'p2' });
-    expect(seen).toEqual([{ kind: 'syncNow' }, { kind: 'projectionTarget', playerId: 'p2' }]);
+    store.request({ kind: 'syncPaused', paused: true });
+    expect(seen).toEqual([{ kind: 'syncNow' }, { kind: 'syncPaused', paused: true }]);
   });
 });

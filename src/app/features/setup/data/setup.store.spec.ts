@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import setupPtBr from '../../../../../public/i18n/setup/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
@@ -21,8 +21,7 @@ function setup(options: { configured?: boolean; profile?: object } = {}) {
   const tournament = TestBed.inject(CurrentTournament);
   const progress = TestBed.inject(SetupProgress);
   const owned = TestBed.inject(OwnedSharedTournament);
-  const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
-  tournament.connect(hooks);
+  const hooks = fakes.hooks;
   const events = () => fakes.analytics.calls.map((call) => (call.kind === 'capture' ? call.event : call.kind));
   return { ...fakes, store, tournament, progress, owned, hooks, events };
 }

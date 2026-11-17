@@ -40,7 +40,7 @@ function withFinals(champion: [number, number] | null, third: [number, number] |
 
 async function show(state: TournamentState) {
   const fakes = tournamentFakes();
-  const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
+  const hooks = fakes.hooks;
   const requests: ShellRequest[] = [];
   await render(RankingPageComponent, {
     imports: [translocoTesting({ 'organizer/pt-BR': organizerPtBr, 'tournament/pt-BR': tournamentPtBr })],
@@ -48,7 +48,6 @@ async function show(state: TournamentState) {
     configureTestBed: () => {
       const tournament = TestBed.inject(CurrentTournament);
       tournament.set(state);
-      tournament.connect(hooks);
       TestBed.inject(TournamentStore).requests.subscribe((request) => requests.push(request));
     },
   });

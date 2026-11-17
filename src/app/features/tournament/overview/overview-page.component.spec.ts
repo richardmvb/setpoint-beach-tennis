@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, render, screen } from '@testing-library/angular';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
 import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
@@ -33,7 +33,6 @@ async function show(state: TournamentState, options: { moderator?: boolean } = {
     configureTestBed: () => {
       const tournament = TestBed.inject(CurrentTournament);
       tournament.set(state);
-      tournament.connect({ save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() });
       TestBed.inject(OwnedSharedTournament).setModerator(!!options.moderator);
       if (options.moderator) TestBed.inject(OwnedSharedTournament).replaceSnapshot(snapshot);
       TestBed.inject(TournamentStore).requests.subscribe((request) => requests.push(request));

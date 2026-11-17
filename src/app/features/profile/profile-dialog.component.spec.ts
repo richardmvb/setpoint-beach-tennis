@@ -29,7 +29,7 @@ async function setup(options: Options = {}) {
   const shell = signal<ProfileShellState>({
     sync: 'synced',
     syncWarning: false,
-    syncError: '',
+    syncError: null,
     theme: 'light',
     ...options.shell,
   });
@@ -153,10 +153,12 @@ describe('ProfileDialogComponent', () => {
   });
 
   it('flags a sync problem and shows its text on hover', async () => {
-    await setup({ shell: { sync: 'error', syncWarning: true, syncError: 'Falhou' } });
+    await setup({ shell: { sync: 'error', syncWarning: true, syncError: 'failed' } });
     const status = screen.getByText('Sincronização pendente');
     expect(status.classList.contains('sync-warning')).toBe(true);
-    expect(status.getAttribute('title')).toBe('Falhou');
+    expect(status.getAttribute('title')).toBe(
+      'Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente.',
+    );
   });
 
   it('keeps the library and theme out of the first-visit welcome', async () => {

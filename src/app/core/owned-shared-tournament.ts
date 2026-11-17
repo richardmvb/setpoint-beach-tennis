@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Subject } from 'rxjs';
 import { normalizeSharedState } from '../domain/tournament-view/shared-state';
 import { CurrentTournament } from './current-tournament';
 import type { PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
@@ -16,9 +17,10 @@ const OWNER_INVITE_KEY = 'setpoint.shared.ownerInvite';
 
 export type OwnedNotice = 'created' | 'copied' | 'renewed';
 
-export interface OwnedSharedHooks {
-  /** A snapshot became the current tournament. `keepView` is true when only the data changed (a guest joined). */
-  applied(snapshot: SharedTournamentSnapshot, keepView: boolean): void;
+/** A snapshot became the current tournament. `keepView` is true when only the data changed (a guest joined). */
+export interface SharedApplied {
+  snapshot: SharedTournamentSnapshot;
+  keepView: boolean;
 }
 
 export interface ModeratorProfile {
@@ -43,7 +45,6 @@ export class OwnedSharedTournament {
   private readonly urlState = inject(URL_STATE);
   private readonly analytics = inject(ANALYTICS);
   private readonly tournament = inject(CurrentTournament);
-  private hooks: OwnedSharedHooks | null = null;
   private stopWatch: (() => void) | null = null;
   private signature = '';
 
@@ -62,9 +63,8 @@ export class OwnedSharedTournament {
   readonly error = this.failure.asReadonly();
   readonly notice = this.message.asReadonly();
 
-  connect(hooks: OwnedSharedHooks): void {
-    this.hooks = hooks;
-  }
+  /** Emits after `apply` made a snapshot the current tournament (the sync prepares its base, the shell moves page). */
+  readonly applied$ = new Subject<SharedApplied>();
 
   /** Whether the cloud backend is set up for this deploy; the shared mode needs it. */
   get configured(): boolean {
@@ -95,7 +95,7 @@ export class OwnedSharedTournament {
   apply(snapshot: SharedTournamentSnapshot, keepView = false): void {
     this.replaceSnapshot(snapshot);
     this.tournament.set(normalizeSharedState(snapshot));
-    this.hooks?.applied(snapshot, keepView);
+    this.applied$.next({ snapshot, keepView });
   }
 
   /**
@@ -125,7 +125,6 @@ export class OwnedSharedTournament {
       this.token.set(snapshot.inviteToken ?? '');
       if (snapshot.inviteToken) this.saveInvite(snapshot.id, snapshot.inviteToken);
       this.apply(snapshot);
-      this.tournament.save();
       this.watch(snapshot.id);
       this.message.set('created');
       onCreated?.();

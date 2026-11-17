@@ -8,11 +8,13 @@ import type { SharedTournamentSnapshot } from './models';
 import { ANALYTICS } from './ports/analytics.port';
 import { AUTH } from './ports/auth.port';
 import { CLOCK } from './ports/clock.port';
+import { RANDOM } from './ports/random.port';
 import { LOCAL_STORE, SESSION_STORE } from './ports/key-value-store.port';
 import { TOURNAMENT_FEED } from './ports/live-feed.port';
 import { FakeAnalytics } from './ports/testing/analytics.fake';
 import { FakeAuth } from './ports/testing/auth.fake';
 import { FakeClock } from './ports/testing/clock.fake';
+import { FakeRandom } from './ports/testing/random.fake';
 import { FakeTournamentFeed } from './ports/testing/feed.fake';
 import { FakeSharedTournaments } from './ports/testing/shared-tournaments.fake';
 import { SHARED_TOURNAMENTS } from './ports/tournaments.port';
@@ -53,16 +55,15 @@ function setup() {
       { provide: LOCAL_STORE, useValue: fakes.local },
       { provide: SESSION_STORE, useValue: fakes.session },
       { provide: CLOCK, useValue: new FakeClock() },
+      { provide: RANDOM, useValue: new FakeRandom() },
       { provide: URL_STATE, useValue: { inviteUrl: (token: string) => `https://app.test/?invite=${token}` } },
     ],
   });
   const owned = TestBed.inject(OwnedSharedTournament);
   const tournament = TestBed.inject(CurrentTournament);
-  const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
-  tournament.connect(hooks);
   const applied = vi.fn();
-  owned.connect({ applied });
-  return { ...fakes, owned, tournament, hooks, applied };
+  owned.applied$.subscribe(({ snapshot, keepView }) => void applied(snapshot, keepView));
+  return { ...fakes, owned, tournament, applied };
 }
 
 const moderator = { name: ' Moderadora ', gender: 'female' as const, avatar: '' };
@@ -73,7 +74,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('creating the shared tournament', () => {
   it('signs in without an e-mail when nobody is signed in, creates it empty and makes it current', async () => {
-    const { owned, tournament, auth, shared, hooks, applied, analytics, local, feed } = setup();
+    const { owned, tournament, auth, shared, applied, analytics, local, feed } = setup();
     local.setItem('setpoint.shared.setup', 'old');
     expect(await owned.create(draft(), moderator)).toBe(true);
     expect(await auth.currentUser()).toEqual({ id: 'anonymous-user' });
@@ -93,7 +94,6 @@ describe('creating the shared tournament', () => {
     expect(owned.loading()).toBe(false);
     expect(tournament.state().sharedTournamentId).toBe('shared-1');
     expect(applied).toHaveBeenCalledWith(expect.objectContaining({ id: 'shared-1' }), false);
-    expect(hooks.save).toHaveBeenCalledOnce();
     expect(local.getItem('setpoint.shared.ownerInvite.shared-1')).toBe('invite-1');
     expect(local.getItem('setpoint.shared.setup')).toBeNull();
     expect(feed.watching()).toEqual(['shared:shared-1']);

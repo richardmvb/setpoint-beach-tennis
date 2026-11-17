@@ -25,14 +25,13 @@ function allTied(): TournamentState {
 async function openWith(state: TournamentState) {
   const fakes = tournamentFakes();
   const close = vi.fn();
-  const save = vi.fn();
+  const save = fakes.hooks.save;
   TestBed.configureTestingModule({
     imports: [translocoTesting({ 'organizer/pt-BR': organizerPtBr })],
     providers: [...fakes.providers, { provide: DialogRef, useValue: { close } }],
   });
   const tournament = TestBed.inject(CurrentTournament);
   tournament.set(state);
-  tournament.connect({ save, notify: vi.fn(), clearNotice: vi.fn() });
   // Created by hand, not through `render`: the tournament must be set before the dialog reads it.
   const fixture = TestBed.createComponent(TieDrawDialogComponent);
   fixture.detectChanges();

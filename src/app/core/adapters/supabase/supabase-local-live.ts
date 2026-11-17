@@ -18,10 +18,7 @@ export class SupabaseLocalLive implements LocalLiveRepository {
     state: TournamentState,
   ): Promise<{ id: string; readToken: string; writeToken: string }> {
     const client = this.requireClient();
-    if (!(await this.auth.currentUser())) {
-      const { error: authError } = await client.auth.signInAnonymously();
-      if (authError) throw authError;
-    }
+    if (!(await this.auth.currentUser())) await this.auth.signInAnonymously();
     const { data, error } = await client.rpc('create_local_live_tournament', {
       p_state: toJson(publicTournamentState(state)),
     });

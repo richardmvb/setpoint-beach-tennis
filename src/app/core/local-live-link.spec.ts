@@ -58,7 +58,7 @@ function setup(options: { configured?: boolean; createFails?: string; clipboard?
   const link = TestBed.inject(LocalLiveLink);
   const tournament = TestBed.inject(CurrentTournament);
   const published: { id: string; state: TournamentState }[] = [];
-  link.connect({ published: (id, state) => published.push({ id, state }) });
+  link.published$.subscribe(({ analyticsId, published: state }) => published.push({ id: analyticsId, state }));
   return { link, tournament, local, analytics, created, copied, published };
 }
 

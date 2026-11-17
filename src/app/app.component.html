@@ -43,7 +43,7 @@
               } @else {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
               }
-              <i class="profile-status" [class.sync-warning]="hasPendingSync || !!syncError || (syncAvailable && (!connectionOnline || syncPaused))" aria-hidden="true"></i>
+              <i class="profile-status" [class.sync-warning]="sync.hasPending() || !!sync.error() || (sync.available() && (!sync.online() || sync.paused()))" aria-hidden="true"></i>
             </span>
             <span class="profile-trigger-name">{{ profileStore.firstName() || 'Perfil' }}</span>
             <svg class="profile-trigger-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
@@ -77,13 +77,38 @@
     <button type="button" [class.active]="page === 'settings'" (click)="navigate('settings')"><span>⚙</span> Ajustes</button>
   </nav>
 }
-@if (notice && !isSharedView) {
-  <div class="notice" [class.error]="noticeType === 'error'" role="status">
-    <span>{{ noticeType === 'error' ? '!' : '✓' }}</span>{{ notice }}<button type="button" (click)="notice = ''" aria-label="Fechar aviso">×</button>
-  </div>
+@if (notices.notice(); as notice) {
+  @if (!isSharedView) {
+    <div class="notice" [class.error]="notice.tone === 'error'" role="status">
+      <span>{{ notice.tone === 'error' ? '!' : '✓' }}</span>@if (notice.key) {@switch (notice.key) {
+        @case ('versionReset') {{{ 'shell.notice.versionReset' | transloco }}}
+        @case ('profileFailed') {{{ 'shell.notice.profileFailed' | transloco }}}
+        @case ('libraryFailed') {{{ 'shell.notice.libraryFailed' | transloco }}}
+        @case ('saveFailed') {{{ 'shell.notice.saveFailed' | transloco }}}
+        @case ('scheduleCount') {{{ 'shell.notice.scheduleCount' | transloco: notice.params }}}
+        @case ('scheduleExists') {{{ 'shell.notice.scheduleExists' | transloco }}}
+        @case ('sharedStartModerator') {{{ 'shell.notice.sharedStartModerator' | transloco }}}
+        @case ('scheduleFailed') {{{ 'shell.notice.scheduleFailed' | transloco }}}
+        @case ('scheduleSaved') {{{ 'shell.notice.scheduleSaved' | transloco }}}
+        @case ('syncWaitNew') {{{ 'shell.notice.syncWaitNew' | transloco }}}
+        @case ('syncWaitArchive') {{{ 'shell.notice.syncWaitArchive' | transloco }}}
+        @case ('syncWaitSwitch') {{{ 'shell.notice.syncWaitSwitch' | transloco }}}
+        @case ('backupTooLarge') {{{ 'shell.notice.backupTooLarge' | transloco }}}
+        @case ('backupInvalid') {{{ 'shell.notice.backupInvalid' | transloco }}}
+        @case ('queueNotUpdated') {{{ 'shell.notice.queueNotUpdated' | transloco }}}
+        @case ('savedOpenFailed') {{{ 'shell.notice.savedOpenFailed' | transloco }}}
+        @case ('newTournament') {{{ 'shell.notice.newTournament' | transloco }}}
+        @case ('backupLoaded') {{{ 'shell.notice.backupLoaded' | transloco }}}
+        @case ('finishedLoaded') {{{ 'shell.notice.finishedLoaded' | transloco }}}
+        @case ('savedOpened') {{{ 'shell.notice.savedOpened' | transloco }}}
+      }} @else {{{ notice.text }}}<button type="button" (click)="notices.clear()" aria-label="Fechar aviso">×</button>
+    </div>
+  }
 }
-@if (syncError && !isSharedView) {
-  <div class="notice error" role="alert"><span>!</span>{{ syncError }} <button type="button" (click)="navigate('settings')">Ajustes</button></div>
+@if (sync.error(); as syncError) {
+  @if (!isSharedView) {
+    <div class="notice error" role="alert"><span>!</span>{{ syncErrors.text(syncError) }} <button type="button" (click)="navigate('settings')">Ajustes</button></div>
+  }
 }
 <main [class.ranking-mode]="page === 'ranking'">
   @if (isTournamentPage) {
@@ -98,7 +123,7 @@
   @switch (page) {
     @case ('setup') {
       @defer (on immediate) {
-        <section appSetup (start)="generateSchedule()" (openLibrary)="openLibrary()" (cancelShared)="cancelSharedTournament()"></section>
+        <section appSetup (start)="generateSchedule()" (openLibrary)="openLibrary()" (cancelShared)="cancelShared()"></section>
       } @placeholder {
         <section class="setup-wizard"></section>
       } @error {

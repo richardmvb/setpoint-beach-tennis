@@ -24,8 +24,8 @@
         ><small>{{ t('autoNote') }}</small></span
       ></label
     >
-    @if (store.shell().syncError) {
-      <p class="shared-error" role="alert">{{ store.shell().syncError }}</p>
+    @if (store.shell().syncError; as syncError) {
+      <p class="shared-error" role="alert">{{ syncErrors.text(syncError) }}</p>
     }
   </div>
   <div class="button-row">

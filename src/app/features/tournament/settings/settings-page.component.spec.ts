@@ -21,7 +21,7 @@ afterEach(() => vi.restoreAllMocks());
 
 async function show(state: TournamentState, shell: Partial<TournamentShellState> = {}) {
   const fakes = tournamentFakes();
-  const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
+  const hooks = fakes.hooks;
   const requests: ShellRequest[] = [];
   await render(SettingsPageComponent, {
     imports: [translocoTesting({ 'organizer/pt-BR': organizerPtBr, 'tournament/pt-BR': tournamentPtBr })],
@@ -29,7 +29,6 @@ async function show(state: TournamentState, shell: Partial<TournamentShellState>
     configureTestBed: () => {
       const tournament = TestBed.inject(CurrentTournament);
       tournament.set(state);
-      tournament.connect(hooks);
       const store = TestBed.inject(TournamentStore);
       store.shell.set({ ...NO_SHELL_STATE, ...shell });
       store.requests.subscribe((request) => requests.push(request));
@@ -139,9 +138,9 @@ describe('SettingsPageComponent: the cards', () => {
   });
 
   it('disables "Sincronizar agora" while offline, with nothing pending or already syncing, and shows the error', async () => {
-    await show(storedTournament(), { syncAvailable: true, syncStatus: 'offline', online: false, syncError: 'Falhou.' });
+    await show(storedTournament(), { syncAvailable: true, syncStatus: 'offline', online: false, syncError: 'failed' });
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Sincronizar agora' }).disabled).toBe(true);
-    expect(screen.getByRole('alert').textContent).toContain('Falhou.');
+    expect(screen.getByRole('alert').textContent).toContain('Não foi possível sincronizar.');
   });
 
   it('exports the backup and says so', async () => {

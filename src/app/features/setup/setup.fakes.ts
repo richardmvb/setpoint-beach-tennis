@@ -16,10 +16,11 @@ import { FakeSharedTournaments } from '../../core/ports/testing/shared-tournamen
 import { SHARED_TOURNAMENTS } from '../../core/ports/tournaments.port';
 import { URL_STATE } from '../../core/routing/url-state';
 import { MemoryStorage } from '../../testing/memory-storage';
+import { shellStubs } from '../../testing/shell-stubs';
 
 /**
  * Every port the setup wizard uses, bound to in-memory fakes (analytics already started), for its specs. `configured`
- * false is a deploy without a backend (no shared mode).
+ * false is a deploy without a backend (no shared mode). `hooks` records what was saved and shown.
  */
 export function setupFakes(options: { configured?: boolean } = {}) {
   const fakes = {
@@ -34,7 +35,9 @@ export function setupFakes(options: { configured?: boolean } = {}) {
   };
   fakes.analytics.start();
   fakes.auth.configured = options.configured ?? true;
+  const stubs = shellStubs();
   const providers: Provider[] = [
+    ...stubs.providers,
     { provide: AUTH, useValue: fakes.auth },
     { provide: SHARED_TOURNAMENTS, useValue: fakes.shared },
     { provide: TOURNAMENT_FEED, useValue: fakes.feed },
@@ -46,5 +49,5 @@ export function setupFakes(options: { configured?: boolean } = {}) {
     { provide: URL_STATE, useValue: { inviteUrl: (token: string) => `https://app.test/?invite=${token}` } },
     { provide: APP_CONFIG, useValue: testConfig({}) },
   ];
-  return { ...fakes, providers };
+  return { ...fakes, hooks: stubs.hooks, providers };
 }

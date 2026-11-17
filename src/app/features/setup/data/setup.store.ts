@@ -1,6 +1,8 @@
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { CurrentTournament } from '../../../core/current-tournament';
+import { TournamentPersistence } from '../../../core/tournament-persistence';
+import { Notices } from '../../../core/notices';
 import { LocalProfileStore } from '../../../core/local-profile.store';
 import type { Player, PlayerGender } from '../../../core/models';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
@@ -56,12 +58,14 @@ const EMPTY_PLAYER: NewPlayer = { name: '', gender: '', avatar: '' };
  * The setup wizard's state and actions. Provided by `SetupComponent`, so it lives and dies with the page; what must
  * outlive the page is in root services: the tournament (`CurrentTournament`), the step (`SetupProgress`) and the
  * moderator's shared tournament (`OwnedSharedTournament`). The store only replaces the tournament, never edits it,
- * and asks the shell to save through `CurrentTournament.save`. Persistence follows the old wizard: the format choices
+ * and saves through `TournamentPersistence.save`. Persistence follows the old wizard: the format choices
  * are kept in memory until "next", the roster and the toggles are saved as they change.
  */
 @Injectable()
 export class SetupStore {
   private readonly tournament = inject(CurrentTournament);
+  private readonly persistence = inject(TournamentPersistence);
+  private readonly notices = inject(Notices);
   private readonly owned = inject(OwnedSharedTournament);
   private readonly progress = inject(SetupProgress);
   private readonly profile = inject(LocalProfileStore);
@@ -144,19 +148,19 @@ export class SetupStore {
     if (this.hasSchedule() || (mode === 'shared' && !this.owned.configured)) return;
     this.tournament.update((state) => withHostingMode(state, mode));
     this.owned.clearMessages();
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setQualificationStats(enabled: boolean): void {
     if (this.hasSchedule()) return;
     this.tournament.update((state) => withQualificationStats(state, enabled));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setDoublesFormat(format: 'open' | 'mixed'): void {
     if (this.hasSchedule()) return;
     this.tournament.update((state) => withDoublesFormat(state, format));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setTournamentMode(mode: 'super' | 'groups'): void {
@@ -182,13 +186,13 @@ export class SetupStore {
   setEarlyFinals(enabled: boolean): void {
     if (this.hasSchedule() || !this.earlyFinalsAvailable()) return;
     this.tournament.update((state) => withEarlyFinals(state, enabled));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setMixedFinalFormat(format: 'knockout' | 'direct'): void {
     if (this.hasSchedule() || !this.earlyFinalsAvailable()) return;
     this.tournament.update((state) => withMixedFinalFormat(state, format));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setModerator(patch: Partial<NewPlayer>): void {
@@ -205,13 +209,13 @@ export class SetupStore {
   goTo(step: SetupStepNumber): void {
     if (!this.canGoTo(step)) return;
     this.progress.revisit(step);
-    this.tournament.clearNotice();
+    this.notices.clear();
   }
 
   previous(): void {
     const step = this.step();
     if (step > 1) this.progress.set((step - 1) as SetupStepNumber);
-    this.tournament.clearNotice();
+    this.notices.clear();
   }
 
   /** Leaves the current step. Returns true when the step changed (the page may then offer the tour). */
@@ -223,13 +227,13 @@ export class SetupStore {
       }
       this.tournament.update((state) => withRequiredRounds(withTrimmedName(state)));
       this.autoJoinProfile();
-      this.tournament.save();
+      this.persistence.save();
       this.progress.completed(1);
       this.progress.show(2);
       return true;
     }
     if (!this.complete()) {
-      this.tournament.notify(
+      this.notices.show(
         this.transloco.translate('notices.exactPlayers', { size: this.state().size }, 'setup/pt-BR'),
         'error',
       );
@@ -237,7 +241,7 @@ export class SetupStore {
     }
     this.progress.completed(2);
     this.progress.show(3);
-    this.tournament.clearNotice();
+    this.notices.clear();
     return true;
   }
 
@@ -258,7 +262,7 @@ export class SetupStore {
     this.tournament.set(result.state);
     this.newPlayerDraft.set({ ...EMPTY_PLAYER });
     this.playerFailure.set(null);
-    this.tournament.save();
+    this.persistence.save();
     const state = this.state();
     this.analytics.capture('player_added', {
       tournament_mode: state.tournamentMode,
@@ -273,25 +277,25 @@ export class SetupStore {
   addBatch(drafts: readonly BatchDraft[]): void {
     const ids = drafts.map(() => this.random.uuid());
     this.tournament.update((state) => addPlayers(state, drafts, ids));
-    this.tournament.save(this.transloco.translate('notices.batchAdded', {}, 'setup/pt-BR'));
+    this.persistence.save(this.transloco.translate('notices.batchAdded', {}, 'setup/pt-BR'));
   }
 
   removePlayer(id: string): void {
     const result = removePlayer(this.state(), id);
     if ('error' in result) {
       if (result.error === 'shared')
-        this.tournament.notify(this.transloco.translate('notices.sharedNoRemove', {}, 'setup/pt-BR'), 'error');
+        this.notices.show(this.transloco.translate('notices.sharedNoRemove', {}, 'setup/pt-BR'), 'error');
       return;
     }
     this.tournament.set(result.state);
-    this.tournament.save();
+    this.persistence.save();
   }
 
   setPlayerGender(playerId: string, gender: PlayerGender | ''): void {
     const next = setPlayerGender(this.state(), playerId, gender);
     if (next === this.state()) return;
     this.tournament.set(next);
-    this.tournament.save();
+    this.persistence.save();
   }
 
   /** The athletes that can fill a seat of pair `pairIndex` in the fixed-pairs list. */
@@ -302,12 +306,12 @@ export class SetupStore {
   swapFixedPair(pairIndex: number, side: 0 | 1, playerId: string): void {
     const result = swapFixedPair(this.state(), pairIndex, side, playerId);
     if ('error' in result) {
-      this.tournament.notify(this.transloco.translate('notices.mixedPair', {}, 'setup/pt-BR'), 'error');
+      this.notices.show(this.transloco.translate('notices.mixedPair', {}, 'setup/pt-BR'), 'error');
       return;
     }
     if (result.state === this.state()) return;
     this.tournament.set(result.state);
-    this.tournament.save();
+    this.persistence.save();
   }
 
   // ---- Step 2: the shared tournament ---------------------------------------------------------------------------
@@ -343,7 +347,7 @@ export class SetupStore {
     const state = this.state();
     const moderator = this.moderatorDraft();
     const reject = (key: 'sharedNotConfigured' | 'moderatorName' | 'moderatorCategory' | 'shareFresh'): false => {
-      this.tournament.notify(this.rejection(key), 'error');
+      this.notices.show(this.rejection(key), 'error');
       return false;
     };
     if (!this.owned.configured) return reject('sharedNotConfigured');
@@ -351,10 +355,12 @@ export class SetupStore {
     if (this.isMixed() && !moderator.gender) return reject('moderatorCategory');
     if (state.players.length || state.rounds.length) return reject('shareFresh');
     this.tournament.update((current) => ({ ...withRequiredRounds(withTrimmedName(current)), hostingMode: 'shared' }));
-    return this.owned.create(this.state(), moderator, () => {
+    const created = await this.owned.create(this.state(), moderator, () => {
       this.progress.completed(1);
       this.progress.show(2);
     });
+    if (created) this.persistence.save();
+    return created;
   }
 
   private rejection(key: 'sharedNotConfigured' | 'moderatorName' | 'moderatorCategory' | 'shareFresh'): string {
@@ -441,7 +447,7 @@ export class SetupStore {
         doubles_format: state.doublesFormat ?? 'open',
       });
     } else if (result.skipped === 'needs-gender') {
-      this.tournament.notify(this.transloco.translate('notices.autoJoinNeedsGender', {}, 'setup/pt-BR'));
+      this.notices.show(this.transloco.translate('notices.autoJoinNeedsGender', {}, 'setup/pt-BR'));
     }
   }
 }

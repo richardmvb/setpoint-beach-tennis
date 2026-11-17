@@ -6,6 +6,7 @@ import {
   availableSizes,
   enrollment,
   newTournament,
+  normalizeStoredTournament,
   requiredRounds,
   reviewKind,
   withCourts,
@@ -123,5 +124,46 @@ describe('setup rules', () => {
     expect(reviewKind(tournamentState())).toBe('super');
     expect(reviewKind(tournamentState({ tournamentMode: 'groups' }))).toBe('groups');
     expect(reviewKind(tournamentState({ tournamentMode: 'groups', groupFormat: 'fixed' }))).toBe('fixedPairs');
+  });
+});
+
+describe('normalizeStoredTournament', () => {
+  it('fills what an older version did not store, without changing the input', () => {
+    const stored = tournamentState({ players: namedPlayers(8) });
+    const before = JSON.stringify(stored);
+    const state = normalizeStoredTournament(stored);
+    expect(state).toMatchObject({
+      tournamentMode: 'super',
+      doublesFormat: 'open',
+      hostingMode: 'local',
+      groupFormat: 'rotating',
+      groups: [],
+      fixedPairs: [],
+      finals: null,
+      tieBreakDraws: [],
+    });
+    expect(state).not.toBe(stored);
+    expect(JSON.stringify(stored)).toBe(before);
+  });
+
+  it('keeps what is stored', () => {
+    const state = normalizeStoredTournament(
+      tournamentState({ tournamentMode: 'groups', doublesFormat: 'mixed', hostingMode: 'shared', size: 12, courts: 3 }),
+    );
+    expect(state).toMatchObject({ tournamentMode: 'groups', doublesFormat: 'mixed', hostingMode: 'shared' });
+  });
+
+  it('fits courts and rounds to the size while there is no schedule', () => {
+    const state = normalizeStoredTournament(tournamentState({ size: 12, courts: 5, roundCount: 1 }));
+    expect(state.courts).toBe(3);
+    expect(state.roundCount).toBe(requiredRounds(state));
+  });
+
+  it('leaves courts and rounds of a tournament that has a schedule', () => {
+    const round = { id: 'r1', number: 1, matches: [], resting: [] };
+    const stored = tournamentState({ courts: 5, roundCount: 1, rounds: [round as never] });
+    const state = normalizeStoredTournament(stored);
+    expect(state.courts).toBe(5);
+    expect(state.roundCount).toBe(1);
   });
 });

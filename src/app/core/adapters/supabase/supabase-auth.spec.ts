@@ -12,6 +12,8 @@ interface FakeSession {
 /** A stand-in for the parts of supabase-js auth the adapter uses. */
 function fakeClient() {
   let session: FakeSession | null = null;
+  let failNext = false;
+  const counts = { signIns: 0 };
   const listeners = new Set<(event: string, session: FakeSession | null) => void>();
   const auth = {
     getUser: () =>
@@ -20,10 +22,19 @@ function fakeClient() {
           ? { data: { user: session.user }, error: null }
           : { data: { user: null }, error: new Error('no session') },
       ),
-    signInAnonymously: () => {
-      session = { user: { id: 'u-1', email: 'secret@example.com', app_metadata: { provider: 'anonymous' } } };
+    signInAnonymously: async () => {
+      counts.signIns++;
+      // The real call goes over the network: callers that start meanwhile must not start a second sign-in.
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      if (failNext) {
+        failNext = false;
+        return { error: new Error('sign_in_failed') };
+      }
+      session = {
+        user: { id: `u-${counts.signIns}`, email: 'secret@example.com', app_metadata: { provider: 'anonymous' } },
+      };
       for (const listener of listeners) listener('SIGNED_IN', session);
-      return Promise.resolve({ error: null });
+      return { error: null };
     },
     signInWithOtp: vi.fn(() => Promise.resolve({ error: null })),
     initialize: vi.fn(() => Promise.resolve()),
@@ -32,7 +43,12 @@ function fakeClient() {
       return { data: { subscription: { unsubscribe: () => listeners.delete(listener) } } };
     },
   };
-  return { client: { auth } as unknown as AppSupabaseClient, auth };
+  return {
+    client: { auth } as unknown as AppSupabaseClient,
+    auth,
+    counts,
+    failNextSignIn: () => (failNext = true),
+  };
 }
 
 function setup(client: AppSupabaseClient | null) {
@@ -54,6 +70,25 @@ describe('SupabaseAuth', () => {
     await port.signInAnonymously();
     expect(heard).toEqual(['signed-in']);
     expect(auth.getUser).toBeDefined();
+  });
+
+  it('makes one anonymous user when several parts of the app sign in at the same time', async () => {
+    const { client, counts } = fakeClient();
+    const port = setup(client);
+    await Promise.all([port.signInAnonymously(), port.signInAnonymously(), port.signInAnonymously()]);
+    expect(counts.signIns).toBe(1);
+    expect(await port.currentUser()).toEqual({ id: 'u-1' });
+  });
+
+  it('does not sign in again when somebody is signed in, and tries again after a failure', async () => {
+    const { client, counts, failNextSignIn } = fakeClient();
+    const port = setup(client);
+    failNextSignIn();
+    await expect(port.signInAnonymously()).rejects.toThrow('sign_in_failed');
+    await port.signInAnonymously();
+    await port.signInAnonymously();
+    expect(counts.signIns).toBe(2);
+    expect(await port.currentUser()).toEqual({ id: 'u-2' });
   });
 
   it('asks Supabase to send the email link with the redirect', async () => {

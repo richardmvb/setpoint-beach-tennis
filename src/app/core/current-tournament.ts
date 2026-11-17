@@ -2,25 +2,17 @@ import { inject, Injectable, signal } from '@angular/core';
 import { newTournament } from '../domain/tournament-setup/setup-rules';
 import type { TournamentState } from './models';
 import { CLOCK } from './ports/clock.port';
-
-/** What the shell does for whoever edits the tournament: save it, and tell the person something. */
-export interface TournamentHooks {
-  /** Stores the tournament (this device, the sync queue, the library). `success` is the message to show. */
-  save(success?: string): void;
-  notify(text: string, tone: 'success' | 'error'): void;
-  clearNotice(): void;
-}
+import { RANDOM } from './ports/random.port';
 
 /**
- * The tournament being run on this device, as a signal, so a feature can show it and change it. A feature replaces it
- * (`update` returns a new object) and never edits it in place, or its views would not refresh. `AppComponent` still
- * holds the same object as `state` and may edit it in place while no feature is showing it (its scores, its sync);
- * until the shell is signal-based (B5) it also provides the hooks that save and notify.
+ * The tournament being run on this device, as a signal, so the shell and the features see and change the same one.
+ * Everyone replaces it (`update` returns a new object) and never edits it in place, or an OnPush view would not
+ * refresh. Saving it is `TournamentPersistence.save`; telling the person something is `Notices`.
  */
 @Injectable({ providedIn: 'root' })
 export class CurrentTournament {
+  private readonly random = inject(RANDOM);
   private readonly current = signal<TournamentState>(newTournament(inject(CLOCK).iso()));
-  private hooks: TournamentHooks | null = null;
 
   readonly state = this.current.asReadonly();
 
@@ -32,19 +24,9 @@ export class CurrentTournament {
     this.current.update(change);
   }
 
-  connect(hooks: TournamentHooks): void {
-    this.hooks = hooks;
-  }
-
-  save(success?: string): void {
-    this.hooks?.save(success);
-  }
-
-  notify(text: string, tone: 'success' | 'error' = 'success'): void {
-    this.hooks?.notify(text, tone);
-  }
-
-  clearNotice(): void {
-    this.hooks?.clearNotice();
+  /** Gives the tournament its analytics id when it has none yet (a new object, so the views that show it refresh). */
+  ensureAnalyticsId(): string {
+    if (!this.current().analyticsId) this.current.update((state) => ({ ...state, analyticsId: this.random.uuid() }));
+    return this.current().analyticsId ?? '';
   }
 }

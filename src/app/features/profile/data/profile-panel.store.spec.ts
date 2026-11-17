@@ -6,10 +6,11 @@ import { LocalProfileStore } from '../../../core/local-profile.store';
 import { PROFILE_KEY } from '../../../core/profile';
 import { SavedTournaments } from '../../../core/saved-tournaments';
 import { storedTournament } from '../../../testing/tournament-state';
+import { translocoTesting } from '../../../testing/transloco-testing';
 import { profileFakes } from '../profile.fakes';
 import { type ProfileDialogData, ProfilePanelStore, type ProfileShellState } from './profile-panel.store';
 
-const shellState: ProfileShellState = { sync: 'synced', syncWarning: false, syncError: '', theme: 'light' };
+const shellState: ProfileShellState = { sync: 'synced', syncWarning: false, syncError: null, theme: 'light' };
 
 function setup(options: { welcome?: boolean; profile?: object; saved?: number; theme?: 'light' | 'dark' } = {}) {
   const fakes = profileFakes({ buildVersion: 7 });
@@ -22,6 +23,7 @@ function setup(options: { welcome?: boolean; profile?: object; saved?: number; t
     setTheme,
   };
   TestBed.configureTestingModule({
+    imports: [translocoTesting()],
     providers: [...fakes.providers, ProfilePanelStore, { provide: DIALOG_DATA, useValue: data }],
   });
   const saved = TestBed.inject(SavedTournaments);

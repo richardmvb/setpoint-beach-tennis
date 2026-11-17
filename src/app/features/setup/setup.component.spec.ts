@@ -26,7 +26,6 @@ async function open(options: { step?: 1 | 2 | 3; players?: number } = {}) {
     on: { start, cancelShared },
     configureTestBed: () => {
       const tournament = TestBed.inject(CurrentTournament);
-      tournament.connect({ save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() });
       tournament.set(tournamentState({ players: namedPlayers(options.players ?? 0) }));
       TestBed.inject(SetupProgress).set(options.step ?? 1);
     },

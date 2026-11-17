@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TranslocoService } from '@jsverse/transloco';
 import { interval, Subject } from 'rxjs';
 import { CurrentTournament } from '../../../core/current-tournament';
+import { TournamentPersistence } from '../../../core/tournament-persistence';
+import { Notices } from '../../../core/notices';
 import {
   calculateFinalLiveScore,
   type FinalLivePoint,
@@ -13,6 +15,7 @@ import { FinalsService, type PodiumPlace } from '../../../core/finals.service';
 import { exportTournamentBackup } from '../../../core/backup-export';
 import type { DoublesFormat, GroupFormat, Match, Page, ThemeMode, TournamentMode } from '../../../core/models';
 import type { SyncStatus } from '../../../core/state-machines';
+import type { SyncErrorKey } from '../../../core/sync/tournament-sync';
 import { NpsFeedbackService } from '../../../core/nps-feedback.service';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { ANALYTICS } from '../../../core/ports/analytics.port';
@@ -80,13 +83,12 @@ export type ShellRequest =
   | { kind: 'importBackup'; file: File }
   | { kind: 'openLibrary' }
   | { kind: 'openLanding' }
-  | { kind: 'projectionTarget'; playerId: string }
   | { kind: 'syncPaused'; paused: boolean }
   | { kind: 'syncNow' };
 
 /**
- * What the shell knows that the pages show: the state of its sync and the theme. The shell refreshes it on every
- * check (until B5 makes it signal-based) and hands it down as one signal input.
+ * What the shell knows that the pages show: the state of its sync and the theme. The shell derives it from the sync
+ * service's signals and hands it down as one signal input.
  */
 export interface TournamentShellState {
   syncAvailable: boolean;
@@ -95,8 +97,8 @@ export interface TournamentShellState {
   syncPaused: boolean;
   syncing: boolean;
   online: boolean;
-  /** The text of the last sync error (shell text, typed in B5). */
-  syncError: string;
+  /** Why the last sync step failed; `SyncErrorText` has the words. */
+  syncError: SyncErrorKey | null;
   theme: ThemeMode;
 }
 
@@ -107,7 +109,7 @@ export const NO_SHELL_STATE: TournamentShellState = {
   syncPaused: false,
   syncing: false,
   online: true,
-  syncError: '',
+  syncError: null,
   theme: 'light',
 };
 
@@ -130,12 +132,14 @@ function podiumKey(places: PodiumPlace[]): string {
  * The organizer's tournament views: Partidas and Ranking (with the finals, the podium and the tie draw). Provided by
  * `TournamentComponent`, so it lives while any of those pages is on screen; what must outlive it is in root services:
  * the tournament (`CurrentTournament`), the selected round (`SelectedRound`), the share pick (`ShareResultsSession`).
- * Every action replaces the tournament through a function of `domain/tournament-play` and asks the shell to save it
- * (`CurrentTournament.save`); nothing here edits the tournament in place.
+ * Every action replaces the tournament through a function of `domain/tournament-play` and saves it
+ * (`TournamentPersistence.save`); nothing here edits the tournament in place.
  */
 @Injectable()
 export class TournamentStore {
   private readonly tournament = inject(CurrentTournament);
+  private readonly persistence = inject(TournamentPersistence);
+  private readonly notices = inject(Notices);
   private readonly owned = inject(OwnedSharedTournament);
   private readonly selected = inject(SelectedRound);
   private readonly finals = inject(FinalsService);
@@ -319,7 +323,7 @@ export class TournamentStore {
     this.dropDraft(match.id);
     if (match.scoreA === next.a && match.scoreB === next.b) return;
     this.tournament.update((state) => withRoundScore(state, match.id, next.a as number, next.b as number));
-    this.tournament.save();
+    this.persistence.save();
     const state = this.state();
     this.analytics.capture('match_score_recorded', {
       tournament_mode: state.tournamentMode,
@@ -340,7 +344,7 @@ export class TournamentStore {
     if (!confirmed) return;
     this.dropDraft(match.id);
     this.tournament.update((state) => withoutScore(state, match.id, this.podiumRule));
-    this.tournament.save(this.transloco.translate('notices.scoreRemoved', {}, 'organizer/pt-BR'));
+    this.persistence.save(this.transloco.translate('notices.scoreRemoved', {}, 'organizer/pt-BR'));
   }
 
   finalScoreChanged(match: Match, field: 'a' | 'b' | 'tieBreakA' | 'tieBreakB', value: number | null): void {
@@ -354,7 +358,7 @@ export class TournamentStore {
     };
     const hadWinner = this.winnerSide(match) !== null;
     this.tournament.update((state) => withFinalScore(state, match.id, edit, this.podiumRule));
-    this.tournament.save();
+    this.persistence.save();
     this.recordFinalScore(match.id, hadWinner);
   }
 
@@ -373,7 +377,7 @@ export class TournamentStore {
     )
       return;
     this.tournament.update((state) => withFinalLiveMode(state, match.id, !active, this.liveRule, this.podiumRule));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   addFinalLivePoint(match: Match, point: FinalLivePoint): void {
@@ -398,7 +402,7 @@ export class TournamentStore {
   /** "Gerar finais": the finals, or the tie draw first when the ranking has a tie it cannot split. */
   async generateFinal(): Promise<void> {
     if (!this.canGenerateFinal()) {
-      this.tournament.notify(this.transloco.translate('notices.finishPhase', {}, 'organizer/pt-BR'), 'error');
+      this.notices.show(this.transloco.translate('notices.finishPhase', {}, 'organizer/pt-BR'), 'error');
       return;
     }
     if (unresolvedFinalTie(this.state(), this.standingsView()).length) {
@@ -418,7 +422,7 @@ export class TournamentStore {
         if (!confirmed) return;
       } catch {
         // The dialog is a lazy chunk: offline or after a deploy it may not load.
-        this.tournament.notify(this.transloco.translate('notices.tieDrawFailed', {}, 'organizer/pt-BR'), 'error');
+        this.notices.show(this.transloco.translate('notices.tieDrawFailed', {}, 'organizer/pt-BR'), 'error');
         return;
       } finally {
         this.tieDrawOpening = false;
@@ -448,7 +452,7 @@ export class TournamentStore {
     if (!this.canFinalizeTournament()) return false;
     const finishedAt = this.clock.iso();
     this.tournament.update((current) => withFinishedAt(current, finishedAt));
-    this.tournament.save(this.transloco.translate('notices.finalized', {}, 'organizer/pt-BR'));
+    this.persistence.save(this.transloco.translate('notices.finalized', {}, 'organizer/pt-BR'));
     return true;
   }
 
@@ -502,7 +506,7 @@ export class TournamentStore {
   changeDoublesFormat(format: DoublesFormat): void {
     if (this.hasSchedule()) return;
     this.tournament.update((state) => withDoublesFormat(state, format));
-    this.tournament.save();
+    this.persistence.save();
   }
 
   changeGroupFormat(format: GroupFormat): void {
@@ -511,16 +515,16 @@ export class TournamentStore {
 
   saveSettings(): void {
     if (this.hasSchedule()) {
-      this.tournament.notify(this.transloco.translate('notices.settingsLocked', {}, 'organizer/pt-BR'), 'error');
+      this.notices.show(this.transloco.translate('notices.settingsLocked', {}, 'organizer/pt-BR'), 'error');
       return;
     }
     const size = this.state().size;
     if (this.state().players.length > size) {
-      this.tournament.notify(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
+      this.notices.show(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
       return;
     }
     this.tournament.update((state) => withRequiredRounds(withTrimmedName(state)));
-    this.tournament.save(this.transloco.translate('notices.settingsSaved', {}, 'organizer/pt-BR'));
+    this.persistence.save(this.transloco.translate('notices.settingsSaved', {}, 'organizer/pt-BR'));
     const saved = this.state();
     this.analytics.capture('tournament_settings_saved', {
       tournament_mode: saved.tournamentMode,
@@ -534,7 +538,7 @@ export class TournamentStore {
 
   exportBackup(): void {
     exportTournamentBackup(this.state(), this.clock, this.analytics);
-    this.tournament.notify(this.transloco.translate('notices.backupExported', {}, 'organizer/pt-BR'));
+    this.notices.show(this.transloco.translate('notices.backupExported', {}, 'organizer/pt-BR'));
   }
 
   /** The dialogs are lazy chunks: they load on the first click, not with the app. */
@@ -577,7 +581,7 @@ export class TournamentStore {
           : this.finals.create(this.standings());
       this.drafts.set({});
       this.tournament.update((current) => ({ ...current, finals: stage }));
-      this.tournament.save(
+      this.persistence.save(
         this.usesMixedFinalBracket()
           ? this.transloco.translate('notices.finalsMixedBracket', {}, 'organizer/pt-BR')
           : this.usesMixedFinals()
@@ -590,7 +594,7 @@ export class TournamentStore {
         tournament_size: state.size,
       });
     } catch (error) {
-      this.tournament.notify(
+      this.notices.show(
         error instanceof Error
           ? error.message
           : this.transloco.translate('notices.finalsFailed', {}, 'organizer/pt-BR'),
@@ -602,7 +606,7 @@ export class TournamentStore {
   private updateLivePoints(match: Match, points: FinalLivePoint[]): void {
     const hadWinner = this.winnerSide(match) !== null;
     this.tournament.update((state) => withFinalLivePoints(state, match.id, points, this.liveRule, this.podiumRule));
-    this.tournament.save();
+    this.persistence.save();
     this.recordFinalScore(match.id, hadWinner);
   }
 

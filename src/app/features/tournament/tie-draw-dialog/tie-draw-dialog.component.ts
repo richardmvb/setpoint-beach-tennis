@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { provideTranslocoScope, TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import { CurrentTournament } from '../../../core/current-tournament';
+import { TournamentPersistence } from '../../../core/tournament-persistence';
 import { CLOCK } from '../../../core/ports/clock.port';
 import { RANDOM } from '../../../core/ports/random.port';
 import {
@@ -35,6 +36,7 @@ export const TIE_DRAW_TITLE_ID = 'tieDrawTitle';
 export class TieDrawDialogComponent {
   private readonly ref = inject<DialogRef<boolean>>(DialogRef);
   private readonly tournament = inject(CurrentTournament);
+  private readonly persistence = inject(TournamentPersistence);
   private readonly random = inject(RANDOM);
   private readonly clock = inject(CLOCK);
   private readonly transloco = inject(TranslocoService);
@@ -68,7 +70,7 @@ export class TieDrawDialogComponent {
     if (ids.length < 2 || this.result().length) return;
     const order = shuffledOrder(ids, (max) => this.random.int(max));
     this.tournament.update((state) => withTieDraw(state, ids, order, this.clock.iso()));
-    this.tournament.save(this.transloco.translate('notices.tieDrawn', {}, 'organizer/pt-BR'));
+    this.persistence.save(this.transloco.translate('notices.tieDrawn', {}, 'organizer/pt-BR'));
     this.result.set(order);
   }
 
