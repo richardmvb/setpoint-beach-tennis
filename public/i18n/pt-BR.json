@@ -73,6 +73,53 @@
         "confirm": "Descartar alterações",
         "cancel": "Voltar"
       }
-    }
+    },
+    "lock": {
+      "kicker": "ACESSO RESTRITO",
+      "title": "Desbloquear torneio",
+      "hint": "Digite a senha para continuar.",
+      "password": "Senha",
+      "submit": "Desbloquear",
+      "wrong": "Senha incorreta. Tente novamente."
+    },
+    "page": {
+      "setup": "Novo torneio",
+      "overview": "Visão geral",
+      "players": "Jogadores",
+      "rounds": "Partidas",
+      "ranking": "Ranking",
+      "projection": "Projeção",
+      "settings": "Ajustes"
+    },
+    "format": {
+      "groups": "GRUPOS",
+      "super": "SUPER"
+    },
+    "nav": {
+      "label": "Navegação principal"
+    },
+    "projection": {
+      "lockedHint": "A projeção é liberada quando a 1ª rodada termina.",
+      "updated": "Projeção (atualizada)",
+      "lockedLabel": "Projeção — A projeção é liberada quando a 1ª rodada termina.",
+      "tipLocked": "Liberada quando a 1ª rodada terminar",
+      "tipReady": "Projeção liberada!",
+      "dismiss": "Dispensar aviso"
+    },
+    "topbar": {
+      "profileOf": "Perfil de {{ name }}",
+      "setupProfile": "Configurar perfil",
+      "profile": "Perfil"
+    },
+    "syncStatus": {
+      "device-only": "Salvo neste dispositivo",
+      "error": "Sincronização pendente",
+      "offline": "Sem conexão",
+      "paused": "Modo offline",
+      "syncing": "Sincronizando",
+      "pending": "Aguardando sincronização",
+      "synced": "Sincronizado"
+    },
+    "noticeClose": "Fechar aviso"
   }
 }

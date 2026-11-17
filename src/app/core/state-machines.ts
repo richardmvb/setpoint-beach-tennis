@@ -59,16 +59,6 @@ export interface SyncStatusInput {
   hasPending: boolean;
 }
 
-export const SYNC_STATUS_LABEL: Readonly<Record<SyncStatus, string>> = {
-  'device-only': 'Salvo neste dispositivo',
-  error: 'Sincronização pendente',
-  offline: 'Sem conexão',
-  paused: 'Modo offline',
-  syncing: 'Sincronizando',
-  pending: 'Aguardando sincronização',
-  synced: 'Sincronizado',
-};
-
 export function syncStatus(input: SyncStatusInput): SyncStatus {
   if (!input.available) return 'device-only';
   if (input.error) return 'error';

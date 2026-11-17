@@ -1,25 +1,25 @@
-@if (isLocked) {
+@if (isLocked()) {
   <main class="lock-screen">
     <form class="lock-panel" (ngSubmit)="unlock()">
       <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span></div>
-      <div><span class="card-kicker">ACESSO RESTRITO</span><h1>Desbloquear torneio</h1><p>Digite a senha para continuar.</p></div>
-      <label for="sitePassword">Senha</label>
-      <input id="sitePassword" name="sitePassword" type="password" [(ngModel)]="sitePassword" autocomplete="current-password" required [attr.aria-invalid]="!!lockError" aria-describedby="lockFeedback">
-      <p id="lockFeedback" class="lock-feedback" [class.visible]="!!lockError" aria-live="polite">{{ lockError }}</p>
-      <button class="button primary" type="submit" [disabled]="!sitePassword">Desbloquear</button>
+      <div><span class="card-kicker">{{ 'shell.lock.kicker' | transloco }}</span><h1>{{ 'shell.lock.title' | transloco }}</h1><p>{{ 'shell.lock.hint' | transloco }}</p></div>
+      <label for="sitePassword">{{ 'shell.lock.password' | transloco }}</label>
+      <input id="sitePassword" name="sitePassword" type="password" [(ngModel)]="sitePassword" autocomplete="current-password" required [attr.aria-invalid]="lockFailed()" aria-describedby="lockFeedback">
+      <p id="lockFeedback" class="lock-feedback" [class.visible]="lockFailed()" aria-live="polite">{{ lockFailed() ? ('shell.lock.wrong' | transloco) : '' }}</p>
+      <button class="button primary" type="submit" [disabled]="!sitePassword()">{{ 'shell.lock.submit' | transloco }}</button>
     </form>
   </main>
 }
 
-@if (isDashboardRoute) {
+@if (isDashboardRoute()) {
   @defer (on immediate) {
-    <app-dashboard (back)="navigate(hasSchedule ? 'overview' : 'setup')" />
+    <app-dashboard (back)="navigate(hasSchedule() ? 'overview' : 'setup')" />
   } @placeholder {
     <main class="lock-screen"></main>
   }
 }
 
-@if (showLanding && !isLocked && !isDashboardRoute) {
+@if (showLanding() && !isLocked() && !isDashboardRoute()) {
   @defer (on immediate) {
     <app-landing [savedCount]="savedTournaments.entries().length" (start)="enterApp()" (resume)="continueFromLanding()" />
   } @placeholder {
@@ -27,8 +27,8 @@
   }
 }
 
-@if (!isLocked && !isDashboardRoute && !showLanding) {
-  <div class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isSharedView">
+@if (!isLocked() && !isDashboardRoute() && !showLanding()) {
+  <div class="app-shell" [class.ranking-view]="page() === 'ranking'" [class.guest-view]="isSharedView">
     @if (!isSharedView) {
       <header class="topbar">
         <button class="brand brand-button" type="button" (click)="handleBrandClick()">
@@ -36,7 +36,7 @@
           <span><strong>SETPOINT</strong>&ngsp;<small>BEACH TENNIS</small></span>
         </button>
         <div class="top-actions">
-          <button class="profile-trigger" type="button" (click)="openProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profileStore.profile().name ? 'Perfil de ' + profileStore.profile().name : 'Configurar perfil') + ' · ' + syncLabel">
+          <button class="profile-trigger" type="button" (click)="openProfile()" [class.open]="dialogs.profileOpen()" aria-haspopup="dialog" [attr.aria-expanded]="dialogs.profileOpen()" aria-controls="profilePanel" [attr.aria-label]="(profileName() ? ('shell.topbar.profileOf' | transloco: { name: profileName() }) : ('shell.topbar.setupProfile' | transloco)) + ' · ' + (sync.status() === 'synced' ? ('shell.syncStatus.synced' | transloco) : sync.status() === 'pending' ? ('shell.syncStatus.pending' | transloco) : sync.status() === 'syncing' ? ('shell.syncStatus.syncing' | transloco) : sync.status() === 'paused' ? ('shell.syncStatus.paused' | transloco) : sync.status() === 'offline' ? ('shell.syncStatus.offline' | transloco) : sync.status() === 'error' ? ('shell.syncStatus.error' | transloco) : ('shell.syncStatus.device-only' | transloco))">
             <span class="profile-trigger-avatar">
               @if (profileStore.profile().name || profileStore.profile().photoDataUrl) {
                 <app-player-avatar [name]="profileStore.profile().name" [photoDataUrl]="profileStore.profile().photoDataUrl" variant="player-avatar" />
@@ -45,7 +45,7 @@
               }
               <i class="profile-status" [class.sync-warning]="sync.hasPending() || !!sync.error() || (sync.available() && (!sync.online() || sync.paused()))" aria-hidden="true"></i>
             </span>
-            <span class="profile-trigger-name">{{ profileStore.firstName() || 'Perfil' }}</span>
+            <span class="profile-trigger-name">{{ profileStore.firstName() || ('shell.topbar.profile' | transloco) }}</span>
             <svg class="profile-trigger-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </button>
         </div>
@@ -53,28 +53,33 @@
     }
     @if (!isSharedView) {
       <section class="page-heading">
-        <div><h1>{{ page === 'setup' ? 'Novo torneio' : page === 'overview' ? 'Visão geral' : page === 'players' ? 'Jogadores' : page === 'rounds' ? 'Partidas' : page === 'ranking' ? 'Ranking' : page === 'projection' ? 'Projeção' : 'Ajustes' }}</h1>
+        <div><h1>@switch (page()) {
+          @case ('setup') {{{ 'shell.page.setup' | transloco }}}
+          @case ('overview') {{{ 'shell.page.overview' | transloco }}}
+          @case ('players') {{{ 'shell.page.players' | transloco }}}
+          @case ('rounds') {{{ 'shell.page.rounds' | transloco }}}
+          @case ('ranking') {{{ 'shell.page.ranking' | transloco }}}
+          @case ('projection') {{{ 'shell.page.projection' | transloco }}}
+          @default {{{ 'shell.page.settings' | transloco }}}
+        }</h1>
       </div>
-      <div class="heading-tag">{{ isGroupTournament ? 'GRUPOS' : 'SUPER' }} {{ state.size }}</div>
+      <div class="heading-tag">{{ isGroupTournament() ? ('shell.format.groups' | transloco) : ('shell.format.super' | transloco) }} {{ state().size }}</div>
     </section>
   }
-  @if (!isSharedView && hasSchedule) {
-    <nav class="main-nav" aria-label="Navegação principal">
-      @if (!hasSchedule) {
-        <button type="button" [class.active]="page === 'setup'" (click)="navigate('setup')"><span>＋</span> Preparar</button>
-      }
-      <button type="button" [class.active]="page === 'overview'" (click)="navigate('overview')"><span>⌂</span> Visão geral</button>
-      <button type="button" [class.active]="page === 'players'" (click)="navigate('players')"><span>♙</span> Jogadores</button>
-      <button type="button" [class.active]="page === 'rounds'" (click)="navigate('rounds')"><span>▦</span> Partidas</button>
-      <button type="button" [class.active]="page === 'ranking'" (click)="navigate('ranking')"><span>↗</span> Ranking</button>
+  @if (!isSharedView && hasSchedule()) {
+    <nav class="main-nav" [attr.aria-label]="'shell.nav.label' | transloco">
+      <button type="button" [class.active]="page() === 'overview'" (click)="navigate('overview')"><span>⌂</span> {{ 'shell.page.overview' | transloco }}</button>
+      <button type="button" [class.active]="page() === 'players'" (click)="navigate('players')"><span>♙</span> {{ 'shell.page.players' | transloco }}</button>
+      <button type="button" [class.active]="page() === 'rounds'" (click)="navigate('rounds')"><span>▦</span> {{ 'shell.page.rounds' | transloco }}</button>
+      <button type="button" [class.active]="page() === 'ranking'" (click)="navigate('ranking')"><span>↗</span> {{ 'shell.page.ranking' | transloco }}</button>
       @if (projection.configured) {
-        <button type="button" class="nav-projection" [class.active]="page === 'projection'" [class.locked]="!projection.available" [attr.aria-disabled]="!projection.available" (click)="openProjection()" [title]="projectionLockedHint || 'Projeção'" [attr.aria-label]="projection.available ? 'Projeção' + (projection.hasNews ? ' (atualizada)' : '') : 'Projeção — ' + projectionLockedHint"><span><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> Projeção@if (projection.hasNews) {
+        <button type="button" class="nav-projection" [class.active]="page() === 'projection'" [class.locked]="!projection.available" [attr.aria-disabled]="!projection.available" (click)="openProjection()" [title]="projection.available ? ('shell.page.projection' | transloco) : ('shell.projection.lockedHint' | transloco)" [attr.aria-label]="projection.available ? (projection.hasNews ? ('shell.projection.updated' | transloco) : ('shell.page.projection' | transloco)) : ('shell.projection.lockedLabel' | transloco)"><span><svg class="nav-projection-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span> {{ 'shell.page.projection' | transloco }}@if (projection.hasNews) {
         <i class="nav-dot" aria-hidden="true"></i>
         }@if (projection.showTip || projection.hintVisible()) {
-        <em class="nav-tip" [class.muted-tip]="projection.hintVisible()" role="status">{{ projection.hintVisible() ? 'Liberada quando a 1ª rodada terminar' : 'Projeção liberada!' }}<b (click)="$event.stopPropagation(); projection.dismissTip()" (keydown.enter)="$event.stopPropagation(); projection.dismissTip()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); projection.dismissTip()" tabindex="0" aria-label="Dispensar aviso" role="button">×</b></em>
+        <em class="nav-tip" [class.muted-tip]="projection.hintVisible()" role="status">{{ projection.hintVisible() ? ('shell.projection.tipLocked' | transloco) : ('shell.projection.tipReady' | transloco) }}<b (click)="$event.stopPropagation(); projection.dismissTip()" (keydown.enter)="$event.stopPropagation(); projection.dismissTip()" (keydown.space)="$event.preventDefault(); $event.stopPropagation(); projection.dismissTip()" tabindex="0" [attr.aria-label]="'shell.projection.dismiss' | transloco" role="button">×</b></em>
       }</button>
     }
-    <button type="button" [class.active]="page === 'settings'" (click)="navigate('settings')"><span>⚙</span> Ajustes</button>
+    <button type="button" [class.active]="page() === 'settings'" (click)="navigate('settings')"><span>⚙</span> {{ 'shell.page.settings' | transloco }}</button>
   </nav>
 }
 @if (notices.notice(); as notice) {
@@ -101,29 +106,29 @@
         @case ('backupLoaded') {{{ 'shell.notice.backupLoaded' | transloco }}}
         @case ('finishedLoaded') {{{ 'shell.notice.finishedLoaded' | transloco }}}
         @case ('savedOpened') {{{ 'shell.notice.savedOpened' | transloco }}}
-      }} @else {{{ notice.text }}}<button type="button" (click)="notices.clear()" aria-label="Fechar aviso">×</button>
+      }} @else {{{ notice.text }}}<button type="button" (click)="notices.clear()" [attr.aria-label]="'shell.noticeClose' | transloco">×</button>
     </div>
   }
 }
 @if (sync.error(); as syncError) {
   @if (!isSharedView) {
-    <div class="notice error" role="alert"><span>!</span>{{ syncErrors.text(syncError) }} <button type="button" (click)="navigate('settings')">Ajustes</button></div>
+    <div class="notice error" role="alert"><span>!</span>{{ syncErrors.text(syncError) }} <button type="button" (click)="navigate('settings')">{{ 'shell.page.settings' | transloco }}</button></div>
   }
 }
-<main [class.ranking-mode]="page === 'ranking'">
-  @if (isTournamentPage) {
+<main [class.ranking-mode]="page() === 'ranking'">
+  @if (isTournamentPage()) {
     @defer (on immediate) {
-      <app-tournament [page]="page" [shell]="shellState()" (request)="onTournamentRequest($event)" />
+      <app-tournament [page]="page()" [shell]="shellState.tournament()" (request)="onTournamentRequest($event)" />
     } @placeholder {
       <section></section>
     } @error {
       <section><article class="surface-card shared-loading">{{ 'shell.loadFailed' | transloco }}</article></section>
     }
   }
-  @switch (page) {
+  @switch (page()) {
     @case ('setup') {
       @defer (on immediate) {
-        <section appSetup (start)="generateSchedule()" (openLibrary)="openLibrary()" (cancelShared)="cancelShared()"></section>
+        <section appSetup (start)="generateSchedule()" (openLibrary)="dialogs.openLibrary()" (cancelShared)="cancelShared()"></section>
       } @placeholder {
         <section class="setup-wizard"></section>
       } @error {

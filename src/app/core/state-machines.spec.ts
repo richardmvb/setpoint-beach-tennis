@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Round } from './models';
 import {
-  SYNC_STATUS_LABEL,
   SyncStatusInput,
   TOURNAMENT_PHASE_FLOW,
   TOURNAMENT_PHASE_LABEL,
@@ -51,17 +50,16 @@ describe('state machines', () => {
       inFlight: false,
       hasPending: false,
     };
-    const check = (patch: Partial<SyncStatusInput>, status: string, label: string): void => {
+    const check = (patch: Partial<SyncStatusInput>, status: string): void => {
       const result = syncStatus({ ...base, ...patch });
       expect(result).toBe(status);
-      expect(SYNC_STATUS_LABEL[result]).toBe(label);
     };
-    check({ available: false, error: true }, 'device-only', 'Salvo neste dispositivo');
-    check({ error: true, online: false }, 'error', 'Sincronização pendente');
-    check({ online: false, paused: true }, 'offline', 'Sem conexão');
-    check({ paused: true, inFlight: true }, 'paused', 'Modo offline');
-    check({ inFlight: true, hasPending: true }, 'syncing', 'Sincronizando');
-    check({ hasPending: true }, 'pending', 'Aguardando sincronização');
-    check({}, 'synced', 'Sincronizado');
+    check({ available: false, error: true }, 'device-only');
+    check({ error: true, online: false }, 'error');
+    check({ online: false, paused: true }, 'offline');
+    check({ paused: true, inFlight: true }, 'paused');
+    check({ inFlight: true, hasPending: true }, 'syncing');
+    check({ hasPending: true }, 'pending');
+    check({}, 'synced');
   });
 });
