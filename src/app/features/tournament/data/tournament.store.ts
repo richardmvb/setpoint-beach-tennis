@@ -103,6 +103,7 @@ export class TournamentStore {
   private readonly podiumRule: PodiumRule = (stage) => this.finals.updatePodium(stage);
   private readonly liveRule: LiveScoreRule = (points) => finalLiveMatchScore(calculateFinalLiveScore(points));
 
+  private tieDrawOpening = false;
   private readonly now = signal(this.clock.now());
   private readonly tournamentKey = computed(() => {
     const state = this.state();
@@ -323,16 +324,27 @@ export class TournamentStore {
       return;
     }
     if (unresolvedFinalTie(this.state(), this.standingsView()).length) {
-      const { TieDrawDialogComponent: component, TIE_DRAW_TITLE_ID: labelledBy } =
-        await import('../tie-draw-dialog/tie-draw-dialog.component');
-      const confirmed = await this.dialog.open<boolean, undefined, TieDrawDialogComponent>(component, {
-        data: undefined,
-        labelledBy,
-        autoFocus: 'dialog',
-        backdropClass: 'ui-backdrop-plain',
-        sheetBelow: 520,
-      });
-      if (!confirmed) return;
+      // A second tap while the first is still loading the dialog must not open another one.
+      if (this.tieDrawOpening) return;
+      this.tieDrawOpening = true;
+      try {
+        const { TieDrawDialogComponent: component, TIE_DRAW_TITLE_ID: labelledBy } =
+          await import('../tie-draw-dialog/tie-draw-dialog.component');
+        const confirmed = await this.dialog.open<boolean, undefined, TieDrawDialogComponent>(component, {
+          data: undefined,
+          labelledBy,
+          autoFocus: 'dialog',
+          backdropClass: 'ui-backdrop-plain',
+          sheetBelow: 520,
+        });
+        if (!confirmed) return;
+      } catch {
+        // The dialog is a lazy chunk: offline or after a deploy it may not load.
+        this.tournament.notify(this.transloco.translate('notices.tieDrawFailed', {}, 'organizer/pt-BR'), 'error');
+        return;
+      } finally {
+        this.tieDrawOpening = false;
+      }
     }
     this.createFinals();
   }

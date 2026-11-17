@@ -225,6 +225,13 @@ describe('TournamentStore: finals', () => {
     expect(tournament.state().finals).toBeFalsy();
   });
 
+  it('does not open a second tie draw while the first is opening', async () => {
+    const { store, dialogs } = setup(allTied());
+    dialogs.openAnswer = false;
+    await Promise.all([store.generateFinal(), store.generateFinal()]);
+    expect(dialogs.opened).toHaveLength(1);
+  });
+
   async function withFinals() {
     const context = setup(played());
     await context.store.generateFinal();

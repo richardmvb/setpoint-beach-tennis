@@ -122,6 +122,7 @@
     "finalsMixedDirect": "Finais diretas geradas com os quatro melhores de cada categoria.",
     "finalsStandard": "Finais geradas com base nos oito primeiros do ranking.",
     "finalsFailed": "Não foi possível gerar a final.",
-    "tieDrawn": "Sorteio registrado; a classificação foi atualizada."
+    "tieDrawn": "Sorteio registrado; a classificação foi atualizada.",
+    "tieDrawFailed": "Não foi possível abrir o sorteio agora. Verifique a conexão e tente de novo."
   }
 }
