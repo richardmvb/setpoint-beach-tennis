@@ -124,7 +124,8 @@ describe('LocalLiveLink', () => {
     const { link, tournament, created } = setup();
     tournament.set(running());
     await link.createOrCopy();
-    expect(created[0]).not.toBe(tournament.state());
+    tournament.update((state) => ({ ...state, name: 'Mudou depois' }));
+    expect(created[0].name).not.toBe('Mudou depois');
   });
 
   it('gives a tournament without an analytics id one (a new object) before publishing', async () => {

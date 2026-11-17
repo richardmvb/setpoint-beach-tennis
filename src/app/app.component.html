@@ -13,7 +13,7 @@
 
 @if (isDashboardRoute) {
   @defer (on immediate) {
-    <app-dashboard (back)="navigate('overview')" />
+    <app-dashboard (back)="navigate(hasSchedule ? 'overview' : 'setup')" />
   } @placeholder {
     <main class="lock-screen"></main>
   }

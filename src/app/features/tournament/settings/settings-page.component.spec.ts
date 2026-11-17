@@ -52,7 +52,7 @@ describe('SettingsPageComponent: the rules', () => {
   });
 
   it('saves the name (trimmed) and the rounds of the format, then tells the organizer', async () => {
-    const { hooks, tournament, analytics } = await show(unscheduled({ name: '  ' }));
+    const { hooks, tournament, analytics } = await show(unscheduled({ name: '  ', roundCount: 1 }));
     fireEvent.input(screen.getByLabelText('Nome do torneio'), { target: { value: '  Copa do Mar  ' } });
     expect(tournament.state().name).toBe('  Copa do Mar  ');
     fireEvent.click(screen.getByRole('button', { name: 'Salvar configurações' }));
@@ -72,11 +72,11 @@ describe('SettingsPageComponent: the rules', () => {
   });
 
   it('refuses to save while there are more athletes than places', async () => {
-    const { hooks, tournament } = await show(unscheduled({ players: namedPlayers(9) }));
+    const { hooks, tournament } = await show(unscheduled({ players: namedPlayers(9), roundCount: 1 }));
     fireEvent.click(screen.getByRole('button', { name: 'Salvar configurações' }));
     expect(hooks.notify).toHaveBeenCalledWith('Remova participantes até ficar com 8.', 'error');
     expect(hooks.save).not.toHaveBeenCalled();
-    expect(tournament.state().roundCount).toBe(7);
+    expect(tournament.state().roundCount).toBe(1);
   });
 
   it('shows the group rules and the readonly court count for a group tournament', async () => {
@@ -158,10 +158,12 @@ describe('SettingsPageComponent: the cards', () => {
     const { requests } = await show(storedTournament());
     const input = screen.getByText(/Importar backup JSON/).querySelector('input') as HTMLInputElement;
     const file = new File(['{}'], 'backup.json', { type: 'application/json' });
+    const cleared = vi.fn();
     Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+    Object.defineProperty(input, 'value', { configurable: true, get: () => 'backup.json', set: cleared });
     fireEvent.change(input);
+    expect(cleared).toHaveBeenCalledWith('');
     expect(requests).toEqual([{ kind: 'importBackup', file }]);
-    expect(input.value).toBe('');
   });
 
   it('asks the shell to start over, open the saved tournaments and go back to the landing page', async () => {

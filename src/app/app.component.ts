@@ -1205,8 +1205,12 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   /** The live link stored for the tournament in use: the shell then keeps its scores in the sync queue. */
   private restoreLiveLink(): void {
     const id = this.state.analyticsId;
-    if (id && this.liveLink.restore(this.state))
+    if (!id || !this.liveLink.restore(this.state)) return;
+    try {
       this.syncQueue.initialize('local', id, publicTournamentState(this.state));
+    } catch {
+      /* the link stays; the sync starts once the browser storage can be written */
+    }
   }
 
   private persist(success?: string, archive = true): void {
