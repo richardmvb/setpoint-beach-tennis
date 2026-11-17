@@ -313,7 +313,7 @@ export class TournamentLifecycle {
 
   /** True when it is safe to go on: nothing pending, or the person chose to discard it. */
   private async confirmDiscardPendingSync(): Promise<boolean> {
-    if (!this.sync.hasPending()) return true;
+    if (!this.sync.pendingNow()) return true;
     return this.dialog.confirm({
       title: this.transloco.translate('shell.confirm.discardPending.title'),
       text: this.transloco.translate('shell.confirm.discardPending.text'),

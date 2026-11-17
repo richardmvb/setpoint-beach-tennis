@@ -56,7 +56,9 @@ export class SupabaseAuth implements AuthPort {
 
   private async signInOnce(): Promise<void> {
     const client = requireSupabaseClient(this.client);
-    if (await this.currentUser()) return;
+    // The stored session, not a network call: a blip must not look like "nobody is signed in" and replace the user.
+    const { data } = await client.auth.getSession();
+    if (data.session) return;
     const { error } = await client.auth.signInAnonymously();
     if (error) throw error;
   }

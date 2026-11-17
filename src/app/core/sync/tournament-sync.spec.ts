@@ -355,6 +355,20 @@ describe('restoring after a reload', () => {
   });
 });
 
+describe('another tab', () => {
+  it('is seen by pendingNow, which reads the queue itself, while the cached hasPending is not', () => {
+    const { sync, local, tournament } = setup();
+    expect(sync.hasPending()).toBe(false);
+    const record = JSON.parse(local.getItem('setpoint.sync.local.a1') ?? '{}') as object;
+    local.setItem(
+      'setpoint.sync.local.a1',
+      JSON.stringify({ ...record, pending: scored(tournament.state()), revision: 5 }),
+    );
+    expect(sync.pendingNow()).toBe(true);
+    expect(sync.hasPending()).toBe(true);
+  });
+});
+
 describe('leaving the tournament', () => {
   it('forgets the queue of the tournament in use', () => {
     const { sync, local } = setup();

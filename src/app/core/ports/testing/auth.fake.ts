@@ -22,6 +22,7 @@ export class FakeAuth implements AuthPort {
     return Promise.resolve();
   }
   signInAnonymously(): Promise<void> {
+    if (this.user) return Promise.resolve();
     this.user = { id: 'anonymous-user' };
     for (const listener of this.listeners) listener('signed-in', this.user);
     return Promise.resolve();

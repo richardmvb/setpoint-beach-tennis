@@ -65,7 +65,7 @@ export class ShellStartup {
     if (!dashboard) this.archive.keep(this.tournament.state());
     let versionResetKept = false;
     if (
-      !this.sync.hasPending() &&
+      !this.sync.pendingNow() &&
       this.storage.clearCompletedTournamentOnVersionChange(this.config.buildId, this.tournament.state())
     ) {
       const id = libraryId(this.tournament.state());

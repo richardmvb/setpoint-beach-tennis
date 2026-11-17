@@ -90,4 +90,19 @@ describe('TournamentPersistence', () => {
     expect(saved.library.pendingArchives()).toEqual([]);
     expect(tournament.state().analyticsId).toBe('a1');
   });
+
+  it('shows a sync error, and still saves, when the new live link cannot start its queue', async () => {
+    const { persistence: _persistence, link, sync, tournament, local, localLive } = setup();
+    localLive.syncLocalLiveTournament.mockImplementation((_t: string, _b: unknown, next: unknown) =>
+      Promise.resolve({ id: 'live-1', status: 'active', state: next }),
+    );
+    vi.spyOn(sync, 'initialize').mockImplementation(() => {
+      throw new Error('full');
+    });
+    await link.createOrCopy();
+    expect(sync.error()).not.toBeNull();
+    expect(JSON.parse(local.getItem('setpoint.tournament.v1') ?? '{}')).toMatchObject({
+      analyticsId: tournament.state().analyticsId,
+    });
+  });
 });

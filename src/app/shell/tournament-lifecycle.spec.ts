@@ -226,6 +226,24 @@ describe('starting over', () => {
   });
 });
 
+describe('changes another tab left unsent', () => {
+  it('are asked about before starting over, even though this tab never saw them', async () => {
+    const { lifecycle, tournament, sync, local, link, dialogs } = setup(running());
+    local.setItem('setpoint.local.live.a1', JSON.stringify({ id: 'l', readToken: 'r', writeToken: 'w' }));
+    link.restore(tournament.state());
+    sync.initialize('local', 'a1', tournament.state());
+    expect(sync.hasPending()).toBe(false);
+    const record = JSON.parse(local.getItem('setpoint.sync.local.a1') ?? '{}') as object;
+    local.setItem(
+      'setpoint.sync.local.a1',
+      JSON.stringify({ ...record, pending: { ...tournament.state(), name: 'Outra aba' }, revision: 2 }),
+    );
+    dialogs.confirm.mockResolvedValueOnce(false);
+    expect(await lifecycle.reset()).toBe(false);
+    expect(dialogs.confirm.mock.calls[0][0]).toMatchObject({ title: 'Alterações ainda não sincronizadas' });
+  });
+});
+
 describe('archiving a shared tournament', () => {
   const shared = (): TournamentState => ({
     ...storedTournament(),

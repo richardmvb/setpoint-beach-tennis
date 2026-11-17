@@ -106,9 +106,12 @@ export class TournamentSync {
   );
 
   constructor() {
-    this.connectivity.onChange((online) => this.onlineState.set(online));
+    const stopListening = this.connectivity.onChange((online) => this.onlineState.set(online));
     this.owned.applied$.subscribe(({ snapshot }) => this.prepareBase(snapshot));
-    inject(DestroyRef).onDestroy(() => this.stop());
+    inject(DestroyRef).onDestroy(() => {
+      stopListening();
+      this.stop();
+    });
   }
 
   /** Starts the 4 s poll that retries what is pending and refreshes a shared tournament that has not started. */
@@ -162,6 +165,26 @@ export class TournamentSync {
     }
   }
 
+  /**
+   * Whether the tournament in use has changes still to be sent, read from the queue now. `hasPending` is cached and
+   * follows this tab's writes only; before throwing the queue away, ask this (another tab may have written to it).
+   */
+  pendingNow(): boolean {
+    const target = this.target();
+    try {
+      return !!target && !!this.queue.read(target.kind, target.id)?.pending;
+    } catch {
+      return false;
+    } finally {
+      this.touched();
+    }
+  }
+
+  /** Records a failure the person should see (the live link could not start its queue, for example). */
+  fail(key: SyncErrorKey): void {
+    this.errorState.set(key);
+  }
+
   /** Whether the queue holds changes still to be sent for a tournament. */
   hasPendingFor(kind: SyncKind, id: string): boolean {
     return !!this.queue.read(kind, id)?.pending;
@@ -182,7 +205,7 @@ export class TournamentSync {
   /** Drops the queue of the tournament in use before another one takes its place. False when it cannot be done. */
   discardCurrentExcept(importedAnalyticsId: string | undefined): boolean {
     const target = this.target();
-    if (target && (this.hasPending() || target.kind !== 'local' || target.id !== importedAnalyticsId)) {
+    if (target && (this.pendingNow() || target.kind !== 'local' || target.id !== importedAnalyticsId)) {
       try {
         this.queue.remove(target.kind, target.id);
       } catch {
@@ -275,6 +298,7 @@ export class TournamentSync {
       this.retryAfter = this.clock.now() + RETRY_AFTER;
     } finally {
       this.inFlightState.set(false);
+      this.touched();
     }
   }
 

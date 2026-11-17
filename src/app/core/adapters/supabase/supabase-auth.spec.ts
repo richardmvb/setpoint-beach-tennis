@@ -37,6 +37,7 @@ function fakeClient() {
       return { error: null };
     },
     signInWithOtp: vi.fn(() => Promise.resolve({ error: null })),
+    getSession: () => Promise.resolve({ data: { session } }),
     initialize: vi.fn(() => Promise.resolve()),
     onAuthStateChange: (listener: (event: string, session: FakeSession | null) => void) => {
       listeners.add(listener);

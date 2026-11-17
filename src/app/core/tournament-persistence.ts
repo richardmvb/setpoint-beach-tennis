@@ -22,7 +22,12 @@ export class TournamentPersistence {
 
   constructor() {
     inject(LocalLiveLink).published$.subscribe(({ analyticsId, published }) => {
-      this.sync.initialize('local', analyticsId, publicTournamentState(published));
+      try {
+        this.sync.initialize('local', analyticsId, publicTournamentState(published));
+      } catch {
+        // A subscriber's error would not reach the caller: the person sees it as a sync error instead.
+        this.sync.fail('queueNotSaved');
+      }
       this.save();
       this.archive.requeue(analyticsId);
       void this.archive.flush();
