@@ -22,5 +22,7 @@
   },
   "setup-review": {
     "label-content-name-mismatch": 1
-  }
+  },
+  "tie-draw-dialog": {},
+  "tie-draw-dialog-drawn": {}
 }

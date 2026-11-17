@@ -1,0 +1,84 @@
+<ng-container *transloco="let t; prefix: 'organizer.matchForm'">
+  <div class="match-teams">
+    <div class="team">
+      <div class="team-names">
+        @for (id of match().teamA; track $index) {
+          <b
+            ><app-player-avatar
+              [name]="store.playerName(id)"
+              [photoDataUrl]="store.playerPhoto(id)"
+              variant="team-avatar"
+            /><span class="team-player-name">{{ store.playerName(id) }}</span></b
+          >
+        }
+      </div>
+      <input
+        class="inline-score"
+        type="number"
+        min="0"
+        [max]="max()"
+        step="1"
+        [disabled]="disabled()"
+        [ngModel]="a()"
+        (ngModelChange)="scoreChange.emit({ side: 'a', value: $event })"
+        [ngModelOptions]="{ standalone: true }"
+        [attr.aria-label]="labelA()"
+      />
+    </div>
+    <span class="versus">{{ t('versus') }}</span>
+    <div class="team team-right">
+      <input
+        class="inline-score"
+        type="number"
+        min="0"
+        [max]="max()"
+        step="1"
+        [disabled]="disabled()"
+        [ngModel]="b()"
+        (ngModelChange)="scoreChange.emit({ side: 'b', value: $event })"
+        [ngModelOptions]="{ standalone: true }"
+        [attr.aria-label]="labelB()"
+      />
+      <div class="team-names">
+        @for (id of match().teamB; track $index) {
+          <b
+            ><span class="team-player-name">{{ store.playerName(id) }}</span
+            ><app-player-avatar
+              [name]="store.playerName(id)"
+              [photoDataUrl]="store.playerPhoto(id)"
+              variant="team-avatar"
+            /></b
+          >
+        }
+      </div>
+    </div>
+    <small class="score-status">
+      @switch (status()) {
+        @case ('fillBoth') {
+          {{ t('statusFillBoth') }}
+        }
+        @case ('invalid') {
+          {{ t('statusInvalid') }}
+        }
+        @case ('saved') {
+          {{ t('statusSaved') }}
+        }
+        @case ('updating') {
+          {{ t('statusUpdating') }}
+        }
+        @case ('resultSaved') {
+          {{ t('statusResultSaved') }}
+        }
+        @case ('tieBreak') {
+          {{ t('statusTieBreak') }}
+        }
+        @case ('enterGames') {
+          {{ t('statusEnterGames') }}
+        }
+        @default {
+          {{ t('statusInProgress') }}
+        }
+      }
+    </small>
+  </div>
+</ng-container>

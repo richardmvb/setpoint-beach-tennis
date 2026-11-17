@@ -1,0 +1,111 @@
+<ng-container *transloco="let t; prefix: 'organizer.finals'">
+  <ng-container *transloco="let kind; prefix: 'tournament.finalKind'">
+      <div class="card-title-row">
+        <div>
+          <span class="card-kicker">{{ t('kicker') }}</span>
+          <h2>{{ t('title') }}</h2>
+        </div>
+        <span class="mini-tag">{{ final().complete ? t('complete') : t('inProgress') }}</span>
+      </div>
+      <div class="final-match-list">
+        @for (match of final().matches; track match.id) {
+          <article
+            class="final-match"
+            [class.quarterfinal]="match.finalKind === 'quarterfinal'"
+            [class.semifinal]="match.finalKind === 'semifinal'"
+            [class.championship]="match.finalKind === 'championship'"
+            [class.third-place]="match.finalKind === 'third-place'"
+          >
+            <div class="match-meta">
+              <span class="court-label">
+                @switch (match.finalKind) {
+                  @case ('quarterfinal') {
+                    {{ kind('quarterfinal') }}
+                  }
+                  @case ('semifinal') {
+                    {{ kind('semifinal') }}
+                  }
+                  @case ('championship') {
+                    {{ kind('championship') }}
+                  }
+                  @default {
+                    {{ kind('thirdPlace') }}
+                  }
+                }
+              </span>
+              <span class="match-state" [class.done]="store.winnerSide(match)">{{
+                store.winnerSide(match) ? t('registered') : t('pending')
+              }}</span>
+            </div>
+            @if (match.finalKind === 'championship' && store.canEditFinalScores()) {
+              <button
+                uiButton
+                variant="secondary"
+                class="final-live-toggle"
+                (click)="store.toggleFinalLiveScore(match)"
+                [disabled]="!ready(match)"
+              >
+                {{ match.livePoints !== undefined ? t('manualMode') : t('liveMode') }}
+              </button>
+            }
+            @if (match.finalKind === 'championship' && match.livePoints !== undefined) {
+              <app-final-live-score
+                [match]="match"
+                [players]="store.state().players"
+                [editable]="store.canEditFinalScores()"
+                (pointSelected)="store.addFinalLivePoint(match, $event)"
+                (undoSelected)="store.undoFinalLivePoint(match)"
+              />
+            } @else {
+              <app-match-score-form
+                [match]="match"
+                [a]="match.scoreA"
+                [b]="match.scoreB"
+                [max]="7"
+                [disabled]="!store.canEditFinalScores() || !ready(match)"
+                [labelA]="t('gamesPair1')"
+                [labelB]="t('gamesPair2')"
+                [status]="store.finalStatus(match)"
+                (scoreChange)="score(match, $event)"
+              />
+              @if (match.scoreA === 6 && match.scoreB === 6) {
+                <div class="tiebreak-row">
+                  <b>{{ t('tieBreak') }}</b
+                  ><label
+                    ><span>{{ t('pair1') }}</span
+                    ><input
+                      type="number"
+                      min="0"
+                      max="99"
+                      step="1"
+                      [disabled]="!store.canEditFinalScores() || !ready(match)"
+                      [ngModel]="match.tieBreakA ?? null"
+                      (ngModelChange)="tieBreak(match, 'tieBreakA', $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                      [attr.aria-label]="t('tieBreakPoints1')"
+                  /></label>
+                  <strong>:</strong>
+                  <label
+                    ><span>{{ t('pair2') }}</span
+                    ><input
+                      type="number"
+                      min="0"
+                      max="99"
+                      step="1"
+                      [disabled]="!store.canEditFinalScores() || !ready(match)"
+                      [ngModel]="match.tieBreakB ?? null"
+                      (ngModelChange)="tieBreak(match, 'tieBreakB', $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                      [attr.aria-label]="t('tieBreakPoints2')"
+                  /></label>
+                </div>
+              }
+            }
+          </article>
+        }
+      </div>
+      @if (final().complete) {
+        <app-podium-section />
+      }
+  </ng-container>
+</ng-container>

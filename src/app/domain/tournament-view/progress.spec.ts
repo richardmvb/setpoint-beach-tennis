@@ -8,6 +8,7 @@ import {
   formatElapsed,
   progressPercent,
   roundDone,
+  roundMatchesDone,
   totalMatches,
 } from './progress';
 
@@ -58,5 +59,16 @@ describe('elapsed time', () => {
     const started = tournamentState({ startedAt: '2026-11-13T10:00:00.000Z' });
     expect(elapsedLabel(started, now)).toBe('00:30:00');
     expect(elapsedLabel({ ...started, finishedAt: '2026-11-13T10:10:05.000Z' }, now)).toBe('00:10:05');
+  });
+});
+
+describe('roundMatchesDone', () => {
+  it('counts the matches of a round that have a score', () => {
+    expect(roundMatchesDone(state, 0)).toBe(2);
+    expect(roundMatchesDone(state, 1)).toBe(1);
+  });
+
+  it('is zero for a round that does not exist', () => {
+    expect(roundMatchesDone(state, 9)).toBe(0);
   });
 });

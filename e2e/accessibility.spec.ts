@@ -19,17 +19,23 @@ function readBaseline(): Baseline {
 }
 
 /** Make the page static before measuring: no running transitions and no transient notices. */
-async function settle(page: Page): Promise<void> {
+async function settle(page: Page, closeNotices: boolean): Promise<void> {
   await page.addStyleTag({
     content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
   });
+  if (!closeNotices) return;
   const notices = page.locator('.notice button');
   while ((await notices.count()) > 0) await notices.first().click();
 }
 
-async function scan(page: Page): Promise<Record<string, number>> {
-  await settle(page);
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+/**
+ * `closeNotices` false while a modal dialog is open (the notices behind it cannot be reached), and `only` limits the
+ * scan to the dialog, since the page behind it is not what the test is about.
+ */
+async function scan(page: Page, closeNotices = true, only?: string): Promise<Record<string, number>> {
+  await settle(page, closeNotices);
+  const axe = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']);
+  const results = await (only ? axe.include(only) : axe).analyze();
   return Object.fromEntries(results.violations.map((violation) => [violation.id, violation.nodes.length]));
 }
 
@@ -143,6 +149,32 @@ test.describe('accessibility (axe, no new violations)', () => {
     await page.getByRole('button', { name: 'Perfil' }).click();
     await expect(page.locator('#profileName')).toBeVisible();
     problems.push(...check('profile-panel', await scan(page), baseline));
+    expect(problems).toEqual([]);
+  });
+
+  test('tournament: the tie-draw dialog, before and after the draw', async ({ page }) => {
+    // Every match ends 4 to 4 on the stored fixture, so nothing separates the eight players.
+    const stored = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v1.json'), 'utf8'),
+    ) as { rounds: { matches: Record<string, unknown>[] }[] };
+    for (const round of stored.rounds)
+      for (const match of round.matches) Object.assign(match, { scoreA: 4, scoreB: 4 });
+    await page.addInitScript((value: string) => {
+      if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', value);
+    }, JSON.stringify(stored));
+    const baseline = readBaseline();
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await page.getByRole('button', { name: 'Gerar finais' }).click();
+    const dialog = page.getByRole('dialog', { name: /Empate entre/ });
+    await expect(dialog).toBeVisible();
+    const problems = check('tie-draw-dialog', await scan(page, false, '[role=dialog]'), baseline);
+    await dialog.getByRole('button', { name: 'Realizar sorteio' }).click();
+    await expect(dialog.getByRole('listitem')).toHaveCount(8);
+    problems.push(...check('tie-draw-dialog-drawn', await scan(page, false, '[role=dialog]'), baseline));
     expect(problems).toEqual([]);
   });
 });

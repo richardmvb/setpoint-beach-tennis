@@ -32,6 +32,11 @@ export function roundDone(state: TournamentState, index: number): boolean {
   return state.rounds[index]?.matches.every((m) => isScored(m)) ?? false;
 }
 
+/** How many matches of a round have a score. */
+export function roundMatchesDone(state: TournamentState, index: number): number {
+  return state.rounds[index]?.matches.filter((m) => isScored(m)).length ?? 0;
+}
+
 /** `hh:mm:ss`; negative durations show as zero. */
 export function formatElapsed(milliseconds: number): string {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));

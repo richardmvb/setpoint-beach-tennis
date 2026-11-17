@@ -1,0 +1,58 @@
+<ng-container *transloco="let t; prefix: 'organizer.ranking'">
+  <app-ranking-view
+    [groupTables]="store.groupTables()"
+    [standings]="store.standings()"
+    [players]="store.state().players"
+    [rounds]="store.state().rounds"
+    [maleStandings]="store.maleStandings()"
+    [femaleStandings]="store.femaleStandings()"
+    [showGenderRankings]="store.usesMixedFinals()"
+    [genderRankingLimit]="store.mixedFinalistCount()"
+    [fixedPairsMode]="store.fixedPairsMode()"
+    [hasSchedule]="store.hasSchedule()"
+    (playerSelected)="store.openPlayerMatches($event)"
+  />
+  @if (store.canGenerateFinal()) {
+    <article uiCard class="full-card final-qualifier">
+      <div>
+        <span class="card-kicker">{{ t('finalPhase') }}</span>
+        <h2>
+          {{
+            store.usesMixedFinals()
+              ? t('mixedAvailable')
+              : store.earlyFinalsReady()
+                ? t('earlyAvailable')
+                : t('eightQualified')
+          }}
+        </h2>
+        <p class="muted">
+          {{
+            store.usesMixedFinalBracket()
+              ? t('mixedBracketText')
+              : store.usesMixedFinals()
+                ? t('mixedDirectText')
+                : store.earlyFinalsReady()
+                  ? t('earlyText')
+                  : t('standardText')
+          }}
+        </p>
+      </div>
+      <button uiButton variant="primary" (click)="store.generateFinal()">{{ t('generateFinals') }}</button>
+    </article>
+  }
+  @if (store.state().finals; as final) {
+    <article appFinalsCard [final]="final"></article>
+  }
+  <article uiCard class="full-card ranking-rules">
+    <span class="card-kicker">{{ t('tieBreak') }}</span>
+    <div class="criteria">
+      <b>01</b><span><strong>{{ t('criterionWins') }}</strong></span>
+    </div>
+    <div class="criteria">
+      <b>02</b><span><strong>{{ t('criterionBalance') }}</strong></span>
+    </div>
+    <div class="criteria">
+      <b>03</b><span><strong>{{ t('criterionGamesFor') }}</strong></span>
+    </div>
+  </article>
+</ng-container>

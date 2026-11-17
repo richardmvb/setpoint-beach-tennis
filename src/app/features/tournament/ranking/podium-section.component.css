@@ -1,0 +1,73 @@
+.share-picker-head p {
+  margin: 4px 0 0;
+}
+
+.podium-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.share-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--white-14);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.15s;
+  border-color: var(--border);
+}
+
+.share-chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--orange);
+}
+
+.share-chip.selected {
+  border-color: var(--green-2);
+  background: var(--green-soft);
+  box-shadow: 0 0 0 2px rgb(from var(--lime) r g b / 25%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green-2) 22%, transparent);
+}
+
+.share-chip-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.share-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.finalize-box {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.share-chip-place {
+  flex: none;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
+.podium-duration {
+  margin: 4px 0 8px;
+}

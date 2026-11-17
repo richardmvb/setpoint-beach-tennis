@@ -11,6 +11,8 @@ export class ShareResultsSession implements OnDestroy {
   /** An object URL of a photo on this device (never uploaded), with its file name. */
   readonly background = signal<{ url: string; name: string } | null>(null);
   readonly message = signal('');
+  /** The athlete picked on the ranking page to make the image for; empty until one is chosen. */
+  readonly playerId = signal('');
 
   setBackground(file: File | null): void {
     const current = this.background();

@@ -1,0 +1,123 @@
+<ng-container *transloco="let t; prefix: 'organizer.rounds'">
+  @if (!store.hasSchedule()) {
+    <div uiCard class="empty-rounds">
+      <div class="empty-icon">▦</div>
+      <h2>{{ t('emptyTitle') }}</h2>
+      <p class="muted">{{ t('emptyHint') }}</p>
+      <button uiButton variant="primary" (click)="store.request({ kind: 'navigate', page: 'players' })">
+        {{ t('goPlayers') }}
+      </button>
+    </div>
+  }
+  @if (store.hasSchedule() && store.currentRound(); as round) {
+    <article uiCard class="rounds-header">
+      <div>
+        <span class="card-kicker">{{ store.state().name }}</span>
+        <h2>{{ t('calendar') }}</h2>
+        <p class="muted">{{ store.roundsLocked() ? t('lockedAfterFinals') : t('anyOrder') }}</p>
+      </div>
+      <div class="round-summary">
+        <b>{{ store.completedRounds() }}<small> / {{ store.state().roundCount }}</small></b
+        ><span>{{ t('rounds') }}</span>
+      </div>
+      <div class="round-summary elapsed-summary">
+        <b>{{ store.elapsedLabel() }}</b
+        ><span>{{ store.state().finishedAt ? t('duration') : t('time') }}</span>
+      </div>
+    </article>
+    <app-round-navigation
+      [selectedRound]="store.selectedRound()"
+      [roundCount]="store.state().rounds.length"
+      [completedRounds]="store.completedRounds()"
+      [finalsExist]="!!store.state().finals"
+      (roundSelect)="select($event)"
+      (ranking)="store.request({ kind: 'navigate', page: 'ranking' })"
+    />
+    <div class="round-tabs" role="tablist" [attr.aria-label]="t('tabsLabel')">
+      @for (item of store.state().rounds; track item.number; let i = $index) {
+        <button
+          [attr.id]="'round-tab-' + i"
+          type="button"
+          role="tab"
+          [attr.aria-selected]="store.selectedRound() === i"
+          [class.active]="store.selectedRound() === i"
+          [class.done]="store.roundDone(i)"
+          (click)="select(i)"
+        >
+          <span>{{ t('round') }}</span
+          ><b>{{ item.number }}</b
+          >@if (store.roundDone(i)) {
+            <i>✓</i>
+          }
+        </button>
+      }
+    </div>
+    <div class="round-toolbar">
+      <div>
+        <span class="card-kicker">{{ t('roundOf', { number: round.number, total: store.state().rounds.length }) }}</span>
+        <h2>{{ round.matches.length === 1 ? t('matchesOne') : t('matchesMany', { count: round.matches.length }) }}</h2>
+      </div>
+      <span class="mini-tag">{{
+        t('resultsCount', { done: store.roundMatchesDone(store.selectedRound()), total: round.matches.length })
+      }}</span>
+    </div>
+    <div class="round-layout">
+      <div class="match-list">
+        @for (match of round.matches; track match.id) {
+          <article uiCard class="match-card">
+            <div class="match-meta">
+              <span class="court-label"
+                >{{ match.groupId ? store.groupName(match.groupId) + ' · ' : '' }}{{ t('court', { number: match.court }) }}</span
+              ><span class="match-state" [class.done]="store.isScored(match)">{{
+                store.isScored(match) ? t('registered') : t('pending')
+              }}</span>
+            </div>
+            <app-match-score-form
+              [match]="match"
+              [a]="store.draftOf(match).a"
+              [b]="store.draftOf(match).b"
+              [max]="store.state().gamesToWin"
+              [disabled]="!store.canEditRoundScores()"
+              [labelA]="t('gamesPair1')"
+              [labelB]="t('gamesPair2')"
+              [status]="store.scoreStatus(match)"
+              (scoreChange)="score(match, $event)"
+            />
+            @if (store.isScored(match)) {
+              <div class="score-foot">
+                <span>{{ t('scoreSaved') }}</span
+                ><button type="button" (click)="store.clearScore(match)" [disabled]="!store.canEditRoundScores()">
+                  {{ t('clear') }}
+                </button>
+              </div>
+            }
+          </article>
+        }
+      </div>
+      @if (round.restingPlayerIds.length) {
+        <aside uiCard class="rest-card">
+          <span class="card-kicker">{{ t('restKicker') }}</span>
+          <h3>{{ t('restTitle') }}</h3>
+          @for (id of round.restingPlayerIds; track id) {
+            <div class="rest-player">
+              <app-player-avatar [name]="store.playerName(id)" [photoDataUrl]="store.playerPhoto(id)" /><b>{{
+                store.playerName(id)
+              }}</b
+              ><small>{{ t('rest') }}</small>
+            </div>
+          }
+        </aside>
+      }
+    </div>
+    <app-round-navigation
+      class="round-nav-bottom"
+      [position]="'bottom'"
+      [selectedRound]="store.selectedRound()"
+      [roundCount]="store.state().rounds.length"
+      [completedRounds]="store.completedRounds()"
+      [finalsExist]="!!store.state().finals"
+      (roundSelect)="select($event)"
+      (ranking)="store.request({ kind: 'navigate', page: 'ranking' })"
+    />
+  }
+</ng-container>

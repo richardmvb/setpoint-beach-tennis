@@ -1,0 +1,54 @@
+<ng-container *transloco="let t; prefix: 'organizer.podium'">
+  <section class="podium-section">
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    @if (store.state().finishedAt) {
+      <p class="muted podium-duration">{{ t('duration', { time: store.elapsedLabel() }) }}</p>
+    }
+    @if (store.canFinalizeTournament()) {
+      <div class="finalize-box">
+        <p class="muted">{{ t('finalizeHint') }}</p>
+        <button uiButton variant="primary" (click)="finalize()">{{ t('finalize') }}</button>
+      </div>
+    }
+    <app-podium [places]="store.finalPodium()" [players]="store.state().players" />
+    <div class="share-picker">
+      <div class="share-picker-head">
+        <span class="card-kicker">{{ t('share') }}</span>
+        <p class="muted">{{ t('pickAthlete') }}</p>
+      </div>
+      <div class="share-picker-grid" role="radiogroup" [attr.aria-label]="t('athleteForImage')">
+        @for (candidate of store.shareCandidates(); track candidate.playerId) {
+          <button
+            type="button"
+            role="radio"
+            class="share-chip"
+            [class.selected]="store.sharePlayerId() === candidate.playerId"
+            [attr.aria-checked]="store.sharePlayerId() === candidate.playerId"
+            (click)="store.selectSharePlayer(candidate.playerId)"
+          >
+            <app-player-avatar
+              [name]="candidate.name"
+              [photoDataUrl]="store.playerPhoto(candidate.playerId)"
+              variant="share-chip-avatar"
+            /><span class="share-chip-name">{{ candidate.name }}</span
+            ><small class="share-chip-place">{{ candidate.place }}º</small>
+          </button>
+        }
+      </div>
+      <button
+        uiButton
+        variant="primary"
+        class="share-picker-action"
+        (click)="store.shareResults()"
+        [disabled]="!store.sharePlayerId()"
+      >
+        {{
+          store.sharePlayerId() ? t('generateImageOf', { name: store.playerName(store.sharePlayerId()) }) : t('selectAthlete')
+        }}
+      </button>
+      @if (store.shareMessage()) {
+        <small class="muted">{{ store.shareMessage() }}</small>
+      }
+    </div>
+  </section>
+</ng-container>

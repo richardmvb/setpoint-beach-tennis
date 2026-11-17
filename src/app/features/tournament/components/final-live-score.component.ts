@@ -1,18 +1,20 @@
-import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input, input, output } from '@angular/core';
+import { provideTranslocoScope, TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
-import { Match, Player } from '../core/models';
+import { Match, Player } from '../../../core/models';
 import {
   calculateFinalLiveScore,
   FinalLivePoint,
   FinalLiveScore,
   MAX_FINAL_LIVE_POINTS,
-} from '../core/final-live-score';
-import { PlayerAvatarComponent } from './player-avatar.component';
+} from '../../../core/final-live-score';
+import { PlayerAvatarComponent } from '../../player-avatar.component';
 
 @Component({
   selector: 'app-final-live-score',
   standalone: true,
-  imports: [PlayerAvatarComponent],
+  imports: [PlayerAvatarComponent, TranslocoDirective],
+  providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -191,78 +193,83 @@ import { PlayerAvatarComponent } from './player-avatar.component';
     `,
   ],
   template: `
-    @if (score; as current) {
-      <div class="live-board" [class.readonly]="!editable()">
-        <div class="live-head">
-          <span>PONTO A PONTO</span
-          ><strong [class.on]="!current.winner">
-            @if (!current.winner) {
-              <i class="live-dot"></i>
-            }
-            {{ current.winner ? 'SET ENCERRADO' : current.tieBreak ? 'TIE-BREAK' : 'EM ANDAMENTO' }}</strong
-          >
-          @if (editable()) {
-            <button
-              class="live-undo"
-              type="button"
-              (click)="undoSelected.emit()"
-              [disabled]="!matchData.livePoints?.length"
-              aria-label="Desfazer último ponto"
-              title="Desfazer último ponto"
-            >
-              ↶
-            </button>
-          }
-        </div>
-        <div class="live-columns">
-          <span>DUPLA</span><span>GAMES</span><span>PONTOS</span>
-          @if (editable()) {
-            <span></span>
-          }
-        </div>
-        @for (side of sides; track side) {
-          <div class="live-row">
-            <div class="live-team">
-              @for (playerId of side === 'A' ? matchData.teamA : matchData.teamB; track playerId) {
-                <div class="live-player">
-                  <app-player-avatar
-                    [name]="nameOf(playerId)"
-                    [photoDataUrl]="photoOf(playerId)"
-                    variant="team-avatar"
-                  /><span>{{ nameOf(playerId) }}</span>
-                </div>
+    <ng-container *transloco="let t; prefix: 'tournament.finalLive'">
+      @if (score; as current) {
+        <div class="live-board" [class.readonly]="!editable()">
+          <div class="live-head">
+            <span>{{ t('title') }}</span><strong [class.on]="!current.winner">
+              @if (!current.winner) {
+                <i class="live-dot"></i>
               }
-            </div>
-            <strong class="live-value">{{ side === 'A' ? current.gamesA : current.gamesB }}</strong>
-            <strong
-              class="live-value live-points"
-              aria-live="polite"
-              [attr.aria-label]="
-                (side === 'A' ? 'Pontos da dupla 1: ' : 'Pontos da dupla 2: ') + pointLabel(current, side)
-              "
-              >{{ pointLabel(current, side) }}</strong
+              {{ current.winner ? t('ended') : current.tieBreak ? t('tieBreak') : t('inProgress') }}</strong
             >
             @if (editable()) {
               <button
-                class="live-add"
+                class="live-undo"
                 type="button"
-                (click)="pointSelected.emit(side)"
-                [disabled]="!!current.winner || (matchData.livePoints?.length ?? 0) >= maxPoints"
-                [attr.aria-label]="side === 'A' ? 'Adicionar ponto à dupla 1' : 'Adicionar ponto à dupla 2'"
-                [title]="side === 'A' ? 'Ponto para dupla 1' : 'Ponto para dupla 2'"
+                (click)="undoSelected.emit()"
+                [disabled]="!matchData.livePoints?.length"
+                [attr.aria-label]="t('undo')"
+                [title]="t('undo')"
               >
-                +
+                ↶
               </button>
             }
           </div>
-        }
-      </div>
-    } @else {
-      <p class="live-error" role="alert">Não foi possível exibir os pontos desta final.</p>
-    }
+          <div class="live-columns">
+            <span>{{ t('team') }}</span><span>{{ t('games') }}</span
+            ><span>{{ t('points') }}</span>
+            @if (editable()) {
+              <span></span>
+            }
+          </div>
+          @for (side of sides; track side) {
+            <div class="live-row">
+              <div class="live-team">
+                @for (playerId of side === 'A' ? matchData.teamA : matchData.teamB; track playerId) {
+                  <div class="live-player">
+                    <app-player-avatar
+                      [name]="nameOf(playerId)"
+                      [photoDataUrl]="photoOf(playerId)"
+                      variant="team-avatar"
+                    /><span>{{ nameOf(playerId) }}</span>
+                  </div>
+                }
+              </div>
+              <strong class="live-value">{{ side === 'A' ? current.gamesA : current.gamesB }}</strong>
+              <strong
+                class="live-value live-points"
+                aria-live="polite"
+                [attr.aria-label]="
+                  side === 'A'
+                    ? t('pointsOf1', { value: pointLabel(current, side) })
+                    : t('pointsOf2', { value: pointLabel(current, side) })
+                "
+                >{{ pointLabel(current, side) }}</strong
+              >
+              @if (editable()) {
+                <button
+                  class="live-add"
+                  type="button"
+                  (click)="pointSelected.emit(side)"
+                  [disabled]="!!current.winner || (matchData.livePoints?.length ?? 0) >= maxPoints"
+                  [attr.aria-label]="side === 'A' ? t('add1') : t('add2')"
+                  [title]="side === 'A' ? t('title1') : t('title2')"
+                >
+                  +
+                </button>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="live-error" role="alert">{{ t('error') }}</p>
+      }
+    </ng-container>
   `,
 })
 export class FinalLiveScoreComponent {
+  private readonly transloco = inject(TranslocoService);
   readonly players = input<Player[]>([]);
   readonly editable = input(false);
   readonly pointSelected = output<FinalLivePoint>();
@@ -282,7 +289,10 @@ export class FinalLiveScoreComponent {
   }
 
   nameOf(playerId: string): string {
-    return this.players().find((player) => player.id === playerId)?.name ?? 'A definir';
+    return (
+      this.players().find((player) => player.id === playerId)?.name ??
+      this.transloco.translate('finalLive.toBeDecided', {}, 'tournament/pt-BR')
+    );
   }
   photoOf(playerId: string): string | undefined {
     return this.players().find((player) => player.id === playerId)?.photoDataUrl;
