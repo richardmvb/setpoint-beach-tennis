@@ -3,7 +3,7 @@ import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { DialogService } from '../../core/dialog.service';
 import { fixedPairsMode, mixedFinalistCount, usesMixedFinals } from '../../domain/tournament-view/format';
 import { PlayerAvatarComponent } from '../player-avatar.component';
-import { RankingViewComponent } from '../ranking-view.component';
+import { RankingViewComponent } from '../tournament/components/ranking-view.component';
 import type {
   PlayerMatchesDialogComponent,
   PlayerMatchesDialogData,

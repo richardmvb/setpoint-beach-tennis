@@ -1,0 +1,157 @@
+.team b {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+@media (width <=420px) {
+  .team {
+    gap: 6px;
+  }
+
+  .team b {
+    font-size: 10px;
+  }
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.team-names b {
+  text-overflow: ellipsis;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.team > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.match-teams {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.score-status {
+  grid-column: 1/-1;
+  display: block;
+  justify-self: end;
+  margin-top: -3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (width <=420px) {
+  .match-teams {
+    grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .team {
+    gap: 4px;
+  }
+
+  .team-names b {
+    font-size: 9px;
+  }
+
+  .inline-score {
+    width: 32px;
+    height: 33px;
+    padding: 2px;
+    font-size: 13px;
+  }
+
+  .score-status {
+    margin-top: 0;
+    font-size: 9px;
+  }
+}
+
+.versus {
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--muted);
+  text-align: center;
+}
+
+.inline-score {
+  width: 48px;
+  height: 46px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  touch-action: manipulation;
+}
+
+@media (width <=600px) {
+  .inline-score {
+    width: 44px;
+    height: 44px;
+    padding: 2px;
+    font-size: 17px;
+  }
+}
+
+.team-names {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+:host-context(.final-match) .match-teams {
+  margin-top: 15px;
+}
+
+.inline-score:focus {
+  border-color: var(--green-2);
+  outline: 0;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-2) 18%, transparent);
+}
+
+.team-names b app-player-avatar {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  min-width: 24px;
+  max-width: 24px;
+  overflow: hidden;
+}
+
+.team-right {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.team-player-name {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.team-names b .team-player-name {
+  flex: 1 1 0;
+  max-width: calc(100% - 28px);
+}

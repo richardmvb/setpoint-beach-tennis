@@ -1,0 +1,35 @@
+<ng-container *transloco="let t; prefix: 'organizer.tieDraw'">
+  <span class="card-kicker">{{ t('kicker') }}</span>
+  <h2 [id]="titleId">{{ t('title', { positions: positions() }) }}</h2>
+  <p class="muted">{{ t('text') }}</p>
+  @if (!result().length) {
+    <div class="tie-draw-participants">
+      @for (id of playerIds(); track id) {
+        <span><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />{{ nameOf(id) }}</span>
+      }
+    </div>
+  }
+  @if (result().length) {
+    <ol class="tie-draw-result">
+      @for (id of result(); track id; let i = $index) {
+        <li>
+          <b>{{ i + 1 }}º</b><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" /><span>{{
+            nameOf(id)
+          }}</span>
+        </li>
+      }
+    </ol>
+  }
+  <div class="tie-draw-actions">
+    <button uiButton variant="secondary" (click)="cancel()">{{ t('cancel') }}</button>
+    <button uiButton variant="primary" (click)="result().length ? confirm() : draw()">
+      @if (!result().length) {
+        {{ t('draw') }}
+      } @else if (moreTies()) {
+        {{ t('confirmNext') }}
+      } @else {
+        {{ t('confirmFinals') }}
+      }
+    </button>
+  </div>
+</ng-container>

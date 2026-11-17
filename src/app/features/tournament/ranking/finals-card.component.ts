@@ -1,0 +1,49 @@
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
+import { ButtonComponent } from '@ui/button/button.component';
+import type { FinalStage, Match } from '../../../core/models';
+import { FinalLiveScoreComponent } from '../components/final-live-score.component';
+import { MatchScoreFormComponent, type ScoreEdit } from '../components/match-score-form.component';
+import { TournamentStore } from '../data/tournament.store';
+import { PodiumSectionComponent } from './podium-section.component';
+
+/**
+ * The finals: each match with its result (typed games and tie-break, or point by point for the championship), and
+ * once they are complete, the podium section. A child of the ranking page, so it reads the page's store.
+ */
+@Component({
+  selector: 'article[appFinalsCard]',
+  imports: [
+    FormsModule,
+    TranslocoDirective,
+    ButtonComponent,
+    FinalLiveScoreComponent,
+    MatchScoreFormComponent,
+    PodiumSectionComponent,
+  ],
+  providers: [provideTranslocoScope('organizer', 'tournament')],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  // The card's own look (what `uiCard` gives): an attribute component cannot share an element with `uiCard`, and a
+  // wrapper element would change what `:first-child` rules match, so the host carries the classes.
+  host: { class: 'surface-card full-card finals-card' },
+  templateUrl: './finals-card.component.html',
+  styleUrl: './finals-card.component.css',
+})
+export class FinalsCardComponent {
+  protected readonly store = inject(TournamentStore);
+  readonly final = input.required<FinalStage>();
+
+  protected score(match: Match, edit: ScoreEdit): void {
+    this.store.finalScoreChanged(match, edit.side, edit.value);
+  }
+
+  protected tieBreak(match: Match, side: 'tieBreakA' | 'tieBreakB', value: number | null): void {
+    this.store.finalScoreChanged(match, side, value);
+  }
+
+  /** The two pairs are known: a final waiting for a semifinal to be decided has nobody to score yet. */
+  protected ready(match: Match): boolean {
+    return !!match.teamA[0] && !!match.teamB[0];
+  }
+}

@@ -3,8 +3,8 @@ import { TranslocoDirective } from '@jsverse/transloco';
 import type { PodiumPlace } from '../../../core/finals.service';
 import type { FinalStage, Player } from '../../../core/models';
 import { BattleCardComponent } from '../../battle-card.component';
-import { FinalLiveScoreComponent } from '../../final-live-score.component';
-import { PodiumComponent } from '../../podium.component';
+import { FinalLiveScoreComponent } from '../../tournament/components/final-live-score.component';
+import { PodiumComponent } from '../../tournament/components/podium.component';
 
 /** The final phase: every final match, then the podium and the guest's own place once it is over. */
 @Component({

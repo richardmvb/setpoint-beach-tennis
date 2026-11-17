@@ -1,0 +1,128 @@
+{
+  "removedPlayer": "Jogador removido",
+  "roundNav": {
+    "previous": "Rodada anterior",
+    "next": "Próxima rodada",
+    "round": "RODADA",
+    "rankingAndFinals": "Ranking e finais"
+  },
+  "matchForm": {
+    "versus": "VS",
+    "statusFillBoth": "Preencha os dois placares",
+    "statusInvalid": "Placar incompleto ou inválido",
+    "statusSaved": "Salvo automaticamente",
+    "statusUpdating": "Atualizando placar",
+    "statusResultSaved": "Resultado salvo",
+    "statusTieBreak": "Tie-break: vencer por 2 pontos",
+    "statusEnterGames": "Informe os games do set",
+    "statusInProgress": "Set em andamento · vitória por 2 games"
+  },
+  "rounds": {
+    "emptyTitle": "Tabela não gerada",
+    "emptyHint": "Cadastre os jogadores e gere a tabela.",
+    "goPlayers": "Ir para jogadores",
+    "calendar": "Calendário",
+    "lockedAfterFinals": "Bloqueadas após as finais.",
+    "anyOrder": "Lance os resultados em qualquer ordem.",
+    "rounds": "rodadas",
+    "duration": "duração",
+    "time": "tempo",
+    "tabsLabel": "Rodadas do torneio",
+    "round": "RODADA",
+    "roundOf": "RODADA {{ number }} DE {{ total }}",
+    "matchesOne": "1 partida",
+    "matchesMany": "{{ count }} partidas",
+    "resultsCount": "{{ done }} / {{ total }} resultados",
+    "court": "QUADRA {{ number }}",
+    "registered": "● Registrado",
+    "pending": "○ Pendente",
+    "gamesPair1": "Games da dupla 1",
+    "gamesPair2": "Games da dupla 2",
+    "scoreSaved": "Placar salvo",
+    "clear": "Limpar",
+    "restKicker": "PAUSA",
+    "restTitle": "Em descanso",
+    "rest": "Descanso"
+  },
+  "ranking": {
+    "finalPhase": "FASE FINAL",
+    "mixedAvailable": "Finais mistas disponíveis",
+    "earlyAvailable": "Finais antecipadas disponíveis",
+    "eightQualified": "Oito classificados",
+    "mixedBracketText": "Os 8 melhores homens e as 8 melhores mulheres formarão duplas fixas para quartas, semis, final e disputa de 3º lugar.",
+    "mixedDirectText": "Os 4 melhores homens e as 4 melhores mulheres formarão duplas fixas para final e disputa de 3º lugar.",
+    "earlyText": "Todos já têm a mesma quantidade de partidas. Ao gerar as finais, as rodadas restantes serão bloqueadas.",
+    "standardText": "1º+3º × 2º+4º decidem o título; 5º+7º × 6º+8º, o 3º lugar.",
+    "generateFinals": "Gerar finais",
+    "tieBreak": "DESEMPATE",
+    "criterionWins": "Vitórias",
+    "criterionBalance": "Saldo de games",
+    "criterionGamesFor": "Games pró"
+  },
+  "finals": {
+    "kicker": "FASE FINAL · SET ÚNICO",
+    "title": "Finais",
+    "complete": "Concluídas",
+    "inProgress": "Em andamento",
+    "registered": "● Registrado",
+    "pending": "○ Pendente",
+    "manualMode": "Usar placar manual",
+    "liveMode": "Ativar ponto a ponto",
+    "gamesPair1": "Games da dupla 1 na final",
+    "gamesPair2": "Games da dupla 2 na final",
+    "tieBreak": "Tie-break",
+    "pair1": "Dupla 1",
+    "pair2": "Dupla 2",
+    "tieBreakPoints1": "Pontos de tie-break da dupla 1",
+    "tieBreakPoints2": "Pontos de tie-break da dupla 2"
+  },
+  "podium": {
+    "kicker": "PÓDIO FINAL",
+    "duration": "Duração do torneio: {{ time }}",
+    "finalizeHint": "Após finalizar, nada mais pode ser editado.",
+    "finalize": "Finalizar torneio",
+    "share": "COMPARTILHAR",
+    "pickAthlete": "Escolha o atleta.",
+    "athleteForImage": "Atleta para gerar a imagem",
+    "generateImageOf": "Gerar imagem de {{ name }}",
+    "selectAthlete": "Selecione um atleta"
+  },
+  "tieDraw": {
+    "kicker": "DESEMPATE DA CLASSIFICAÇÃO",
+    "title": "Empate entre {{ positions }}",
+    "text": "O confronto direto não resolveu. Sorteie a ordem para gerar as finais.",
+    "cancel": "Cancelar",
+    "draw": "Realizar sorteio",
+    "confirmNext": "Confirmar e sortear próximo empate",
+    "confirmFinals": "Confirmar e gerar finais"
+  },
+  "confirm": {
+    "clearScore": {
+      "title": "Remover o placar desta partida?",
+      "text": "O ranking será recalculado.",
+      "confirm": "Remover placar"
+    },
+    "liveMode": {
+      "title": "Alterar o modo de placar?",
+      "text": "Isso apagará o resultado atual desta final.",
+      "confirm": "Alterar e apagar"
+    },
+    "finalize": {
+      "title": "Finalizar o torneio?",
+      "text": "Depois disso nenhum resultado poderá ser alterado. Para confirmar, digite a palavra abaixo.",
+      "phrase": "finalizar",
+      "confirm": "Finalizar torneio"
+    }
+  },
+  "notices": {
+    "scoreRemoved": "Placar removido.",
+    "finalized": "Torneio finalizado.",
+    "finishPhase": "Conclua todas as partidas da fase atual para gerar a final.",
+    "finalsMixedBracket": "Chave mista gerada com os oito melhores de cada categoria.",
+    "finalsMixedDirect": "Finais diretas geradas com os quatro melhores de cada categoria.",
+    "finalsStandard": "Finais geradas com base nos oito primeiros do ranking.",
+    "finalsFailed": "Não foi possível gerar a final.",
+    "tieDrawn": "Sorteio registrado; a classificação foi atualizada.",
+    "tieDrawFailed": "Não foi possível abrir o sorteio agora. Verifique a conexão e tente de novo."
+  }
+}

@@ -1,0 +1,90 @@
+.tiebreak-row > b {
+  align-self: center;
+  margin-right: auto;
+  font-size: 11px;
+}
+
+.final-match-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (width <=600px) {
+  .final-match-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tiebreak-row {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.tiebreak-row input {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  padding: 8px;
+  font: inherit;
+  text-align: center;
+  font-weight: 800;
+  width: 56px;
+  min-height: 44px;
+  font-size: 17px;
+}
+
+@media (width <=600px) {
+  .tiebreak-row input {
+    width: 52px;
+    min-height: 44px;
+  }
+}
+
+.final-match {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.final-live-toggle {
+  min-height: 40px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+
+.tiebreak-row label span {
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.final-match.quarterfinal {
+  background: color-mix(in srgb, var(--chart-blue) 6%, var(--surface));
+}
+
+.final-match.semifinal {
+  background: color-mix(in srgb, var(--chart-purple) 7%, var(--surface));
+}
+
+.final-match.championship {
+  background: color-mix(in srgb, var(--orange) 8%, var(--surface));
+}
+
+.final-match.third-place {
+  background: color-mix(in srgb, var(--gold-100) 7%, var(--surface));
+}
+
+.tiebreak-row label {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}

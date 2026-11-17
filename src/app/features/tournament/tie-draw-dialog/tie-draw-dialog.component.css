@@ -1,0 +1,110 @@
+.tie-draw-participants span {
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tie-draw-participants > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+:host > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+:host h2 {
+  margin: 6px 0 9px;
+  font-size: 22px;
+}
+
+:host {
+  display: block;
+  width: min(100%, 480px);
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 20px 70px rgb(from var(--black) r g b / 24%);
+}
+
+.tie-draw-result {
+  display: grid;
+  gap: 7px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tie-draw-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 22px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+
+@media (width <=420px) {
+  :host {
+    padding: 17px;
+  }
+
+  :host h2 {
+    font-size: 19px;
+  }
+
+  .tie-draw-actions {
+    flex-direction: column-reverse;
+  }
+
+  .tie-draw-actions button {
+    width: 100%;
+  }
+}
+
+.tie-draw-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.tie-draw-participants app-player-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.tie-draw-result app-player-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+}
+
+.tie-draw-result li b {
+  min-width: 28px;
+  color: var(--accent-text);
+}
+
+.tie-draw-result li {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.tie-draw-result li:first-child {
+  border-color: color-mix(in srgb, var(--orange) 55%, var(--border));
+  background: var(--orange-soft);
+}
