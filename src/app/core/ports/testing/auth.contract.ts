@@ -21,6 +21,14 @@ export function authContract(name: string, create: () => AuthPort): void {
       expect(heard.at(-1)?.[1]).toEqual(user);
     });
 
+    it('does not sign in again when somebody is signed in, and overlapping calls make one user', async () => {
+      const auth = create();
+      await Promise.all([auth.signInAnonymously(), auth.signInAnonymously()]);
+      const first = await auth.currentUser();
+      await auth.signInAnonymously();
+      expect(await auth.currentUser()).toEqual(first);
+    });
+
     it('stops calling a listener once it is unsubscribed', async () => {
       const auth = create();
       let calls = 0;

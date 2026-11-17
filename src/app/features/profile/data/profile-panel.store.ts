@@ -7,14 +7,16 @@ import { APP_CONFIG, versionLabel } from '../../../core/ports/app-config.port';
 import { PROFILE_NAME_MAX } from '../../../core/profile';
 import { SavedTournaments } from '../../../core/saved-tournaments';
 import type { SyncStatus } from '../../../core/state-machines';
+import { SyncErrorText } from '../../../core/sync/sync-error-text';
+import type { SyncErrorKey } from '../../../core/sync/tournament-sync';
 
 /** What the shell knows that the panel shows: the sync state and the theme. */
 export interface ProfileShellState {
   sync: SyncStatus;
   /** Something needs the organizer's attention (pending changes, an error, offline). */
   syncWarning: boolean;
-  /** The text of the last sync error, when there is one. */
-  syncError: string;
+  /** Why the last sync step failed, when it did. */
+  syncError: SyncErrorKey | null;
   theme: ThemeMode;
 }
 
@@ -45,6 +47,9 @@ export class ProfilePanelStore {
 
   readonly welcome = this.data.welcome;
   readonly shell = this.data.shell;
+  private readonly syncErrors = inject(SyncErrorText);
+  /** The words for the sync error, for the status line's tooltip; empty when there is none. */
+  readonly syncErrorText = computed(() => this.syncErrors.text(this.shell().syncError));
   readonly nameMax = PROFILE_NAME_MAX;
   readonly versionLabel = versionLabel(inject(APP_CONFIG));
   readonly profile = this.profileStore.profile;

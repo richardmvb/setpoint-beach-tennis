@@ -178,3 +178,25 @@ export function reviewKind(state: TournamentState): 'fixedPairs' | 'groups' | 's
   if (fixedPairsMode(state)) return 'fixedPairs';
   return isGroupTournament(state) ? 'groups' : 'super';
 }
+
+/**
+ * A tournament read from this device (or from an older version), with every field a later version added filled in,
+ * and, while it has no schedule, courts and rounds that fit its size. Returns a new object; the input is not changed.
+ */
+export function normalizeStoredTournament(stored: TournamentState): TournamentState {
+  const state: TournamentState = {
+    ...stored,
+    tournamentMode: stored.tournamentMode ?? 'super',
+    doublesFormat: stored.doublesFormat ?? 'open',
+    hostingMode: stored.hostingMode ?? 'local',
+    groupFormat: stored.groupFormat ?? 'rotating',
+    groups: stored.groups ?? [],
+    fixedPairs: stored.fixedPairs ?? [],
+    finals: stored.finals ?? null,
+    tieBreakDraws: stored.tieBreakDraws ?? [],
+  };
+  if (state.rounds.length) return state;
+  const courts = availableCourts(state).includes(state.courts) ? state.courts : Math.floor(state.size / 4);
+  const fitted = { ...state, courts };
+  return { ...fitted, roundCount: requiredRounds(fitted) };
+}

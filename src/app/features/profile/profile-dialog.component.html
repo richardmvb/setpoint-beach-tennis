@@ -4,7 +4,7 @@
     <div class="profile-head-text">
       <span class="card-kicker">{{ store.welcome ? t('welcome.kicker') : t('kicker') }}</span>
       <h2 [id]="titleId">{{ store.name() || t('untitled') }}</h2>
-      <small class="profile-sync" [class.sync-warning]="store.shell().syncWarning" [attr.title]="store.shell().syncError || null"><i aria-hidden="true"></i>@switch (store.shell().sync) {
+      <small class="profile-sync" [class.sync-warning]="store.shell().syncWarning" [attr.title]="store.syncErrorText() || null"><i aria-hidden="true"></i>@switch (store.shell().sync) {
         @case ('device-only') {
           {{ t('sync.deviceOnly') }}
         }

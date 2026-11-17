@@ -4,8 +4,10 @@ import { tournamentState } from '../testing/tournament-state';
 import { CurrentTournament } from './current-tournament';
 import { ANALYTICS } from './ports/analytics.port';
 import { CLOCK } from './ports/clock.port';
+import { RANDOM } from './ports/random.port';
 import { FakeAnalytics } from './ports/testing/analytics.fake';
 import { FakeClock } from './ports/testing/clock.fake';
+import { FakeRandom } from './ports/testing/random.fake';
 import { SetupProgress } from './setup-progress';
 
 function setup() {
@@ -15,6 +17,7 @@ function setup() {
     providers: [
       { provide: ANALYTICS, useValue: analytics },
       { provide: CLOCK, useValue: new FakeClock() },
+      { provide: RANDOM, useValue: new FakeRandom() },
     ],
   });
   TestBed.inject(CurrentTournament).set(tournamentState({ tournamentMode: 'groups', size: 12, hostingMode: 'shared' }));

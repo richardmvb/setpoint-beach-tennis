@@ -49,6 +49,7 @@ export function fakeSupabase(options: { signedIn?: boolean } = {}) {
             ? { data: { user: { id: 'u-1' } }, error: null }
             : { data: { user: null }, error: new Error('no session') },
         ),
+      getSession: () => Promise.resolve({ data: { session: auth.signedIn ? { user: { id: 'u-1' } } : null } }),
       signInAnonymously: () => {
         auth.signInCalls++;
         auth.signedIn = true;

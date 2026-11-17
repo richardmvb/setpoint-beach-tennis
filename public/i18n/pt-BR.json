@@ -7,6 +7,72 @@
       "surveyFailed": "Não foi possível abrir a pesquisa."
     },
     "loading": "Carregando torneio…",
-    "loadFailed": "Não foi possível carregar esta tela. Verifique a conexão e recarregue a página."
+    "loadFailed": "Não foi possível carregar esta tela. Verifique a conexão e recarregue a página.",
+    "notice": {
+      "versionReset": "Nova versão do SETPOINT. Seu torneio anterior continua salvo em Meus torneios.",
+      "profileFailed": "Não foi possível abrir o perfil agora. Verifique a conexão e tente de novo.",
+      "libraryFailed": "Não foi possível abrir os torneios salvos agora. Verifique a conexão e tente de novo.",
+      "saveFailed": "Falha ao salvar.",
+      "scheduleCount": "Cadastre exatamente {{ size }} jogadores. Atualmente: {{ count }}.",
+      "scheduleExists": "A tabela já foi gerada.",
+      "sharedStartModerator": "O torneio compartilhado só pode iniciar pelo moderador quando todas as vagas estiverem preenchidas.",
+      "scheduleFailed": "Erro ao gerar a tabela.",
+      "scheduleSaved": "Todas as rodadas foram geradas e salvas.",
+      "syncWaitNew": "Aguarde a sincronização terminar antes de iniciar outro torneio.",
+      "syncWaitArchive": "Aguarde a sincronização terminar antes de arquivar o torneio.",
+      "syncWaitSwitch": "Aguarde a sincronização terminar antes de trocar de torneio.",
+      "backupTooLarge": "O arquivo é grande demais para ser um backup do SETPOINT.",
+      "backupInvalid": "Arquivo inválido: selecione um backup JSON exportado pelo SETPOINT.",
+      "queueNotUpdated": "Não foi possível atualizar a fila de sincronização.",
+      "savedOpenFailed": "Não foi possível abrir este torneio salvo.",
+      "newTournament": "Novo torneio iniciado.",
+      "backupLoaded": "Backup carregado.",
+      "finishedLoaded": "Torneio finalizado carregado. Os dados estão em modo somente leitura.",
+      "savedOpened": "Torneio salvo aberto."
+    },
+    "syncError": {
+      "queueUnavailable": "Não foi possível acessar a fila de sincronização local.",
+      "prefsNotSaved": "Não foi possível salvar a preferência de sincronização.",
+      "prepareFailed": "Não foi possível preparar a sincronização neste dispositivo.",
+      "notStaged": "Sincronização não preparada. Exporte um backup e reconecte antes de continuar.",
+      "queueNotSaved": "Não foi possível salvar a fila de sincronização. Exporte um backup deste torneio.",
+      "queueNotCleared": "Não foi possível limpar a fila local.",
+      "conflict": "O torneio mudou em outro dispositivo. As alterações locais estão preservadas; exporte um backup antes de resolver o conflito.",
+      "expired": "O torneio no servidor expirou, foi arquivado ou já foi finalizado. Exporte um backup dos dados locais.",
+      "failed": "Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente."
+    },
+    "confirm": {
+      "newKept": {
+        "title": "Iniciar um novo torneio?",
+        "text": "O torneio atual continuará salvo em Meus torneios.",
+        "confirm": "Novo torneio"
+      },
+      "newErase": {
+        "title": "Iniciar um novo torneio?",
+        "text": "Isso apagará a tabela, os placares e os participantes salvos neste navegador.",
+        "confirm": "Apagar e começar"
+      },
+      "archive": {
+        "title": "Arquivar este torneio e recomeçar?",
+        "text": "O convite será invalidado. O histórico e os participantes serão preservados no dashboard.",
+        "confirm": "Arquivar e recomeçar"
+      },
+      "importBackup": {
+        "title": "Importar este backup?",
+        "text": "Ele substitui o torneio atual neste navegador.",
+        "confirm": "Importar backup"
+      },
+      "openOther": {
+        "title": "Abrir outro torneio?",
+        "text": "O torneio atual ainda não foi iniciado e não está salvo. Abrir outro descarta essa configuração.",
+        "confirm": "Abrir e descartar"
+      },
+      "discardPending": {
+        "title": "Alterações ainda não sincronizadas",
+        "text": "Exporte um backup antes de continuar. Se seguir agora, essas alterações serão descartadas.",
+        "confirm": "Descartar alterações",
+        "cancel": "Voltar"
+      }
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { Subject } from 'rxjs';
 import { CurrentTournament } from './current-tournament';
 import type { TournamentState } from './models';
 import { ANALYTICS } from './ports/analytics.port';
@@ -16,9 +17,10 @@ export interface LiveLinkError {
   detail?: string;
 }
 
-export interface LocalLiveHooks {
-  /** The link was created: the shell starts the sync queue, saves, re-queues the archive and uploads it. */
-  published(analyticsId: string, published: TournamentState): void;
+/** The link was just created: the sync queue starts for it, the tournament is saved and its archive re-queued. */
+export interface LiveLinkPublished {
+  analyticsId: string;
+  published: TournamentState;
 }
 
 /**
@@ -35,14 +37,13 @@ export class LocalLiveLink {
   private readonly analytics = inject(ANALYTICS);
   private readonly tournament = inject(CurrentTournament);
   private readonly random = inject(RANDOM);
-  private hooks: LocalLiveHooks | null = null;
 
   private readonly link = signal('');
   private readonly busy = signal(false);
   private readonly message = signal<'copied' | null>(null);
   private readonly failure = signal<LiveLinkError | null>(null);
   private readToken = '';
-  private token = '';
+  private readonly writeCredential = signal('');
   private forAnalyticsId = '';
 
   readonly url = this.link.asReadonly();
@@ -55,13 +56,12 @@ export class LocalLiveLink {
     return this.auth.configured;
   }
 
-  connect(hooks: LocalLiveHooks): void {
-    this.hooks = hooks;
-  }
+  /** Emits once the link is created and stored (`createOrCopy`). */
+  readonly published$ = new Subject<LiveLinkPublished>();
 
   /** The token that sends this device's scores to the link, or empty when the tournament has no link. */
   writeToken(): string {
-    return this.token;
+    return this.writeCredential();
   }
 
   /** The link stored for this tournament, if any. Returns whether there is one (the shell then starts its sync). */
@@ -73,7 +73,7 @@ export class LocalLiveLink {
       const credentials = JSON.parse(stored) as { id?: string; readToken?: string; writeToken?: string };
       if (!credentials.id || !credentials.readToken || !credentials.writeToken) return false;
       this.readToken = credentials.readToken;
-      this.token = credentials.writeToken;
+      this.writeCredential.set(credentials.writeToken);
       this.forAnalyticsId = state.analyticsId;
       this.link.set(this.urlState.liveUrl(credentials.readToken));
       return true;
@@ -102,7 +102,7 @@ export class LocalLiveLink {
       /* sem armazenamento local */
     }
     this.readToken = '';
-    this.token = '';
+    this.writeCredential.set('');
     this.forAnalyticsId = '';
     this.link.set('');
     this.message.set(null);
@@ -130,11 +130,11 @@ export class LocalLiveLink {
       const analyticsId = published.analyticsId ?? '';
       const credentials = await this.repository.createLocalLiveTournament(published);
       this.readToken = credentials.readToken;
-      this.token = credentials.writeToken;
+      this.writeCredential.set(credentials.writeToken);
       this.forAnalyticsId = analyticsId;
       this.link.set(this.urlState.liveUrl(credentials.readToken));
       this.local.setItem(`${LOCAL_LIVE_KEY}.${analyticsId}`, JSON.stringify(credentials));
-      this.hooks?.published(analyticsId, published);
+      this.published$.next({ analyticsId, published });
       this.analytics.capture('local_live_link_created');
       await this.copy();
     } catch (error) {

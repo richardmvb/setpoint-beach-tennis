@@ -10,17 +10,18 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { Page, PlayerStanding, SharedTournamentSnapshot, ThemeMode, TournamentState } from './core/models';
+import { Page, ThemeMode, TournamentState } from './core/models';
 import { StorageService } from './core/storage.service';
 import { CurrentTournament } from './core/current-tournament';
-import { OwnedSharedTournament, SHARED_SETUP_KEY } from './core/owned-shared-tournament';
+import { Notices } from './core/notices';
 import { SetupProgress } from './core/setup-progress';
-import { SelectedRound } from './core/selected-round';
-import { LocalLiveLink } from './core/local-live-link';
-import { availableCourts, newTournament, requiredRounds } from './domain/tournament-setup/setup-rules';
-import { SetupTourCue } from './features/setup/data/setup-tour-cue';
 import { LocalProfileStore } from './core/local-profile.store';
 import { SavedTournaments } from './core/saved-tournaments';
+import { TournamentArchive } from './core/archive/tournament-archive';
+import { SyncErrorText } from './core/sync/sync-error-text';
+import { TournamentSync } from './core/sync/tournament-sync';
+import { AppNavigation } from './core/routing/app-navigation';
+import { ShellContext } from './core/shell-context';
 import type {
   ProfileDialogData,
   ProfileDialogResult,
@@ -29,29 +30,18 @@ import type {
 import type { ProfileDialogComponent } from './features/profile/profile-dialog.component';
 import type { LibraryDialogData } from './features/library/data/library.store';
 import type { LibraryDialogComponent } from './features/library/library-dialog.component';
-import { OfflineSyncQueue, SyncKind } from './core/offline-sync-queue';
 import { libraryId } from './core/tournament-library';
-import { SYNC_STATUS_LABEL, syncStatus } from './core/state-machines';
-import { ScheduleService } from './core/schedule.service';
-import { GroupScheduleService } from './core/group-schedule.service';
-import { ShareCardService } from './core/share-card.service';
-import * as tournamentFormat from './domain/tournament-view/format';
-import { createStandingsMemo, type StandingsView } from './domain/tournament-view/standings';
-import { ShareResultsSession } from './features/tournament/share-results-dialog/share-results-session';
+import { SYNC_STATUS_LABEL } from './core/state-machines';
+import { SetupTourCue } from './features/setup/data/setup-tour-cue';
 import { PlayerAvatarComponent } from './features/player-avatar.component';
 import { ANALYTICS } from './core/ports/analytics.port';
-import { ARCHIVE } from './core/ports/archive.port';
 import { AppUser, AUTH } from './core/ports/auth.port';
 import { APP_CONFIG, versionLabel } from './core/ports/app-config.port';
-import { CLOCK } from './core/ports/clock.port';
 import { LOCAL_STORE, SESSION_STORE } from './core/ports/key-value-store.port';
-import { RANDOM } from './core/ports/random.port';
 import { URL_STATE } from './core/routing/url-state';
-import { TOURNAMENT_FEED } from './core/ports/live-feed.port';
-import { LOCAL_LIVE, SHARED_TOURNAMENTS } from './core/ports/tournaments.port';
-import { publicTournamentState } from './core/public-tournament-state';
 import { DialogService } from './core/dialog.service';
 import { NpsFeedbackService } from './core/nps-feedback.service';
+import * as tournamentFormat from './domain/tournament-view/format';
 import { ProjectionController } from './features/tournament/projection/projection-controller';
 import { SharedViewComponent } from './features/shared-view/shared-view.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -64,10 +54,12 @@ import {
   type TournamentShellState,
 } from './features/tournament/data/tournament.store';
 import { landingSeen } from './features/landing/data/landing-visit';
+import { provideHostProjection } from './shell/host-projection';
+import { ShellStartup } from './shell/shell-startup';
+import { TournamentLifecycle } from './shell/tournament-lifecycle';
 
 const ACCESS_PASSWORD = 'bt2026';
 const UNLOCK_SESSION_KEY = 'setpoint.unlocked';
-const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
 
 @Component({
   selector: 'app-root',
@@ -82,56 +74,47 @@ const SYNC_PAUSED_KEY = 'setpoint.sync.paused';
     TournamentComponent,
     TranslocoPipe,
   ],
-  providers: [ProjectionController],
+  providers: [provideHostProjection()],
   changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit, DoCheck, OnDestroy {
-  private storage = inject(StorageService);
+  private readonly storage = inject(StorageService);
   private readonly local = inject(LOCAL_STORE);
   private readonly session = inject(SESSION_STORE);
-  private readonly clock = inject(CLOCK);
-  private readonly random = inject(RANDOM);
   private readonly config = inject(APP_CONFIG);
   private readonly urlState = inject(URL_STATE);
-  private stopPathWatch: (() => void) | null = null;
-  private scheduler = inject(ScheduleService);
-  private groupScheduler = inject(GroupScheduleService);
-  private readonly sharedTournaments = inject(SHARED_TOURNAMENTS);
-  private readonly localLive = inject(LOCAL_LIVE);
-  private readonly feed = inject(TOURNAMENT_FEED);
-  private readonly archive = inject(ARCHIVE);
   private readonly auth = inject(AUTH);
-  private shareCard = inject(ShareCardService);
-
   private readonly analytics = inject(ANALYTICS);
-  protected readonly nps = inject(NpsFeedbackService);
-  protected readonly projection = inject(ProjectionController);
   private readonly dialog = inject(DialogService);
-  private readonly shareSession = inject(ShareResultsSession);
   private readonly tournament = inject(CurrentTournament);
-  private readonly owned = inject(OwnedSharedTournament);
   private readonly setup = inject(SetupProgress);
-  private readonly selectedRound = inject(SelectedRound);
-  private readonly liveLink = inject(LocalLiveLink);
   private readonly transloco = inject(TranslocoService);
   private readonly setupTourCue = inject(SetupTourCue);
-  private readonly authCallback: boolean;
-  private readonly syncQueue = new OfflineSyncQueue(this.local);
-
+  private readonly archive = inject(TournamentArchive);
+  private readonly lifecycle = inject(TournamentLifecycle);
+  private readonly startup = inject(ShellStartup);
+  private readonly context = inject(ShellContext);
+  private readonly navigation = inject(AppNavigation);
+  protected readonly sync = inject(TournamentSync);
+  protected readonly syncErrors = inject(SyncErrorText);
+  protected readonly notices = inject(Notices);
+  protected readonly nps = inject(NpsFeedbackService);
+  protected readonly projection = inject(ProjectionController);
   protected readonly savedTournaments = inject(SavedTournaments);
-  private readonly library = this.savedTournaments.library;
   protected readonly profileStore = inject(LocalProfileStore);
-  private archiveInFlight = false;
-  private archiveRetryAfter = 0;
-  private versionResetKeptTournament = false;
+  private readonly authCallback: boolean;
+  private stopPathWatch: (() => void) | null = null;
+  private authStateUnsubscribe: (() => void) | null = null;
+  private identifiedUserId: string | null = null;
+
   /** The profile dialog is open: setup tours and the saved-tournaments prompt wait for it to close. */
   profileOpen = false;
   /** The saved-tournaments dialog is open (or loading), so a second click does not stack another. */
   private libraryOpen = false;
   /**
-   * What the shell knows that the tournament pages and the profile dialog show (sync, theme). Refreshed on every check
-   * until the shell is signal-based (B5); it only changes when a field does, so the views it feeds stay still.
+   * What the shell knows that the tournament pages and the profile dialog show (sync, theme). Refreshed on every
+   * check until the shell is OnPush (B5b); it only changes when a field does, so the views it feeds stay still.
    */
   protected readonly shellState = signal<TournamentShellState>(NO_SHELL_STATE, {
     equal: (a, b) =>
@@ -164,147 +147,64 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   showLanding = false;
   sitePassword = '';
   lockError = '';
-  page: Page = 'setup';
   theme: ThemeMode = 'light';
+  appBasePath = '';
+  readonly versionLabel = versionLabel(this.config);
+  /** The address opens someone else's tournament: the page is the lazy shared view and no owner startup runs. */
+  readonly isSharedView = this.context.isSharedView;
+
   /** The tournament being run: the one `CurrentTournament` holds, so the features see it too. */
   get state(): TournamentState {
     return this.tournament.state();
   }
-  set state(value: TournamentState) {
-    this.tournament.set(value);
+  get page(): Page {
+    return this.navigation.page();
   }
-  private readonly standingsMemo = createStandingsMemo();
-  notice = '';
-  noticeType: 'success' | 'error' = 'success';
-  /**
-   * The address opens someone else's tournament (live link, invite or admin viewer). The page is then the lazy
-   * `SharedViewComponent`, and none of the device's own tournament, sync, library or version reset runs.
-   */
-  readonly isSharedView: boolean;
-  /** The moderator's own shared tournament lives in `OwnedSharedTournament`; these are the shell's views of it. */
-  get isSharedModerator(): boolean {
-    return this.owned.moderator();
+  get isDashboardRoute(): boolean {
+    return this.navigation.dashboardRoute();
   }
-  set isSharedModerator(value: boolean) {
-    this.owned.setModerator(value);
+  get hasSchedule(): boolean {
+    return this.state.rounds.length > 0;
   }
-  get sharedSnapshot(): SharedTournamentSnapshot | null {
-    return this.owned.snapshot();
+  get isGroupTournament(): boolean {
+    return tournamentFormat.isGroupTournament(this.state);
   }
-  get sharedLoading(): boolean {
-    return this.owned.loading();
+  get syncLabel(): string {
+    return SYNC_STATUS_LABEL[this.sync.status()];
   }
-  private syncTimeout: number | null = null;
-  private syncInFlight = false;
-  private syncRetryAfter = 0;
-  syncPaused = false;
-  syncError = '';
-  connectionOnline = navigator.onLine;
-  private sharedPollTimer: number | null = null;
-  private authStateUnsubscribe: (() => void) | null = null;
-  private identifiedUserId: string | null = null;
-  /** The athlete the host picked in the projection; empty means the leader. */
-  private qualificationTargetPlayerId = '';
-  isDashboardRoute = false;
-  appBasePath = '';
-  private readonly onPopState = (): void => this.restorePageFromPath();
-  private readonly onConnectionChange = (): void => {
-    this.connectionOnline = navigator.onLine;
-    if (this.connectionOnline) {
-      void this.syncPending();
-      void this.flushArchives();
-    }
-  };
+  get projectionLockedHint(): string {
+    return this.projection.available ? '' : 'A projeção é liberada quando a 1ª rodada termina.';
+  }
+  /** The six organizer pages are one lazy feature. */
+  get isTournamentPage(): boolean {
+    return (
+      this.page === 'overview' ||
+      this.page === 'players' ||
+      this.page === 'rounds' ||
+      this.page === 'ranking' ||
+      this.page === 'projection' ||
+      this.page === 'settings'
+    );
+  }
 
   constructor() {
-    // The schedule services default to Math.random; production draws go through the Random port instead.
-    this.scheduler.random = () => this.random.next();
-    this.groupScheduler.random = () => this.random.next();
-    this.tournament.connect({
-      save: (success) => this.persist(success),
-      notify: (text, tone) => this.message(text, tone),
-      clearNotice: () => this.clearNotice(),
-    });
-    this.owned.connect({ applied: (snapshot, keepView) => this.onSharedApplied(snapshot, keepView) });
-    this.liveLink.connect({
-      published: (analyticsId, published) => {
-        this.syncQueue.initialize('local', analyticsId, publicTournamentState(published));
-        this.persist();
-        this.library.requeue(analyticsId);
-        void this.flushArchives();
-      },
-    });
-    this.projection.connect({
-      state: () => this.state,
-      standings: () => this.standings,
-      playerId: () => this.qualificationPlayerId,
-      isGuest: false,
-      viewing: () => this.page === 'projection',
-    });
     const url = this.urlState.snapshot();
     this.authCallback = url.authCallback;
     this.appBasePath = this.urlState.basePath;
-    this.isDashboardRoute = url.dashboardPath;
-    this.isSharedView = !url.dashboardPath && !!(url.inviteToken || url.liveToken || url.dashboardViewerId);
     this.theme = this.storage.loadTheme();
-    if (this.isSharedView) {
-      // Only a placeholder: the shared view reads its own tournament. Its hosting mode is what analytics reports.
-      this.state = newTournament(this.clock.iso());
-      this.state.hostingMode = url.dashboardViewerId
-        ? (url.dashboardViewerSource ?? 'shared')
-        : url.liveToken
-          ? 'local'
-          : 'shared';
-      this.page = 'shared';
-      return;
-    }
-    try {
-      this.isLocked =
-        this.config.lockScreenEnabled &&
-        !this.isDashboardRoute &&
-        !this.authCallback &&
-        this.session.getItem(UNLOCK_SESSION_KEY) !== 'true';
-    } catch {
-      this.isLocked = this.config.lockScreenEnabled && !this.isDashboardRoute && !this.authCallback;
-    }
-    this.showLanding = !this.isDashboardRoute && !this.authCallback && !landingSeen(this.local);
-    this.state = this.storage.loadTournament() ?? newTournament(this.clock.iso());
-    try {
-      this.syncPaused = this.local.getItem(SYNC_PAUSED_KEY) === 'true';
-      if (!this.isDashboardRoute) {
-        const kind: SyncKind = this.state.hostingMode === 'shared' ? 'shared' : 'local';
-        const id = kind === 'shared' ? this.state.sharedTournamentId : this.state.analyticsId;
-        const record = id ? this.syncQueue.read(kind, id) : null;
-        if (record?.pending) this.state = record.pending;
-        if (kind === 'shared' && record && this.state.sharedStatus === 'active' && this.state.rounds.length)
-          this.isSharedModerator = true;
+    if (!this.isSharedView) {
+      try {
+        this.isLocked =
+          this.config.lockScreenEnabled &&
+          !this.isDashboardRoute &&
+          !this.authCallback &&
+          this.session.getItem(UNLOCK_SESSION_KEY) !== 'true';
+      } catch {
+        this.isLocked = this.config.lockScreenEnabled && !this.isDashboardRoute && !this.authCallback;
       }
-    } catch {
-      this.syncError = 'Não foi possível acessar a fila de sincronização local.';
+      this.showLanding = !this.isDashboardRoute && !this.authCallback && !landingSeen(this.local);
     }
-    if (!this.isDashboardRoute) this.keepInLibrary(this.state);
-    if (!this.hasPendingSync && this.storage.clearCompletedTournamentOnVersionChange(this.buildId, this.state)) {
-      this.versionResetKeptTournament = !!libraryId(this.state) && !!this.library.get(libraryId(this.state) ?? '');
-      this.state = newTournament(this.clock.iso());
-    }
-    this.state.tournamentMode ??= 'super';
-    this.state.doublesFormat ??= 'open';
-    this.state.doublesFormat ??= 'open';
-    this.state.hostingMode ??= 'local';
-    this.state.groupFormat ??= 'rotating';
-    this.state.groups ??= [];
-    this.state.fixedPairs ??= [];
-    this.state.finals ??= null;
-    this.state.tieBreakDraws ??= [];
-    this.restoreLiveLink();
-    this.page = this.isDashboardRoute ? 'dashboard' : this.state.rounds.length ? 'overview' : 'setup';
-    if (!this.state.rounds.length) {
-      if (!this.availableCourts.includes(this.state.courts)) this.state.courts = Math.floor(this.state.size / 4);
-      this.state.roundCount = this.requiredRounds;
-    }
-    this.savedTournaments.refresh();
-    if (this.versionResetKeptTournament)
-      this.message('Nova versão do SETPOINT. Seu torneio anterior continua salvo em Meus torneios.');
+    this.startup.restore();
   }
 
   ngOnInit(): void {
@@ -312,9 +212,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
   }
 
   private async startApp(): Promise<void> {
-    this.stopPathWatch = this.urlState.onPathChange(this.onPopState);
-    window.addEventListener('online', this.onConnectionChange);
-    window.addEventListener('offline', this.onConnectionChange);
+    this.stopPathWatch = this.urlState.onPathChange(() => this.restorePageFromPath());
     this.applyTheme();
     // Os tokens do link mágico ficam no hash da URL; o PostHog só pode iniciar depois que saem dela.
     if (this.authCallback) {
@@ -332,7 +230,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       has_schedule: this.state.rounds.length > 0,
       is_guest_view: this.isSharedView,
     });
-    this.trackFeatureViewed(this.page);
+    this.navigation.trackViewed(this.page);
     if (this.page === 'setup') this.setup.viewed();
     if (!this.isSharedView) window.setTimeout(() => this.welcomeThen(() => this.cueSetupTour()), 600);
     if (!this.isSharedView && !this.isDashboardRoute) {
@@ -348,24 +246,13 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     });
     void this.identifyCurrentUser();
     // The shared view runs its own clock, poll and realtime watch.
-    if (this.isSharedView) return;
-    if (!this.isLocked && !this.isDashboardRoute) {
-      this.backfillLocalTournamentMetrics();
-      this.archiveCurrent();
-    }
-    this.sharedPollTimer = window.setInterval(() => this.pollShared(), 4000);
-    void this.restoreOwnerSharedFlow();
-    if (!this.isDashboardRoute) void this.syncPending();
+    this.startup.start(this.isLocked);
   }
 
   ngOnDestroy(): void {
     this.stopPathWatch?.();
-    window.removeEventListener('online', this.onConnectionChange);
-    window.removeEventListener('offline', this.onConnectionChange);
-    if (this.sharedPollTimer !== null) window.clearInterval(this.sharedPollTimer);
-    if (this.syncTimeout !== null) window.clearTimeout(this.syncTimeout);
     this.authStateUnsubscribe?.();
-    this.owned.stopWatching();
+    this.startup.stop();
   }
 
   private async identifyCurrentUser(): Promise<void> {
@@ -381,120 +268,6 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.identifiedUserId = user.id;
   }
 
-  private get syncTarget(): { kind: SyncKind; id: string } | null {
-    if (this.isSharedView || this.isDashboardRoute || !this.state) return null;
-    if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId)
-      return { kind: 'shared', id: this.state.sharedTournamentId };
-    if (this.state.hostingMode !== 'shared' && this.state.analyticsId)
-      return { kind: 'local', id: this.state.analyticsId };
-    return null;
-  }
-  get hasPendingSync(): boolean {
-    try {
-      const target = this.syncTarget;
-      return !!target && !!this.syncQueue.read(target.kind, target.id)?.pending;
-    } catch {
-      return false;
-    }
-  }
-  get syncing(): boolean {
-    return this.syncInFlight;
-  }
-  get syncAvailable(): boolean {
-    return (
-      !this.isDashboardRoute &&
-      ((this.isSharedMode && this.isSharedModerator && !!this.state.sharedTournamentId && !!this.state.rounds.length) ||
-        (!this.isSharedMode && !!this.liveLink.writeToken()))
-    );
-  }
-  get syncStatus() {
-    return syncStatus({
-      available: this.syncAvailable,
-      error: !!this.syncError,
-      online: this.connectionOnline,
-      paused: this.syncPaused,
-      inFlight: this.syncInFlight,
-      hasPending: this.hasPendingSync,
-    });
-  }
-  get syncLabel(): string {
-    return SYNC_STATUS_LABEL[this.syncStatus];
-  }
-  setSyncPaused(paused: boolean): void {
-    this.syncPaused = paused;
-    try {
-      this.local.setItem(SYNC_PAUSED_KEY, String(paused));
-    } catch {
-      this.syncError = 'Não foi possível salvar a preferência de sincronização.';
-    }
-    if (!paused) {
-      this.syncRetryAfter = 0;
-      void this.syncPending();
-    }
-  }
-  syncNow(): void {
-    this.syncRetryAfter = 0;
-    void this.syncPending(true);
-  }
-
-  private async syncPending(manual = false): Promise<void> {
-    if (this.syncInFlight || !this.connectionOnline || (this.syncPaused && !manual)) return;
-    const target = this.syncTarget;
-    if (
-      !target ||
-      (target.kind === 'shared' && !this.isSharedModerator) ||
-      (target.kind === 'local' && !this.liveLink.writeToken())
-    )
-      return;
-    this.syncInFlight = true;
-    try {
-      while (this.syncTarget?.kind === target.kind && this.syncTarget?.id === target.id) {
-        const record = this.syncQueue.read(target.kind, target.id);
-        if (!record?.pending) break;
-        const snapshot =
-          target.kind === 'shared'
-            ? await this.sharedTournaments.syncSharedTournament(target.id, record.base, record.pending)
-            : await this.localLive.syncLocalLiveTournament(this.liveLink.writeToken(), record.base, record.pending);
-        this.syncQueue.acknowledge(target.kind, target.id, record.revision, snapshot.state);
-        if (target.kind === 'shared' && this.state.sharedTournamentId === target.id) {
-          this.state = { ...this.state, sharedStatus: snapshot.status };
-          if (this.sharedSnapshot?.id === snapshot.id) this.owned.replaceSnapshot(snapshot as SharedTournamentSnapshot);
-          this.storage.saveTournament(this.state);
-        }
-        this.syncError = '';
-        this.syncRetryAfter = 0;
-        if (this.syncPaused && !manual) break;
-      }
-    } catch (error) {
-      const detail = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-      this.syncError = detail.includes('sync_conflict')
-        ? 'O torneio mudou em outro dispositivo. As alterações locais estão preservadas; exporte um backup antes de resolver o conflito.'
-        : detail.includes('expired') ||
-            detail.includes('tournament_completed') ||
-            detail.includes('tournament_archived')
-          ? 'O torneio no servidor expirou, foi arquivado ou já foi finalizado. Exporte um backup dos dados locais.'
-          : 'Não foi possível sincronizar. Os dados permanecem neste dispositivo; tente novamente.';
-      this.syncRetryAfter = this.clock.now() + 15000;
-    } finally {
-      this.syncInFlight = false;
-    }
-  }
-  readonly buildId = this.config.buildId;
-  readonly versionLabel = versionLabel(this.config);
-  get isSharedMode(): boolean {
-    return this.state.hostingMode === 'shared';
-  }
-  /** The athlete whose projection the host is looking at: the leader until another one is picked. */
-  private get qualificationPlayerId(): string {
-    return this.qualificationTargetPlayerId || this.standings[0]?.playerId || '';
-  }
-  setQualificationTargetPlayer(playerId: string): void {
-    this.qualificationTargetPlayerId = playerId;
-    this.projection.playerChanged();
-  }
-  get projectionLockedHint(): string {
-    return this.projection.available ? '' : 'A projeção é liberada quando a 1ª rodada termina.';
-  }
   openProjection(): void {
     if (!this.projection.open()) return;
     this.navigate('projection');
@@ -559,59 +332,21 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     this.isLocked = false;
     this.sitePassword = '';
     this.lockError = '';
-    this.backfillLocalTournamentMetrics();
-    this.archiveCurrent();
+    this.startup.afterUnlock();
     if (!this.showLanding) window.setTimeout(() => this.welcomeThen(() => this.cueSetupTour()), 300);
   }
 
-  private backfillLocalTournamentMetrics(): void {
-    if (this.state.hostingMode === 'shared' || !this.state.startedAt || !this.state.rounds.length) return;
-    this.ensureAnalyticsId();
-    try {
-      this.storage.saveTournament(this.state);
-    } catch {
-      return;
-    }
-    this.syncLocalTournamentMetrics();
+  /** The setup wizard's "start": draws the schedule. */
+  protected generateSchedule(): void {
+    void this.lifecycle.generateSchedule();
   }
 
-  /** The six organizer pages are one lazy feature. */
-  get isTournamentPage(): boolean {
-    return (
-      this.page === 'overview' ||
-      this.page === 'players' ||
-      this.page === 'rounds' ||
-      this.page === 'ranking' ||
-      this.page === 'projection' ||
-      this.page === 'settings'
-    );
-  }
-  get hasSchedule(): boolean {
-    return this.state.rounds.length > 0;
-  }
-  get isGroupTournament(): boolean {
-    return tournamentFormat.isGroupTournament(this.state);
-  }
-  get isMixedDoubles(): boolean {
-    return tournamentFormat.isMixedDoubles(this.state);
-  }
-  get availableCourts(): number[] {
-    return availableCourts(this.state);
-  }
-  get requiredRounds(): number {
-    return requiredRounds(this.state);
-  }
-  get requiredCourts(): number {
-    return this.state.courts;
-  }
-  get standings(): PlayerStanding[] {
-    return this.standingsView.all;
-  }
-  private get standingsView(): StandingsView {
-    return this.standingsMemo(this.state);
+  /** Archives the moderator's shared tournament (from the setup page: the person stays where they are). */
+  protected cancelShared(): void {
+    void this.landingAfter(this.lifecycle.cancelShared());
   }
 
-  /** What a tournament page asks of the shell, which owns navigation, saving, the sync queue and the device. */
+  /** What a tournament page asks of the shell, which owns navigation, the URL and the landing page. */
   protected onTournamentRequest(request: ShellRequest): void {
     switch (request.kind) {
       case 'navigate':
@@ -619,18 +354,18 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
         return;
       case 'finalized':
         // The tournament was finished (the store saved it): the report is in Ajustes.
-        this.setPage('settings');
+        this.navigation.setPage('settings');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        if (!this.isSharedMode) this.syncLocalTournamentMetrics();
+        if (this.state.hostingMode !== 'shared') this.archive.recordMetrics();
         return;
       case 'cancelShared':
-        void this.cancelSharedTournament();
+        void this.landingAfter(this.lifecycle.cancelShared());
         return;
       case 'reset':
-        void this.resetTournament();
+        void this.landingAfter(this.lifecycle.reset());
         return;
       case 'importBackup':
-        void this.importBackup(request.file);
+        void this.lifecycle.importBackup(request.file);
         return;
       case 'openLibrary':
         void this.openLibrary();
@@ -638,55 +373,26 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       case 'openLanding':
         this.openLanding();
         return;
-      case 'projectionTarget':
-        this.setQualificationTargetPlayer(request.playerId);
-        return;
       case 'syncPaused':
-        this.setSyncPaused(request.paused);
+        this.sync.setPaused(request.paused);
         return;
       case 'syncNow':
-        this.syncNow();
+        this.sync.syncNow();
         return;
     }
+  }
+
+  private async landingAfter(flow: Promise<boolean>): Promise<void> {
+    if (await flow) this.openLanding();
   }
 
   navigate(page: Page): void {
-    this.setPage(page);
-    this.clearNotice();
-  }
-
-  private setPage(page: Page): void {
-    if (this.page === page && (page !== 'dashboard' || this.isDashboardRoute)) return;
-    if (page === 'dashboard') {
-      this.isDashboardRoute = true;
-      this.urlState.goToDashboard();
-    } else if (this.isDashboardRoute) {
-      this.isDashboardRoute = false;
-      this.urlState.goHome();
-    }
-    if (this.page === 'projection') this.projection.leave();
-    this.page = page;
-    this.trackFeatureViewed(page);
+    this.navigation.setPage(page);
+    this.notices.clear();
   }
 
   private restorePageFromPath(): void {
-    const dashboard = this.urlState.snapshot().dashboardPath;
-    if (dashboard === this.isDashboardRoute) return;
-    this.isDashboardRoute = dashboard;
-    if (dashboard) {
-      this.page = 'dashboard';
-      void this.identifyCurrentUser();
-    } else {
-      this.page = this.isSharedView ? 'shared' : this.state.rounds.length ? 'overview' : 'setup';
-    }
-  }
-
-  private trackFeatureViewed(page: Page): void {
-    this.analytics.capture('feature_viewed', {
-      feature: page === 'rounds' ? 'matches' : page,
-      hosting_mode: this.state.hostingMode,
-      is_guest_view: this.isSharedView,
-    });
+    if (this.navigation.restoreFromPath()) void this.identifyCurrentUser();
   }
 
   /**
@@ -721,14 +427,14 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       });
     } catch {
       // The panel is a lazy chunk: offline or after a deploy it may not load. Whatever waited for it still goes on.
-      this.message('Não foi possível abrir o perfil agora. Verifique a conexão e tente de novo.', 'error');
+      this.notices.showKey('profileFailed', 'error');
       if (welcome && afterWelcome) afterWelcome();
       return;
     } finally {
       this.profileOpen = false;
     }
     if (result?.kind === 'library') void this.openLibrary();
-    else if (result?.kind === 'open') await this.openLibraryTournament(result.id);
+    else if (result?.kind === 'open') await this.lifecycle.openSaved(result.id);
     else if (welcome && afterWelcome) window.setTimeout(afterWelcome, 250);
   }
 
@@ -755,13 +461,13 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
 
   private refreshShellState(): void {
     this.shellState.set({
-      syncAvailable: this.syncAvailable,
-      syncStatus: this.syncStatus,
-      hasPendingSync: this.hasPendingSync,
-      syncPaused: this.syncPaused,
-      syncing: this.syncing,
-      online: this.connectionOnline,
-      syncError: this.syncError,
+      syncAvailable: this.sync.available(),
+      syncStatus: this.sync.status(),
+      hasPendingSync: this.sync.hasPending(),
+      syncPaused: this.sync.paused(),
+      syncing: this.sync.inFlight(),
+      online: this.sync.online(),
+      syncError: this.sync.error(),
       theme: this.theme,
     });
   }
@@ -777,325 +483,7 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
     document.documentElement.dataset['theme'] = this.theme;
   }
 
-  /** The moderator's own shared tournament: read it again from the server and keep watching it. */
-  private async restoreOwnerSharedFlow(): Promise<void> {
-    if (!this.auth.configured) return;
-    this.local.removeItem(SHARED_SETUP_KEY);
-    this.session.removeItem(SHARED_SETUP_KEY);
-
-    if (this.state.hostingMode === 'shared' && this.state.sharedTournamentId && (await this.auth.currentUser())) {
-      const keepLocal = !!this.syncQueue.read('shared', this.state.sharedTournamentId)?.pending;
-      const snapshot = await this.owned.restore(this.state.sharedTournamentId, keepLocal);
-      if (!snapshot) return;
-      if (!snapshot.state.rounds?.length) {
-        this.setPage('setup');
-        this.setup.show(2);
-      }
-      void this.syncPending();
-    }
-  }
-
-  /** The shared tournament became the current one: what only the shell does with it. */
-  private onSharedApplied(snapshot: SharedTournamentSnapshot, keepView: boolean): void {
-    if (this.isSharedModerator && snapshot.status === 'active' && snapshot.state.rounds?.length) {
-      try {
-        this.syncQueue.refreshBase('shared', snapshot.id, snapshot.state);
-      } catch {
-        this.syncError = 'Não foi possível preparar a sincronização neste dispositivo.';
-      }
-    }
-    if (!keepView) this.setPage(this.state.rounds.length ? 'overview' : 'setup');
-  }
-
-  // Garante a atualização mesmo quando o Realtime não entrega o aviso.
-  private pollShared(): void {
-    if (document.hidden || this.sharedLoading) return;
-    if (this.hasPendingSync && this.clock.now() >= this.syncRetryAfter) void this.syncPending();
-    if (this.isSharedModerator && this.state.sharedTournamentId && !this.state.rounds.length)
-      void this.owned.refresh(this.state.sharedTournamentId);
-  }
-
-  async generateSchedule(): Promise<void> {
-    if (this.state.players.length !== this.state.size) {
-      return this.message(
-        `Cadastre exatamente ${this.state.size} jogadores. Atualmente: ${this.state.players.length}.`,
-        'error',
-      );
-    }
-    if (this.hasSchedule) return this.message('A tabela já foi gerada.');
-    if (this.isSharedMode && (!this.isSharedModerator || this.state.sharedStatus !== 'ready')) {
-      return this.message(
-        'O torneio compartilhado só pode iniciar pelo moderador quando todas as vagas estiverem preenchidas.',
-        'error',
-      );
-    }
-    const previous = this.state;
-    try {
-      const courts = this.requiredCourts;
-      const roundCount = this.requiredRounds;
-      const base = { ...previous, roundCount, courts };
-      // A new object, so a feature showing the tournament (the setup review) sees the schedule appear.
-      if (this.isGroupTournament) {
-        const schedule = this.groupScheduler.generate(
-          previous.players,
-          previous.groupFormat ?? 'rotating',
-          previous.fixedPairs ?? [],
-          this.isMixedDoubles,
-        );
-        this.state = { ...base, groups: schedule.groups, rounds: schedule.rounds };
-      } else {
-        this.state = {
-          ...base,
-          groups: [],
-          rounds: this.scheduler.generate(previous.players, previous.size, courts, roundCount, this.isMixedDoubles),
-        };
-      }
-      const sharedId = this.state.sharedTournamentId;
-      if (this.isSharedMode && sharedId) {
-        this.state = { ...this.state, startedAt: this.clock.iso() };
-        const snapshot = await this.sharedTournaments.startSharedTournament(sharedId, this.state);
-        this.owned.apply(snapshot);
-      }
-      this.state = {
-        ...this.state,
-        startedAt: this.state.startedAt ?? this.clock.iso(),
-        analyticsId: this.isSharedMode ? this.state.analyticsId : (this.state.analyticsId ?? this.id()),
-      };
-      this.selectedRound.reset();
-      this.persist('Todas as rodadas foram geradas e salvas.');
-      this.setPage('rounds');
-      if (!this.isSharedMode) this.syncLocalTournamentMetrics();
-      this.setup.completed(3);
-      if (!this.isSharedMode) {
-        this.analytics.capture('tournament_created', {
-          hosting_mode: this.state.hostingMode,
-          tournament_mode: this.state.tournamentMode,
-          doubles_format: this.state.doublesFormat ?? 'open',
-          tournament_size: this.state.size,
-        });
-      }
-      this.analytics.capture('tournament_started', {
-        hosting_mode: this.state.hostingMode,
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        tournament_size: this.state.size,
-        round_count: this.state.rounds.length,
-      });
-      this.analytics.capture('schedule_generated', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        hosting_mode: this.state.hostingMode,
-        tournament_size: this.state.size,
-        round_count: this.state.rounds.length,
-        court_count: this.state.courts,
-      });
-      this.analytics.logInfo('tournament schedule generated', {
-        tournament_mode: this.state.tournamentMode,
-        doubles_format: this.state.doublesFormat ?? 'open',
-        hosting_mode: this.state.hostingMode,
-        tournament_size: this.state.size,
-        round_count: this.state.rounds.length,
-        court_count: this.state.courts,
-      });
-    } catch (error) {
-      if (this.isSharedMode) {
-        // The server did not start it: the tournament goes back to what it was (no schedule, not started).
-        this.state = {
-          ...this.state,
-          rounds: previous.rounds,
-          groups: previous.groups,
-          startedAt: previous.startedAt,
-        };
-      }
-      this.message(error instanceof Error ? error.message : 'Erro ao gerar a tabela.', 'error');
-    }
-  }
-
-  async resetTournament(): Promise<void> {
-    if (this.isSharedModerator && this.state.sharedTournamentId) {
-      void this.cancelSharedTournament(true);
-      return;
-    }
-    if (this.syncInFlight)
-      return this.message('Aguarde a sincronização terminar antes de iniciar outro torneio.', 'error');
-    if (!(await this.confirmDiscardPendingSync())) return;
-    const kept = this.isSavedInLibrary();
-    if (
-      !(await this.dialog.confirm(
-        kept
-          ? {
-              title: 'Iniciar um novo torneio?',
-              text: 'O torneio atual continuará salvo em Meus torneios.',
-              confirmText: 'Novo torneio',
-            }
-          : {
-              title: 'Iniciar um novo torneio?',
-              text: 'Isso apagará a tabela, os placares e os participantes salvos neste navegador.',
-              confirmText: 'Apagar e começar',
-              tone: 'danger',
-            },
-      ))
-    )
-      return;
-    if (!this.isSharedMode) this.syncLocalTournamentMetrics(true);
-    this.clearLocalTournament(true);
-  }
-
-  private syncLocalTournamentMetrics(abandoned = false): void {
-    if (this.state.hostingMode === 'shared' || !this.state.startedAt) return;
-    this.ensureAnalyticsId();
-    const snapshot = { ...this.state };
-    void this.archive.recordLocalTournamentMetrics(snapshot, abandoned).catch(() => undefined);
-  }
-
-  async cancelSharedTournament(returnToLanding = false): Promise<void> {
-    const id = this.state.sharedTournamentId;
-    if (!this.isSharedModerator || !id) return;
-    if (this.syncInFlight)
-      return this.message('Aguarde a sincronização terminar antes de arquivar o torneio.', 'error');
-    if (!(await this.confirmDiscardPendingSync())) return;
-    if (
-      !(await this.dialog.confirm({
-        title: 'Arquivar este torneio e recomeçar?',
-        text: 'O convite será invalidado. O histórico e os participantes serão preservados no dashboard.',
-        confirmText: 'Arquivar e recomeçar',
-        tone: 'danger',
-      }))
-    )
-      return;
-    if (await this.owned.cancel(id)) this.clearLocalTournament(returnToLanding);
-  }
-
-  private clearLocalTournament(returnToLanding = false): void {
-    this.keepInLibrary(this.state);
-    const target = this.syncTarget;
-    try {
-      if (target) this.syncQueue.remove(target.kind, target.id);
-    } catch {
-      this.syncError = 'Não foi possível limpar a fila local.';
-    }
-    this.storage.clearTournament();
-    this.leaveSharedTournament();
-    this.liveLink.clear();
-    this.syncError = '';
-    this.state = newTournament(this.clock.iso());
-    this.selectedRound.reset();
-    this.setup.set(1);
-    this.setPage('setup');
-    this.savedTournaments.refresh();
-    if (returnToLanding) this.openLanding();
-    this.setup.viewed(1);
-    this.message('Novo torneio iniciado.');
-  }
-
-  async importBackup(file: File): Promise<void> {
-    if (file.size > 1_000_000)
-      return this.message('O arquivo é grande demais para ser um backup do SETPOINT.', 'error');
-    const imported = this.storage.parseTournament(await file.text());
-    if (!imported) return this.message('Arquivo inválido: selecione um backup JSON exportado pelo SETPOINT.', 'error');
-    if (!(await this.adoptTournament(imported, 'backup'))) return;
-    this.analytics.capture('backup_imported', {
-      tournament_mode: this.state.tournamentMode,
-      tournament_size: this.state.size,
-      has_schedule: this.hasSchedule,
-      is_finalized: !!this.state.finishedAt,
-    });
-  }
-
-  /** Replaces the tournament in the active slot with a backup file or a saved library entry. */
-  private async adoptTournament(
-    imported: TournamentState,
-    origin: 'backup' | 'library',
-    fromShared = false,
-  ): Promise<boolean> {
-    if (this.syncInFlight) {
-      this.message('Aguarde a sincronização terminar antes de trocar de torneio.', 'error');
-      return false;
-    }
-    if (!(await this.confirmDiscardPendingSync())) return false;
-    const replacesWork =
-      origin === 'backup'
-        ? !!(this.state.players.length || this.state.rounds.length)
-        : this.state.players.length > 0 && !this.isSavedInLibrary();
-    if (
-      replacesWork &&
-      !(await this.dialog.confirm(
-        origin === 'backup'
-          ? {
-              title: 'Importar este backup?',
-              text: 'Ele substitui o torneio atual neste navegador.',
-              confirmText: 'Importar backup',
-              tone: 'danger',
-            }
-          : {
-              title: 'Abrir outro torneio?',
-              text: 'O torneio atual ainda não foi iniciado e não está salvo. Abrir outro descarta essa configuração.',
-              confirmText: 'Abrir e descartar',
-              tone: 'danger',
-            },
-      ))
-    )
-      return false;
-
-    const previousTarget = this.syncTarget;
-    if (
-      previousTarget &&
-      (this.hasPendingSync || previousTarget.kind !== 'local' || previousTarget.id !== imported.analyticsId)
-    ) {
-      try {
-        this.syncQueue.remove(previousTarget.kind, previousTarget.id);
-      } catch {
-        this.message('Não foi possível atualizar a fila de sincronização.', 'error');
-        return false;
-      }
-    }
-    this.syncError = '';
-    this.leaveSharedTournament();
-    if (this.liveLink.analyticsId() && this.liveLink.analyticsId() !== imported.analyticsId) this.liveLink.clear();
-    delete imported.sharedTournamentId;
-    delete imported.sharedStatus;
-    this.state = {
-      ...imported,
-      hostingMode: 'local',
-      analyticsId: imported.analyticsId ?? (imported.rounds.length ? this.id() : undefined),
-      groups: imported.groups ?? [],
-      fixedPairs: imported.fixedPairs ?? [],
-      finals: imported.finals ?? null,
-      tieBreakDraws: imported.tieBreakDraws ?? [],
-    };
-    this.restoreLiveLink();
-    this.selectedRound.reset();
-    this.shareSession.playerId.set('');
-    this.shareSession.message.set('');
-    // A local copy of a shared tournament is already stored on the server: do not archive or count it twice.
-    this.persist(undefined, !fromShared);
-    if (fromShared) this.keepInLibrary(this.state, true);
-    this.savedTournaments.refresh();
-    this.setPage(this.state.finals?.complete ? 'ranking' : this.state.rounds.length ? 'overview' : 'setup');
-    if (origin === 'backup' && this.state.startedAt) this.syncLocalTournamentMetrics();
-    this.message(
-      this.state.finals?.complete
-        ? 'Torneio finalizado carregado. Os dados estão em modo somente leitura.'
-        : origin === 'backup'
-          ? 'Backup carregado.'
-          : 'Torneio salvo aberto.',
-    );
-    return true;
-  }
-
-  /** True when it is safe to go on: nothing pending, or the user chose to discard it. */
-  private async confirmDiscardPendingSync(): Promise<boolean> {
-    if (!this.hasPendingSync) return true;
-    return this.dialog.confirm({
-      title: 'Alterações ainda não sincronizadas',
-      text: 'Exporte um backup antes de continuar. Se seguir agora, essas alterações serão descartadas.',
-      confirmText: 'Descartar alterações',
-      cancelText: 'Voltar',
-      tone: 'danger',
-    });
-  }
-
-  /** "Meus torneios", a lazy dialog. It opens a saved tournament through `openLibraryTournament`. */
+  /** "Meus torneios", a lazy dialog. It opens a saved tournament through the lifecycle. */
   async openLibrary(): Promise<void> {
     if (this.libraryOpen) return;
     this.libraryOpen = true;
@@ -1103,155 +491,16 @@ export class AppComponent implements OnInit, DoCheck, OnDestroy {
       const { LibraryDialogComponent: component, LIBRARY_TITLE_ID: labelledBy } =
         await import('./features/library/library-dialog.component');
       await this.dialog.open<void, LibraryDialogData, LibraryDialogComponent>(component, {
-        data: { currentId: libraryId(this.state), open: (id) => this.openLibraryTournament(id) },
+        data: { currentId: libraryId(this.state), open: (id) => this.lifecycle.openSaved(id) },
         labelledBy,
         autoFocus: 'dialog',
         backdropClass: 'ui-backdrop-plain',
         sheetBelow: 620,
       });
     } catch {
-      this.message('Não foi possível abrir os torneios salvos agora. Verifique a conexão e tente de novo.', 'error');
+      this.notices.showKey('libraryFailed', 'error');
     } finally {
       this.libraryOpen = false;
     }
-  }
-
-  /** True when the saved tournament is now the one in use, so the list can close. */
-  async openLibraryTournament(id: string): Promise<boolean> {
-    const entry = this.library.get(id);
-    const saved = this.library.load(id);
-    if (!entry || !saved) {
-      this.message('Não foi possível abrir este torneio salvo.', 'error');
-      return false;
-    }
-    if (libraryId(this.state) === entry.id) {
-      this.setPage(this.hasSchedule ? 'overview' : 'setup');
-      return true;
-    }
-    if (!(await this.adoptTournament(saved, 'library', entry.hosting === 'shared'))) return false;
-    window.scrollTo({ top: 0 });
-    this.analytics.capture('tournament_library_opened_item', {
-      phase: entry.phase,
-      hosting_mode: entry.hosting,
-    });
-    return true;
-  }
-
-  private isSavedInLibrary(): boolean {
-    try {
-      const id = libraryId(this.state);
-      return !!id && !!this.library.get(id);
-    } catch {
-      return false;
-    }
-  }
-
-  /** Best-effort: the library is a safety net and must never break scoring. */
-  private keepInLibrary(state: TournamentState, alreadyOnServer = false): void {
-    try {
-      if (state.hostingMode !== 'shared' && state.rounds.length && !state.analyticsId) {
-        if (state === this.state) {
-          this.ensureAnalyticsId();
-          state = this.state;
-        } else state = { ...state, analyticsId: this.id() };
-      }
-      const entry = this.library.save(state);
-      if (entry && alreadyOnServer) this.library.markArchived(entry.id, entry.updatedAt);
-    } catch {
-      /* histórico é opcional */
-    }
-  }
-
-  private archiveCurrent(): void {
-    if (this.isDashboardRoute) return;
-    this.keepInLibrary(this.state);
-    this.savedTournaments.refresh();
-    void this.flushArchives();
-  }
-
-  /** Uploads every unsent local tournament, in order. Retried on reconnect, on change and on launch. */
-  private async flushArchives(): Promise<void> {
-    if (
-      this.archiveInFlight ||
-      this.clock.now() < this.archiveRetryAfter ||
-      !this.connectionOnline ||
-      !this.auth.configured ||
-      this.isSharedView ||
-      this.isDashboardRoute
-    )
-      return;
-    this.archiveInFlight = true;
-    try {
-      for (let pending = this.library.pendingArchives(); pending.length; pending = this.library.pendingArchives()) {
-        const entry = pending[0];
-        const saved = this.library.load(entry.id);
-        if (saved)
-          await this.archive.saveLocalTournamentArchive(entry.id, saved, this.liveLink.storedId(saved.analyticsId));
-        // Keeps the flag when the entry changed mid-upload, so the next pass sends the newer copy.
-        this.library.markArchived(entry.id, entry.updatedAt);
-      }
-    } catch {
-      // Data stays on the device. Back off so a missing migration or an outage does not fire a request per score.
-      this.archiveRetryAfter = this.clock.now() + 60_000;
-    } finally {
-      this.archiveInFlight = false;
-    }
-  }
-
-  private leaveSharedTournament(): void {
-    this.owned.leave();
-  }
-
-  /** The live link stored for the tournament in use: the shell then keeps its scores in the sync queue. */
-  private restoreLiveLink(): void {
-    const id = this.state.analyticsId;
-    if (!id || !this.liveLink.restore(this.state)) return;
-    try {
-      this.syncQueue.initialize('local', id, publicTournamentState(this.state));
-    } catch {
-      /* the link stays; the sync starts once the browser storage can be written */
-    }
-  }
-
-  private persist(success?: string, archive = true): void {
-    const target = this.syncTarget;
-    let queued = false;
-    if (target && this.syncAvailable && (target.kind !== 'shared' || this.state.sharedStatus === 'active')) {
-      try {
-        queued = this.syncQueue.stage(target.kind, target.id, this.state);
-        if (!queued) this.syncError = 'Sincronização não preparada. Exporte um backup e reconecte antes de continuar.';
-      } catch {
-        this.syncError = 'Não foi possível salvar a fila de sincronização. Exporte um backup deste torneio.';
-      }
-    }
-    try {
-      this.storage.saveTournament(this.state);
-      if (success) this.message(success);
-    } catch (error) {
-      this.message(error instanceof Error ? error.message : 'Falha ao salvar.', 'error');
-    }
-    if (queued) {
-      if (this.syncTimeout !== null) window.clearTimeout(this.syncTimeout);
-      this.syncTimeout = window.setTimeout(() => {
-        this.syncTimeout = null;
-        void this.syncPending();
-      }, 250);
-    }
-    if (archive) this.archiveCurrent();
-  }
-  private message(text: string, type: 'success' | 'error' = 'success'): void {
-    this.notice = text;
-    this.noticeType = type;
-  }
-  private clearNotice(): void {
-    this.notice = '';
-  }
-  /** Gives the tournament its analytics id when it has none yet (a new object, so the views that show it refresh). */
-  private ensureAnalyticsId(): string {
-    if (!this.state.analyticsId) this.state = { ...this.state, analyticsId: this.id() };
-    return this.state.analyticsId ?? '';
-  }
-  private id(): string {
-    return this.random.uuid();
   }
 }

@@ -17,6 +17,7 @@ export interface AuthPort {
   onAuthStateChange(callback: (change: AuthChange, user: AppUser | null) => void): () => void;
   /** Sends a sign-in link to the moderator's email. */
   requestModeratorLogin(email: string, redirectTo: string): Promise<void>;
+  /** Signs in without an e-mail, unless somebody is signed in already. Overlapping calls make one sign-in. */
   signInAnonymously(): Promise<void>;
 }
 export const AUTH = new InjectionToken<AuthPort>('AuthPort');

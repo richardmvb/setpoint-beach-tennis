@@ -1,12 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { CLOCK } from './ports/clock.port';
 import { FakeClock } from './ports/testing/clock.fake';
+import { RANDOM } from './ports/random.port';
+import { FakeRandom } from './ports/testing/random.fake';
 import { CurrentTournament } from './current-tournament';
 import { tournamentState } from '../testing/tournament-state';
 
 function setup() {
-  TestBed.configureTestingModule({ providers: [{ provide: CLOCK, useValue: new FakeClock() }] });
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: CLOCK, useValue: new FakeClock() },
+      { provide: RANDOM, useValue: new FakeRandom() },
+    ],
+  });
   return TestBed.inject(CurrentTournament);
 }
 
@@ -28,24 +35,15 @@ describe('CurrentTournament', () => {
     expect(before.name).not.toBe('Novo');
   });
 
-  it('hands saving and messages to the shell, and does nothing before the shell connects', () => {
+  it('gives the tournament an analytics id once, as a new object', () => {
     const current = setup();
-    expect(() => {
-      current.save('x');
-      current.notify('x');
-      current.clearNotice();
-    }).not.toThrow();
-    const hooks = { save: vi.fn(), notify: vi.fn(), clearNotice: vi.fn() };
-    current.connect(hooks);
-    current.save('Salvo');
-    current.notify('Erro', 'error');
-    current.notify('Ok');
-    current.clearNotice();
-    expect(hooks.save).toHaveBeenCalledWith('Salvo');
-    expect(hooks.notify.mock.calls).toEqual([
-      ['Erro', 'error'],
-      ['Ok', 'success'],
-    ]);
-    expect(hooks.clearNotice).toHaveBeenCalledOnce();
+    const before = current.state();
+    const id = current.ensureAnalyticsId();
+    expect(id).not.toBe('');
+    expect(current.state()).not.toBe(before);
+    expect(current.state().analyticsId).toBe(id);
+    const after = current.state();
+    expect(current.ensureAnalyticsId()).toBe(id);
+    expect(current.state()).toBe(after);
   });
 });
