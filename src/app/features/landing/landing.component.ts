@@ -1,3 +1,4 @@
+import { scrollBehavior } from '../../core/motion';
 import { ChangeDetectionStrategy, Component, ElementRef, inject, input, output } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
@@ -40,6 +41,8 @@ export class LandingComponent {
   }
 
   protected scrollTo(section: LandingSection): void {
-    this.host.nativeElement.querySelector(`#${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.host.nativeElement
+      .querySelector(`#${section}`)
+      ?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   }
 }

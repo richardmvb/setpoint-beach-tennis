@@ -1,4 +1,4 @@
-import { DOCUMENT, inject, Injectable } from '@angular/core';
+import { afterNextRender, DOCUMENT, inject, Injectable, Injector } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import type { Observable } from 'rxjs';
 import { take } from 'rxjs';
@@ -18,20 +18,24 @@ export type ScreenKey =
   | 'settings';
 
 const FOCUS_ATTEMPTS = 30;
+/** The screen's heading: inside the content, or the shell's own heading above it. */
+const HEADING = '#main-content h1, .page-heading h1';
 
 /**
  * Tells people who cannot see the screen that it changed: sets `document.title` for the screen and, when the screen
  * changes while they are using the app, moves focus to its `h1` so a screen reader reads it and the keyboard starts at
- * the top. The first announcement (the page just loaded) only sets the title. Focus is left alone while a dialog is open
+ * the top. Focus only moves for a change the person made (`focus` true): the first announcement (the page just loaded)
+ * and changes the app makes itself (a sync result) only set the title. Focus is also left alone while a dialog is open
  * or when the person is typing in a field.
  */
 @Injectable({ providedIn: 'root' })
 export class PageAnnouncer {
   private readonly document = inject(DOCUMENT);
   private readonly transloco = inject(TranslocoService);
+  private readonly injector = inject(Injector);
   private current: ScreenKey | null = null;
 
-  announce(screen: ScreenKey): void {
+  announce(screen: ScreenKey, focus = true): void {
     if (screen === this.current) return;
     const first = this.current === null;
     this.current = screen;
@@ -40,7 +44,8 @@ export class PageAnnouncer {
       .subscribe((title) => {
         if (this.current === screen) this.document.title = title;
       });
-    if (!first) this.focusHeading(screen);
+    // After the screen has rendered: before that, the heading found would still be the one being replaced.
+    if (!first && focus) afterNextRender(() => this.focusHeading(screen), { injector: this.injector });
   }
 
   private title(screen: ScreenKey): Observable<string> {
@@ -73,8 +78,8 @@ export class PageAnnouncer {
   /** The screen renders a moment later (a lazy feature may still be loading), so look for its heading for a while. */
   private focusHeading(screen: ScreenKey, attempt = 0): void {
     if (this.current !== screen) return;
-    const heading = this.document.querySelector<HTMLElement>('h1');
-    if (heading) {
+    const heading = this.document.querySelector<HTMLElement>(HEADING);
+    if (heading?.isConnected) {
       if (this.mayMoveFocus()) {
         heading.tabIndex = -1;
         heading.focus();

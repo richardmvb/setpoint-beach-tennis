@@ -12,7 +12,7 @@ test.describe('skip link', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Novo torneio' })).toBeVisible();
     const address = page.url();
     await page.keyboard.press('Tab');
-    const skip = page.getByRole('link', { name: 'Ir para o conteúdo' });
+    const skip = page.getByRole('button', { name: 'Ir para o conteúdo' });
     await expect(skip).toBeFocused();
     await expect(skip).toBeInViewport();
     await page.keyboard.press('Enter');
@@ -23,7 +23,7 @@ test.describe('skip link', () => {
   test('is hidden until it has focus', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1, name: 'Novo torneio' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Ir para o conteúdo' })).not.toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Ir para o conteúdo' })).not.toBeInViewport();
   });
 });
 
@@ -51,10 +51,12 @@ test.describe('title and focus on a screen change', () => {
     await createLocalTournament(page);
     await page.reload();
     await expect(page).toHaveTitle('Visão geral · SETPOINT');
-    await expect(page.getByRole('heading', { level: 1 })).not.toBeFocused();
+    // Give a late focus move time to happen, then look once.
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('H1');
   });
 
-  test('does not take focus from a dialog', async ({ page }) => {
+  test('opening the profile panel keeps focus inside it, not on the heading', async ({ page }) => {
     await createLocalTournament(page);
     await page.getByRole('button', { name: 'Perfil' }).click();
     const dialog = page.getByRole('dialog');
@@ -66,6 +68,26 @@ test.describe('title and focus on a screen change', () => {
 
   test.describe('landing page', () => {
     test.use({ onboarding: { skipLanding: false, disableTour: true, skipProfilePrompt: true } });
+    test('moves focus to the heading of the screen that replaced it', async ({ page }) => {
+      await page.goto('/');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await page.getByRole('button', { name: 'Abrir o app' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Novo torneio' })).toBeFocused();
+      await expect(page).toHaveTitle('Novo torneio · SETPOINT');
+    });
+
+    test('goes back to the landing heading from the brand button', async ({ page }) => {
+      await page.goto('/');
+      await page.getByRole('button', { name: 'Abrir o app' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Novo torneio' })).toBeVisible();
+      await page
+        .getByRole('button', { name: /SETPOINT/ })
+        .first()
+        .click();
+      await expect(page.locator('main#main-content h1').first()).toBeFocused();
+      await expect(page).toHaveTitle('SETPOINT · Beach Tennis');
+    });
+
     test('has the product title', async ({ page }) => {
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

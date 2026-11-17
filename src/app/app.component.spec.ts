@@ -237,11 +237,9 @@ describe('the first visit and the brand button', () => {
 });
 
 describe('keyboard and screen readers', () => {
-  it('has a skip link that moves focus to the content without leaving the page', async () => {
+  it('has a skip button that moves focus to the content', async () => {
     await show({ stored: running() });
-    const skip = screen.getByRole('link', { name: 'Ir para o conteúdo' });
-    expect(skip.getAttribute('href')).toBe('#main-content');
-    fireEvent.click(skip);
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para o conteúdo' }));
     expect(document.activeElement).toBe(document.getElementById('main-content'));
     expect(document.getElementById('main-content')?.tagName).toBe('MAIN');
   });

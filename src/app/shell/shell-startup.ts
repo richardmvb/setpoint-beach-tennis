@@ -47,7 +47,7 @@ export class ShellStartup {
     // The services that react to what the shell does must exist before it does it.
     inject(TournamentPersistence);
     this.owned.applied$.subscribe(({ keepView }) => {
-      if (!keepView) this.navigation.setPage(this.tournament.state().rounds.length ? 'overview' : 'setup');
+      if (!keepView) this.navigation.setPage(this.tournament.state().rounds.length ? 'overview' : 'setup', 'system');
     });
   }
 
@@ -117,7 +117,7 @@ export class ShellStartup {
       const snapshot = await this.owned.restore(state.sharedTournamentId, keepLocal);
       if (!snapshot) return;
       if (!snapshot.state.rounds?.length) {
-        this.navigation.setPage('setup');
+        this.navigation.setPage('setup', 'system');
         this.setup.show(2);
       }
       void this.sync.run();

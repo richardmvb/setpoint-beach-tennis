@@ -2827,7 +2827,6 @@ input {
 .form-field input:focus-visible,
 .form-field select:focus-visible,
 .add-player input:focus-visible,
-.participant-form input:focus-visible,
 .lock-panel > input:focus-visible,
 .shared-invite-copy input:focus-visible,
 .score-editor input:focus-visible {
@@ -4679,6 +4678,11 @@ app-player-avatar .podium-avatar {
   outline: 0;
   border-color: var(--green-2);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-2) 18%, transparent);
+}
+
+.participant-form input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .avatar-trigger img {
@@ -7299,8 +7303,11 @@ app-player-avatar .podium-avatar {
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font-weight: 700;
   text-decoration: none;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
   transform: translateY(-200%);
 }
 
@@ -7310,6 +7317,7 @@ app-player-avatar .podium-avatar {
   box-shadow: var(--shadow);
 }
 
-#main-content:focus {
+#main-content:focus,
+h1[tabindex='-1']:focus {
   outline: none;
 }

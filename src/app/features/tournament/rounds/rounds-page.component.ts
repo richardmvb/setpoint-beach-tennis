@@ -1,3 +1,4 @@
+import { scrollBehavior } from '../../../core/motion';
 import { ChangeDetectionStrategy, Component, ElementRef, inject } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
@@ -43,7 +44,7 @@ export class RoundsPageComponent {
         tab.getBoundingClientRect().left - tabs.getBoundingClientRect().left - (tabs.clientWidth - tab.clientWidth) / 2;
       tabs.scrollTo({
         left: tabs.scrollLeft + offset,
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        behavior: scrollBehavior(),
       });
     }, 0);
   }

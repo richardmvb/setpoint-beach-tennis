@@ -6,6 +6,8 @@ import { ANALYTICS } from '../ports/analytics.port';
 import { ShellContext } from '../shell-context';
 import { URL_STATE } from './url-state';
 
+export type NavigationSource = 'user' | 'system';
+
 /**
  * Which page the shell shows, and the address that goes with it (`/dashboard` or home). A root service so the sync and
  * the archive can ask whether the dashboard is open, and the flows can move the person to a page.
@@ -18,9 +20,12 @@ export class AppNavigation {
   private readonly analytics = inject(ANALYTICS);
   private readonly current = signal<Page>('setup');
   private readonly dashboard = signal(this.context.startsOnDashboard);
+  private readonly source = signal<NavigationSource>('user');
 
   readonly page = this.current.asReadonly();
   readonly dashboardRoute = this.dashboard.asReadonly();
+  /** Who made the last change: the person (a click, the back button) or the app itself (a sync result). */
+  readonly lastSource = this.source.asReadonly();
   /** The page being left, before the next one is set (the projection records what it showed). */
   readonly left$ = new Subject<Page>();
 
@@ -29,8 +34,9 @@ export class AppNavigation {
     this.current.set(page);
   }
 
-  setPage(page: Page): void {
+  setPage(page: Page, source: NavigationSource = 'user'): void {
     if (this.current() === page && (page !== 'dashboard' || this.dashboard())) return;
+    this.source.set(source);
     if (page === 'dashboard') {
       this.dashboard.set(true);
       this.urlState.goToDashboard();
@@ -48,6 +54,7 @@ export class AppNavigation {
     const dashboard = this.urlState.snapshot().dashboardPath;
     if (dashboard === this.dashboard()) return false;
     this.dashboard.set(dashboard);
+    this.source.set('user');
     if (dashboard) this.current.set('dashboard');
     else
       this.current.set(

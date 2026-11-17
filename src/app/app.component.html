@@ -1,4 +1,4 @@
-<a class="skip-link" href="#main-content" (click)="skipToContent($event)">{{ 'shell.skipLink' | transloco }}</a>
+<button class="skip-link" type="button" (click)="skipToContent()">{{ 'shell.skipLink' | transloco }}</button>
 
 @if (isLocked()) {
   <main class="lock-screen" id="main-content" tabindex="-1">

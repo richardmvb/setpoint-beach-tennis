@@ -14,6 +14,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { TournamentArchive } from './core/archive/tournament-archive';
 import { CurrentTournament } from './core/current-tournament';
 import type { Page } from './core/models';
+import { scrollBehavior } from './core/motion';
 import { Notices } from './core/notices';
 import { NpsFeedbackService } from './core/nps-feedback.service';
 import { ANALYTICS } from './core/ports/analytics.port';
@@ -135,7 +136,7 @@ export class AppComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
-    effect(() => this.announcer.announce(this.screen()));
+    effect(() => this.announcer.announce(this.screen(), this.navigation.lastSource() === 'user'));
     const url = this.urlState.snapshot();
     if (!this.isSharedView) {
       const canLock = this.config.lockScreenEnabled && !url.dashboardPath && !url.authCallback;
@@ -193,9 +194,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.startup.stop();
   }
 
-  /** The skip link: the address would change with a plain `#` link, so focus the content ourselves. */
-  protected skipToContent(event: Event): void {
-    event.preventDefault();
+  /** The skip link: a button, because a `#` link would change the address (and drop `?live=` and the like). */
+  protected skipToContent(): void {
     document.getElementById('main-content')?.focus();
   }
 
@@ -291,7 +291,7 @@ export class AppComponent implements OnInit, OnDestroy {
       case 'finalized':
         // The tournament was finished (the store saved it): the report is in Ajustes.
         this.navigation.setPage('settings');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
         if (this.state().hostingMode !== 'shared') this.archive.recordMetrics();
         return;
       case 'cancelShared':
