@@ -1,28 +1,20 @@
 {
   "batch-dialog": {},
-  "finals": {
-    "label-content-name-mismatch": 1
-  },
+  "finals": {},
   "landing": {},
+  "overview": {},
+  "players": {},
   "profile-panel": {
-    "button-name": 2,
-    "label-content-name-mismatch": 1
+    "button-name": 2
   },
-  "ranking": {
-    "label-content-name-mismatch": 1
-  },
-  "rounds": {
-    "label-content-name-mismatch": 1
-  },
-  "setup-configuration": {
-    "label-content-name-mismatch": 1
-  },
-  "setup-players": {
-    "label-content-name-mismatch": 1
-  },
-  "setup-review": {
-    "label-content-name-mismatch": 1
-  },
+  "ranking": {},
+  "rounds": {},
+  "settings": {},
+  "setup-configuration": {},
+  "setup-players": {},
+  "setup-review": {},
+  "shared-invite": {},
+  "shared-live": {},
   "tie-draw-dialog": {},
   "tie-draw-dialog-drawn": {}
 }

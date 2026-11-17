@@ -1,6 +1,9 @@
 import type { Provider } from '@angular/core';
 import { DialogService } from '../../core/dialog.service';
 import { SURVEYS } from '../../core/ports/analytics.port';
+import { LOCAL_LIVE } from '../../core/ports/tournaments.port';
+import { URL_STATE } from '../../core/routing/url-state';
+import type { TournamentState } from '../../core/models';
 import { FakeSurveys } from '../../core/ports/testing/analytics.fake';
 import { setupFakes } from '../setup/setup.fakes';
 
@@ -38,10 +41,36 @@ export function tournamentFakes(options: { configured?: boolean } = {}) {
   const base = setupFakes(options);
   const dialogs = new FakeDialogs();
   const surveys = new FakeSurveys();
+  /** The tournaments the live link published, and what the clipboard received. */
+  const published: TournamentState[] = [];
+  const copied: string[] = [];
+  const localLive = {
+    createLocalLiveTournament: (state: TournamentState) => {
+      published.push(state);
+      return Promise.resolve({ id: 'live-1', readToken: 'read-1', writeToken: 'write-1' });
+    },
+  };
   const providers: Provider[] = [
     ...base.providers,
     { provide: SURVEYS, useValue: surveys },
     { provide: DialogService, useValue: dialogs },
+    { provide: LOCAL_LIVE, useValue: localLive },
+    {
+      provide: URL_STATE,
+      useValue: {
+        inviteUrl: (token: string) => `https://app.test/?invite=${token}`,
+        liveUrl: (token: string) => `https://app.test/?live=${token}`,
+      },
+    },
   ];
-  return { ...base, dialogs, surveys, providers };
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: {
+      writeText: (text: string) => {
+        copied.push(text);
+        return Promise.resolve();
+      },
+    },
+  });
+  return { ...base, dialogs, surveys, published, copied, providers };
 }

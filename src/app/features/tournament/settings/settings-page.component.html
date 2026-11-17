@@ -1,0 +1,186 @@
+<ng-container *transloco="let t; prefix: 'organizer.settings'">
+  <article uiCard class="settings-form">
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    <h2>{{ t('title') }}</h2>
+    <div class="form-field">
+      <label for="tournamentName">{{ t('name') }}</label
+      ><input
+        id="tournamentName"
+        name="tournamentName"
+        [ngModel]="store.state().name"
+        (ngModelChange)="store.setName($event)"
+        maxlength="60"
+        [disabled]="store.hasSchedule()"
+      />
+    </div>
+    <div class="form-field">
+      <label for="settingsMode">{{ t('format') }}</label
+      ><select
+        id="settingsMode"
+        name="settingsMode"
+        [ngModel]="store.state().tournamentMode"
+        (ngModelChange)="store.changeTournamentMode($event)"
+        [disabled]="store.hasSchedule()"
+      >
+        <option [ngValue]="'super'">{{ t('formatSuper') }}</option>
+        <option [ngValue]="'groups'">{{ t('formatGroups') }}</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label for="settingsDoublesFormat">{{ t('doubles') }}</label
+      ><select
+        id="settingsDoublesFormat"
+        name="settingsDoublesFormat"
+        [ngModel]="store.state().doublesFormat ?? 'open'"
+        (ngModelChange)="store.changeDoublesFormat($event)"
+        [disabled]="store.hasSchedule()"
+      >
+        <option [ngValue]="'open'">{{ t('doublesOpen') }}</option>
+        <option [ngValue]="'mixed'">{{ t('doublesMixed') }}</option>
+      </select>
+    </div>
+    <div class="form-two">
+      <div class="form-field">
+        <label for="size">{{ t('participants') }}</label
+        ><select
+          id="size"
+          name="size"
+          [ngModel]="store.state().size"
+          (ngModelChange)="store.changeSize($event)"
+          [disabled]="store.hasSchedule()"
+        >
+          @for (size of store.availableSizes(); track size) {
+            <option [ngValue]="size">{{ t('playersCount', { count: size }) }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        @if (store.isGroup()) {
+          <label for="settingsGroupFormat">{{ t('groupFormat') }}</label>
+          <select
+            id="settingsGroupFormat"
+            name="settingsGroupFormat"
+            [ngModel]="store.state().groupFormat"
+            (ngModelChange)="store.changeGroupFormat($event)"
+            [disabled]="store.hasSchedule()"
+          >
+            <option [ngValue]="'rotating'">{{ t('groupRotating') }}</option>
+            <option [ngValue]="'fixed'">{{ t('groupFixed') }}</option>
+          </select>
+          <input [value]="t('courtsCount', { count: store.state().courts })" [attr.aria-label]="t('courts')" readonly />
+        } @else {
+          <label for="courts">{{ t('courts') }}</label>
+          <select
+            id="courts"
+            name="courts"
+            [ngModel]="store.state().courts"
+            (ngModelChange)="store.changeCourts($event)"
+            [disabled]="store.hasSchedule()"
+          >
+            @for (courtCount of store.availableCourts(); track courtCount) {
+              <option [ngValue]="courtCount">{{ t('courtsCount', { count: courtCount }) }}</option>
+            }
+          </select>
+        }
+      </div>
+    </div>
+    <div class="form-two">
+      <div class="form-field">
+        <label for="games">{{ t('games') }}</label
+        ><select
+          id="games"
+          name="games"
+          [ngModel]="store.state().gamesToWin"
+          (ngModelChange)="store.setGamesToWin($event)"
+          [disabled]="store.hasSchedule()"
+        >
+          @for (games of store.availableGamesToWin(); track games) {
+            <option [ngValue]="games">{{ games === 3 ? t('gamesQuick') : t('gamesCount', { count: games }) }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="roundCount">{{ t('rounds') }}</label
+        ><input id="roundCount" [value]="store.requiredRounds()" readonly />
+      </div>
+    </div>
+    @if (store.state().gamesToWin === 3) {
+      <p class="muted quick-format-note">{{ t('quickNote') }}</p>
+    }
+    <button uiButton variant="primary" type="button" (click)="store.saveSettings()" [disabled]="store.hasSchedule()">
+      {{ t('save') }}
+    </button>
+    @if (store.hasSchedule()) {
+      <p class="muted helper-text">{{ t('locked') }}</p>
+    }
+  </article>
+  <article uiCard class="settings-info">
+    <span class="card-kicker">{{ t('rules.kicker') }}</span>
+    <h3>{{ t('rules.title') }}</h3>
+    @if (!store.isGroup()) {
+      <ul>
+        <li>{{ t('rules.superCounts') }}</li>
+        @if (store.state().size === 24 && !store.isMixed()) {
+          <li>{{ t('rules.super24') }}</li>
+        }
+        @if (store.state().size === 24 && store.isMixed()) {
+          <li>{{ t('rules.super24Mixed') }}</li>
+        }
+        @if (store.isMixed() && store.state().size !== 24) {
+          <li>{{ t('rules.mixedRepeat') }}</li>
+        }
+        @if (!store.isMixed()) {
+          <li>{{ t('rules.noRepeat') }}</li>
+        }
+        @if (store.state().size !== 24 || !store.isMixed()) {
+          <li>{{ t('rules.everyone') }}</li>
+        }
+        @if (store.state().size === 24 && store.isMixed()) {
+          <li>{{ t('rules.mixedVaried') }}</li>
+        }
+      </ul>
+    } @else {
+      <ul>
+        @if (store.isMixed() && store.state().groupFormat === 'rotating') {
+          <li>{{ t('rules.groupsMixedRotating') }}</li>
+        }
+        @if (!store.isMixed() && store.state().groupFormat === 'rotating') {
+          <li>{{ t('rules.groupsRotating') }}</li>
+        }
+        @if (store.state().groupFormat === 'fixed') {
+          <li>{{ t('rules.groupsFixed') }}</li>
+        }
+        @if (store.isMixed()) {
+          <li>{{ t('rules.groupsMixedPair') }}</li>
+        }
+        <li>{{ t('rules.groupsSame') }}</li>
+      </ul>
+    }
+  </article>
+  @if (store.state().finishedAt) {
+    <app-tournament-report
+      [state]="store.state()"
+      [existingLiveUrl]="!store.isShared() ? liveLink.url() : ''"
+      [sharedConfigured]="liveLink.configured"
+    />
+  }
+  @if (!store.isShared() && !store.state().finishedAt) {
+    <article appLiveLinkCard></article>
+  }
+  @if (store.shell().syncAvailable) {
+    <article appSyncCard></article>
+  }
+  <article appDataCard></article>
+  <article uiCard class="full-card data-card">
+    <div>
+      <span class="card-kicker">{{ 'organizer.about.kicker' | transloco }}</span>
+      <h2>{{ 'organizer.about.title' | transloco }}</h2>
+      <p class="muted">{{ 'organizer.about.text' | transloco }}</p>
+    </div>
+    <div class="button-row">
+      <button uiButton variant="secondary" type="button" (click)="store.request({ kind: 'openLanding' })">
+        {{ 'organizer.about.back' | transloco }}
+      </button>
+    </div>
+  </article>
+</ng-container>

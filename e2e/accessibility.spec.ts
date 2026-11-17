@@ -152,6 +152,34 @@ test.describe('accessibility (axe, no new violations)', () => {
     expect(problems).toEqual([]);
   });
 
+  test('tournament: overview, players and settings', async ({ page }) => {
+    const stored = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v1.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    await page.addInitScript((value: string) => {
+      if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', value);
+    }, JSON.stringify(stored));
+    const baseline = readBaseline();
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeVisible();
+    const problems = check('overview', await scan(page), baseline);
+
+    await page
+      .getByRole('button', { name: /Jogadores/ })
+      .first()
+      .click();
+    await expect(page.getByRole('heading', { name: 'Jogadores inscritos' })).toBeVisible();
+    problems.push(...check('players', await scan(page), baseline));
+
+    await page
+      .getByRole('button', { name: /Ajustes/ })
+      .first()
+      .click();
+    await expect(page.getByRole('heading', { name: 'Regras do torneio' })).toBeVisible();
+    problems.push(...check('settings', await scan(page), baseline));
+    expect(problems).toEqual([]);
+  });
+
   test('tournament: the tie-draw dialog, before and after the draw', async ({ page }) => {
     // Every match ends 4 to 4 on the stored fixture, so nothing separates the eight players.
     const stored = JSON.parse(

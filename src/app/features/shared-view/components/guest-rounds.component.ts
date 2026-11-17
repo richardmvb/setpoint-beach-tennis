@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TranslocoDirective } from '@jsverse/transloco';
 import type { Player, Round, TournamentState } from '../../../core/models';
 import { roundDone } from '../../../domain/tournament-view/progress';
-import { BattleCardComponent } from '../../battle-card.component';
+import { BattleCardComponent } from '../../tournament/components/battle-card.component';
 
 /** The round on court, then every other round folded. */
 @Component({

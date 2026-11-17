@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import type { TournamentState } from '../../../core/models';
-import { QualificationStatsComponent } from '../../qualification-stats.component';
+import { QualificationStatsComponent } from '../components/qualification-stats.component';
 import { ProjectionController } from './projection-controller';
 
 /**

@@ -50,6 +50,7 @@ export default defineConfig<{ routerEnabled: boolean }>({
         'shared-invite.spec.ts',
         'shared-view.spec.ts',
         'tournament-flow.spec.ts',
+        'tournament-pages.spec.ts',
       ],
       use: {
         ...devices['Desktop Chrome'],

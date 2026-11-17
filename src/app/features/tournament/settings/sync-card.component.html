@@ -1,0 +1,42 @@
+<ng-container *transloco="let t; prefix: 'organizer.sync'">
+  <div>
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    <h2>{{ t('title') }}</h2>
+    <p class="muted">
+      @switch (store.shell().syncStatus) {
+        @case ('device-only') {{{ t('status.device-only') }}}
+        @case ('error') {{{ t('status.error') }}}
+        @case ('offline') {{{ t('status.offline') }}}
+        @case ('paused') {{{ t('status.paused') }}}
+        @case ('syncing') {{{ t('status.syncing') }}}
+        @case ('pending') {{{ t('status.pending') }}}
+        @case ('synced') {{{ t('status.synced') }}}
+      }{{ store.shell().hasPendingSync ? t('pendingNote') : '' }}
+    </p>
+    <label class="toggle-field"
+      ><input
+        type="checkbox"
+        [ngModel]="!store.shell().syncPaused"
+        (ngModelChange)="store.request({ kind: 'syncPaused', paused: !$event })"
+        [ngModelOptions]="{ standalone: true }"
+      /><span
+        ><b>{{ t('auto') }}</b
+        ><small>{{ t('autoNote') }}</small></span
+      ></label
+    >
+    @if (store.shell().syncError) {
+      <p class="shared-error" role="alert">{{ store.shell().syncError }}</p>
+    }
+  </div>
+  <div class="button-row">
+    <button
+      uiButton
+      variant="secondary"
+      type="button"
+      (click)="store.request({ kind: 'syncNow' })"
+      [disabled]="!store.shell().online || !store.shell().hasPendingSync || store.shell().syncing"
+    >
+      {{ store.shell().syncing ? t('syncing') : t('now') }}
+    </button>
+  </div>
+</ng-container>

@@ -123,8 +123,8 @@
                 {
                   "type": "bundle",
                   "name": "tournament-component",
-                  "maximumWarning": "53kB",
-                  "maximumError": "61kB"
+                  "maximumWarning": "90kB",
+                  "maximumError": "104kB"
                 },
                 {
                   "type": "bundle",
@@ -183,7 +183,7 @@
               "statements": 81,
               "branches": 78,
               "functions": 89,
-              "lines": 80
+              "lines": 81
             }
           }
         }
