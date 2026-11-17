@@ -1,5 +1,5 @@
 <ng-container *transloco="let t; prefix: 'dashboard'">
-<main class="lock-screen">
+<main class="lock-screen" id="main-content" tabindex="-1">
   <form class="lock-panel" (ngSubmit)="sendRequested.emit()">
     <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>{{ t('login.brand') }}</small></span></div>
     <div><span class="card-kicker">{{ t('login.kicker') }}</span><h1>{{ t('login.title') }}</h1><p>{{ t('login.text') }}</p></div>

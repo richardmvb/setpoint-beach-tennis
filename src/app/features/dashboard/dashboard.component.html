@@ -2,7 +2,7 @@
 @if (!store.authenticated()) {
   <app-dashboard-login [(email)]="store.email" [busy]="store.loading()" [sent]="store.magicLinkSent()" [error]="store.error()" (sendRequested)="store.requestMagicLink()" />
 } @else {
-  <div class="dashboard-shell">
+  <main class="dashboard-shell" id="main-content" tabindex="-1">
     <header class="dashboard-header"><a class="brand" [href]="store.basePath + '/'"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>{{ t('header.brand', { version: store.versionLabel }) }}</small></span></a><h1>{{ t('header.title') }}</h1><button class="button secondary" type="button" (click)="back.emit()">{{ t('header.back') }}</button></header>
     <div class="dashboard-toolbar">
       <div><span class="dashboard-eyebrow">{{ t('header.eyebrow') }}</span><h2>{{ t('header.subtitle') }}</h2>@if (store.updatedAt(); as updatedAt) {
@@ -24,11 +24,11 @@
     <p class="dashboard-empty">{{ t('header.loading') }}</p>
   }
   @if (store.metrics()) {
-    <nav class="dash-tabs" role="tablist" [attr.aria-label]="t('tabs.label')">
+    <div class="dash-tabs" role="tablist" [attr.aria-label]="t('tabs.label')">
       <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'summary'" [class.active]="store.tab() === 'summary'" (click)="store.tab.set('summary')">{{ t('tabs.summary') }}</button>
       <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'usage'" [class.active]="store.tab() === 'usage'" (click)="store.tab.set('usage')">{{ t('tabs.usage') }}</button>
       <button type="button" role="tab" [attr.aria-selected]="store.tab() === 'tournaments'" [class.active]="store.tab() === 'tournaments'" (click)="store.tab.set('tournaments')">{{ t('tabs.tournaments') }}</button>
-    </nav>
+    </div>
   }
   @if (store.metrics() && store.insightsMissing() && store.tab() !== 'tournaments') {
     <p class="shared-error" role="status">{{ t('header.insightsMissing') }}</p>
@@ -64,6 +64,6 @@
   <span role="status">{{ 'shell.footer.surveyFailed' | transloco }}</span>
   }
   }</footer>
-  </div>
+  </main>
 }
 </ng-container>

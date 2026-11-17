@@ -1562,9 +1562,12 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
     animation: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -2818,6 +2821,18 @@ input {
   outline: 0;
   border-color: var(--green-2);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-2) 18%, transparent);
+}
+
+/* The fields above remove the default outline and mark focus with a tint only: keyboard focus gets the same ring as every other control. */
+.form-field input:focus-visible,
+.form-field select:focus-visible,
+.add-player input:focus-visible,
+.participant-form input:focus-visible,
+.lock-panel > input:focus-visible,
+.shared-invite-copy input:focus-visible,
+.score-editor input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .player-row.me-row {
@@ -4112,6 +4127,11 @@ table {
   color: var(--forest-100);
 }
 
+/* --forest-100 is the same in both themes: on the dark podium rows it needs the light chip colour. */
+:root[data-theme='dark'] .ranking-page :is(.rank-gold, .rank-silver, .rank-bronze) .balance-chip.positive {
+  color: var(--chip-secure-fg);
+}
+
 .podium-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4534,7 +4554,7 @@ tr.me-row td:first-child {
 }
 
 .dashboard-list-controls input:focus {
-  outline: 2px solid var(--green-2);
+  outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
 
@@ -4860,7 +4880,7 @@ app-player-avatar .podium-avatar {
 }
 
 .ranking-player-button:focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
   border-radius: 7px;
 }
@@ -5445,13 +5465,14 @@ app-player-avatar .podium-avatar {
   animation: move-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 
+/* Opaque backgrounds: a translucent tint over a highlighted ranking row (leader, mine) dropped the text below 4.5:1. */
 .move-chip.up {
-  background: color-mix(in srgb, var(--forest-400) 18%, transparent);
-  color: var(--success-text);
+  background: var(--chip-secure-bg);
+  color: var(--chip-secure-fg);
 }
 
 .move-chip.down {
-  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  background: var(--chip-out-bg);
   color: var(--danger);
 }
 
@@ -5603,7 +5624,7 @@ app-player-avatar .podium-avatar {
 }
 
 .choice-card:focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -6885,7 +6906,7 @@ app-player-avatar .podium-avatar {
 }
 
 .profile-trigger:focus-visible {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -7266,4 +7287,29 @@ app-player-avatar .podium-avatar {
     opacity: 0;
     transform: translateY(6px);
   }
+}
+
+/* Skip link: the first stop for the keyboard; it shows only while it has focus. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+/* The shadow only while shown: a blurred shadow reaches past the edge of the screen when it is hidden above it. */
+.skip-link:focus {
+  transform: none;
+  box-shadow: var(--shadow);
+}
+
+#main-content:focus {
+  outline: none;
 }

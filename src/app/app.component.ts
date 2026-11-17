@@ -3,6 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
+  effect,
   inject,
   OnDestroy,
   OnInit,
@@ -40,6 +41,7 @@ import type { ShellRequest } from './features/tournament/data/tournament.store';
 import { ProjectionController } from './features/tournament/projection/projection-controller';
 import { TournamentComponent } from './features/tournament/tournament.component';
 import { AnalyticsIdentity } from './shell/analytics-identity';
+import { PageAnnouncer, type ScreenKey } from './shell/page-announcer';
 import { provideHostProjection } from './shell/host-projection';
 import { ShellDialogs } from './shell/shell-dialogs';
 import { prefetchDialogs, prefetchTournamentViews } from './shell/shell-prefetch';
@@ -90,6 +92,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly navigation = inject(AppNavigation);
   private readonly theme = inject(ThemeService);
   private readonly changes = inject(ChangeDetectorRef);
+  private readonly announcer = inject(PageAnnouncer);
   private stopPathWatch: (() => void) | null = null;
 
   protected readonly sync = inject(TournamentSync);
@@ -123,7 +126,16 @@ export class AppComponent implements OnInit, OnDestroy {
   /** The name in the profile button's label, without braces (a translation parameter must not look like `{{x}}`). */
   protected readonly profileName = computed(() => this.profileStore.profile().name.replace(/[{}]/g, ''));
 
+  /** The screen in front of the person, for the document title and the focus after a change. */
+  private readonly screen = computed<ScreenKey>(() => {
+    if (this.isLocked()) return 'lock';
+    if (this.isDashboardRoute()) return 'dashboard';
+    if (this.showLanding()) return 'landing';
+    return this.page();
+  });
+
   constructor() {
+    effect(() => this.announcer.announce(this.screen()));
     const url = this.urlState.snapshot();
     if (!this.isSharedView) {
       const canLock = this.config.lockScreenEnabled && !url.dashboardPath && !url.authCallback;
@@ -179,6 +191,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.stopPathWatch?.();
     this.identity.stop();
     this.startup.stop();
+  }
+
+  /** The skip link: the address would change with a plain `#` link, so focus the content ourselves. */
+  protected skipToContent(event: Event): void {
+    event.preventDefault();
+    document.getElementById('main-content')?.focus();
   }
 
   protected openProfile(welcome = false, afterWelcome?: () => void): Promise<void> {
