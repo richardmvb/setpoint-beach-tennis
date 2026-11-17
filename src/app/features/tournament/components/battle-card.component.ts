@@ -1,13 +1,15 @@
-import { ChangeDetectionStrategy, Component, Input, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, inject, input } from '@angular/core';
+import { provideTranslocoScope, TranslocoService } from '@jsverse/transloco';
 
-import { Match, Player } from '../core/models';
-import { PlayerAvatarComponent } from './player-avatar.component';
+import { Match, Player } from '../../../core/models';
+import { PlayerAvatarComponent } from '../../player-avatar.component';
 
 /** Versus card used when watching a tournament: two teams, a big scoreboard, a clear winner. */
 @Component({
   selector: 'app-battle-card',
   standalone: true,
   imports: [PlayerAvatarComponent],
+  providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:block;min-width:0}'],
   template: `
@@ -30,7 +32,7 @@ import { PlayerAvatarComponent } from './player-avatar.component';
             </div>
           }
           @if (winner === 'A') {
-            <span class="battle-win">VENCEU</span>
+            <span class="battle-win">{{ wonLabel }}</span>
           }
         </div>
         <div
@@ -56,17 +58,18 @@ import { PlayerAvatarComponent } from './player-avatar.component';
             </div>
           }
           @if (winner === 'B') {
-            <span class="battle-win">VENCEU</span>
+            <span class="battle-win">{{ wonLabel }}</span>
           }
         </div>
       </div>
       @if (match.tieBreakA != null && match.tieBreakB != null) {
-        <small class="battle-tie">Tie-break {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
+        <small class="battle-tie">{{ tieBreakLabel }} {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
       }
     </div>
   `,
 })
 export class BattleCardComponent {
+  private readonly transloco = inject(TranslocoService);
   @Input({ required: true }) match!: Match;
   readonly players = input<Player[]>([]);
   readonly highlightId = input('');
@@ -88,22 +91,41 @@ export class BattleCardComponent {
     const highlightId = this.highlightId();
     return !!highlightId && [...this.match.teamA, ...this.match.teamB].includes(highlightId);
   }
+  get wonLabel(): string {
+    return this.transloco.translate('battle.won', {}, 'tournament/pt-BR');
+  }
+  get tieBreakLabel(): string {
+    return this.transloco.translate('battle.tieBreak', {}, 'tournament/pt-BR');
+  }
   get statusLabel(): string {
-    return this.done ? 'ENCERRADA' : this.live() ? 'EM QUADRA' : 'AGUARDANDO';
+    return this.done
+      ? this.transloco.translate('battle.done', {}, 'tournament/pt-BR')
+      : this.live()
+        ? this.transloco.translate('battle.live', {}, 'tournament/pt-BR')
+        : this.transloco.translate('battle.waiting', {}, 'tournament/pt-BR');
   }
   get ariaScore(): string {
+    const a = this.teamName(this.match.teamA);
+    const b = this.teamName(this.match.teamB);
     return this.done
-      ? `${this.teamName(this.match.teamA)} ${this.match.scoreA} contra ${this.match.scoreB} ${this.teamName(this.match.teamB)}`
-      : `${this.teamName(this.match.teamA)} contra ${this.teamName(this.match.teamB)}, sem placar`;
+      ? this.transloco.translate(
+          'battle.ariaScore',
+          { teamA: a, scoreA: this.match.scoreA, scoreB: this.match.scoreB, teamB: b },
+          'tournament/pt-BR',
+        )
+      : this.transloco.translate('battle.ariaNoScore', { teamA: a, teamB: b }, 'tournament/pt-BR');
   }
 
   nameOf(id: string): string {
-    return this.players().find((player) => player.id === id)?.name ?? 'A definir';
+    return (
+      this.players().find((player) => player.id === id)?.name ??
+      this.transloco.translate('battle.tbd', {}, 'tournament/pt-BR')
+    );
   }
   photoOf(id: string): string | undefined {
     return this.players().find((player) => player.id === id)?.photoDataUrl;
   }
   private teamName(ids: readonly string[]): string {
-    return ids.map((id) => this.nameOf(id)).join(' e ');
+    return ids.map((id) => this.nameOf(id)).join(` ${this.transloco.translate('battle.and', {}, 'tournament/pt-BR')} `);
   }
 }

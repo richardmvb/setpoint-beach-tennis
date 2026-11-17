@@ -352,3 +352,143 @@ describe('TournamentStore: sharing and the clock', () => {
     expect(store.playerName('nobody')).toBe('Jogador removido');
   });
 });
+
+describe('TournamentStore: the numbers of the overview', () => {
+  it('counts the matches and the progress', () => {
+    const { store } = setup(played());
+    const total = store.totalMatches();
+    expect(total).toBeGreaterThan(0);
+    expect(store.completedMatches()).toBe(total);
+    expect(store.progress()).toBe(100);
+    TestBed.resetTestingModule();
+    expect(setup(tournamentState()).store.progress()).toBe(0);
+  });
+
+  it('knows whether the doubles are mixed', () => {
+    expect(setup(tournamentState({ doublesFormat: 'mixed' })).store.isMixed()).toBe(true);
+    TestBed.resetTestingModule();
+    expect(setup(tournamentState({ doublesFormat: 'open' })).store.isMixed()).toBe(false);
+  });
+
+  it('names the status of the shared tournament, "loading" until there is a snapshot', () => {
+    const { store } = setup();
+    expect(store.sharedStatusKey()).toBe('loading');
+    for (const status of ['archived', 'registration', 'ready', 'active', 'completed'] as const) {
+      TestBed.inject(OwnedSharedTournament).replaceSnapshot({
+        id: 's',
+        status,
+        capacity: 8,
+        state: storedTournament(),
+        inviteToken: '',
+        inviteExpiresAt: '',
+        expiresAt: null,
+      });
+      expect(store.sharedStatusKey()).toBe(status);
+    }
+  });
+
+  it('keeps what the shell last said until it says something else', () => {
+    const { store } = setup();
+    expect(store.shell().syncAvailable).toBe(false);
+    store.shell.set({ ...store.shell(), syncAvailable: true, syncStatus: 'synced' });
+    expect(store.shell()).toMatchObject({ syncAvailable: true, syncStatus: 'synced' });
+  });
+});
+
+describe('TournamentStore: the rules form', () => {
+  const unscheduled = (overrides: Partial<TournamentState> = {}) =>
+    tournamentState({ players: storedTournament().players, ...overrides });
+
+  it('replaces the tournament on every change instead of editing it', () => {
+    const { store, tournament } = setup(unscheduled());
+    const before = tournament.state();
+    store.setName('Copa');
+    store.setGamesToWin(5);
+    expect(tournament.state()).not.toBe(before);
+    expect(before.name).toBe('Teste');
+    expect(tournament.state()).toMatchObject({ name: 'Copa', gamesToWin: 5 });
+  });
+
+  it('changes the size, the courts, the mode and the group format through the setup rules', () => {
+    const { store, tournament } = setup(unscheduled());
+    store.changeSize(12);
+    expect(tournament.state()).toMatchObject({ size: 12, courts: 2 });
+    store.changeCourts(3);
+    expect(tournament.state().courts).toBe(3);
+    store.changeTournamentMode('groups');
+    expect(tournament.state()).toMatchObject({ tournamentMode: 'groups', courts: 3 });
+    expect(store.availableSizes()).toEqual([8, 12, 24]);
+    store.changeGroupFormat('fixed');
+    expect(tournament.state().groupFormat).toBe('fixed');
+    expect(store.requiredRounds()).toBe(tournament.state().size / 2 - 1);
+  });
+
+  it('keeps a value the format does not allow out', () => {
+    const { store, tournament } = setup(unscheduled());
+    store.changeSize(7);
+    store.changeCourts(9);
+    expect(tournament.state()).toMatchObject({ size: 8, courts: 2 });
+  });
+
+  it('saves the doubles format at once, and only before the schedule exists', () => {
+    const { store, tournament, hooks } = setup(unscheduled());
+    store.changeDoublesFormat('mixed');
+    expect(tournament.state().doublesFormat).toBe('mixed');
+    expect(hooks.save).toHaveBeenCalledTimes(1);
+    TestBed.resetTestingModule();
+    const scheduled = setup();
+    scheduled.store.changeDoublesFormat('mixed');
+    expect(scheduled.tournament.state().doublesFormat).not.toBe('mixed');
+    expect(scheduled.hooks.save).not.toHaveBeenCalled();
+  });
+
+  it('refuses to save after the schedule exists, and says so', () => {
+    const { store, hooks } = setup();
+    store.saveSettings();
+    expect(hooks.notify).toHaveBeenCalledWith(
+      'As configurações ficam bloqueadas depois da geração da tabela.',
+      'error',
+    );
+    expect(hooks.save).not.toHaveBeenCalled();
+  });
+
+  it('saves a trimmed name and the rounds of the format, and tells analytics', () => {
+    const { store, tournament, hooks, events } = setup(unscheduled({ name: '  Copa  ', roundCount: 1 }));
+    store.saveSettings();
+    expect(tournament.state()).toMatchObject({ name: 'Copa', roundCount: 7 });
+    expect(hooks.save).toHaveBeenCalledWith('Configurações salvas.');
+    expect(events()).toContain('tournament_settings_saved');
+  });
+
+  it('does not save with more athletes than places', () => {
+    const { store, hooks } = setup(
+      unscheduled({ players: [...storedTournament().players, { id: 'x', name: 'Extra' }] }),
+    );
+    store.saveSettings();
+    expect(hooks.notify).toHaveBeenCalledWith('Remova participantes até ficar com 8.', 'error');
+    expect(hooks.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('TournamentStore: the backup', () => {
+  it('downloads the tournament and says so', () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const { store, hooks, events } = setup();
+    store.exportBackup();
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(hooks.notify).toHaveBeenCalledWith('Backup JSON exportado.', 'success');
+    expect(events()).toContain('backup_exported');
+    click.mockRestore();
+  });
+
+  it('forwards what only the shell can do', () => {
+    const { store } = setup();
+    const seen: unknown[] = [];
+    store.requests.subscribe((request) => seen.push(request));
+    store.request({ kind: 'syncNow' });
+    store.request({ kind: 'projectionTarget', playerId: 'p2' });
+    expect(seen).toEqual([{ kind: 'syncNow' }, { kind: 'projectionTarget', playerId: 'p2' }]);
+  });
+});

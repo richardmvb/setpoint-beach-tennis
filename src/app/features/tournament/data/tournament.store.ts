@@ -10,7 +10,9 @@ import {
   MAX_FINAL_LIVE_POINTS,
 } from '../../../core/final-live-score';
 import { FinalsService, type PodiumPlace } from '../../../core/finals.service';
-import type { Match, Page } from '../../../core/models';
+import { exportTournamentBackup } from '../../../core/backup-export';
+import type { DoublesFormat, GroupFormat, Match, Page, ThemeMode, TournamentMode } from '../../../core/models';
+import type { SyncStatus } from '../../../core/state-machines';
 import { NpsFeedbackService } from '../../../core/nps-feedback.service';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { ANALYTICS } from '../../../core/ports/analytics.port';
@@ -19,6 +21,21 @@ import { RANDOM } from '../../../core/ports/random.port';
 import { SelectedRound } from '../../../core/selected-round';
 import { ShareCardService } from '../../../core/share-card.service';
 import { DialogService } from '../../../core/dialog.service';
+import {
+  availableCourts,
+  availableGamesToWin,
+  availableSizes,
+  requiredRounds,
+  withCourts,
+  withDoublesFormat,
+  withGamesToWin,
+  withGroupFormat,
+  withName,
+  withRequiredRounds,
+  withSize,
+  withTournamentMode,
+  withTrimmedName,
+} from '../../../domain/tournament-setup/setup-rules';
 import { canGenerateFinals, earlyFinalsReady, withFinishedAt } from '../../../domain/tournament-play/finals';
 import {
   finalScoreStatus,
@@ -54,8 +71,48 @@ import type {
 import { ShareResultsSession } from '../share-results-dialog/share-results-session';
 import type { TieDrawDialogComponent } from '../tie-draw-dialog/tie-draw-dialog.component';
 
-/** What a tournament page asks of the shell, which owns navigation: the page cannot do it itself. */
-export type ShellRequest = { kind: 'navigate'; page: Page } | { kind: 'finalized' };
+/** What a tournament page asks of the shell, which owns navigation, saving and the sync queue. */
+export type ShellRequest =
+  | { kind: 'navigate'; page: Page }
+  | { kind: 'finalized' }
+  | { kind: 'cancelShared' }
+  | { kind: 'reset' }
+  | { kind: 'importBackup'; file: File }
+  | { kind: 'openLibrary' }
+  | { kind: 'openLanding' }
+  | { kind: 'projectionTarget'; playerId: string }
+  | { kind: 'syncPaused'; paused: boolean }
+  | { kind: 'syncNow' };
+
+/**
+ * What the shell knows that the pages show: the state of its sync and the theme. The shell refreshes it on every
+ * check (until B5 makes it signal-based) and hands it down as one signal input.
+ */
+export interface TournamentShellState {
+  syncAvailable: boolean;
+  syncStatus: SyncStatus;
+  hasPendingSync: boolean;
+  syncPaused: boolean;
+  syncing: boolean;
+  online: boolean;
+  /** The text of the last sync error (shell text, typed in B5). */
+  syncError: string;
+  theme: ThemeMode;
+}
+
+export const NO_SHELL_STATE: TournamentShellState = {
+  syncAvailable: false,
+  syncStatus: 'device-only',
+  hasPendingSync: false,
+  syncPaused: false,
+  syncing: false,
+  online: true,
+  syncError: '',
+  theme: 'light',
+};
+
+/** The status of the shared tournament the invite card shows, as a key the page turns into words. */
+export type SharedStatusKey = 'archived' | 'registration' | 'ready' | 'active' | 'completed' | 'loading';
 
 /** What was typed in a match's score fields and is not on the match yet, with the scores it was typed over. */
 interface Draft extends ScoreDraft {
@@ -93,6 +150,8 @@ export class TournamentStore {
   private readonly standingsMemo = createStandingsMemo();
 
   readonly state = this.tournament.state;
+  /** The shell's state (sync, theme), set by `TournamentComponent` from its input. */
+  readonly shell = signal<TournamentShellState>(NO_SHELL_STATE);
   readonly selectedRound = this.selected.index;
   readonly maxLivePoints = MAX_FINAL_LIVE_POINTS;
   /** The shell listens to these (`TournamentComponent` forwards them as its output). */
@@ -136,6 +195,25 @@ export class TournamentStore {
   readonly mixedFinalistCount = computed(() => tournamentFormat.mixedFinalistCount(this.state()));
   readonly earlyFinalsReady = computed(() => earlyFinalsReady(this.state(), this.standings()));
   readonly canGenerateFinal = computed(() => canGenerateFinals(this.state(), this.standings(), this.canEditScores()));
+
+  readonly totalMatches = computed(() => tournamentProgress.totalMatches(this.state()));
+  readonly completedMatches = computed(() => tournamentProgress.completedMatches(this.state(), this.winnerSide));
+  readonly progress = computed(() => tournamentProgress.progressPercent(this.state(), this.winnerSide));
+  readonly isMixed = computed(() => tournamentFormat.isMixedDoubles(this.state()));
+  readonly availableSizes = computed(() => availableSizes(this.state()));
+  readonly availableCourts = computed(() => availableCourts(this.state()));
+  readonly availableGamesToWin = computed(() => availableGamesToWin(this.state()));
+  readonly requiredRounds = computed(() => requiredRounds(this.state()));
+  readonly sharedStatusKey = computed<SharedStatusKey>(() => {
+    const status = this.owned.snapshot()?.status;
+    return status === 'archived' ||
+      status === 'registration' ||
+      status === 'ready' ||
+      status === 'active' ||
+      status === 'completed'
+      ? status
+      : 'loading';
+  });
 
   readonly currentRound = computed(() => this.state().rounds[this.selectedRound()] ?? null);
   readonly completedRounds = computed(() => tournamentProgress.completedRounds(this.state()));
@@ -398,6 +476,65 @@ export class TournamentStore {
       has_started_at: !!state.startedAt,
     });
     void this.nps.open(true);
+  }
+
+  /** The rules form (Ajustes): each change replaces the tournament; "Salvar" saves it. */
+  setName(name: string): void {
+    this.tournament.update((state) => withName(state, name));
+  }
+
+  setGamesToWin(gamesToWin: number): void {
+    this.tournament.update((state) => withGamesToWin(state, gamesToWin));
+  }
+
+  changeSize(size: number): void {
+    this.tournament.update((state) => withSize(state, size));
+  }
+
+  changeCourts(courts: number): void {
+    this.tournament.update((state) => withCourts(state, courts));
+  }
+
+  changeTournamentMode(mode: TournamentMode): void {
+    this.tournament.update((state) => withTournamentMode(state, mode));
+  }
+
+  changeDoublesFormat(format: DoublesFormat): void {
+    if (this.hasSchedule()) return;
+    this.tournament.update((state) => withDoublesFormat(state, format));
+    this.tournament.save();
+  }
+
+  changeGroupFormat(format: GroupFormat): void {
+    this.tournament.update((state) => withGroupFormat(state, format));
+  }
+
+  saveSettings(): void {
+    if (this.hasSchedule()) {
+      this.tournament.notify(this.transloco.translate('notices.settingsLocked', {}, 'organizer/pt-BR'), 'error');
+      return;
+    }
+    const size = this.state().size;
+    if (this.state().players.length > size) {
+      this.tournament.notify(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
+      return;
+    }
+    this.tournament.update((state) => withRequiredRounds(withTrimmedName(state)));
+    this.tournament.save(this.transloco.translate('notices.settingsSaved', {}, 'organizer/pt-BR'));
+    const saved = this.state();
+    this.analytics.capture('tournament_settings_saved', {
+      tournament_mode: saved.tournamentMode,
+      doubles_format: saved.doublesFormat ?? 'open',
+      hosting_mode: saved.hostingMode,
+      tournament_size: saved.size,
+      court_count: saved.courts,
+      games_to_win: saved.gamesToWin,
+    });
+  }
+
+  exportBackup(): void {
+    exportTournamentBackup(this.state(), this.clock, this.analytics);
+    this.tournament.notify(this.transloco.translate('notices.backupExported', {}, 'organizer/pt-BR'));
   }
 
   /** The dialogs are lazy chunks: they load on the first click, not with the app. */

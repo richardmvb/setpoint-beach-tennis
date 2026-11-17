@@ -1,0 +1,20 @@
+<ng-container *transloco="let t; prefix: 'organizer.data'">
+  <div>
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    <h2>{{ t('title') }}</h2>
+    <p class="muted">{{ t('text') }}</p>
+  </div>
+  <div class="button-row">
+    @if (saved.entries().length) {
+      <button uiButton variant="secondary" type="button" (click)="store.request({ kind: 'openLibrary' })">
+        {{ t('library', { count: saved.entries().length }) }}
+      </button>
+    }
+    <button uiButton variant="secondary" type="button" (click)="store.exportBackup()">{{ t('export') }}</button
+    ><label class="button secondary file-button"
+      >{{ t('import') }}<input type="file" accept="application/json,.json" (change)="pick($event)" hidden /></label
+    ><button uiButton variant="danger" type="button" (click)="store.request({ kind: 'reset' })">
+      {{ t('reset') }}
+    </button>
+  </div>
+</ng-container>

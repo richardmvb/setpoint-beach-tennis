@@ -85,33 +85,11 @@ button:disabled {
   font-size: 12px;
 }
 
-.stat-card {
-  grid-column: span 4;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 15px 17px;
-  box-shadow: var(--shadow);
-}
-
 .progress-track {
   background: var(--surface-soft);
   border-radius: 99px;
   overflow: hidden;
   height: 8px;
-}
-
-.status-icon {
-  width: 35px;
-  height: 35px;
-  border-radius: 10px;
-  background: var(--orange-soft);
-  color: var(--accent-text);
-  display: grid;
-  place-items: center;
-  font-size: 19px;
-  font-weight: 900;
-  margin: 14px 0 10px;
 }
 
 .player-avatar,
@@ -289,40 +267,6 @@ p {
   margin: 6px 0 5px;
 }
 
-.stat-card strong {
-  display: block;
-  font:
-    800 28px Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
-  margin: 7px 0 2px;
-}
-
-.overview-main {
-  grid-column: span 8;
-}
-
-.overview-side {
-  grid-column: span 4;
-}
-
-.player-entry {
-  grid-column: span 5;
-}
-
-.player-list-card {
-  grid-column: span 7;
-}
-
-.settings-form {
-  grid-column: span 7;
-}
-
-.settings-info {
-  grid-column: span 5;
-}
-
 .data-card {
   display: flex;
   justify-content: space-between;
@@ -347,17 +291,6 @@ p {
     font-size: 23px;
   }
 
-  .stat-card {
-    padding: 13px;
-    grid-column: span 4;
-  }
-
-  .stat-card strong {
-    font-size: 24px;
-  }
-
-  .overview-main,
-  .overview-side,
   .rules-card,
   .quick-card {
     grid-column: span 12;
@@ -369,13 +302,6 @@ p {
 
   .rules-card h2 {
     max-width: none;
-  }
-
-  .player-entry,
-  .player-list-card,
-  .settings-form,
-  .settings-info {
-    grid-column: span 12;
   }
 
   .data-card {
@@ -442,13 +368,6 @@ app-player-avatar > span {
 
 .notice > span {
   font-weight: 900;
-}
-
-.stat-card > span {
-  font-size: 10px;
-  color: var(--muted);
-  font-weight: 800;
-  letter-spacing: 1px;
 }
 
 .progress-track span {
@@ -821,18 +740,6 @@ main {
   font-size: 11px;
 }
 
-.stat-card strong small {
-  font-size: 15px;
-  color: var(--muted);
-}
-
-.stat-card p {
-  font-size: 11px;
-  color: var(--muted);
-  margin: 0;
-}
-
-.overview-main h2,
 .rules-card h2,
 .surface-card h2 {
   font:
@@ -846,41 +753,6 @@ main {
 
 .muted {
   color: var(--muted);
-}
-
-.overview-main .muted {
-  font-size: 12px;
-  margin-bottom: 18px;
-}
-
-.progress-caption {
-  display: flex;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 10px;
-  margin-top: 7px;
-}
-
-.progress-caption b {
-  color: var(--text);
-}
-
-.status-icon.ready {
-  background: var(--green-soft);
-  color: var(--green-2);
-}
-
-.overview-side h3 {
-  font:
-    800 15px Inter,
-    sans-serif;
-  margin: 0 0 7px;
-}
-
-.overview-side p {
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 0;
 }
 
 .rules-card {
@@ -922,22 +794,6 @@ main {
   }
 
   .heading-tag {
-    font-size: 9px;
-  }
-
-  .stat-card {
-    padding: 11px 9px;
-  }
-
-  .stat-card > span {
-    font-size: 8px;
-  }
-
-  .stat-card strong {
-    font-size: 21px;
-  }
-
-  .stat-card p {
     font-size: 9px;
   }
 
@@ -999,10 +855,6 @@ main {
   white-space: normal;
   overflow: hidden;
   max-width: 100%;
-}
-
-.elapsed-row b {
-  font-variant-numeric: tabular-nums;
 }
 
 .qual-grid b {
@@ -1607,8 +1459,7 @@ select {
     sans-serif;
 }
 
-.surface-card,
-.stat-card {
+.surface-card {
   border-radius: var(--radius);
   padding: 22px;
   border-color: var(--border);
@@ -1658,8 +1509,7 @@ select {
 }
 
 @media (hover: hover) {
-  .surface-card:hover,
-  .stat-card:hover {
+  .surface-card:hover {
     transform: translateY(-2px);
   }
 }
@@ -1695,12 +1545,6 @@ select {
     gap: 12px;
   }
 
-  .stat-card,
-  .overview-main,
-  .overview-side {
-    grid-column: 1/-1;
-  }
-
   .main-nav button {
     padding: 9px 13px;
   }
@@ -1714,10 +1558,6 @@ select {
 
   .page-heading h1 {
     font-size: 24px;
-  }
-
-  .stat-card {
-    grid-column: span 4;
   }
 }
 
@@ -2193,13 +2033,6 @@ input {
   border-radius: 14px;
 }
 
-.file-button {
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .card-kicker {
   color: var(--accent-text);
   letter-spacing: 1.8px;
@@ -2258,12 +2091,6 @@ input {
   margin: 12px 0;
 }
 
-.form-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
 .lock-panel {
   width: min(100%, 360px);
   display: grid;
@@ -2295,10 +2122,6 @@ input {
 
 .share-picker-action {
   width: 100%;
-}
-
-.stat-card {
-  padding: 20px 22px;
 }
 
 .notice {
@@ -2514,10 +2337,6 @@ input {
   margin: 6px 0;
 }
 
-.settings-form h2 {
-  margin: 6px 0 16px;
-}
-
 .data-card h2 {
   margin: 5px 0;
 }
@@ -2562,8 +2381,7 @@ input {
   font-size: 16px;
 }
 
-.surface-card h2,
-.overview-main h2 {
+.surface-card h2 {
   font-size: 20px;
   letter-spacing: -0.5px;
 }
@@ -2915,18 +2733,6 @@ input {
   color: var(--text);
   font: inherit;
   font-size: 12px;
-}
-
-.live-link-field input {
-  flex: 1 1 260px;
-  min-width: 0;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 13px;
 }
 
 .add-player input:focus {
@@ -3767,15 +3573,6 @@ app-player-avatar > span:not(.has-photo) {
   min-width: 0;
 }
 
-/* Tutorial */
-
-.live-link-field {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 0;
-}
-
 /* Gender controls and mixed finals */
 
 .gender-icon {
@@ -4225,22 +4022,6 @@ table {
   font-weight: 800;
 }
 
-.settings-info h3 {
-  font:
-    800 15px Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
-  margin: 7px 0 12px;
-}
-
-.settings-info ul {
-  padding-left: 18px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 2;
-}
-
 .setup-wizard {
   max-width: 760px;
   margin: 0 auto;
@@ -4536,10 +4317,6 @@ app-player-avatar .share-chip-avatar {
   color: var(--white);
 }
 
-.elapsed-row {
-  margin-top: 6px;
-}
-
 .shared-guest-tags {
   display: flex;
   flex-wrap: wrap;
@@ -4562,11 +4339,6 @@ app-player-avatar .share-chip-avatar {
 .main-nav button:hover:not(.active) {
   background: var(--surface-soft);
   color: var(--text);
-}
-
-.stat-card strong {
-  font-size: 34px;
-  letter-spacing: -1px;
 }
 
 .podium-place.place-1 {
@@ -4977,10 +4749,6 @@ app-player-avatar .podium-avatar {
   font-weight: 800;
 }
 
-.live-link-field .button {
-  min-height: 44px;
-}
-
 .gender-toggle button.male.active {
   background: var(--chart-blue);
 }
@@ -5100,12 +4868,6 @@ app-player-avatar .podium-avatar {
 .player-match-list {
   display: grid;
   gap: 8px;
-}
-
-/* Completion actions and resilient player-history modal. */
-
-.settings-page > .data-card-primary {
-  order: -1;
 }
 
 .player-matches-modal {

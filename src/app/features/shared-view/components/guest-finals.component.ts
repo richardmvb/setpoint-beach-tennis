@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { TranslocoDirective } from '@jsverse/transloco';
 import type { PodiumPlace } from '../../../core/finals.service';
 import type { FinalStage, Player } from '../../../core/models';
-import { BattleCardComponent } from '../../battle-card.component';
+import { BattleCardComponent } from '../../tournament/components/battle-card.component';
 import { FinalLiveScoreComponent } from '../../tournament/components/final-live-score.component';
 import { PodiumComponent } from '../../tournament/components/podium.component';
 

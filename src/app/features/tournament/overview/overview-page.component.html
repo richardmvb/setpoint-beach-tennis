@@ -1,0 +1,138 @@
+<ng-container *transloco="let t; prefix: 'organizer.overview'">
+  @if (showInvite()) {
+    <article uiCard class="full-card shared-invite-panel">
+      <div>
+        <span class="card-kicker"
+          >{{ t('shared.kicker') }} ·
+          @switch (store.sharedStatusKey()) {
+            @case ('archived') {
+              {{ 'organizer.sharedStatus.archived' | transloco }}
+            }
+            @case ('registration') {
+              {{ 'organizer.sharedStatus.registration' | transloco }}
+            }
+            @case ('ready') {
+              {{ 'organizer.sharedStatus.ready' | transloco }}
+            }
+            @case ('active') {
+              {{ 'organizer.sharedStatus.active' | transloco }}
+            }
+            @case ('completed') {
+              {{ 'organizer.sharedStatus.completed' | transloco }}
+            }
+            @default {
+              {{ 'organizer.sharedStatus.loading' | transloco }}
+            }
+          }</span
+        >
+        <h2>{{ t('shared.title') }}</h2>
+        <p class="muted">{{ t('shared.note') }}</p>
+        @if (owned.snapshot()?.expiresAt; as expiresAt) {
+          <p class="muted">{{ t('shared.availableUntil', { date: (expiresAt | date: 'short') }) }}</p>
+        }
+        @if (owned.error(); as error) {
+          <p class="shared-error" role="alert">
+            @switch (error.key) {
+              @case ('invalidLiveLink') {{{ t('shared.errors.invalidLiveLink') }}}
+              @case ('authRequired') {{{ t('shared.errors.authRequired') }}}
+              @case ('completed') {{{ t('shared.errors.completed') }}}
+              @case ('registrationClosed') {{{ t('shared.errors.registrationClosed') }}}
+              @case ('full') {{{ t('shared.errors.full') }}}
+              @case ('expired') {{{ t('shared.errors.expired') }}}
+              @case ('notRemovable') {{{ t('shared.errors.notRemovable') }}}
+              @case ('roundsLocked') {{{ t('shared.errors.roundsLocked') }}}
+              @case ('invalidInvite') {{{ t('shared.errors.invalidInvite') }}}
+              @case ('anonymousDisabled') {{{ t('shared.errors.anonymousDisabled') }}}
+              @case ('signInFailed') {{{ t('shared.errors.signInFailed') }}}
+              @case ('unavailable') {{{ t('shared.errors.unavailable') }}}
+              @case ('categoryRequired') {{{ t('shared.errors.categoryRequired') }}}
+              @case ('copyFailed') {{{ t('shared.errors.copyFailed') }}}
+              @case ('raw') {{{ error.detail }}}
+            }
+          </p>
+        }
+        @if (owned.notice(); as notice) {
+          <p class="shared-success" role="status">
+            @switch (notice) {
+              @case ('created') {{{ t('shared.notices.created') }}}
+              @case ('copied') {{{ t('shared.notices.copied') }}}
+              @case ('renewed') {{{ t('shared.notices.renewed') }}}
+            }
+          </p>
+        }
+      </div>
+      <div class="shared-invite-copy">
+        @if (owned.inviteUrl()) {
+          <input [attr.aria-label]="t('shared.linkLabel')" readonly [value]="owned.inviteUrl()" />
+          <button uiButton variant="secondary" type="button" (click)="owned.copyInvite()">{{ t('shared.copy') }}</button>
+        }
+        <button uiButton variant="secondary" type="button" (click)="owned.renewInvite()" [disabled]="owned.loading()">
+          {{ owned.inviteUrl() ? t('shared.renew') : t('shared.recover') }}
+        </button>
+        <button
+          uiButton
+          variant="danger"
+          type="button"
+          (click)="store.request({ kind: 'cancelShared' })"
+          [disabled]="owned.loading()"
+        >
+          {{ t('shared.cancel') }}
+        </button>
+      </div>
+    </article>
+  }
+  <article class="stat-card">
+    <span>{{ t('players') }}</span>
+    <strong>{{ store.state().players.length }}<small> / {{ store.state().size }}</small></strong>
+    <p>{{ t('enrolled') }}</p>
+  </article>
+  <article class="stat-card">
+    <span>{{ t('rounds') }}</span>
+    <strong>{{ store.state().rounds.length || '—' }}</strong>
+    <p>{{ store.state().rounds.length ? t('generated') : t('pending') }}</p>
+  </article>
+  <article class="stat-card">
+    <span>{{ t('matches') }}</span>
+    <strong>{{ store.completedMatches() }}<small> / {{ store.totalMatches() }}</small></strong>
+    <p>{{ t('registered') }}</p>
+  </article>
+  <article uiCard class="overview-main">
+    <div class="card-kicker">{{ t('current') }}</div>
+    <h2>{{ store.state().name }}</h2>
+    <p class="muted">
+      {{
+        t('summary', {
+          mode: store.isGroup() ? t('modeGroups') : t('modeSuper'),
+          size: store.state().size,
+          courts: store.state().courts,
+          games: store.state().gamesToWin,
+          rounds: store.state().roundCount,
+        })
+      }}
+    </p>
+    <div class="progress-track"><span [style.width.%]="store.progress()"></span></div>
+    <div class="progress-caption">
+      <span>{{ t('progress') }}</span
+      ><b>{{ store.progress() }}%</b>
+    </div>
+    <div class="progress-caption elapsed-row">
+      <span>{{ store.state().finishedAt ? t('elapsedDone') : t('elapsed') }}</span
+      ><b>{{ store.elapsedLabel() }}</b>
+    </div>
+    <div class="button-row">
+      <button
+        uiButton
+        variant="primary"
+        (click)="store.request({ kind: 'navigate', page: store.hasSchedule() ? 'rounds' : 'players' })"
+      >
+        {{ store.hasSchedule() ? t('openMatches') : t('addPlayers') }} <span>→</span>
+      </button>
+    </div>
+  </article>
+  <article uiCard class="overview-side">
+    <span class="card-kicker">{{ t('statusKicker') }}</span>
+    <div class="status-icon" [class.ready]="store.hasSchedule()">{{ store.hasSchedule() ? '✓' : '＋' }}</div>
+    <h3>{{ store.hasSchedule() ? t('ready') : t('preparing') }}</h3>
+    <p class="muted">{{ store.hasSchedule() ? t('readyNote') : t('preparingNote') }}</p>
+  </article>
+</ng-container>

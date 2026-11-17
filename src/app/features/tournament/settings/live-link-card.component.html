@@ -1,0 +1,45 @@
+<ng-container *transloco="let t; prefix: 'organizer.liveLink'">
+  <div>
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    <h2>{{ t('title') }}</h2>
+    <p class="muted">{{ t('text') }}</p>
+    @if (link.url()) {
+      <p class="live-link-field">
+        <input [attr.aria-label]="t('field')" readonly [value]="link.url()" /><button
+          uiButton
+          variant="secondary"
+          type="button"
+          (click)="link.copy()"
+        >
+          {{ t('copy') }}
+        </button>
+      </p>
+    }
+    @if (link.notice()) {
+      <p class="shared-success" role="status">{{ t('copied') }}</p>
+    }
+    @if (link.error(); as error) {
+      <p class="shared-error" role="alert">
+        @switch (error.key) {
+          @case ('notConfigured') {{{ t('notConfigured') }}}
+          @case ('createFailed') {{{ error.detail ?? t('createFailed') }}}
+          @case ('copyFailed') {{{ t('copyFailed') }}}
+        }
+      </p>
+    }
+    @if (!link.configured) {
+      <p class="muted helper-text">{{ t('notConfigured') }}</p>
+    }
+  </div>
+  <div class="button-row">
+    <button
+      uiButton
+      variant="primary"
+      type="button"
+      (click)="link.createOrCopy()"
+      [disabled]="link.loading() || !link.configured"
+    >
+      {{ link.loading() ? t('generating') : link.url() ? t('copyLive') : t('generate') }}
+    </button>
+  </div>
+</ng-container>

@@ -1,0 +1,14 @@
+.player-entry {
+  grid-column: span 5;
+}
+
+.player-list-card {
+  grid-column: span 7;
+}
+
+@media (width <=760px) {
+  .player-entry,
+  .player-list-card {
+    grid-column: span 12;
+  }
+}

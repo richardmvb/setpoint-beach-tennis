@@ -1,0 +1,56 @@
+<ng-container *transloco="let t; prefix: 'organizer.playersPage'">
+  <article uiCard class="player-entry">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">{{ t('kicker') }}</span>
+        <h2>{{ t('title') }}</h2>
+      </div>
+      <div class="counter">{{ store.state().players.length }}<small> / {{ store.state().size }}</small></div>
+    </div>
+    <div class="progress-track">
+      <span [style.width.%]="(store.state().players.length / store.state().size) * 100"></span>
+    </div>
+    <form class="add-player">
+      <input
+        name="newPlayerName"
+        maxlength="40"
+        [placeholder]="t('namePlaceholder')"
+        [attr.aria-label]="t('namePlaceholder')"
+        disabled
+      /><button uiButton variant="primary" type="submit" disabled>{{ t('add') }}</button>
+    </form>
+    <p class="muted helper-text">{{ t('helper', { size: store.state().size }) }}</p>
+  </article>
+  <article uiCard class="player-list-card">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">{{ t('listKicker') }}</span>
+        <h2>{{ t('listTitle') }}</h2>
+      </div>
+      <span class="mini-tag">{{ t('enrolled', { count: store.state().players.length }) }}</span>
+    </div>
+    @if (!store.state().players.length) {
+      <div class="empty-state">
+        <span>♙</span><b>{{ t('empty') }}</b
+        ><small>{{ t('emptyHint') }}</small>
+      </div>
+    }
+    @for (player of store.state().players; track player.id; let i = $index) {
+      <div class="player-row">
+        <app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"
+          ><b>{{ player.name }}</b
+          ><small>{{ t('participant', { number: number(i) }) }}</small></span
+        ><button class="remove-button" type="button" disabled [attr.aria-label]="t('remove')">×</button>
+      </div>
+    }
+  </article>
+  <article uiCard class="full-card">
+    <div class="callout">
+      <span>{{ t('callout') }}</span>
+    </div>
+    <button uiButton variant="primary" (click)="store.request({ kind: 'navigate', page: 'settings' })" [disabled]="store.hasSchedule()">
+      {{ t('review') }}
+    </button>
+    <button uiButton variant="secondary" disabled>{{ t('generate') }} <span>→</span></button>
+  </article>
+</ng-container>

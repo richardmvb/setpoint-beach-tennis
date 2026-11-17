@@ -1,0 +1,61 @@
+<ng-container *transloco="let t; prefix: 'organizer.report'">
+<article uiCard class="report-panel">
+  <div>
+    <span class="card-kicker">{{ t('kicker') }}</span>
+    <h2>{{ t('title') }}</h2>
+  </div>
+  <div class="report-actions">
+    <button uiButton variant="primary" (click)="generateImage()" [disabled]="imageLoading">
+      {{ imageLoading ? t('generatingImage') : t('generateImage') }}
+    </button>
+    <button uiButton variant="secondary" (click)="shareText()">{{ t('shareText') }}</button>
+    <button uiButton variant="secondary" (click)="toggleText()">
+      {{ textVisible ? t('hideText') : t('viewText') }}
+    </button>
+    <button
+      uiButton
+      variant="secondary"
+      (click)="generateFinalLink()"
+      [disabled]="linkLoading || !sharedConfigured()"
+    >
+      {{ linkLoading ? t('generatingLink') : finalLink ? t('copyFinalLink') : t('generateLink') }}
+    </button>
+  </div>
+  @if (textVisible) {
+    <div>
+      <textarea class="report-text" [attr.aria-label]="t('textLabel')" readonly [value]="reportText"></textarea>
+      <div class="report-actions">
+        <button uiButton variant="secondary" (click)="copyText()">{{ t('copyText') }}</button>
+      </div>
+    </div>
+  }
+  @if (imageUrl) {
+    <div class="report-preview">
+      <img [src]="imageUrl" [alt]="t('previewAlt')" />
+    </div>
+  }
+  @if (imageUrl) {
+    <div class="report-actions">
+      <button uiButton variant="primary" (click)="shareImage()">{{ t('shareImage') }}</button
+      ><button uiButton variant="secondary" (click)="downloadImage()">{{ t('download') }}</button>
+    </div>
+  }
+  @if (finalLink) {
+    <div class="report-link">
+      <input [attr.aria-label]="t('linkLabel')" readonly [value]="finalLink" /><button
+        uiButton
+        variant="secondary"
+        (click)="copyLink()"
+      >
+        {{ t('copyLink') }}
+      </button>
+    </div>
+  }
+  @if (!sharedConfigured()) {
+    <p class="report-message">{{ t('unavailable') }}</p>
+  }
+  @if (message) {
+    <p class="report-message" [class.error]="messageIsError" role="status">{{ message }}</p>
+  }
+</article>
+</ng-container>

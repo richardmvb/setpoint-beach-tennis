@@ -1,0 +1,145 @@
+.stat-card {
+  grid-column: span 4;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.25s;
+}
+
+.status-icon {
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
+  background: var(--orange-soft);
+  color: var(--accent-text);
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  font-weight: 900;
+  margin: 14px 0 10px;
+}
+
+.stat-card strong {
+  display: block;
+  font:
+    800 34px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  margin: 7px 0 2px;
+  letter-spacing: -1px;
+}
+
+.overview-main {
+  grid-column: span 8;
+}
+
+.overview-side {
+  grid-column: span 4;
+}
+
+.stat-card > span {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.stat-card strong small {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.stat-card p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.overview-main h2 {
+  font:
+    800 20px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  letter-spacing: -0.5px;
+  margin: 7px 0;
+}
+
+.overview-main .muted {
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+.progress-caption {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 7px;
+}
+
+.progress-caption b {
+  color: var(--text);
+}
+
+.status-icon.ready {
+  background: var(--green-soft);
+  color: var(--green-2);
+}
+
+.overview-side h3 {
+  font:
+    800 15px Inter,
+    sans-serif;
+  margin: 0 0 7px;
+}
+
+.overview-side p {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (width <=420px) {
+  .stat-card > span {
+    font-size: 8px;
+  }
+
+  .stat-card p {
+    font-size: 9px;
+  }
+}
+
+.elapsed-row b {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (width <=760px) {
+  .stat-card,
+  .overview-main,
+  .overview-side {
+    grid-column: 1/-1;
+  }
+}
+
+@media (width <=420px) {
+  .stat-card {
+    grid-column: span 4;
+  }
+}
+
+.elapsed-row {
+  margin-top: 6px;
+}

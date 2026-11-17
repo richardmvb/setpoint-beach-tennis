@@ -13,7 +13,7 @@
 
 @if (isDashboardRoute) {
   @defer (on immediate) {
-    <app-dashboard (back)="navigate('overview')" />
+    <app-dashboard (back)="navigate(hasSchedule ? 'overview' : 'setup')" />
   } @placeholder {
     <main class="lock-screen"></main>
   }
@@ -31,9 +31,9 @@
   <div class="app-shell" [class.ranking-view]="page === 'ranking'" [class.guest-view]="isSharedView">
     @if (!isSharedView) {
       <header class="topbar">
-        <button class="brand brand-button" type="button" (click)="handleBrandClick()" aria-label="SETPOINT início">
+        <button class="brand brand-button" type="button" (click)="handleBrandClick()">
           <span class="brand-mark">SP</span>
-          <span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span>
+          <span><strong>SETPOINT</strong>&ngsp;<small>BEACH TENNIS</small></span>
         </button>
         <div class="top-actions">
           <button class="profile-trigger" type="button" (click)="openProfile()" [class.open]="profileOpen" aria-haspopup="dialog" [attr.aria-expanded]="profileOpen" aria-controls="profilePanel" [attr.aria-label]="(profileStore.profile().name ? 'Perfil de ' + profileStore.profile().name : 'Configurar perfil') + ' · ' + syncLabel">
@@ -86,9 +86,9 @@
   <div class="notice error" role="alert"><span>!</span>{{ syncError }} <button type="button" (click)="navigate('settings')">Ajustes</button></div>
 }
 <main [class.ranking-mode]="page === 'ranking'">
-  @if (page === 'rounds' || page === 'ranking') {
+  @if (isTournamentPage) {
     @defer (on immediate) {
-      <app-tournament [page]="page" (request)="onTournamentRequest($event)" />
+      <app-tournament [page]="page" [shell]="shellState()" (request)="onTournamentRequest($event)" />
     } @placeholder {
       <section></section>
     } @error {
@@ -112,137 +112,7 @@
     <article class="surface-card shared-loading">{{ 'shell.loading' | transloco }}</article>
   }
 }
-@case ('overview') {
-  <section class="content-grid">
-    @if (isSharedMode && isSharedModerator && state.sharedTournamentId) {
-      <article class="surface-card full-card shared-invite-panel"><div><span class="card-kicker">TORNEIO COMPARTILHADO · {{ sharedStatusLabel }}</span><h2>Link para acompanhar</h2><p class="muted">Convidados acompanham; só você registra placares.</p>@if (sharedSnapshot?.expiresAt) {
-      <p class="muted">Disponível até {{ sharedSnapshot.expiresAt | date:'short' }}.</p>
-    }</div><div class="shared-invite-copy">@if (sharedInviteUrl) {
-    <input aria-label="Link de convite" readonly [value]="sharedInviteUrl">
-    }@if (sharedInviteUrl) {
-    <button class="button secondary" type="button" (click)="copySharedInvite()">Copiar link</button>
-    }<button class="button secondary" type="button" (click)="renewSharedInvite()" [disabled]="sharedLoading">{{ sharedInviteUrl ? 'Gerar novo link' : 'Recuperar link' }}</button><button class="button danger" type="button" (click)="cancelSharedTournament()" [disabled]="sharedLoading">Cancelar e recomeçar</button></div></article>
   }
-  <article class="stat-card"><span>JOGADORES</span><strong>{{ state.players.length }}<small> / {{ state.size }}</small></strong><p>Inscritos</p></article>
-  <article class="stat-card"><span>RODADAS</span><strong>{{ state.rounds.length || '—' }}</strong><p>{{ state.rounds.length ? 'Geradas' : 'Pendente' }}</p></article>
-  <article class="stat-card"><span>PARTIDAS</span><strong>{{ completedMatches }}<small> / {{ totalMatches }}</small></strong><p>Registradas</p></article>
-  <article class="surface-card overview-main">
-    <div class="card-kicker">TORNEIO ATUAL</div><h2>{{ state.name }}</h2>
-    <p class="muted">{{ isGroupTournament ? 'Grupos' : 'Super' }} {{ state.size }} · {{ state.courts }} quadra(s) · {{ state.gamesToWin }} games por partida · {{ state.roundCount }} rodadas</p>
-    <div class="progress-track"><span [style.width.%]="progress"></span></div>
-    <div class="progress-caption"><span>Progresso</span><b>{{ progress }}%</b></div>
-    <div class="progress-caption elapsed-row"><span>{{ state.finishedAt ? 'Duração do torneio' : 'Tempo de torneio' }}</span><b>{{ elapsedLabel }}</b></div>
-    <div class="button-row"><button class="button primary" (click)="navigate(hasSchedule ? 'rounds' : 'players')">{{ hasSchedule ? 'Abrir partidas' : 'Cadastrar jogadores' }} <span>→</span></button></div>
-  </article>
-  <article class="surface-card overview-side"><span class="card-kicker">STATUS</span><div class="status-icon" [class.ready]="hasSchedule">{{ hasSchedule ? '✓' : '＋' }}</div><h3>{{ hasSchedule ? 'Tabela pronta' : 'Preparando torneio' }}</h3><p class="muted">{{ hasSchedule ? 'Registre resultados em qualquer ordem.' : 'Cadastre os jogadores e gere a tabela.' }}</p></article>
-</section>
-}
-@case ('players') {
-  <section class="content-grid">
-    <article class="surface-card player-entry"><div class="card-title-row"><div><span class="card-kicker">INSCRIÇÕES</span><h2>Participantes</h2></div><div class="counter">{{ state.players.length }}<small> / {{ state.size }}</small></div></div>
-    <div class="progress-track"><span [style.width.%]="state.players.length / state.size * 100"></span></div>
-    <form class="add-player"><input name="newPlayerName" maxlength="40" placeholder="Nome do jogador" disabled><button class="button primary" type="submit" disabled>Adicionar</button></form>
-    <p class="muted helper-text">Cadastre {{ state.size }} jogadores para gerar a tabela.</p>
-  </article>
-  <article class="surface-card player-list-card"><div class="card-title-row"><div><span class="card-kicker">LISTA DE ATLETAS</span><h2>Jogadores inscritos</h2></div><span class="mini-tag">{{ state.players.length }} inscritos</span></div>
-  @if (!state.players.length) {
-    <div class="empty-state"><span>♙</span><b>Nenhum jogador cadastrado</b><small>Adicione os participantes para começar.</small></div>
-  }
-  @for (player of state.players; track player.id; let i = $index) {
-    <div class="player-row"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b><small>Participante {{ (i + 1).toString().padStart(2, '0') }}</small></span><button class="remove-button" type="button" disabled aria-label="Remover jogador">×</button></div>
-  }
-</article>
-<article class="surface-card full-card"><div class="callout"><span>Após gerar a tabela, jogadores e ajustes ficam bloqueados.</span></div><button class="button primary" (click)="navigate('settings')" [disabled]="hasSchedule">Revisar configurações</button><button class="button secondary" (click)="generateSchedule()" [disabled]="hasSchedule || state.players.length !== state.size">Gerar todas as rodadas <span>→</span></button></article>
-</section>
-}
-@case ('projection') {
-  <section class="projection-page">
-    <app-projection-panel [state]="state" (targetPlayerChange)="setQualificationTargetPlayer($event)" />
-  </section>
-}
-@case ('settings') {
-  <section class="content-grid settings-page">
-    <article class="surface-card settings-form"><span class="card-kicker">CONFIGURAÇÃO DA COMPETIÇÃO</span><h2>Regras do torneio</h2>
-    <div class="form-field"><label for="tournamentName">Nome do torneio</label><input id="tournamentName" name="tournamentName" [(ngModel)]="state.name" maxlength="60" [disabled]="hasSchedule"></div>
-    <div class="form-field"><label for="settingsMode">Formato do torneio</label><select id="settingsMode" name="settingsMode" [ngModel]="state.tournamentMode" (ngModelChange)="changeTournamentMode($event)" [disabled]="hasSchedule"><option [ngValue]="'super'">Super · duplas rotativas</option><option [ngValue]="'groups'">Grupos</option></select></div>
-    <div class="form-field"><label for="settingsDoublesFormat">Tipo de dupla</label><select id="settingsDoublesFormat" name="settingsDoublesFormat" [ngModel]="state.doublesFormat ?? 'open'" (ngModelChange)="changeDoublesFormat($event)" [disabled]="hasSchedule"><option [ngValue]="'open'">Duplas abertas</option><option [ngValue]="'mixed'">Duplas mistas · 1 masculino + 1 feminino</option></select></div>
-    <div class="form-two"><div class="form-field"><label for="size">Participantes</label><select id="size" name="size" [ngModel]="state.size" (ngModelChange)="changeSize($event)" [disabled]="hasSchedule">@for (size of availableSizes; track size) {
-    <option [ngValue]="size">{{ size }} jogadores</option>
-  }</select></div><div class="form-field">@if (isGroupTournament) {
-  <label for="settingsGroupFormat">Formato dos grupos</label>
-  }@if (!isGroupTournament) {
-  <label for="courts">Quadras por rodada</label>
-  }@if (isGroupTournament) {
-  <select id="settingsGroupFormat" name="settingsGroupFormat" [ngModel]="state.groupFormat" (ngModelChange)="changeGroupFormat($event)" [disabled]="hasSchedule"><option [ngValue]="'rotating'">Parceiros rotativos</option><option [ngValue]="'fixed'">Duplas fixas</option></select>
-  }@if (!isGroupTournament) {
-  <select id="courts" name="courts" [ngModel]="state.courts" (ngModelChange)="changeCourts($event)" [disabled]="hasSchedule">@for (courtCount of availableCourts; track courtCount) {
-    <option [ngValue]="courtCount">{{ courtCount }} quadras</option>
-  }</select>
-  }@if (isGroupTournament) {
-  <input [value]="requiredCourts + ' quadras'" readonly>
-}</div></div>
-<div class="form-two"><div class="form-field"><label for="games">Games para vencer</label><select id="games" name="games" [(ngModel)]="state.gamesToWin" [disabled]="hasSchedule">@for (games of availableGamesToWin; track games) {
-<option [ngValue]="games">{{ games === 3 ? '3 games · rápido' : games + ' games' }}</option>
-}</select></div><div class="form-field"><label for="roundCount">Rodadas do formato</label><input id="roundCount" [value]="requiredRounds" readonly></div></div>
-@if (state.gamesToWin === 3) {
-  <p class="muted quick-format-note">Modo rápido: final e disputa de 3º lugar continuam em 6 games.</p>
-}
-<button class="button primary" type="button" (click)="saveSettings()" [disabled]="hasSchedule">Salvar configurações</button>
-@if (hasSchedule) {
-  <p class="muted helper-text">Bloqueado após gerar a tabela.</p>
-}
-</article>
-<article class="surface-card settings-info"><span class="card-kicker">REGRAS AUTOMÁTICAS</span><h3>Como a tabela é montada</h3>@if (!isGroupTournament) {
-<ul><li>Super 8: 7 rodadas; Super 10: 10; Super 12: 11 ou 12.</li>@if (state.size === 24 && !isMixedDoubles) {
-<li>Super 24: 23 rodadas, 6 quadras; todos jogam em cada rodada.</li>
-}@if (state.size === 24 && isMixedDoubles) {
-<li>Novas tabelas do Super 24 misto: 12 rodadas em 6 quadras ou 24 em 3; cada atleta joga 12 partidas, com 12 parceiros diferentes.</li>
-}@if (isMixedDoubles && state.size !== 24) {
-<li>No misto, cada dupla tem um atleta masculino e um feminino; algumas parcerias podem se repetir.</li>
-}@if (!isMixedDoubles) {
-<li>Nenhuma dupla de parceiros se repete.</li>
-}@if (state.size !== 24 || !isMixedDoubles) {
-<li>Todos enfrentam cada atleta ao menos uma vez e jogam a mesma quantidade de partidas.</li>
-}@if (state.size === 24 && isMixedDoubles) {
-<li>Os confrontos são variados, mas nem todos os atletas necessariamente se enfrentam.</li>
-}</ul>
-}@if (isGroupTournament) {
-<ul>@if (isMixedDoubles && state.groupFormat === 'rotating') {
-  <li>Grupos mistos de quatro atletas, com dois de cada categoria e 2 rodadas.</li>
-  }@if (!isMixedDoubles && state.groupFormat === 'rotating') {
-  <li>Grupos rotativos de quatro atletas e 3 rodadas.</li>
-  }@if (state.groupFormat === 'fixed') {
-  <li>Duplas fixas: todos contra todos.</li>
-  }@if (isMixedDoubles) {
-  <li>Cada dupla mista tem um atleta masculino e um feminino.</li>
-  }<li>Todos jogam a mesma quantidade de partidas; a classificação é por grupo.</li></ul>
-}</article>
-@if (state.finishedAt) {
-  <app-tournament-report [state]="state" [existingLiveUrl]="!isSharedMode ? localLiveUrl : ''" [sharedConfigured]="sharedConfigured" />
-}
-@if (!isSharedMode && !state.finishedAt) {
-  <article class="surface-card full-card data-card"><div><span class="card-kicker">ACOMPANHAMENTO PÚBLICO</span><h2>Link para acompanhar ao vivo</h2><p class="muted">Qualquer pessoa com o link pode ver participantes, partidas, placares e ranking. O link não permite entrar nem alterar o torneio.</p>@if (localLiveUrl) {
-  <p class="live-link-field"><input aria-label="Link público de acompanhamento" readonly [value]="localLiveUrl"><button class="button secondary" type="button" (click)="copyLocalLiveLink()">Copiar link</button></p>
-  }@if (localLiveNotice) {
-  <p class="shared-success" role="status">{{ localLiveNotice }}</p>
-  }@if (localLiveError) {
-  <p class="shared-error" role="alert">{{ localLiveError }}</p>
-  }@if (!sharedConfigured) {
-  <p class="muted helper-text">A publicação ao vivo não está configurada neste deploy.</p>
-  }</div><div class="button-row"><button class="button primary" type="button" (click)="createOrCopyLocalLiveLink()" [disabled]="localLiveLoading || !sharedConfigured">{{ localLiveLoading ? 'Gerando…' : localLiveUrl ? 'Copiar link ao vivo' : 'Gerar e copiar link' }}</button></div></article>
-}
-@if (syncAvailable) {
-  <article class="surface-card full-card data-card"><div><span class="card-kicker">SINCRONIZAÇÃO</span><h2>Online e offline</h2><p class="muted">{{ syncLabel }}{{ hasPendingSync ? ' · Há alterações aguardando envio.' : '' }}</p><label class="toggle-field"><input type="checkbox" [ngModel]="!syncPaused" (ngModelChange)="setSyncPaused(!$event)" [ngModelOptions]="{standalone: true}"><span><b>Sincronização automática</b><small>Desative para manter os placares apenas neste dispositivo até sincronizar.</small></span></label>@if (syncError) {
-  <p class="shared-error" role="alert">{{ syncError }}</p>
-  }</div><div class="button-row"><button class="button secondary" type="button" (click)="syncNow()" [disabled]="!connectionOnline || !hasPendingSync || syncing">{{ syncing ? 'Sincronizando…' : 'Sincronizar agora' }}</button></div></article>
-}
-<article class="surface-card full-card data-card data-card-primary"><div><span class="card-kicker">DADOS LOCAIS</span><h2>Backup e manutenção</h2><p class="muted">Todo torneio iniciado fica salvo neste navegador em Meus torneios. Exporte uma cópia ou importe um torneio.</p></div><div class="button-row">@if (savedTournaments.entries().length) {
-<button class="button secondary" type="button" (click)="openLibrary()">Meus torneios ({{ savedTournaments.entries().length }})</button>
-}<button class="button secondary" type="button" (click)="exportBackup()">↓ Exportar backup JSON</button><label class="button secondary file-button">↑ Importar backup JSON<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden></label><button class="button danger" type="button" (click)="resetTournament()">Iniciar novo torneio</button></div></article>
-<article class="surface-card full-card data-card"><div><span class="card-kicker">SOBRE O SETPOINT</span><h2>Página inicial</h2><p class="muted">Rever a apresentação do produto e suas funcionalidades.</p></div><div class="button-row"><button class="button secondary" type="button" (click)="openLanding()">Voltar para a página inicial</button></div></article>
-</section>
-}
-}
 </main>
 <footer class="app-footer"><span>SETPOINT</span><span class="build-id" [title]="'shell.footer.versionTitle' | transloco">{{ versionLabel }}</span>@if (nps.available) {
 <button class="footer-feedback" type="button" (click)="nps.open()" [disabled]="nps.loading()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8 11.5h8M8 14.5h5"/></svg>{{ 'shell.footer.feedback' | transloco }}</button>

@@ -1,19 +1,21 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, inject, input } from '@angular/core';
 
-import { TournamentState } from '../core/models';
-import { AUTH } from '../core/ports/auth.port';
-import { LOCAL_STORE } from '../core/ports/key-value-store.port';
-import { liveTokenOf } from '../core/routing/app-url';
-import { URL_STATE } from '../core/routing/url-state';
-import { LOCAL_LIVE } from '../core/ports/tournaments.port';
-import { TournamentReportService } from '../core/tournament-report.service';
+import { TournamentState } from '../../../core/models';
+import { AUTH } from '../../../core/ports/auth.port';
+import { LOCAL_STORE } from '../../../core/ports/key-value-store.port';
+import { liveTokenOf } from '../../../core/routing/app-url';
+import { URL_STATE } from '../../../core/routing/url-state';
+import { LOCAL_LIVE } from '../../../core/ports/tournaments.port';
+import { TournamentReportService } from '../../../core/tournament-report.service';
+import { provideTranslocoScope, TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import { CardComponent } from '@ui/card/card.component';
 
 @Component({
   selector: 'app-tournament-report',
   standalone: true,
-  imports: [ButtonComponent, CardComponent],
+  imports: [TranslocoDirective, ButtonComponent, CardComponent],
+  providers: [provideTranslocoScope('organizer')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -99,67 +101,7 @@ import { CardComponent } from '@ui/card/card.component';
       }
     `,
   ],
-  template: `
-    <article uiCard class="report-panel">
-      <div>
-        <span class="card-kicker">TORNEIO FINALIZADO</span>
-        <h2>Relatório final</h2>
-      </div>
-      <div class="report-actions">
-        <button uiButton variant="primary" (click)="generateImage()" [disabled]="imageLoading">
-          {{ imageLoading ? 'Gerando imagem…' : 'Gerar imagem' }}
-        </button>
-        <button uiButton variant="secondary" (click)="shareText()">Compartilhar texto</button>
-        <button uiButton variant="secondary" (click)="toggleText()">
-          {{ textVisible ? 'Ocultar texto' : 'Ver texto' }}
-        </button>
-        <button
-          uiButton
-          variant="secondary"
-          (click)="generateFinalLink()"
-          [disabled]="linkLoading || !sharedConfigured()"
-        >
-          {{ linkLoading ? 'Gerando link…' : finalLink ? 'Copiar link final' : 'Gerar link final' }}
-        </button>
-      </div>
-      @if (textVisible) {
-        <div>
-          <textarea class="report-text" aria-label="Texto do relatório final" readonly [value]="reportText"></textarea>
-          <div class="report-actions">
-            <button uiButton variant="secondary" (click)="copyText()">Copiar texto</button>
-          </div>
-        </div>
-      }
-      @if (imageUrl) {
-        <div class="report-preview">
-          <img [src]="imageUrl" alt="Prévia do relatório completo do torneio" />
-        </div>
-      }
-      @if (imageUrl) {
-        <div class="report-actions">
-          <button uiButton variant="primary" (click)="shareImage()">Compartilhar imagem</button
-          ><button uiButton variant="secondary" (click)="downloadImage()">Baixar imagem</button>
-        </div>
-      }
-      @if (finalLink) {
-        <div class="report-link">
-          <input aria-label="Link para visualizar o resultado final" readonly [value]="finalLink" /><button
-            uiButton
-            variant="secondary"
-            (click)="copyLink()"
-          >
-            Copiar link
-          </button>
-        </div>
-      }
-      @if (!sharedConfigured()) {
-        <p class="report-message">Link final indisponível: publicação não configurada neste deploy.</p>
-      }
-      @if (message) {
-        <p class="report-message" [class.error]="messageIsError" role="status">{{ message }}</p>
-      }
-    </article>
-  `,
+  templateUrl: './tournament-report.component.html',
 })
 export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly report = inject(TournamentReportService);
@@ -167,6 +109,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AUTH);
   private readonly store = inject(LOCAL_STORE);
   private readonly urlState = inject(URL_STATE);
+  private readonly transloco = inject(TranslocoService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private alive = true;
   private image: Blob | null = null;
@@ -207,7 +150,10 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     this.message = '';
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Resultado · ${this.state().name}`, text: this.reportText });
+        await navigator.share({
+          title: this.transloco.translate('report.shareTitle', { name: this.state().name }, 'organizer/pt-BR'),
+          text: this.reportText,
+        });
         return;
       }
       await this.copyText();
@@ -224,9 +170,9 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     this.textVisible = true;
     try {
       await navigator.clipboard.writeText(this.reportText);
-      this.setMessage('Texto copiado. Cole no WhatsApp.');
+      this.setMessage(this.transloco.translate('report.messages.textCopied', {}, 'organizer/pt-BR'));
     } catch {
-      this.setMessage('Não foi possível copiar. Selecione o texto e copie manualmente.', true);
+      this.setMessage(this.transloco.translate('report.messages.textCopyFailed', {}, 'organizer/pt-BR'), true);
     }
   }
 
@@ -241,7 +187,12 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
       this.image = image;
       this.imageUrl = URL.createObjectURL(image);
     } catch (error) {
-      this.setMessage(error instanceof Error ? error.message : 'Não foi possível gerar a imagem.', true);
+      this.setMessage(
+        error instanceof Error
+          ? error.message
+          : this.transloco.translate('report.messages.imageFailed', {}, 'organizer/pt-BR'),
+        true,
+      );
     } finally {
       this.imageLoading = false;
       this.changeDetector.markForCheck();
@@ -256,10 +207,13 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
       return;
     }
     try {
-      await navigator.share({ title: `Resultado · ${this.state().name}`, files: [file] });
+      await navigator.share({
+        title: this.transloco.translate('report.shareTitle', { name: this.state().name }, 'organizer/pt-BR'),
+        files: [file],
+      });
     } catch (error) {
       if (!(error instanceof Error && error.name === 'AbortError'))
-        this.setMessage('Não foi possível compartilhar. Baixe a imagem e envie pelo WhatsApp.', true);
+        this.setMessage(this.transloco.translate('report.messages.shareFailed', {}, 'organizer/pt-BR'), true);
     }
   }
 
@@ -269,7 +223,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     anchor.href = this.imageUrl;
     anchor.download = 'setpoint-relatorio-final.png';
     anchor.click();
-    this.setMessage('Imagem baixada.');
+    this.setMessage(this.transloco.translate('report.messages.downloaded', {}, 'organizer/pt-BR'));
   }
 
   async generateFinalLink(): Promise<void> {
@@ -301,7 +255,7 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
       }
       if (!this.finalLink) {
         if (state.hostingMode === 'shared' && !(await this.auth.currentUser())) {
-          throw new Error('Conecte-se com a sessão do moderador para gerar o link final.');
+          throw new Error(this.transloco.translate('report.messages.moderatorSession', {}, 'organizer/pt-BR'));
         }
         const snapshot: TournamentState = {
           ...state,
@@ -320,7 +274,12 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
       }
       await this.copyLink();
     } catch (error) {
-      this.setMessage(error instanceof Error ? error.message : 'Não foi possível gerar o link final.', true);
+      this.setMessage(
+        error instanceof Error
+          ? error.message
+          : this.transloco.translate('report.messages.linkFailed', {}, 'organizer/pt-BR'),
+        true,
+      );
     } finally {
       this.linkLoading = false;
       this.changeDetector.markForCheck();
@@ -331,9 +290,9 @@ export class TournamentReportComponent implements OnInit, OnDestroy {
     if (!this.finalLink) return;
     try {
       await navigator.clipboard.writeText(this.finalLink);
-      this.setMessage('Link final copiado.');
+      this.setMessage(this.transloco.translate('report.messages.linkCopied', {}, 'organizer/pt-BR'));
     } catch {
-      this.setMessage('Não foi possível copiar. Selecione o link e copie manualmente.', true);
+      this.setMessage(this.transloco.translate('report.messages.linkCopyFailed', {}, 'organizer/pt-BR'), true);
     }
   }
 

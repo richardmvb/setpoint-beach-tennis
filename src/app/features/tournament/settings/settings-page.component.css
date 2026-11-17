@@ -1,0 +1,40 @@
+.settings-form {
+  grid-column: span 7;
+}
+
+.settings-info {
+  grid-column: span 5;
+}
+
+@media (width <=760px) {
+  .settings-form,
+  .settings-info {
+    grid-column: span 12;
+  }
+}
+
+.form-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.settings-form h2 {
+  margin: 6px 0 16px;
+}
+
+.settings-info h3 {
+  font:
+    800 15px Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  margin: 7px 0 12px;
+}
+
+.settings-info ul {
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 2;
+}

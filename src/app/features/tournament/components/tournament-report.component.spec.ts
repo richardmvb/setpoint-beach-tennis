@@ -1,12 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { provideBrowserAdapters } from '../core/adapters/browser/provide-browser-adapters';
+import { provideBrowserAdapters } from '../../../core/adapters/browser/provide-browser-adapters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AUTH } from '../core/ports/auth.port';
-import { LOCAL_LIVE, LocalLiveRepository } from '../core/ports/tournaments.port';
-import { FakeAuth } from '../core/ports/testing/auth.fake';
-import type { TournamentState } from '../core/models';
-import { LegacyUrlState } from '../core/routing/legacy-url-state';
-import { URL_STATE } from '../core/routing/url-state';
+import { AUTH } from '../../../core/ports/auth.port';
+import { LOCAL_LIVE, LocalLiveRepository } from '../../../core/ports/tournaments.port';
+import { FakeAuth } from '../../../core/ports/testing/auth.fake';
+import type { TournamentState } from '../../../core/models';
+import { LegacyUrlState } from '../../../core/routing/legacy-url-state';
+import { URL_STATE } from '../../../core/routing/url-state';
+import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
+import { translocoTesting } from '../../../testing/transloco-testing';
 import { TournamentReportComponent } from './tournament-report.component';
 
 const PLAYERS = [
@@ -64,6 +66,7 @@ describe('TournamentReportComponent final link', () => {
     });
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
+      imports: [translocoTesting({ 'organizer/pt-BR': organizerPtBr })],
       providers: [
         provideBrowserAdapters(),
         { provide: URL_STATE, useExisting: LegacyUrlState },
