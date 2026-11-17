@@ -135,5 +135,29 @@
       "projection": "Projeção · SETPOINT",
       "settings": "Ajustes · SETPOINT"
     }
+  },
+  "common": {
+    "photo": {
+      "change": "Alterar foto",
+      "add": "Adicionar foto",
+      "take": "Tirar foto",
+      "gallery": "Escolher da galeria",
+      "remove": "Remover foto",
+      "failed": "Não foi possível processar a foto."
+    },
+    "gender": {
+      "category": "Categoria",
+      "male": "Masculino",
+      "female": "Feminino"
+    },
+    "range": {
+      "fixed": "Definido pelo formato escolhido."
+    },
+    "dialog": {
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "typePhrase": "Digite “{{ phrase }}” para confirmar",
+      "typeExactly": "Digite exatamente “{{ phrase }}”."
+    }
   }
 }

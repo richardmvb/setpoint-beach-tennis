@@ -8,13 +8,14 @@ import {
   inject,
   output,
 } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { AvatarService } from '../core/avatar.service';
 
 @Component({
   selector: 'app-avatar-picker',
   standalone: true,
-  imports: [],
+  imports: [TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:inline-block;position:relative}'],
   template: `
@@ -24,7 +25,7 @@ import { AvatarService } from '../core/avatar.service';
       (click)="menuOpen = !menuOpen"
       [attr.aria-expanded]="menuOpen"
       aria-haspopup="menu"
-      [attr.aria-label]="value ? 'Alterar foto' : 'Adicionar foto'"
+      [attr.aria-label]="value ? ('common.photo.change' | transloco) : ('common.photo.add' | transloco)"
     >
       @if (value) {
         <img [src]="value" alt="" />
@@ -42,13 +43,16 @@ import { AvatarService } from '../core/avatar.service';
     @if (menuOpen) {
       <div class="avatar-menu" role="menu">
         <label class="avatar-menu-item" role="menuitem"
-          >Tirar foto<input type="file" accept="image/*" capture="user" hidden (change)="pick($event)"
+          >{{ 'common.photo.take' | transloco
+          }}<input type="file" accept="image/*" capture="user" hidden (change)="pick($event)"
         /></label>
         <label class="avatar-menu-item" role="menuitem"
-          >Escolher da galeria<input type="file" accept="image/*" hidden (change)="pick($event)"
+          >{{ 'common.photo.gallery' | transloco }}<input type="file" accept="image/*" hidden (change)="pick($event)"
         /></label>
         @if (value) {
-          <button class="avatar-menu-item danger" type="button" role="menuitem" (click)="remove()">Remover foto</button>
+          <button class="avatar-menu-item danger" type="button" role="menuitem" (click)="remove()">
+            {{ 'common.photo.remove' | transloco }}
+          </button>
         }
       </div>
     }
@@ -59,6 +63,7 @@ import { AvatarService } from '../core/avatar.service';
 })
 export class AvatarPickerComponent {
   private readonly avatars = inject(AvatarService);
+  private readonly transloco = inject(TranslocoService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
@@ -88,7 +93,7 @@ export class AvatarPickerComponent {
     try {
       this.valueChange.emit(await this.avatars.compress(file));
     } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Não foi possível processar a foto.';
+      this.error = error instanceof Error ? error.message : this.transloco.translate('common.photo.failed');
     } finally {
       this.processing = false;
       this.changeDetector.markForCheck();

@@ -2,6 +2,7 @@ import { Dialog } from '@angular/cdk/dialog';
 import type { ComponentType } from '@angular/cdk/portal';
 import { Overlay } from '@angular/cdk/overlay';
 import { inject, Injectable } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmDialogComponent, ConfirmDialogData } from '@ui/dialog/confirm-dialog.component';
 
@@ -56,6 +57,7 @@ export interface TypedConfirmOptions extends ConfirmOptions {
 export class DialogService {
   private static counter = 0;
   private readonly dialog = inject(Dialog);
+  private readonly transloco = inject(TranslocoService);
   private readonly overlay = inject(Overlay);
 
   confirm(options: ConfirmOptions): Promise<boolean> {
@@ -98,8 +100,8 @@ export class DialogService {
     const data: ConfirmDialogData = {
       title: options.title,
       text: options.text,
-      confirmText: options.confirmText ?? 'Confirmar',
-      cancelText: options.cancelText ?? 'Cancelar',
+      confirmText: options.confirmText ?? this.transloco.translate('common.dialog.confirm'),
+      cancelText: options.cancelText ?? this.transloco.translate('common.dialog.cancel'),
       tone: options.tone === 'danger' ? 'danger' : 'primary',
       phrase,
       titleId: `${id}-title`,
