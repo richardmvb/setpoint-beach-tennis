@@ -236,6 +236,30 @@ describe('the first visit and the brand button', () => {
   });
 });
 
+describe('keyboard and screen readers', () => {
+  it('has a skip button that moves focus to the content', async () => {
+    await show({ stored: running() });
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para o conteúdo' }));
+    expect(document.activeElement).toBe(document.getElementById('main-content'));
+    expect(document.getElementById('main-content')?.tagName).toBe('MAIN');
+  });
+
+  it('puts the screen in the document title and follows the page', async () => {
+    const { navigation } = await show({ stored: running() });
+    await eventually(() => expect(document.title).toBe('Visão geral · SETPOINT'));
+    navigation.setPage('rounds');
+    await eventually(() => expect(document.title).toBe('Partidas · SETPOINT'));
+  });
+
+  it('titles the lock screen and the landing page', async () => {
+    await show({ lockScreen: true });
+    await vi.waitFor(() => expect(document.title).toBe('Acesso restrito · SETPOINT'));
+    TestBed.resetTestingModule();
+    await show({ landingSeen: false });
+    await vi.waitFor(() => expect(document.title).toBe('SETPOINT · Beach Tennis'));
+  });
+});
+
 describe('the first-visit welcome', () => {
   it('opens the profile panel once, and starts the setup tour only after it closes', async () => {
     const { dialogs } = await show({ prompted: false });

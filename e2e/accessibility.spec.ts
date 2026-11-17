@@ -2,7 +2,15 @@ import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { completeRoundMatches, createLocalTournament, expect, generateFinals, test } from './support/fixtures';
+import {
+  completeFinalMatches,
+  completeRoundMatches,
+  createLocalTournament,
+  expect,
+  generateFinals,
+  test,
+} from './support/fixtures';
+import { openLibrary, seedTwoTournaments } from './support/library';
 import { mockSupabase, tournamentFixture } from './support/supabase-mock';
 
 /**
@@ -204,5 +212,120 @@ test.describe('accessibility (axe, no new violations)', () => {
     await expect(dialog.getByRole('listitem')).toHaveCount(8);
     problems.push(...check('tie-draw-dialog-drawn', await scan(page, false, '[role=dialog]'), baseline));
     expect(problems).toEqual([]);
+  });
+
+  test('the lock screen and the dashboard sign-in', async ({ page }) => {
+    const baseline = readBaseline();
+    await page.addInitScript(() => {
+      (window as unknown as { __SETPOINT_CONFIG__: object }).__SETPOINT_CONFIG__ = {
+        production: false,
+        lockScreenEnabled: true,
+      };
+    });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Desbloquear torneio' })).toBeVisible();
+    const problems = check('lock-screen', await scan(page), baseline);
+    expect(problems).toEqual([]);
+  });
+
+  test('the dashboard sign-in', async ({ page }) => {
+    await mockSupabase(page);
+    await page.goto('/dashboard');
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+    expect(check('dashboard-login', await scan(page), readBaseline())).toEqual([]);
+  });
+
+  test("dialogs: saved tournaments, confirmation and a player's matches", async ({ page }) => {
+    const baseline = readBaseline();
+    await seedTwoTournaments(page);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeVisible();
+    const library = await openLibrary(page);
+    const problems = check('library-dialog', await scan(page, false, '[role=dialog]'), baseline);
+    await library
+      .getByRole('button', { name: /Fechar/ })
+      .first()
+      .click();
+
+    await page
+      .getByRole('button', { name: /Ajustes/ })
+      .first()
+      .click();
+    await page.getByRole('button', { name: 'Iniciar novo torneio' }).click();
+    const confirm = page.getByRole('alertdialog');
+    await expect(confirm).toBeVisible();
+    problems.push(...check('confirm-dialog', await scan(page, false, '[role=alertdialog]'), baseline));
+    await page.keyboard.press('Escape');
+    await expect(confirm).toHaveCount(0);
+
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await expect(page.getByRole('heading', { name: 'Ranking individual' })).toBeVisible();
+    await page.locator('button.ranking-player-button').first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    problems.push(...check('player-matches-dialog', await scan(page, false, '[role=dialog]'), baseline));
+    expect(problems).toEqual([]);
+  });
+
+  test('the share-results dialog', async ({ page }) => {
+    test.slow();
+    await createLocalTournament(page);
+    await completeRoundMatches(page);
+    await page.getByRole('button', { name: 'Ranking e finais →' }).first().click();
+    await generateFinals(page);
+    await completeFinalMatches(page);
+    await page.getByRole('radiogroup', { name: 'Atleta para gerar a imagem' }).getByRole('radio').first().click();
+    await page.getByRole('button', { name: /^Gerar imagem de / }).click();
+    const dialog = page.getByRole('dialog', { name: 'Personalize e confira' });
+    await expect(dialog.getByRole('img', { name: 'Prévia do card de resultados' })).toBeVisible();
+    expect(check('share-results-dialog', await scan(page, false, '[role=dialog]'), readBaseline())).toEqual([]);
+  });
+
+  test.describe('dark theme', () => {
+    test('overview, players, rounds, ranking and settings', async ({ page }) => {
+      test.slow();
+      const stored = JSON.parse(
+        readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v1.json'), 'utf8'),
+      ) as Record<string, unknown>;
+      await page.addInitScript((value: string) => {
+        localStorage.setItem('setpoint.theme.v1', 'dark');
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', value);
+      }, JSON.stringify(stored));
+      const baseline = readBaseline();
+      await page.goto('/');
+      await expect(page.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeVisible();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      const problems = check('dark-overview', await scan(page), baseline);
+      for (const [name, button, heading] of [
+        ['dark-players', /Jogadores/, 'Jogadores'],
+        ['dark-rounds', /Partidas/, 'Partidas'],
+        ['dark-ranking', /Ranking/, 'Ranking'],
+        ['dark-settings', /Ajustes/, 'Ajustes'],
+      ] as const) {
+        await page.getByRole('button', { name: button }).first().click();
+        await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+        problems.push(...check(name, await scan(page), baseline));
+      }
+      expect(problems).toEqual([]);
+    });
+
+    test.describe('landing and setup', () => {
+      test.use({ onboarding: { skipLanding: false, disableTour: true, skipProfilePrompt: true } });
+      test('dark landing', async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('setpoint.theme.v1', 'dark'));
+        await page.goto('/');
+        await expect(page.getByRole('heading', { name: /Do sorteio ao pódio/ })).toBeVisible();
+        expect(check('dark-landing', await scan(page), readBaseline())).toEqual([]);
+      });
+    });
+
+    test('dark setup', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('setpoint.theme.v1', 'dark'));
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'Configure a competição' })).toBeVisible();
+      expect(check('dark-setup', await scan(page), readBaseline())).toEqual([]);
+    });
   });
 });

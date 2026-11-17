@@ -120,6 +120,20 @@
       "pending": "Aguardando sincronização",
       "synced": "Sincronizado"
     },
-    "noticeClose": "Fechar aviso"
+    "noticeClose": "Fechar aviso",
+    "skipLink": "Ir para o conteúdo",
+    "title": {
+      "lock": "Acesso restrito · SETPOINT",
+      "landing": "SETPOINT · Beach Tennis",
+      "dashboard": "Dashboard · SETPOINT",
+      "shared": "Acompanhar torneio · SETPOINT",
+      "setup": "Novo torneio · SETPOINT",
+      "overview": "Visão geral · SETPOINT",
+      "players": "Jogadores · SETPOINT",
+      "rounds": "Partidas · SETPOINT",
+      "ranking": "Ranking · SETPOINT",
+      "projection": "Projeção · SETPOINT",
+      "settings": "Ajustes · SETPOINT"
+    }
   }
 }

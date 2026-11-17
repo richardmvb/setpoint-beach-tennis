@@ -1,5 +1,7 @@
+<button class="skip-link" type="button" (click)="skipToContent()">{{ 'shell.skipLink' | transloco }}</button>
+
 @if (isLocked()) {
-  <main class="lock-screen">
+  <main class="lock-screen" id="main-content" tabindex="-1">
     <form class="lock-panel" (ngSubmit)="unlock()">
       <div class="lock-brand"><span class="brand-mark">SP</span><span><strong>SETPOINT</strong><small>BEACH TENNIS</small></span></div>
       <div><span class="card-kicker">{{ 'shell.lock.kicker' | transloco }}</span><h1>{{ 'shell.lock.title' | transloco }}</h1><p>{{ 'shell.lock.hint' | transloco }}</p></div>
@@ -15,7 +17,7 @@
   @defer (on immediate) {
     <app-dashboard (back)="navigate(hasSchedule() ? 'overview' : 'setup')" />
   } @placeholder {
-    <main class="lock-screen"></main>
+    <div class="lock-screen"></div>
   }
 }
 
@@ -23,7 +25,7 @@
   @defer (on immediate) {
     <app-landing [savedCount]="savedTournaments.entries().length" (start)="enterApp()" (resume)="continueFromLanding()" />
   } @placeholder {
-    <main></main>
+    <div></div>
   }
 }
 
@@ -115,7 +117,7 @@
     <div class="notice error" role="alert"><span>!</span>{{ syncErrors.text(syncError) }} <button type="button" (click)="navigate('settings')">{{ 'shell.page.settings' | transloco }}</button></div>
   }
 }
-<main [class.ranking-mode]="page() === 'ranking'">
+<main id="main-content" tabindex="-1" [class.ranking-mode]="page() === 'ranking'">
   @if (isTournamentPage()) {
     @defer (on immediate) {
       <app-tournament [page]="page()" [shell]="shellState.tournament()" (request)="onTournamentRequest($event)" />

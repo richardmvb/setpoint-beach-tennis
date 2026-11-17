@@ -250,6 +250,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                             ><b>{{ row.name }}</b>
                             @if (moveOf(row.playerId); as move) {
                               <i
+                                role="img"
                                 class="move-chip"
                                 [class.up]="move > 0"
                                 [class.down]="move < 0"

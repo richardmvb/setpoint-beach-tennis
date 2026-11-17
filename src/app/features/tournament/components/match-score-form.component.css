@@ -127,6 +127,11 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--green-2) 18%, transparent);
 }
 
+.inline-score:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .team-names b app-player-avatar {
   width: 24px;
   height: 24px;

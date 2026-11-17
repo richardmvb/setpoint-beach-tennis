@@ -1,3 +1,4 @@
+import { scrollBehavior } from '../../core/motion';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { DialogService } from '../../core/dialog.service';
@@ -75,7 +76,7 @@ export class SharedViewComponent {
       setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
       return;
     }
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   }
 
   protected openProjection(fromToast = false): void {
@@ -88,7 +89,7 @@ export class SharedViewComponent {
     const target = this.store.takeFirstUpdate();
     if (!target) return;
     document.getElementById(target)?.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      behavior: scrollBehavior(),
       block: 'start',
     });
   }

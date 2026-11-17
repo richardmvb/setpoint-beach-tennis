@@ -16,7 +16,10 @@ function setup(stored?: string) {
   return { local, theme: TestBed.inject(ThemeService) };
 }
 
-beforeEach(() => TestBed.resetTestingModule());
+beforeEach(() => {
+  TestBed.resetTestingModule();
+  delete document.documentElement.dataset['theme'];
+});
 afterEach(() => delete document.documentElement.dataset['theme']);
 
 describe('ThemeService', () => {
