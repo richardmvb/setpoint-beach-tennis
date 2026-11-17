@@ -63,14 +63,14 @@
                 {
                   "type": "bundle",
                   "name": "dashboard-component",
-                  "maximumWarning": "51kB",
-                  "maximumError": "59kB"
+                  "maximumWarning": "54kB",
+                  "maximumError": "62kB"
                 },
                 {
                   "type": "bundle",
                   "name": "shared-view-component",
-                  "maximumWarning": "49kB",
-                  "maximumError": "57kB"
+                  "maximumWarning": "52kB",
+                  "maximumError": "60kB"
                 },
                 {
                   "type": "bundle",
@@ -105,8 +105,8 @@
                 {
                   "type": "bundle",
                   "name": "qualification-stats-component",
-                  "maximumWarning": "14kB",
-                  "maximumError": "16kB"
+                  "maximumWarning": "16kB",
+                  "maximumError": "18kB"
                 },
                 {
                   "type": "bundle",
@@ -123,8 +123,8 @@
                 {
                   "type": "bundle",
                   "name": "tournament-component",
-                  "maximumWarning": "90kB",
-                  "maximumError": "104kB"
+                  "maximumWarning": "104kB",
+                  "maximumError": "112kB"
                 },
                 {
                   "type": "bundle",

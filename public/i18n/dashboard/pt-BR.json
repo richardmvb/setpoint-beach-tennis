@@ -182,5 +182,141 @@
     "rate": "{{ rate }}%",
     "hoursMinutes": "{{ hours }}h {{ minutes }}min",
     "minutes": "{{ minutes }}min"
+  },
+  "insights": {
+    "volume": {
+      "new": {
+        "title": "Primeiros torneios do período",
+        "detail": "{{ started }} iniciados, contra nenhum no período anterior."
+      },
+      "up": {
+        "title": "Uso cresceu {{ percent }}%",
+        "detail": "{{ started }} torneios iniciados, contra {{ previous }} nos {{ days }} dias anteriores."
+      },
+      "down": {
+        "title": "Uso caiu {{ percent }}%",
+        "detail": "{{ started }} torneios iniciados, contra {{ previous }} nos {{ days }} dias anteriores."
+      },
+      "stable": {
+        "title": "Uso estável",
+        "detail": "{{ started }} torneios iniciados, contra {{ previous }} no período anterior."
+      }
+    },
+    "completion": {
+      "low": {
+        "title": "Só {{ percent }}% dos torneios chegam ao fim",
+        "detail": "{{ finished }} de {{ started }} iniciados foram finalizados."
+      },
+      "high": {
+        "title": "{{ percent }}% dos torneios são finalizados",
+        "detail": "{{ finished }} de {{ started }} iniciados chegaram ao pódio."
+      }
+    },
+    "funnel": {
+      "title": "{{ drop }}% se perdem entre “{{ from }}” e “{{ to }}”",
+      "detailScores": "O primeiro placar é onde o torneio morre: vale simplificar o lançamento ou lembrar o organizador.",
+      "detailOther": "É a maior queda do funil neste período."
+    },
+    "dropoff": {
+      "title": "Maior parada: {{ stage }}",
+      "detail": "{{ count }} torneios compartilhados pararam nesta etapa."
+    },
+    "format": {
+      "title": "{{ format }} é o formato mais usado",
+      "detail": "{{ count }} de {{ total }} torneios ({{ percent }}%) têm {{ size }} atletas."
+    },
+    "peak": {
+      "title": "Pico de uso: {{ weekday }} às {{ hour }}h",
+      "detail": "{{ count }} torneios começaram nesse horário. Bom momento para avisos e lançamentos."
+    },
+    "retention": {
+      "low": {
+        "title": "Só {{ percent }}% dos moderadores voltam",
+        "detail": "{{ oneTime }} de {{ total }} organizaram um único torneio. Meus torneios e lembretes podem ajudar a trazê-los de volta."
+      },
+      "high": {
+        "title": "{{ percent }}% dos moderadores voltam",
+        "detail": "{{ returning }} de {{ total }} organizaram dois ou mais torneios."
+      }
+    },
+    "qualification": {
+      "low": {
+        "title": "“Seu caminho” em só {{ percent }}% dos compartilhados",
+        "detail": "{{ used }} de {{ of }} torneios Super compartilhados ativaram. Considere deixar ligado por padrão."
+      },
+      "high": {
+        "title": "“Seu caminho” ativado em {{ percent }}% dos compartilhados",
+        "detail": "{{ used }} de {{ of }} torneios Super compartilhados."
+      }
+    },
+    "pbp": {
+      "title": "Final ponto a ponto em {{ percent }}% das finais",
+      "detail": "{{ used }} de {{ of }} torneios que chegaram às finais."
+    },
+    "hosting": {
+      "title": "Compartilhados são só {{ percent }}% dos torneios",
+      "detail": "A projeção, o acompanhamento ao vivo e os convites só existem neles: há espaço para convidar mais organizadores a testar."
+    },
+    "coverage": {
+      "title": "{{ percent }}% dos torneios locais têm detalhes completos",
+      "detail": "O restante começou antes do arquivamento completo; o funil e a adoção os desconsideram."
+    }
+  },
+  "weekday": {
+    "0": "domingos",
+    "1": "segundas",
+    "2": "terças",
+    "3": "quartas",
+    "4": "quintas",
+    "5": "sextas",
+    "6": "sábados"
+  },
+  "format": {
+    "superOpen": "Super {{ size }}",
+    "superMixed": "Super {{ size }} misto",
+    "groupsOpen": "Grupos {{ size }}",
+    "groupsMixed": "Grupos {{ size }} misto"
+  },
+  "funnelStep": {
+    "started": "Iniciaram",
+    "with_scores": "Lançaram o 1º placar",
+    "half_played": "Passaram da metade",
+    "rounds_done": "Terminaram as rodadas",
+    "reached_finals": "Chegaram às finais",
+    "finished": "Finalizaram"
+  },
+  "delta": {
+    "flat": "sem variação",
+    "new": "novo"
+  },
+  "kpi": {
+    "started": {
+      "label": "Torneios iniciados",
+      "hint": "{{ finished }} finalizados"
+    },
+    "completion": {
+      "label": "Taxa de conclusão",
+      "hintSome": "{{ finished }} de {{ started }} iniciados",
+      "hintNone": "Sem torneios iniciados"
+    },
+    "players": {
+      "label": "Atletas",
+      "hintAverage": "média de {{ average }} por torneio",
+      "hintNone": "Sem atletas"
+    },
+    "matches": {
+      "label": "Partidas lançadas",
+      "hint": "Placares registrados"
+    },
+    "moderators": {
+      "label": "Moderadores ativos",
+      "hintOne": "{{ count }} novo no período",
+      "hintMany": "{{ count }} novos no período"
+    },
+    "duration": {
+      "label": "Duração mediana",
+      "hintNone": "Sem torneios finalizados",
+      "hintP90": "9 em cada 10 terminam em até {{ duration }}"
+    }
   }
 }

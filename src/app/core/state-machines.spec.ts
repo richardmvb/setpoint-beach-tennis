@@ -3,7 +3,6 @@ import { Round } from './models';
 import {
   SyncStatusInput,
   TOURNAMENT_PHASE_FLOW,
-  TOURNAMENT_PHASE_LABEL,
   canTransitionTournamentPhase,
   syncStatus,
   tournamentPhase,
@@ -38,10 +37,9 @@ describe('state machines', () => {
     expect(canTransitionTournamentPhase('qualifying', 'finals')).toBe(true);
     expect(canTransitionTournamentPhase('finished', 'finals')).toBe(false);
     expect(canTransitionTournamentPhase('finals', 'finals')).toBe(true);
-    for (const label of Object.values(TOURNAMENT_PHASE_LABEL)) expect(label.length).toBeGreaterThan(0);
   });
 
-  it('o status de sincronização preserva a precedência e os textos originais', () => {
+  it('o status de sincronização preserva a precedência', () => {
     const base: SyncStatusInput = {
       available: true,
       error: false,

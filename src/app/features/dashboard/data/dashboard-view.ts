@@ -1,5 +1,4 @@
 import {
-  ABANDONMENT_STAGE_LABEL,
   type AbandonmentStageId,
   buildInsights,
   type DashboardInsights,
@@ -13,6 +12,7 @@ import {
   kpiCards,
   share,
   trendChart,
+  type Texts,
   type TrendChart,
 } from '../../../core/dashboard-insights';
 import type { DashboardActiveTournament, DashboardActivity } from '../../../core/ports/dashboard.port';
@@ -30,7 +30,7 @@ interface MixRow {
   percent: number;
 }
 
-/** Everything the Resumo and Uso tabs draw. Labels are ids; text from `core/dashboard-insights` is pt-BR as it comes. */
+/** Everything the Resumo and Uso tabs draw. The words come from the `Texts` it is given. */
 export interface DashboardView {
   cards: KpiCard[];
   insights: Insight[];
@@ -82,6 +82,26 @@ export function abandonmentStages(activity: DashboardActivity | null): Abandonme
   return stages.map((stage) => ({ ...stage, percent: total ? Math.round((stage.count * 100) / total) : 0 }));
 }
 
+/** The stage's name inside an insight sentence (the dashboard's own list translates the same ids in its template). */
+function stageLabel(id: AbandonmentStageId, t: Texts): string {
+  switch (id) {
+    case 'registration':
+      return t('abandonment.registration');
+    case 'noScores':
+      return t('abandonment.noScores');
+    case 'underHalf':
+      return t('abandonment.underHalf');
+    case 'overHalf':
+      return t('abandonment.overHalf');
+    case 'roundsComplete':
+      return t('abandonment.roundsComplete');
+    case 'finals':
+      return t('abandonment.finals');
+    case 'unknown':
+      return t('abandonment.unknown');
+  }
+}
+
 /** The known stage where most tournaments stopped; null when none did. */
 export function mainDropoff(stages: AbandonmentStage[]): AbandonmentStage | null {
   return stages
@@ -89,16 +109,16 @@ export function mainDropoff(stages: AbandonmentStage[]): AbandonmentStage | null
     .reduce<AbandonmentStage | null>((best, stage) => (stage.count > (best?.count ?? 0) ? stage : best), null);
 }
 
-export function buildDashboardView(data: DashboardInsights, dropoff: AbandonmentStage | null): DashboardView {
+export function buildDashboardView(data: DashboardInsights, dropoff: AbandonmentStage | null, t: Texts): DashboardView {
   const r = data.retention;
   return {
-    cards: kpiCards(data),
-    insights: buildInsights(data, dropoff && { label: ABANDONMENT_STAGE_LABEL[dropoff.id], count: dropoff.count }),
-    funnel: funnelSteps(data.funnel),
+    cards: kpiCards(data, t),
+    insights: buildInsights(data, t, dropoff && { label: stageLabel(dropoff.id, t), count: dropoff.count }),
+    funnel: funnelSteps(data.funnel, t),
     chart: trendChart(data.series),
     grid: heatmapGrid(data.heatmap),
     formats: data.formats.map((row) => ({
-      label: formatLabel(row.mode, row.size, row.doubles),
+      label: formatLabel(row.mode, row.size, row.doubles, t),
       started: row.started,
       finished: row.finished,
       rate: share(row.finished, row.started),

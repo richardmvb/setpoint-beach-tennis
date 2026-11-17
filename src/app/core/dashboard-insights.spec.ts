@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as model from './dashboard-insights';
 import type { DashboardInsights, Insight } from './dashboard-insights';
+import { dashboardTexts as t } from '../testing/dashboard-texts';
 
 type KpiSet = DashboardInsights['kpis']['current'];
 
@@ -47,30 +48,33 @@ const ids = (list: Insight[]): string[] => list.map((item) => item.id);
 
 describe('dashboard insights model', () => {
   it('variação nunca inventa porcentagem sobre base zero', () => {
-    expect(model.kpiDelta(10, 0)).toStrictEqual({ direction: 'new', percent: null, label: 'novo' });
-    expect(model.kpiDelta(0, 0).direction).toBe('flat');
-    expect(model.kpiDelta(12, 10)).toStrictEqual({ direction: 'up', percent: 20, label: '+20%' });
-    expect(model.kpiDelta(5, 10)).toStrictEqual({ direction: 'down', percent: -50, label: '-50%' });
-    expect(model.kpiDelta(null, 10).direction).toBe('none');
-    expect(model.kpiDelta(70.5, 60, 'pts')).toStrictEqual({ direction: 'up', percent: 10.5, label: '+10.5 pts' });
+    expect(model.kpiDelta(10, 0, t)).toStrictEqual({ direction: 'new', percent: null, label: 'novo' });
+    expect(model.kpiDelta(0, 0, t).direction).toBe('flat');
+    expect(model.kpiDelta(12, 10, t)).toStrictEqual({ direction: 'up', percent: 20, label: '+20%' });
+    expect(model.kpiDelta(5, 10, t)).toStrictEqual({ direction: 'down', percent: -50, label: '-50%' });
+    expect(model.kpiDelta(null, 10, t).direction).toBe('none');
+    expect(model.kpiDelta(70.5, 60, t, 'pts')).toStrictEqual({ direction: 'up', percent: 10.5, label: '+10.5 pts' });
   });
 
   it('funil calcula a conversão sobre o início e sobre a etapa anterior', () => {
-    const steps = model.funnelSteps(data().funnel);
+    const steps = model.funnelSteps(data().funnel, t);
     expect(steps.length).toBe(6);
     expect([steps[1].ofStart, steps[1].ofPrevious]).toStrictEqual([90, 90]);
     expect([steps[5].ofStart, steps[5].ofPrevious]).toStrictEqual([60, 100]);
     expect(
       model
-        .funnelSteps({
-          basis: 0,
-          started: 0,
-          with_scores: 0,
-          half_played: 0,
-          rounds_done: 0,
-          reached_finals: 0,
-          finished: 0,
-        })
+        .funnelSteps(
+          {
+            basis: 0,
+            started: 0,
+            with_scores: 0,
+            half_played: 0,
+            rounds_done: 0,
+            reached_finals: 0,
+            finished: 0,
+          },
+          t,
+        )
         .map((s) => s.ofStart),
     ).toStrictEqual([0, 0, 0, 0, 0, 0]);
   });
@@ -92,7 +96,7 @@ describe('dashboard insights model', () => {
   it('insights de volume: crescimento, queda, estabilidade e primeiro uso', () => {
     const volume = (cur: number, prev: number) =>
       model
-        .buildInsights(data({ kpis: { current: kpi({ started: cur }), previous: kpi({ started: prev }) } }))
+        .buildInsights(data({ kpis: { current: kpi({ started: cur }), previous: kpi({ started: prev }) } }), t)
         .find((i) => i.id === 'volume');
     expect(volume(15, 10)?.tone).toBe('good');
     expect(volume(15, 10)?.title).toMatch(/cresceu 50%/);
@@ -116,6 +120,7 @@ describe('dashboard insights model', () => {
           finished: 2,
         },
       }),
+      t,
     );
     expect(ids(weak)).toContain('completion');
     expect(weak.find((i) => i.id === 'completion')?.tone).toBe('warn');
@@ -135,6 +140,7 @@ describe('dashboard insights model', () => {
           finished: 0,
         },
       }),
+      t,
     );
     expect(ids(tiny)).not.toContain('completion');
     expect(ids(tiny)).not.toContain('funnel');
@@ -153,6 +159,7 @@ describe('dashboard insights model', () => {
         retention: { moderators_total: 10, one_time: 8, two: 1, three_plus: 1, active_new: 4, active_returning: 1 },
         adoption: { ...data().adoption, qualification: { used: 1, of: 8 } },
       }),
+      t,
     );
     expect(rich.find((i) => i.id === 'format')?.title).toMatch(/Super 8 é o formato mais usado/);
     expect(rich.find((i) => i.id === 'peak')?.title).toMatch(/sábados às 19h/);
@@ -165,6 +172,7 @@ describe('dashboard insights model', () => {
         adoption: { ...data().adoption, qualification: { used: 0, of: 1 } },
         mix: { mode: { super: 3 }, size: { 8: 3 }, doubles: { open: 3 }, hosting: { shared: 0, local: 3 } },
       }),
+      t,
     );
     for (const id of ['retention', 'qualification', 'format', 'hosting'])
       expect(ids(sparse).includes(id), id).toBe(false);
@@ -184,6 +192,7 @@ describe('dashboard insights model', () => {
         },
         retention: { moderators_total: 10, one_time: 8, two: 1, three_plus: 1, active_new: 4, active_returning: 1 },
       }),
+      t,
       { label: 'Antes do primeiro placar', count: 4 },
     );
     expect(list.length).toBe(6);
@@ -207,21 +216,21 @@ describe('dashboard insights model', () => {
       retention: { moderators_total: 10, one_time: 6, two: 3, three_plus: 1, active_new: 2, active_returning: 3 },
       adoption: { ...data().adoption, qualification: { used: 2, of: 5 }, point_by_point: { used: 1, of: 6 } },
     };
-    const list = model.buildInsights(data({ ...quiet, coverage: { local_started: 4, local_with_detail: 1 } }), {
+    const list = model.buildInsights(data({ ...quiet, coverage: { local_started: 4, local_with_detail: 1 } }), t, {
       label: 'Antes do primeiro placar',
       count: 4,
     });
     expect(list.find((i) => i.id === 'dropoff')?.title).toMatch(/antes do primeiro placar/);
     expect(list.find((i) => i.id === 'coverage')?.title).toMatch(/25% dos torneios locais/);
     expect(
-      ids(model.buildInsights(data(quiet), { label: 'x', count: 2 })).includes('dropoff'),
+      ids(model.buildInsights(data(quiet), t, { label: 'x', count: 2 })).includes('dropoff'),
       'poucas paradas não viram insight',
     ).toBe(false);
   });
 
   it('rótulos e duração', () => {
-    expect(model.formatLabel('super', 24, 'mixed')).toBe('Super 24 misto');
-    expect(model.formatLabel('groups', 12, 'open')).toBe('Grupos 12');
+    expect(model.formatLabel('super', 24, 'mixed', t)).toBe('Super 24 misto');
+    expect(model.formatLabel('groups', 12, 'open', t)).toBe('Grupos 12');
     expect(model.formatDuration(5400)).toBe('1h30');
     expect(model.formatDuration(1500)).toBe('25 min');
     expect(model.formatDuration(7200)).toBe('2h');
@@ -249,6 +258,7 @@ describe('dashboard insights model', () => {
           { date: '2026-11-02', started: 0, shared: 0, finished: 3 },
         ],
       }),
+      t,
     );
     expect(cards.map((c) => c.key)).toStrictEqual([
       'started',

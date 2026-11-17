@@ -7,6 +7,7 @@ import { DashboardSummaryComponent } from './components/dashboard-summary.compon
 import { DashboardTournamentsComponent } from './components/dashboard-tournaments.component';
 import { DashboardUsageComponent } from './components/dashboard-usage.component';
 import { DashboardStore } from './data/dashboard.store';
+import { DashboardText } from './data/dashboard-text';
 
 /**
  * The admin dashboard (`/dashboard`): the e-mail sign-in, then the product numbers in three tabs. Rendered by
@@ -23,7 +24,7 @@ import { DashboardStore } from './data/dashboard.store';
     DashboardTournamentsComponent,
     DashboardUsageComponent,
   ],
-  providers: [DashboardStore, provideTranslocoScope('dashboard')],
+  providers: [DashboardStore, DashboardText, provideTranslocoScope('dashboard')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   templateUrl: './dashboard.component.html',

@@ -19,15 +19,6 @@ export const TOURNAMENT_PHASE_FLOW: Readonly<Record<TournamentPhase, readonly To
   finished: [],
 };
 
-export const TOURNAMENT_PHASE_LABEL: Readonly<Record<TournamentPhase, string>> = {
-  setup: 'Configuração',
-  registration: 'Inscrições',
-  ready: 'Pronto para iniciar',
-  qualifying: 'Em andamento',
-  finals: 'Finais',
-  finished: 'Finalizado',
-};
-
 export function tournamentPhase(
   state: Pick<TournamentState, 'rounds' | 'finals' | 'finishedAt' | 'hostingMode' | 'sharedStatus'>,
 ): TournamentPhase {

@@ -20,7 +20,6 @@ const SRC = join(ROOT, 'src/app');
 const ALLOWED_WORDS = new Set(['SETPOINT', 'BEACH', 'TENNIS', 'SP', 'VS', 'PWA']);
 /** Files that may keep Portuguese text for now (see the header). */
 const PENDING = new Set([
-  'src/app/core/dashboard-insights.ts',
   'src/app/core/qualification.service.ts',
   'src/app/core/share-card.service.ts',
   'src/app/core/path-card.service.ts',
@@ -29,7 +28,6 @@ const PENDING = new Set([
   'src/app/core/group-schedule.service.ts',
   'src/app/core/finals.service.ts',
   'src/app/core/avatar.service.ts',
-  'src/app/core/state-machines.ts',
   'src/app/core/storage.service.ts',
   'src/app/core/final-live-score.ts',
   'src/app/core/adapters/supabase/supabase-feed.ts',

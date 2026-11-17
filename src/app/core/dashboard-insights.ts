@@ -77,49 +77,121 @@ interface Delta {
 }
 
 /** Where an abandoned tournament stopped (the dashboard's "Onde os torneios pararam" list). */
+/** Every piece of text the numbers need. The words are in `dashboard/pt-BR` (see `DashboardText`), so this module stays pure. */
+export type TextKey =
+  | 'insights.volume.new.title'
+  | 'insights.volume.new.detail'
+  | 'insights.volume.up.title'
+  | 'insights.volume.up.detail'
+  | 'insights.volume.down.title'
+  | 'insights.volume.down.detail'
+  | 'insights.volume.stable.title'
+  | 'insights.volume.stable.detail'
+  | 'insights.completion.low.title'
+  | 'insights.completion.low.detail'
+  | 'insights.completion.high.title'
+  | 'insights.completion.high.detail'
+  | 'insights.funnel.title'
+  | 'insights.funnel.detailScores'
+  | 'insights.funnel.detailOther'
+  | 'insights.dropoff.title'
+  | 'insights.dropoff.detail'
+  | 'insights.format.title'
+  | 'insights.format.detail'
+  | 'insights.peak.title'
+  | 'insights.peak.detail'
+  | 'insights.retention.low.title'
+  | 'insights.retention.low.detail'
+  | 'insights.retention.high.title'
+  | 'insights.retention.high.detail'
+  | 'insights.qualification.low.title'
+  | 'insights.qualification.low.detail'
+  | 'insights.qualification.high.title'
+  | 'insights.qualification.high.detail'
+  | 'insights.pbp.title'
+  | 'insights.pbp.detail'
+  | 'insights.hosting.title'
+  | 'insights.hosting.detail'
+  | 'insights.coverage.title'
+  | 'insights.coverage.detail'
+  | 'weekday.0'
+  | 'weekday.1'
+  | 'weekday.2'
+  | 'weekday.3'
+  | 'weekday.4'
+  | 'weekday.5'
+  | 'weekday.6'
+  | 'format.superOpen'
+  | 'format.superMixed'
+  | 'format.groupsOpen'
+  | 'format.groupsMixed'
+  | 'funnelStep.started'
+  | 'funnelStep.with_scores'
+  | 'funnelStep.half_played'
+  | 'funnelStep.rounds_done'
+  | 'funnelStep.reached_finals'
+  | 'funnelStep.finished'
+  | 'delta.flat'
+  | 'delta.new'
+  | 'kpi.started.label'
+  | 'kpi.started.hint'
+  | 'kpi.completion.label'
+  | 'kpi.completion.hintSome'
+  | 'kpi.completion.hintNone'
+  | 'kpi.players.label'
+  | 'kpi.players.hintAverage'
+  | 'kpi.players.hintNone'
+  | 'kpi.matches.label'
+  | 'kpi.matches.hint'
+  | 'kpi.moderators.label'
+  | 'kpi.moderators.hintOne'
+  | 'kpi.moderators.hintMany'
+  | 'kpi.duration.label'
+  | 'kpi.duration.hintNone'
+  | 'kpi.duration.hintP90'
+  | 'abandonment.registration'
+  | 'abandonment.noScores'
+  | 'abandonment.underHalf'
+  | 'abandonment.overHalf'
+  | 'abandonment.roundsComplete'
+  | 'abandonment.finals'
+  | 'abandonment.unknown';
+
+export type TextParams = Record<string, string | number>;
+
+/** Gives the words for a key (the feature supplies it; specs use the pt-BR file). */
+export type Texts = (key: TextKey, params?: TextParams) => string;
+
 export type AbandonmentStageId =
   'registration' | 'noScores' | 'underHalf' | 'overHalf' | 'roundsComplete' | 'finals' | 'unknown';
 
-/**
- * The stage names inside the insight sentences below. The dashboard's own list translates the same ids
- * (`dashboard.abandonment.*`); this pt-BR copy goes when the insights move to keys (Phase 6).
- */
-export const ABANDONMENT_STAGE_LABEL: Readonly<Record<AbandonmentStageId, string>> = {
-  registration: 'Durante a inscrição',
-  noScores: 'Antes do primeiro placar',
-  underHalf: 'Menos da metade das partidas',
-  overHalf: 'Metade ou mais das partidas',
-  roundsComplete: 'Após as rodadas',
-  finals: 'Durante as finais',
-  unknown: 'Etapa desconhecida',
-};
-
-const WEEKDAYS = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'];
-
-export function formatLabel(mode: string, size: number | string, doubles: string): string {
-  return `${mode === 'groups' ? 'Grupos' : 'Super'} ${size}${doubles === 'mixed' ? ' misto' : ''}`;
+export function formatLabel(mode: string, size: number | string, doubles: string, t: Texts): string {
+  const mixed = doubles === 'mixed';
+  return mode === 'groups'
+    ? t(mixed ? 'format.groupsMixed' : 'format.groupsOpen', { size })
+    : t(mixed ? 'format.superMixed' : 'format.superOpen', { size });
 }
 
 /** Change versus the previous period. A zero baseline is "novo", never an invented percentage. */
-export function kpiDelta(current: number | null, previous: number | null, unit: '%' | 'pts' = '%'): Delta {
+export function kpiDelta(current: number | null, previous: number | null, t: Texts, unit: '%' | 'pts' = '%'): Delta {
   if (current === null || previous === null) return { direction: 'none', percent: null, label: '—' };
   if (previous === 0)
     return current === 0
-      ? { direction: 'flat', percent: 0, label: 'sem variação' }
-      : { direction: 'new', percent: null, label: 'novo' };
+      ? { direction: 'flat', percent: 0, label: t('delta.flat') }
+      : { direction: 'new', percent: null, label: t('delta.new') };
   if (unit === 'pts') {
     const diff = Math.round((current - previous) * 10) / 10;
     return {
       direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat',
       percent: diff,
-      label: diff === 0 ? 'sem variação' : `${diff > 0 ? '+' : ''}${diff} pts`,
+      label: diff === 0 ? t('delta.flat') : `${diff > 0 ? '+' : ''}${diff} pts`,
     };
   }
   const percent = Math.round(((current - previous) / previous) * 100);
   return {
     direction: percent > 0 ? 'up' : percent < 0 ? 'down' : 'flat',
     percent,
-    label: percent === 0 ? 'sem variação' : `${percent > 0 ? '+' : ''}${percent}%`,
+    label: percent === 0 ? t('delta.flat') : `${percent > 0 ? '+' : ''}${percent}%`,
   };
 }
 
@@ -131,14 +203,14 @@ export interface FunnelStep {
   ofPrevious: number;
 }
 
-export function funnelSteps(funnel: DashboardInsights['funnel']): FunnelStep[] {
+export function funnelSteps(funnel: DashboardInsights['funnel'], t: Texts): FunnelStep[] {
   const raw: [string, string, number][] = [
-    ['started', 'Iniciaram', funnel.started],
-    ['with_scores', 'Lançaram o 1º placar', funnel.with_scores],
-    ['half_played', 'Passaram da metade', funnel.half_played],
-    ['rounds_done', 'Terminaram as rodadas', funnel.rounds_done],
-    ['reached_finals', 'Chegaram às finais', funnel.reached_finals],
-    ['finished', 'Finalizaram', funnel.finished],
+    ['started', t('funnelStep.started'), funnel.started],
+    ['with_scores', t('funnelStep.with_scores'), funnel.with_scores],
+    ['half_played', t('funnelStep.half_played'), funnel.half_played],
+    ['rounds_done', t('funnelStep.rounds_done'), funnel.rounds_done],
+    ['reached_finals', t('funnelStep.reached_finals'), funnel.reached_finals],
+    ['finished', t('funnelStep.finished'), funnel.finished],
   ];
   const start = raw[0][2];
   return raw.map(([key, label, count], index) => ({
@@ -189,11 +261,31 @@ function top(record: Record<string, number>): { key: string; count: number; tota
   return { key, count, total };
 }
 
+function weekday(dow: number, t: Texts): string {
+  switch (dow) {
+    case 0:
+      return t('weekday.0');
+    case 1:
+      return t('weekday.1');
+    case 2:
+      return t('weekday.2');
+    case 3:
+      return t('weekday.3');
+    case 4:
+      return t('weekday.4');
+    case 5:
+      return t('weekday.5');
+    default:
+      return t('weekday.6');
+  }
+}
+
 const TONE_ORDER: Record<InsightTone, number> = { warn: 0, good: 1, info: 2 };
 
 /** Findings worth acting on, most urgent first. Rules need a minimum sample so small numbers do not shout. */
 export function buildInsights(
   data: DashboardInsights,
+  t: Texts,
   mainDropoff: { label: string; count: number } | null = null,
 ): Insight[] {
   const out: Insight[] = [];
@@ -201,34 +293,42 @@ export function buildInsights(
 
   // 1. Volume versus the previous period
   if (current.started + previous.started > 0) {
-    const delta = kpiDelta(current.started, previous.started);
+    const delta = kpiDelta(current.started, previous.started, t);
     if (delta.direction === 'new')
       out.push({
         id: 'volume',
         tone: 'good',
-        title: 'Primeiros torneios do período',
-        detail: `${current.started} iniciados, contra nenhum no período anterior.`,
+        title: t('insights.volume.new.title'),
+        detail: t('insights.volume.new.detail', { started: current.started }),
       });
     else if (delta.percent !== null && delta.percent >= 20)
       out.push({
         id: 'volume',
         tone: 'good',
-        title: `Uso cresceu ${delta.percent}%`,
-        detail: `${current.started} torneios iniciados, contra ${previous.started} nos ${data.period.days} dias anteriores.`,
+        title: t('insights.volume.up.title', { percent: delta.percent }),
+        detail: t('insights.volume.up.detail', {
+          started: current.started,
+          previous: previous.started,
+          days: data.period.days,
+        }),
       });
     else if (delta.percent !== null && delta.percent <= -20)
       out.push({
         id: 'volume',
         tone: 'warn',
-        title: `Uso caiu ${Math.abs(delta.percent)}%`,
-        detail: `${current.started} torneios iniciados, contra ${previous.started} nos ${data.period.days} dias anteriores.`,
+        title: t('insights.volume.down.title', { percent: Math.abs(delta.percent) }),
+        detail: t('insights.volume.down.detail', {
+          started: current.started,
+          previous: previous.started,
+          days: data.period.days,
+        }),
       });
     else
       out.push({
         id: 'volume',
         tone: 'info',
-        title: 'Uso estável',
-        detail: `${current.started} torneios iniciados, contra ${previous.started} no período anterior.`,
+        title: t('insights.volume.stable.title'),
+        detail: t('insights.volume.stable.detail', { started: current.started, previous: previous.started }),
       });
   }
 
@@ -238,20 +338,20 @@ export function buildInsights(
       out.push({
         id: 'completion',
         tone: 'warn',
-        title: `Só ${Math.round(current.completion_rate)}% dos torneios chegam ao fim`,
-        detail: `${current.finished} de ${current.started} iniciados foram finalizados.`,
+        title: t('insights.completion.low.title', { percent: Math.round(current.completion_rate) }),
+        detail: t('insights.completion.low.detail', { finished: current.finished, started: current.started }),
       });
     else if (current.completion_rate >= 70)
       out.push({
         id: 'completion',
         tone: 'good',
-        title: `${Math.round(current.completion_rate)}% dos torneios são finalizados`,
-        detail: `${current.finished} de ${current.started} iniciados chegaram ao pódio.`,
+        title: t('insights.completion.high.title', { percent: Math.round(current.completion_rate) }),
+        detail: t('insights.completion.high.detail', { finished: current.finished, started: current.started }),
       });
   }
 
   // 3. Where the funnel leaks the most
-  const steps = funnelSteps(data.funnel);
+  const steps = funnelSteps(data.funnel, t);
   if (data.funnel.basis >= 3) {
     let worst: { from: FunnelStep; to: FunnelStep; drop: number } | null = null;
     for (let i = 1; i < steps.length; i++) {
@@ -263,11 +363,8 @@ export function buildInsights(
       out.push({
         id: 'funnel',
         tone: 'warn',
-        title: `${worst.drop}% se perdem entre “${worst.from.label}” e “${worst.to.label}”`,
-        detail:
-          worst.to.key === 'with_scores'
-            ? 'O primeiro placar é onde o torneio morre: vale simplificar o lançamento ou lembrar o organizador.'
-            : 'É a maior queda do funil neste período.',
+        title: t('insights.funnel.title', { drop: worst.drop, from: worst.from.label, to: worst.to.label }),
+        detail: t(worst.to.key === 'with_scores' ? 'insights.funnel.detailScores' : 'insights.funnel.detailOther'),
       });
     }
   }
@@ -275,8 +372,8 @@ export function buildInsights(
     out.push({
       id: 'dropoff',
       tone: 'info',
-      title: `Maior parada: ${mainDropoff.label.toLocaleLowerCase('pt-BR')}`,
-      detail: `${mainDropoff.count} torneios compartilhados pararam nesta etapa.`,
+      title: t('insights.dropoff.title', { stage: mainDropoff.label.toLocaleLowerCase('pt-BR') }),
+      detail: t('insights.dropoff.detail', { count: mainDropoff.count }),
     });
 
   // 4. Most used format
@@ -286,8 +383,13 @@ export function buildInsights(
     out.push({
       id: 'format',
       tone: 'info',
-      title: `${formatLabel(mode.key, size.key, 'open').replace(' misto', '')} é o formato mais usado`,
-      detail: `${size.count} de ${size.total} torneios (${share(size.count, size.total)}%) têm ${size.key} atletas.`,
+      title: t('insights.format.title', { format: formatLabel(mode.key, size.key, 'open', t) }),
+      detail: t('insights.format.detail', {
+        count: size.count,
+        total: size.total,
+        percent: share(size.count, size.total),
+        size: size.key,
+      }),
     });
   }
 
@@ -297,8 +399,11 @@ export function buildInsights(
     out.push({
       id: 'peak',
       tone: 'info',
-      title: `Pico de uso: ${WEEKDAYS[grid.peak.dow]} às ${String(grid.peak.hour).padStart(2, '0')}h`,
-      detail: `${grid.peak.count} torneios começaram nesse horário. Bom momento para avisos e lançamentos.`,
+      title: t('insights.peak.title', {
+        weekday: weekday(grid.peak.dow, t),
+        hour: String(grid.peak.hour).padStart(2, '0'),
+      }),
+      detail: t('insights.peak.detail', { count: grid.peak.count }),
     });
   }
 
@@ -310,15 +415,15 @@ export function buildInsights(
       out.push({
         id: 'retention',
         tone: 'warn',
-        title: `Só ${returning}% dos moderadores voltam`,
-        detail: `${r.one_time} de ${r.moderators_total} organizaram um único torneio. Meus torneios e lembretes podem ajudar a trazê-los de volta.`,
+        title: t('insights.retention.low.title', { percent: returning }),
+        detail: t('insights.retention.low.detail', { oneTime: r.one_time, total: r.moderators_total }),
       });
     else if (returning >= 50)
       out.push({
         id: 'retention',
         tone: 'good',
-        title: `${returning}% dos moderadores voltam`,
-        detail: `${r.two + r.three_plus} de ${r.moderators_total} organizaram dois ou mais torneios.`,
+        title: t('insights.retention.high.title', { percent: returning }),
+        detail: t('insights.retention.high.detail', { returning: r.two + r.three_plus, total: r.moderators_total }),
       });
   }
 
@@ -330,15 +435,15 @@ export function buildInsights(
       out.push({
         id: 'qualification',
         tone: 'warn',
-        title: `“Seu caminho” em só ${pct}% dos compartilhados`,
-        detail: `${q.used} de ${q.of} torneios Super compartilhados ativaram. Considere deixar ligado por padrão.`,
+        title: t('insights.qualification.low.title', { percent: pct }),
+        detail: t('insights.qualification.low.detail', { used: q.used, of: q.of }),
       });
     else if (pct >= 60)
       out.push({
         id: 'qualification',
         tone: 'good',
-        title: `“Seu caminho” ativado em ${pct}% dos compartilhados`,
-        detail: `${q.used} de ${q.of} torneios Super compartilhados.`,
+        title: t('insights.qualification.high.title', { percent: pct }),
+        detail: t('insights.qualification.high.detail', { used: q.used, of: q.of }),
       });
   }
   const pbp = data.adoption.point_by_point;
@@ -346,8 +451,8 @@ export function buildInsights(
     out.push({
       id: 'pbp',
       tone: 'good',
-      title: `Final ponto a ponto em ${share(pbp.used, pbp.of)}% das finais`,
-      detail: `${pbp.used} de ${pbp.of} torneios que chegaram às finais.`,
+      title: t('insights.pbp.title', { percent: share(pbp.used, pbp.of) }),
+      detail: t('insights.pbp.detail', { used: pbp.used, of: pbp.of }),
     });
 
   // 8. Hosting mix
@@ -357,9 +462,8 @@ export function buildInsights(
     out.push({
       id: 'hosting',
       tone: 'info',
-      title: `Compartilhados são só ${share(hosting['shared'] ?? 0, hostTotal)}% dos torneios`,
-      detail:
-        'A projeção, o acompanhamento ao vivo e os convites só existem neles: há espaço para convidar mais organizadores a testar.',
+      title: t('insights.hosting.title', { percent: share(hosting['shared'] ?? 0, hostTotal) }),
+      detail: t('insights.hosting.detail'),
     });
 
   // 9. Data coverage (so the reader knows how much detail the numbers rest on)
@@ -368,8 +472,8 @@ export function buildInsights(
     out.push({
       id: 'coverage',
       tone: 'info',
-      title: `${share(c.local_with_detail, c.local_started)}% dos torneios locais têm detalhes completos`,
-      detail: 'O restante começou antes do arquivamento completo; o funil e a adoção os desconsideram.',
+      title: t('insights.coverage.title', { percent: share(c.local_with_detail, c.local_started) }),
+      detail: t('insights.coverage.detail'),
     });
   }
 
@@ -386,59 +490,66 @@ export interface KpiCard {
   spark: number[] | null;
 }
 
-export function kpiCards(data: DashboardInsights): KpiCard[] {
+export function kpiCards(data: DashboardInsights, t: Texts): KpiCard[] {
   const { current, previous } = data.kpis;
   const started = data.series.map((day) => day.started);
   const finished = data.series.map((day) => day.finished);
   return [
     {
       key: 'started',
-      label: 'Torneios iniciados',
+      label: t('kpi.started.label'),
       value: String(current.started),
-      hint: `${current.finished} finalizados`,
-      delta: kpiDelta(current.started, previous.started),
+      hint: t('kpi.started.hint', { finished: current.finished }),
+      delta: kpiDelta(current.started, previous.started, t),
       spark: started,
     },
     {
       key: 'completion',
-      label: 'Taxa de conclusão',
+      label: t('kpi.completion.label'),
       value: current.completion_rate === null ? '—' : `${Math.round(current.completion_rate)}%`,
-      hint: current.started ? `${current.finished} de ${current.started} iniciados` : 'Sem torneios iniciados',
-      delta: kpiDelta(current.completion_rate, previous.completion_rate, 'pts'),
+      hint: current.started
+        ? t('kpi.completion.hintSome', { finished: current.finished, started: current.started })
+        : t('kpi.completion.hintNone'),
+      delta: kpiDelta(current.completion_rate, previous.completion_rate, t, 'pts'),
       spark: finished,
     },
     {
       key: 'players',
-      label: 'Atletas',
+      label: t('kpi.players.label'),
       value: String(current.players),
-      hint: current.avg_players ? `média de ${current.avg_players} por torneio` : 'Sem atletas',
-      delta: kpiDelta(current.players, previous.players),
+      hint: current.avg_players
+        ? t('kpi.players.hintAverage', { average: current.avg_players })
+        : t('kpi.players.hintNone'),
+      delta: kpiDelta(current.players, previous.players, t),
       spark: null,
     },
     {
       key: 'matches',
-      label: 'Partidas lançadas',
+      label: t('kpi.matches.label'),
       value: String(current.matches_scored),
-      hint: 'Placares registrados',
-      delta: kpiDelta(current.matches_scored, previous.matches_scored),
+      hint: t('kpi.matches.hint'),
+      delta: kpiDelta(current.matches_scored, previous.matches_scored, t),
       spark: null,
     },
     {
       key: 'moderators',
-      label: 'Moderadores ativos',
+      label: t('kpi.moderators.label'),
       value: String(current.moderators),
-      hint: `${current.new_moderators} ${current.new_moderators === 1 ? 'novo' : 'novos'} no período`,
-      delta: kpiDelta(current.moderators, previous.moderators),
+      hint:
+        current.new_moderators === 1
+          ? t('kpi.moderators.hintOne', { count: current.new_moderators })
+          : t('kpi.moderators.hintMany', { count: current.new_moderators }),
+      delta: kpiDelta(current.moderators, previous.moderators, t),
       spark: null,
     },
     {
       key: 'duration',
-      label: 'Duração mediana',
+      label: t('kpi.duration.label'),
       value: formatDuration(data.duration.median_seconds),
       hint:
         data.duration.p90_seconds === null
-          ? 'Sem torneios finalizados'
-          : `9 em cada 10 terminam em até ${formatDuration(data.duration.p90_seconds)}`,
+          ? t('kpi.duration.hintNone')
+          : t('kpi.duration.hintP90', { duration: formatDuration(data.duration.p90_seconds) }),
       delta: { direction: 'none', percent: null, label: '' },
       spark: null,
     },

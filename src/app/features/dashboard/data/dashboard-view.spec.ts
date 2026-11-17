@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formatLabel, heatmapGrid } from '../../../core/dashboard-insights';
+import { dashboardTexts as t } from '../../../testing/dashboard-texts';
 import { dashboardActivity, dashboardInsights, dashboardTournament } from '../../../testing/dashboard-data';
 import {
   abandonmentStages,
@@ -42,7 +43,7 @@ describe('abandonmentStages and mainDropoff', () => {
 });
 
 describe('buildDashboardView', () => {
-  const view = buildDashboardView(dashboardInsights(), mainDropoff(abandonmentStages(dashboardActivity())));
+  const view = buildDashboardView(dashboardInsights(), mainDropoff(abandonmentStages(dashboardActivity())), t);
 
   it('orders each mix by count with its percentage, keeping the raw keys for the template', () => {
     expect(view.mixes.map((mix) => mix.kind)).toEqual(['mode', 'size', 'doubles', 'hosting']);
@@ -73,10 +74,10 @@ describe('buildDashboardView', () => {
   });
 
   it('labels the completion by format and passes the drop-off to the insights in pt-BR', () => {
-    expect(view.formats).toEqual([{ label: formatLabel('super', 8, 'open'), started: 5, finished: 4, rate: 80 }]);
+    expect(view.formats).toEqual([{ label: formatLabel('super', 8, 'open', t), started: 5, finished: 4, rate: 80 }]);
     expect(view.cards.length).toBeGreaterThan(0);
     expect(view.funnel[0]?.key).toBe('started');
-    const withDropoff = buildDashboardView(dashboardInsights(), { id: 'underHalf', count: 3, percent: 25 });
+    const withDropoff = buildDashboardView(dashboardInsights(), { id: 'underHalf', count: 3, percent: 25 }, t);
     expect(withDropoff.insights.some((insight) => insight.title.includes('menos da metade das partidas'))).toBe(true);
   });
 });
