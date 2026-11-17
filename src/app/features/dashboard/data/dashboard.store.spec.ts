@@ -2,7 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { dashboardActivity, dashboardInsights, dashboardMetrics } from '../../../testing/dashboard-data';
 import { dashboardFakes } from '../dashboard.fakes';
+import dashboardPtBr from '../../../../../public/i18n/dashboard/pt-BR.json';
+import { translocoTesting } from '../../../testing/transloco-testing';
 import { DashboardStore } from './dashboard.store';
+import { DashboardText } from './dashboard-text';
 
 async function setup(options: { signedIn?: boolean; data?: boolean } = {}) {
   const fakes = await dashboardFakes({ signedIn: options.signedIn });
@@ -11,7 +14,10 @@ async function setup(options: { signedIn?: boolean; data?: boolean } = {}) {
     fakes.dashboard.givenActivity(dashboardActivity());
     fakes.dashboard.givenInsights(dashboardInsights());
   }
-  TestBed.configureTestingModule({ providers: [DashboardStore, ...fakes.providers] });
+  TestBed.configureTestingModule({
+    imports: [translocoTesting({ 'dashboard/pt-BR': dashboardPtBr })],
+    providers: [DashboardStore, DashboardText, ...fakes.providers],
+  });
   const store = TestBed.inject(DashboardStore);
   await vi.advanceTimersByTimeAsync(0);
   return { ...fakes, store };
@@ -69,7 +75,10 @@ describe('DashboardStore', () => {
     fakes.dashboard.givenMetrics(dashboardMetrics());
     fakes.dashboard.givenActivity(dashboardActivity());
     fakes.dashboard.givenInsights(null);
-    TestBed.configureTestingModule({ providers: [DashboardStore, ...fakes.providers] });
+    TestBed.configureTestingModule({
+      imports: [translocoTesting({ 'dashboard/pt-BR': dashboardPtBr })],
+      providers: [DashboardStore, DashboardText, ...fakes.providers],
+    });
     const store = TestBed.inject(DashboardStore);
     await vi.advanceTimersByTimeAsync(0);
     expect(store.insightsMissing()).toBe(true);
@@ -142,7 +151,10 @@ describe('DashboardStore', () => {
     const fakes = await dashboardFakes({ signedIn: true });
     fakes.dashboard.givenMetrics(dashboardMetrics());
     fakes.dashboard.givenActivity(dashboardActivity());
-    TestBed.configureTestingModule({ providers: [DashboardStore, ...fakes.providers] });
+    TestBed.configureTestingModule({
+      imports: [translocoTesting({ 'dashboard/pt-BR': dashboardPtBr })],
+      providers: [DashboardStore, DashboardText, ...fakes.providers],
+    });
     TestBed.inject(DashboardStore);
     TestBed.resetTestingModule();
     await vi.advanceTimersByTimeAsync(0);

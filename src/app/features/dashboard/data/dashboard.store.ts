@@ -1,3 +1,4 @@
+import { DashboardText } from './dashboard-text';
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import type { DashboardInsights } from '../../../core/dashboard-insights';
 import { APP_CONFIG, versionLabel } from '../../../core/ports/app-config.port';
@@ -34,6 +35,7 @@ export class DashboardStore {
   private readonly dashboard = inject(DASHBOARD);
   private readonly clock = inject(CLOCK);
   private readonly urlState = inject(URL_STATE);
+  private readonly words = inject(DashboardText);
   private readonly config = inject(APP_CONFIG);
 
   readonly basePath = this.urlState.basePath;
@@ -59,7 +61,7 @@ export class DashboardStore {
   readonly dropoff = computed(() => mainDropoff(this.stages()));
   readonly view = computed(() => {
     const insights = this.insights();
-    return insights ? buildDashboardView(insights, this.dropoff()) : null;
+    return insights ? buildDashboardView(insights, this.dropoff(), this.words.text) : null;
   });
   /** The chosen list after the search, each with the link that opens it in the admin viewer. */
   readonly visibleTournaments = computed(() =>
