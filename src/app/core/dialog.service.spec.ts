@@ -4,6 +4,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { translocoTesting } from '../testing/transloco-testing';
 import { DialogService, matchesPhrase } from './dialog.service';
 
 const dialogEl = () => document.querySelector<HTMLElement>('.ui-dialog');
@@ -48,6 +49,7 @@ describe('confirmation dialogs', () => {
 
   beforeEach(() => {
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ imports: [translocoTesting()] });
     service = TestBed.inject(DialogService);
   });
 
@@ -220,6 +222,7 @@ describe('feature dialogs (open)', () => {
 
   beforeEach(() => {
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ imports: [translocoTesting()] });
     service = TestBed.inject(DialogService);
   });
 

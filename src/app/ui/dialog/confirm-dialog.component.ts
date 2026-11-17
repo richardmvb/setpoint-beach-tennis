@@ -1,5 +1,6 @@
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, signal, ViewEncapsulation } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ButtonComponent } from '../button/button.component';
 import { matchesPhrase } from './matches-phrase';
 
@@ -25,7 +26,7 @@ export interface ConfirmDialogData {
  */
 @Component({
   selector: 'ui-confirm-dialog',
-  imports: [ButtonComponent],
+  imports: [ButtonComponent, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   host: { class: 'ui-dialog' },
@@ -36,7 +37,9 @@ export interface ConfirmDialogData {
       <p class="ui-dialog-text" [id]="data.textId">{{ data.text }}</p>
     }
     @if (data.phrase) {
-      <label class="ui-dialog-label" [for]="inputId">Digite “{{ data.phrase }}” para confirmar</label>
+      <label class="ui-dialog-label" [for]="inputId">{{
+        'common.dialog.typePhrase' | transloco: { phrase: data.phrase }
+      }}</label>
       <input
         class="ui-dialog-input"
         data-autofocus
@@ -50,7 +53,9 @@ export interface ConfirmDialogData {
         (keydown.enter)="accept()"
       />
       @if (showError()) {
-        <p class="ui-dialog-error" role="alert" [id]="errorId">Digite exatamente “{{ data.phrase }}”.</p>
+        <p class="ui-dialog-error" role="alert" [id]="errorId">
+          {{ 'common.dialog.typeExactly' | transloco: { phrase: data.phrase } }}
+        </p>
       }
     }
     <div class="ui-dialog-actions">

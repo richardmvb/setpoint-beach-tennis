@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, Input, input, output } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-number-range',
   standalone: true,
-  imports: [],
+  imports: [TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (values.length < 2) {
@@ -11,7 +12,7 @@ import { ChangeDetectionStrategy, Component, Input, input, output } from '@angul
         <div class="number-range-head">
           <span class="range-label">{{ label() }}</span><strong>{{ displayValue }}</strong>
         </div>
-        <small class="muted">Definido pelo formato escolhido.</small>
+        <small class="muted">{{ 'common.range.fixed' | transloco }}</small>
       </div>
     }
     @if (values.length > 1) {

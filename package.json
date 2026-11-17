@@ -26,7 +26,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.eslint.json --noEmit && tsc -p tsconfig.spec.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "knip": "knip",
-    "i18n:check": "transloco-keys-manager find --input src/app --translations-path public/i18n --langs pt-BR --emit-error-on-extra-keys",
+    "i18n:check": "transloco-keys-manager find --input src/app --translations-path public/i18n --langs pt-BR --emit-error-on-extra-keys && node scripts/check-raw-text.mjs",
     "check": "npm run lint && npm run lint:styles && npm run format:check && npm run typecheck && npm run knip && npm run i18n:check && npm test && npm run test:db && npm run build",
     "prepare": "husky",
     "e2e": "playwright test",
