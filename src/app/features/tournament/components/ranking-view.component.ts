@@ -73,6 +73,27 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                         @if (isMine(entry)) {
                           <em class="row-tag me-tag">{{ t('you') }}</em>
                         }
+                        @if (entry.status; as status) {
+                          <span
+                            class="qual-chip"
+                            [class.secure]="status === 'direct'"
+                            [class.chance]="status === 'bestThird'"
+                            ><span aria-hidden="true">{{
+                              status === 'direct' ? '✓' : status === 'bestThird' ? '★' : '✕'
+                            }}</span>
+                            @switch (status) {
+                              @case ('direct') {
+                                {{ t('status.direct') }}
+                              }
+                              @case ('bestThird') {
+                                {{ t('status.bestThird') }}
+                              }
+                              @default {
+                                {{ t('status.out') }}
+                              }
+                            }
+                          </span>
+                        }
                       </span>
                     </td>
                     <td class="numeric">

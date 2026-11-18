@@ -2,14 +2,18 @@
   <div class="match-teams">
     <div class="team">
       <div class="team-names">
-        @for (id of match().teamA; track $index) {
-          <b
-            ><app-player-avatar
-              [name]="store.playerName(id)"
-              [photoDataUrl]="store.playerPhoto(id)"
-              variant="team-avatar"
-            /><span class="team-player-name">{{ store.playerName(id) }}</span></b
-          >
+        @if (match().teamA[0]) {
+          @for (id of match().teamA; track $index) {
+            <b
+              ><app-player-avatar
+                [name]="store.playerName(id)"
+                [photoDataUrl]="store.playerPhoto(id)"
+                variant="team-avatar"
+              /><span class="team-player-name">{{ store.playerName(id) }}</span></b
+            >
+          }
+        } @else {
+          <b><span class="team-player-name">{{ t('toBeDecided') }}</span></b>
         }
       </div>
       <input
@@ -40,15 +44,19 @@
         [attr.aria-label]="labelB()"
       />
       <div class="team-names">
-        @for (id of match().teamB; track $index) {
-          <b
-            ><span class="team-player-name">{{ store.playerName(id) }}</span
-            ><app-player-avatar
-              [name]="store.playerName(id)"
-              [photoDataUrl]="store.playerPhoto(id)"
-              variant="team-avatar"
-            /></b
-          >
+        @if (match().teamB[0]) {
+          @for (id of match().teamB; track $index) {
+            <b
+              ><span class="team-player-name">{{ store.playerName(id) }}</span
+              ><app-player-avatar
+                [name]="store.playerName(id)"
+                [photoDataUrl]="store.playerPhoto(id)"
+                variant="team-avatar"
+              /></b
+            >
+          }
+        } @else {
+          <b><span class="team-player-name">{{ t('toBeDecided') }}</span></b>
         }
       </div>
     </div>

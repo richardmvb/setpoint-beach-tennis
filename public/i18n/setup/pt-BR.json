@@ -118,7 +118,29 @@
       "courts": "quadras",
       "games": "games p/ vencer"
     },
-    "quickNote": "Modo rápido: final e disputa de 3º lugar continuam em 6 games."
+    "quickNote": "Modo rápido: final e disputa de 3º lugar continuam em 6 games.",
+    "groupSize": {
+      "label": "Grupos",
+      "four": {
+        "label": "5 grupos de 4",
+        "hint": "Passam os 2 primeiros de cada grupo e os 2 melhores terceiros."
+      },
+      "five": {
+        "label": "4 grupos de 5",
+        "hint": "Passam os 2 primeiros de cada grupo e os 4 terceiros."
+      }
+    },
+    "finalsPairing": {
+      "label": "Duplas da fase final",
+      "crossed": {
+        "label": "Cruzado",
+        "hint": "1º com 3º, 2º com 4º, 5º com 7º, e assim por diante."
+      },
+      "seededDraw": {
+        "label": "Sorteio com cabeças de chave",
+        "hint": "Cada um dos 6 melhores sorteia o parceiro entre os 7º e 12º."
+      }
+    }
   },
   "players": {
     "enroll": {
@@ -191,12 +213,17 @@
     "formats": {
       "fixedPairs": "Grupos · duplas fixas",
       "groups": "Grupos · rotativas",
-      "super": "Super"
+      "super": "Super",
+      "groupsQualification": "Grupos · 12 classificados"
     },
     "descriptions": {
       "fixedPairs": "Confira as duplas fixas e os jogadores antes de iniciar.",
       "groups": "Os grupos e confrontos são sorteados ao gerar a tabela.",
-      "super": "Confrontos e descansos são calculados ao gerar a tabela."
+      "super": "Confrontos e descansos são calculados ao gerar a tabela.",
+      "groupsQualification4": "5 grupos de 4: passam 12 atletas (2 por grupo e os 2 melhores terceiros).",
+      "groupsQualification5": "4 grupos de 5: passam 12 atletas (2 por grupo e os 4 terceiros).",
+      "pairingCrossed": "Duplas da fase final cruzadas pelo ranking.",
+      "pairingSeededDraw": "Duplas da fase final sorteadas com cabeças de chave."
     },
     "lockNote": "Ao gerar a tabela, a lista de jogadores fica bloqueada e o cronômetro do torneio começa."
   },

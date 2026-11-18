@@ -84,6 +84,36 @@
         }
       </div>
     </div>
+    @if (store.groupQualification()) {
+      <div class="form-two">
+        <div class="form-field">
+          <label for="settingsGroupSize">{{ t('groupSize') }}</label
+          ><select
+            id="settingsGroupSize"
+            name="settingsGroupSize"
+            [ngModel]="store.state().groupSize ?? 4"
+            (ngModelChange)="store.changeGroupSize($event)"
+            [disabled]="store.hasSchedule()"
+          >
+            <option [ngValue]="4">{{ t('groupSizeFour') }}</option>
+            <option [ngValue]="5">{{ t('groupSizeFive') }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="settingsFinalsPairing">{{ t('finalsPairing') }}</label
+          ><select
+            id="settingsFinalsPairing"
+            name="settingsFinalsPairing"
+            [ngModel]="store.state().finalsPairing ?? 'crossed'"
+            (ngModelChange)="store.changeFinalsPairing($event)"
+            [disabled]="!!store.state().finals"
+          >
+            <option [ngValue]="'crossed'">{{ t('pairingCrossed') }}</option>
+            <option [ngValue]="'seededDraw'">{{ t('pairingSeededDraw') }}</option>
+          </select>
+        </div>
+      </div>
+    }
     <div class="form-two">
       <div class="form-field">
         <label for="games">{{ t('games') }}</label
@@ -149,6 +179,12 @@
         }
         @if (store.state().groupFormat === 'fixed') {
           <li>{{ t('rules.groupsFixed') }}</li>
+        }
+        @if (store.groupQualification()) {
+          <li>{{ store.state().groupSize === 5 ? t('rules.groups20Five') : t('rules.groups20Four') }}</li>
+          <li>{{ t('rules.groups20Seeding') }}</li>
+          <li>{{ store.state().finalsPairing === 'seededDraw' ? t('rules.groups20Seeded') : t('rules.groups20Crossed') }}</li>
+          <li>{{ t('rules.groups20Bracket') }}</li>
         }
         @if (store.isMixed()) {
           <li>{{ t('rules.groupsMixedPair') }}</li>

@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { normalizeSharedState } from '../domain/tournament-view/shared-state';
+import { groupFormatProperties } from '../domain/tournament-view/format';
 import { CurrentTournament } from './current-tournament';
 import type { PlayerGender, SharedTournamentSnapshot, TournamentState } from './models';
 import { ANALYTICS } from './ports/analytics.port';
@@ -134,7 +135,11 @@ export class OwnedSharedTournament {
         doubles_format: state.doublesFormat ?? 'open',
         tournament_size: state.size,
       };
-      this.analytics.capture('tournament_created', { hosting_mode: 'shared', ...common });
+      this.analytics.capture('tournament_created', {
+        hosting_mode: 'shared',
+        ...common,
+        ...groupFormatProperties(state),
+      });
       this.analytics.capture('shared_tournament_created', { ...common, moderator_auth_mode: 'anonymous' });
       return true;
     } catch (error) {

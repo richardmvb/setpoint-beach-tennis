@@ -1,4 +1,6 @@
 import type { PlayerStanding, TournamentState } from '../../core/models';
+import { usesGroupQualification } from '../tournament-view/format';
+import { unresolvedQualificationTie } from '../tournament-view/group-qualification';
 import { storedTieDrawOrder, type StandingsView } from '../tournament-view/standings';
 
 /** How many of the top places the finals use: a tie that only touches places after the 8th does not matter. */
@@ -16,6 +18,11 @@ export function unresolvedFinalTie(state: TournamentState, view: StandingsView):
     position += tiedPlayers.length;
   }
   return [];
+}
+
+/** The tie the generation of the finals must have drawn first: the qualification's in the 20-player format. */
+export function unresolvedTie(state: TournamentState, view: StandingsView): PlayerStanding[] {
+  return usesGroupQualification(state) ? unresolvedQualificationTie(state) : unresolvedFinalTie(state, view);
 }
 
 /** The places the tied players hold, in order: `[4, 5]`. */

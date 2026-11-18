@@ -58,3 +58,10 @@ export function usesGroupQualification(state: TournamentState): boolean {
 export function groupSizeOf(state: TournamentState): GroupSize {
   return usesGroupQualification(state) && state.groupSize === 5 ? 5 : 4;
 }
+
+/** What analytics learns about the 20-player format (enums and counts only); nothing for the other formats. */
+export function groupFormatProperties(state: TournamentState): { group_size?: number; finals_pairing?: string } {
+  return usesGroupQualification(state)
+    ? { group_size: groupSizeOf(state), finals_pairing: state.finalsPairing ?? 'crossed' }
+    : {};
+}

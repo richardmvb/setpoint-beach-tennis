@@ -4126,6 +4126,11 @@ table {
   color: var(--forest-100);
 }
 
+/* A negative balance in a medal row: the translucent tint over the gold, silver or bronze row is too weak for AA. */
+.ranking-page :is(.rank-gold, .rank-silver, .rank-bronze) .balance-chip.negative {
+  background: var(--surface);
+}
+
 /* --forest-100 is the same in both themes: on the dark podium rows it needs the light chip colour. */
 :root[data-theme='dark'] .ranking-page :is(.rank-gold, .rank-silver, .rank-bronze) .balance-chip.positive {
   color: var(--chip-secure-fg);

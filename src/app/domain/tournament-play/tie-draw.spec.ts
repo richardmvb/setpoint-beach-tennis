@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerStanding } from '../../core/models';
 import { match, namedPlayers, round, tournamentState } from '../../testing/tournament-state';
+import { groups20State, sideAWins } from '../../testing/groups20';
 import { createStandingsMemo } from '../tournament-view/standings';
-import { shuffledOrder, tiedPositions, unresolvedFinalTie, withTieDraw } from './tie-draw';
+import { shuffledOrder, tiedPositions, unresolvedFinalTie, unresolvedTie, withTieDraw } from './tie-draw';
 
 /** Everybody ties: every match ends 4 to 4, so nothing separates the players. */
 function allTied() {
@@ -76,5 +77,15 @@ describe('withTieDraw', () => {
       { playerIds: ['p1', 'p3'], order: ['p3', 'p1'], createdAt: '2026-11-17T10:00:00.000Z' },
     ]);
     expect(state.tieBreakDraws).toBeUndefined();
+  });
+});
+
+describe('unresolvedTie', () => {
+  it('asks the finals question for the usual formats and the qualification question for the 20-player one', () => {
+    const view = createStandingsMemo();
+    const usual = allTied();
+    expect(unresolvedTie(usual, view(usual))).toEqual(unresolvedFinalTie(usual, view(usual)));
+    const twenty = groups20State(4, 5, sideAWins);
+    expect(unresolvedTie(twenty, view(twenty)).length).toBeGreaterThan(1);
   });
 });

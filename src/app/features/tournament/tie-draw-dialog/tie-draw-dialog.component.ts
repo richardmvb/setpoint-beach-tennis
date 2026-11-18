@@ -6,12 +6,9 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import { TournamentPersistence } from '../../../core/tournament-persistence';
 import { CLOCK } from '../../../core/ports/clock.port';
 import { RANDOM } from '../../../core/ports/random.port';
-import {
-  shuffledOrder,
-  tiedPositions,
-  unresolvedFinalTie,
-  withTieDraw,
-} from '../../../domain/tournament-play/tie-draw';
+import { shuffledOrder, tiedPositions, unresolvedTie, withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { usesGroupQualification } from '../../../domain/tournament-view/format';
+import { describeQualificationTie } from '../../../domain/tournament-view/group-qualification';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
 import { PlayerAvatarComponent } from '../../player-avatar.component';
 
@@ -50,12 +47,23 @@ export class TieDrawDialogComponent {
   /** Their order once drawn; empty until then. */
   protected readonly result = signal<string[]>([]);
   /** Another tie waits after the one on screen. */
-  protected readonly moreTies = computed(() => unresolvedFinalTie(this.state(), this.standings()).length > 0);
+  protected readonly moreTies = computed(() => unresolvedTie(this.state(), this.standings()).length > 0);
   protected readonly positions = computed(() =>
     tiedPositions(this.playerIds(), this.standings().all)
       .map((position) => `${position}º`)
       .join(' e '),
   );
+  /** In the 20-player format the tie is in a group, among the third places, or in the order of the qualifiers. */
+  protected readonly qualificationTie = computed(() => {
+    const state = this.state();
+    if (!usesGroupQualification(state)) return null;
+    const ids = new Set(this.playerIds());
+    const rows = this.standings().all.filter((row) => ids.has(row.playerId));
+    const tie = describeQualificationTie(state, rows);
+    return tie.kind === 'group'
+      ? { ...tie, positionsText: tie.positions.map((position) => `${position}º`).join(' e ') }
+      : tie;
+  });
 
   protected nameOf(id: string): string {
     return this.state().players.find((player) => player.id === id)?.name ?? '';
@@ -90,6 +98,6 @@ export class TieDrawDialogComponent {
   }
 
   private nextTie(): string[] {
-    return unresolvedFinalTie(this.tournament.state(), this.standings()).map((player) => player.playerId);
+    return unresolvedTie(this.tournament.state(), this.standings()).map((player) => player.playerId);
   }
 }

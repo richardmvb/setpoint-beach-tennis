@@ -209,8 +209,9 @@ export function enrollment(state: TournamentState): Enrollment {
 }
 
 /** What step 3 says about the draw. */
-export function reviewKind(state: TournamentState): 'fixedPairs' | 'groups' | 'super' {
+export function reviewKind(state: TournamentState): 'fixedPairs' | 'groups' | 'groupsQualification' | 'super' {
   if (fixedPairsMode(state)) return 'fixedPairs';
+  if (usesGroupQualification(state)) return 'groupsQualification';
   return isGroupTournament(state) ? 'groups' : 'super';
 }
 
