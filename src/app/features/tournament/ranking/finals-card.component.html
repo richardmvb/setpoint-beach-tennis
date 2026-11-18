@@ -7,6 +7,9 @@
         </div>
         <span class="mini-tag">{{ final().complete ? t('complete') : t('inProgress') }}</span>
       </div>
+      @if (bracket(); as view) {
+        <app-finals-bracket class="finals-bracket" [view]="view" [players]="store.state().players" />
+      }
       <div class="final-match-list">
         @for (match of final().matches; track match.id) {
           <article

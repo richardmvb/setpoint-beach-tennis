@@ -1,0 +1,251 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+
+.bracket-tabs {
+  display: none;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.bracket-tabs button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bracket-tabs button[aria-pressed='true'] {
+  background: var(--chip-secure-bg);
+  border-color: var(--chip-secure-border);
+  color: var(--chip-secure-fg);
+}
+
+.bracket-track {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 24px;
+  min-inline-size: 0;
+}
+
+.bracket-column {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.bracket-column h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bracket-column ol {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bracket-cell {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  padding-block: 4px;
+}
+
+.bracket-cell.third {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  flex: none;
+}
+
+.bracket-match {
+  position: relative;
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.bracket-match.tbd {
+  border-style: dashed;
+}
+
+.bracket-match.live {
+  border-color: var(--orange);
+}
+
+.bracket-tag {
+  display: block;
+  padding: 4px 8px 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.bracket-live {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  padding: 2px 8px;
+  border-end-start-radius: 8px;
+  background: var(--orange);
+  color: var(--on-orange);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.bracket-slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 40px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.bracket-slot + .bracket-slot {
+  border-block-start: 1px solid var(--border);
+}
+
+.bracket-slot.won {
+  background: var(--chip-secure-bg);
+  color: var(--chip-secure-fg);
+  font-weight: 800;
+}
+
+.bracket-slot.me {
+  box-shadow: inset 3px 0 0 var(--accent-text);
+}
+
+.bracket-slot.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.bracket-slot.bye {
+  justify-content: center;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: repeating-linear-gradient(135deg, var(--surface-soft) 0 6px, var(--surface) 6px 12px);
+}
+
+.bracket-seed {
+  flex: none;
+  min-inline-size: 28px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.bracket-names {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bracket-games {
+  flex: none;
+  font-weight: 800;
+}
+
+.bracket-sr {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Connectors: an elbow from each pair of cells in the first two columns, a stub into the next column. */
+.col-0 .bracket-cell::after,
+.col-1 .bracket-cell::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: -12px;
+  inline-size: 12px;
+  border-block-start: 1px solid var(--border);
+}
+
+.col-0 .bracket-cell:nth-child(odd)::after,
+.col-1 .bracket-cell:nth-child(odd)::after {
+  block-size: 100%;
+  border-inline-end: 1px solid var(--border);
+}
+
+.col-1 .bracket-cell::before,
+.col-2 .bracket-cell:first-child::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: -12px;
+  inline-size: 12px;
+  border-block-start: 1px solid var(--border);
+}
+
+@container (width < 40rem) {
+  .bracket-tabs {
+    display: flex;
+  }
+
+  .bracket-track {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+  }
+
+  .bracket-column {
+    flex: none;
+    inline-size: calc(100% - 3rem);
+    scroll-snap-align: start;
+  }
+
+  .bracket-cell::before,
+  .bracket-cell::after {
+    display: none;
+  }
+
+  .bracket-column ol {
+    gap: 12px;
+  }
+
+  .bracket-cell,
+  .bracket-cell.third {
+    position: static;
+    flex: none;
+  }
+
+  .col-2 .bracket-cell {
+    margin-block-start: 0;
+  }
+}

@@ -4,6 +4,7 @@ import sharedPtBr from '../../../../public/i18n/shared/pt-BR.json';
 import tournamentPtBr from '../../../../public/i18n/tournament/pt-BR.json';
 import { FinalsService } from '../../core/finals.service';
 import { pairQualifiers } from '../../domain/tournament-play/qualifier-pairs';
+import { createStandingsMemo } from '../../domain/tournament-view/standings';
 import { groupQualification } from '../../domain/tournament-view/group-qualification';
 import { groups20State, strongerPairWins } from '../../testing/groups20';
 import { translocoTesting } from '../../testing/transloco-testing';
@@ -104,7 +105,23 @@ describe('SharedViewComponent', () => {
     );
     expect(await screen.findByRole('heading', { name: 'Classificados' })).toBeTruthy();
     expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('QUARTAS DE FINAL').length).toBe(2);
-    expect(screen.getAllByText('A definir').length).toBeGreaterThan(0);
+    expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
+    expect(screen.getByRole('article', { name: 'Quartas 1' })).toBeTruthy();
+    expect(screen.getAllByText('BYE')).toHaveLength(2);
+    expect(screen.getByText('Vencedor QF2')).toBeTruthy();
+  });
+
+  it('keeps the plain list of matches, with no tree, for the Super finals', async () => {
+    const played = storedTournament();
+    const finals = new FinalsService();
+    await setup({ url: { liveToken: 'live' } }, ({ live }) =>
+      live.given('live', {
+        id: 'live-super',
+        status: 'active',
+        state: { ...played, finals: finals.updatePodium(finals.create(createStandingsMemo()(played).all)) },
+      }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Finais em andamento' })).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
   });
 });

@@ -2113,6 +2113,11 @@ input {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* The group tables are long and alike: give each one room so they read as separate cards. */
+.shared-guest-page .group-ranking-card + .group-ranking-card {
+  margin-top: 8px;
+}
+
 .shared-waiting {
   display: grid;
   gap: 5px;
@@ -5549,7 +5554,21 @@ app-player-avatar .podium-avatar {
   }
 
   .leaderboard .ranking-player-cell {
-    gap: 5px;
+    flex-wrap: wrap;
+    gap: 3px 5px;
+  }
+
+  /* The status badge drops under the name instead of being clipped by the narrow player column. */
+  .leaderboard .ranking-player-cell > b {
+    flex: 1 1 calc(100% - 25px);
+    min-width: 0;
+  }
+
+  .leaderboard .ranking-player-cell > .qual-chip {
+    margin-inline-start: 25px;
+    padding: 3px 8px;
+    font-size: 9px;
+    letter-spacing: 0.3px;
   }
 
   .leaderboard .ranking-player-cell > app-player-avatar {

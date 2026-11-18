@@ -2,20 +2,24 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { TranslocoDirective } from '@jsverse/transloco';
 import type { PodiumPlace } from '../../../core/finals.service';
 import type { FinalStage, Player } from '../../../core/models';
+import type { BracketView } from '../../../domain/tournament-view/bracket';
 import { BattleCardComponent } from '../../tournament/components/battle-card.component';
 import { FinalLiveScoreComponent } from '../../tournament/components/final-live-score.component';
+import { FinalsBracketComponent } from '../../tournament/components/finals-bracket.component';
 import { PodiumComponent } from '../../tournament/components/podium.component';
 
 /** The final phase: every final match, then the podium and the guest's own place once it is over. */
 @Component({
   selector: 'app-guest-finals',
-  imports: [TranslocoDirective, BattleCardComponent, FinalLiveScoreComponent, PodiumComponent],
+  imports: [TranslocoDirective, BattleCardComponent, FinalLiveScoreComponent, FinalsBracketComponent, PodiumComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [':host{display:contents}'],
   templateUrl: './guest-finals.component.html',
 })
 export class GuestFinalsComponent {
   readonly finals = input.required<FinalStage>();
+  /** The knockout tree; null for the formats without one, which keep the plain list of matches. */
+  readonly bracket = input<BracketView | null>(null);
   readonly players = input<Player[]>([]);
   readonly podium = input<PodiumPlace[]>([]);
   readonly highlightId = input('');

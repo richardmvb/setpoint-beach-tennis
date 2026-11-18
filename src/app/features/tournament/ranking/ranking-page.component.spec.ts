@@ -111,6 +111,7 @@ describe('RankingPageComponent', () => {
   it('shows the podium, the athlete picker and the finish button once the finals are complete', async () => {
     await show(withFinals([6, 2], [6, 4]));
     expect(screen.getByText('PÓDIO FINAL')).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Finalizar torneio' })).toBeTruthy();
     const picker = screen.getByRole('radiogroup', { name: 'Atleta para gerar a imagem' });
     expect(within(picker).getAllByRole('radio')).toHaveLength(8);
@@ -141,5 +142,19 @@ describe('RankingPageComponent: the 20-player format', () => {
     expect(screen.getByText('Doze classificados')).toBeTruthy();
     expect(screen.getByText(/Cada uma das 6 melhores sorteia o parceiro/)).toBeTruthy();
     expect(screen.getByText('Sorteio registrado')).toBeTruthy();
+  });
+
+  it('draws the bye bracket above the list of finals, with the score fields still in the list', async () => {
+    const finals = new FinalsService();
+    const state = groups20State(5, 3, strongerPairWins);
+    const pairs = Array.from({ length: 6 }, (_, i): [string, string] => [
+      state.players[i * 2].id,
+      state.players[i * 2 + 1].id,
+    ]);
+    await show({ ...state, finals: finals.updatePodium(finals.createByeBracket(pairs)) });
+    expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
+    expect(screen.getAllByText('BYE')).toHaveLength(2);
+    expect(screen.getByRole('article', { name: 'Quartas 1' })).toBeTruthy();
+    expect(screen.getAllByRole('spinbutton').length).toBeGreaterThan(0);
   });
 });
