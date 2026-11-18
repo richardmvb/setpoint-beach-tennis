@@ -3,15 +3,17 @@
 set lock_timeout = '3s';
 set statement_timeout = '30s';
 
-alter table public.shared_tournaments
-  drop constraint if exists shared_tournaments_capacity_check;
+-- Widening a CHECK list needs a drop and re-add; the guarantee comes back in the next statements (only 20 is added).
+-- squawk-ignore ban-drop-constraint
+alter table public.shared_tournaments drop constraint if exists shared_tournaments_capacity_check;
 alter table public.shared_tournaments
   add constraint shared_tournaments_capacity_check check (capacity in (8, 10, 12, 20, 24)) not valid;
 alter table public.shared_tournaments
   validate constraint shared_tournaments_capacity_check;
 
-alter table public.local_tournament_metrics
-  drop constraint if exists local_tournament_metrics_tournament_size_check;
+-- Widening a CHECK list needs a drop and re-add; the guarantee comes back in the next statements (only 20 is added).
+-- squawk-ignore ban-drop-constraint
+alter table public.local_tournament_metrics drop constraint if exists local_tournament_metrics_tournament_size_check;
 alter table public.local_tournament_metrics
   add constraint local_tournament_metrics_tournament_size_check check (tournament_size in (8, 10, 12, 20, 24)) not valid;
 alter table public.local_tournament_metrics
