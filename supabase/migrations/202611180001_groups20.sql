@@ -1,14 +1,21 @@
 -- Grupos 20: torneios de 20 atletas (5 grupos de 4 ou 4 grupos de 5).
 -- Só a lista de tamanhos aceitos muda; o corpo das funções é o da versão mais recente.
+set lock_timeout = '3s';
+set statement_timeout = '30s';
+
 alter table public.shared_tournaments
   drop constraint if exists shared_tournaments_capacity_check;
 alter table public.shared_tournaments
-  add constraint shared_tournaments_capacity_check check (capacity in (8, 10, 12, 20, 24));
+  add constraint shared_tournaments_capacity_check check (capacity in (8, 10, 12, 20, 24)) not valid;
+alter table public.shared_tournaments
+  validate constraint shared_tournaments_capacity_check;
 
 alter table public.local_tournament_metrics
   drop constraint if exists local_tournament_metrics_tournament_size_check;
 alter table public.local_tournament_metrics
-  add constraint local_tournament_metrics_tournament_size_check check (tournament_size in (8, 10, 12, 20, 24));
+  add constraint local_tournament_metrics_tournament_size_check check (tournament_size in (8, 10, 12, 20, 24)) not valid;
+alter table public.local_tournament_metrics
+  validate constraint local_tournament_metrics_tournament_size_check;
 
 create or replace function public.create_shared_tournament(
   p_name text,
