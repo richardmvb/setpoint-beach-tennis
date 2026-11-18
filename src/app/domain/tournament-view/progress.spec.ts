@@ -6,6 +6,8 @@ import {
   completedRounds,
   elapsedLabel,
   formatElapsed,
+  groupStageComplete,
+  listMatches,
   progressPercent,
   roundDone,
   roundMatchesDone,
@@ -70,5 +72,25 @@ describe('roundMatchesDone', () => {
 
   it('is zero for a round that does not exist', () => {
     expect(roundMatchesDone(state, 9)).toBe(0);
+  });
+});
+
+describe('groupStageComplete and listMatches', () => {
+  it('the group stage is complete only with a schedule whose matches are all scored', () => {
+    expect(groupStageComplete(tournamentState())).toBe(false);
+    expect(groupStageComplete(state)).toBe(false);
+    const done = {
+      ...state,
+      rounds: state.rounds.map((r) => ({ ...r, matches: r.matches.map((m) => ({ ...m, scoreA: 6, scoreB: 3 })) })),
+    };
+    expect(groupStageComplete(done)).toBe(true);
+  });
+
+  it('lists the matches in drawn order with their round, optionally only the pending ones', () => {
+    const all = listMatches(state, { pendingOnly: false, groupId: '' });
+    expect(all.map((item) => item.roundNumber)).toEqual(state.rounds.flatMap((r) => r.matches.map(() => r.number)));
+    const pending = listMatches(state, { pendingOnly: true, groupId: '' });
+    expect(pending.length).toBe(all.length - 3);
+    expect(listMatches(state, { pendingOnly: false, groupId: 'nobody' })).toEqual([]);
   });
 });

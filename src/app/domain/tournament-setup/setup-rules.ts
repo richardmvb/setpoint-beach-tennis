@@ -50,7 +50,12 @@ export function availableSizes(state: TournamentState): TournamentSize[] {
 }
 
 export function availableCourts(state: TournamentState): number[] {
-  if (isGroupTournament(state)) return [state.size === 20 ? 20 / groupSizeOf(state) : state.size / 4];
+  if (state.size === 20 && isGroupTournament(state)) {
+    // One court per group is the full schedule; fewer courts make the groups take turns (see usesCourtQueue).
+    const perRound = 20 / groupSizeOf(state);
+    return Array.from({ length: perRound - 1 }, (_, index) => perRound - index);
+  }
+  if (isGroupTournament(state)) return [state.size / 4];
   if (state.size === 24) return isMixedDoubles(state) ? [6, 3] : [6];
   return state.size === 12 ? [2, 3] : [2];
 }

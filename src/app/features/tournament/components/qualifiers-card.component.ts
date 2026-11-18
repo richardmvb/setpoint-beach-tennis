@@ -13,8 +13,9 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     ':host{display:contents}',
-    // Phone width: four columns must fit without a sideways scroll, so the avatar goes and the cells tighten.
-    '@media (width <= 620px){.qualifiers-card table{table-layout:fixed;width:100%;min-width:0}.qualifiers-card th,.qualifiers-card td{padding-inline:4px;white-space:normal;overflow-wrap:anywhere}.qualifiers-card th:first-child,.qualifiers-card td:first-child{width:44px}.qualifiers-card th:nth-child(3),.qualifiers-card td:nth-child(3){width:56px}.qualifiers-card th:last-child,.qualifiers-card td:last-child{width:96px}.qualifiers-card app-player-avatar{display:none}.qualifiers-card .qual-chip{padding:4px 6px;font-size:9px;white-space:normal}}',
+    // Phone width: every column must fit without a sideways scroll, so the avatar goes and the cells tighten.
+    '.qualifier-rules{margin-top:12px}.qualifier-rules ol{margin:6px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.5}',
+    '@media (width <= 620px){.qualifiers-card table{table-layout:fixed;width:100%;min-width:0}.qualifiers-card th,.qualifiers-card td{padding-inline:4px;white-space:normal;overflow-wrap:anywhere}.qualifiers-card th:first-child,.qualifiers-card td:first-child{width:40px}.qualifiers-card th:nth-child(3),.qualifiers-card td:nth-child(3){width:58px}.qualifiers-card th:nth-child(n+4),.qualifiers-card td:nth-child(n+4){width:38px}.qualifiers-card app-player-avatar{display:none}}',
   ],
   template: `
     <ng-container *transloco="let t; prefix: 'tournament.qualifiers'">
@@ -26,9 +27,7 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
           </div>
           <span class="mini-tag">{{ t('count', { count: rows().length }) }}</span>
         </div>
-        @if (provisional()) {
-          <p class="muted">{{ t('provisional') }}</p>
-        }
+        <p class="muted">{{ provisional() ? t('provisional') : t('settled') }}</p>
         <div class="table-scroll">
           <table class="leaderboard" [attr.aria-label]="t('title')">
             <thead>
@@ -36,7 +35,9 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
                 <th>{{ t('seed') }}</th>
                 <th>{{ t('player') }}</th>
                 <th>{{ t('group') }}</th>
-                <th>{{ t('how') }}</th>
+                <th class="numeric">{{ t('winsShort') }}</th>
+                <th class="numeric">{{ t('balance') }}</th>
+                <th class="numeric">{{ t('gamesForShort') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -50,17 +51,24 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
                       <app-player-avatar [name]="row.name" [photoDataUrl]="row.photo" /><b>{{ row.name }}</b>
                     </span>
                   </td>
-                  <td>{{ row.group }}</td>
-                  <td>
-                    <span class="qual-chip" [class.secure]="row.direct" [class.chance]="!row.direct"
-                      ><span aria-hidden="true">{{ row.direct ? '✓' : '★' }}</span>
-                      {{ row.direct ? t('status.direct') : t('status.bestThird') }}</span
-                    >
+                  <td>{{ t('groupPlace', { group: row.group, place: row.position }) }}</td>
+                  <td class="numeric">
+                    <b>{{ row.setsWon }}</b>
                   </td>
+                  <td class="numeric">{{ row.gameBalance > 0 ? '+' : '' }}{{ row.gameBalance }}</td>
+                  <td class="numeric">{{ row.gamesFor }}</td>
                 </tr>
               }
             </tbody>
           </table>
+        </div>
+        <div class="qualifier-rules">
+          <span class="card-kicker">{{ t('rulesKicker') }}</span>
+          <ol>
+            <li>{{ t('ruleHow') }}</li>
+            <li>{{ t('ruleOrder') }}</li>
+            <li>{{ t('ruleGroupOrder') }}</li>
+          </ol>
         </div>
       </article>
     </ng-container>
@@ -84,7 +92,10 @@ export class QualifiersCardComponent {
         name: standing.name,
         photo: this.players().find((player) => player.id === standing.playerId)?.photoDataUrl ?? '',
         group: found?.group ?? '',
-        direct: found?.row.status === 'direct',
+        position: found?.row.position ?? 0,
+        setsWon: standing.setsWon,
+        gameBalance: standing.gameBalance,
+        gamesFor: standing.gamesFor,
       };
     });
   });

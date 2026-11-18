@@ -67,7 +67,22 @@
             <option [ngValue]="'rotating'">{{ t('groupRotating') }}</option>
             <option [ngValue]="'fixed'">{{ t('groupFixed') }}</option>
           </select>
-          <input [value]="t('courtsCount', { count: store.state().courts })" [attr.aria-label]="t('courts')" readonly />
+          @if (store.groupQualification()) {
+            <select
+              id="settingsGroupCourts"
+              name="settingsGroupCourts"
+              [attr.aria-label]="t('courts')"
+              [ngModel]="store.state().courts"
+              (ngModelChange)="store.changeCourts($event)"
+              [disabled]="store.hasSchedule()"
+            >
+              @for (courtCount of store.availableCourts(); track courtCount) {
+                <option [ngValue]="courtCount">{{ t('courtsCount', { count: courtCount }) }}</option>
+              }
+            </select>
+          } @else {
+            <input [value]="t('courtsCount', { count: store.state().courts })" [attr.aria-label]="t('courts')" readonly />
+          }
         } @else {
           <label for="courts">{{ t('courts') }}</label>
           <select

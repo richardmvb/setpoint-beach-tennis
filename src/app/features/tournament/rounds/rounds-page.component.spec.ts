@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { fireEvent, render, screen } from '@testing-library/angular';
+import { fireEvent, render, screen, waitFor } from '@testing-library/angular';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
 import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
 import { namedPlayers, tournamentState, storedTournament } from '../../../testing/tournament-state';
+import { groups20State, strongerPairWins } from '../../../testing/groups20';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { TournamentStore, type ShellRequest } from '../data/tournament.store';
 import { tournamentFakes } from '../tournament.fakes';
@@ -78,5 +79,47 @@ describe('RoundsPageComponent', () => {
     await show({ ...storedTournament(), finals: { matches: [], complete: false, podiumPlayerIds: [] } });
     for (const field of screen.getAllByRole<HTMLInputElement>('spinbutton')) expect(field.disabled).toBe(true);
     expect(screen.getByText('Bloqueadas após as finais.')).toBeTruthy();
+  });
+
+  describe('with fewer courts than matches per round (20 players)', () => {
+    const queued = () => ({ ...groups20State(4, 3), courts: 3 });
+
+    it('hides the drawn court and lists every match in one open list', async () => {
+      await show(queued());
+      expect(screen.queryByText(/QUADRA \d/)).toBeNull();
+      expect(screen.getAllByText(/Grupo [A-E] · RODADA 1/).length).toBe(5);
+      fireEvent.click(screen.getByRole('button', { name: 'Todos os jogos' }));
+      expect(screen.getByRole('heading', { name: '15 jogos' })).toBeTruthy();
+      expect(screen.queryByRole('tablist')).toBeNull();
+      fireEvent.change(screen.getByLabelText('Grupo'), {
+        target: { value: screen.getByRole<HTMLOptionElement>('option', { name: 'Grupo B' }).value },
+      });
+      expect(screen.getByRole('heading', { name: '3 jogos' })).toBeTruthy();
+    });
+
+    it('lists every match by default and only the pending ones when asked', async () => {
+      const state = groups20State(4, 3, strongerPairWins);
+      await show({
+        ...state,
+        courts: 3,
+        rounds: state.rounds.map((round, index) =>
+          index === 0
+            ? { ...round, matches: round.matches.map((match) => ({ ...match, scoreA: null, scoreB: null })) }
+            : round,
+        ),
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Todos os jogos' }));
+      expect(screen.getByRole('heading', { name: '15 jogos' })).toBeTruthy();
+      const box = screen.getByRole<HTMLInputElement>('checkbox', { name: 'Só pendentes' });
+      await waitFor(() => expect(box.checked).toBe(false));
+      fireEvent.click(box);
+      expect(screen.getByRole('heading', { name: '5 jogos' })).toBeTruthy();
+    });
+
+    it('has no toggle when every group has its own court', async () => {
+      await show({ ...groups20State(4, 3), courts: 5 });
+      expect(screen.queryByRole('button', { name: 'Todos os jogos' })).toBeNull();
+      expect(screen.getAllByText(/Grupo [A-E] · QUADRA \d/).length).toBeGreaterThan(0);
+    });
   });
 });

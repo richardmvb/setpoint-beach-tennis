@@ -198,13 +198,17 @@
     "title": "Classificados",
     "count": "{{ count }} atletas",
     "provisional": "Ordem provisória: muda a cada placar até o fim da fase de grupos.",
+    "settled": "Ordem final da fase de grupos. A semente 1 é a melhor.",
     "seed": "SEMENTE",
     "player": "JOGADOR",
     "group": "GRUPO",
-    "how": "VAGA",
-    "status": {
-      "direct": "Classificado",
-      "bestThird": "Melhor 3º"
-    }
+    "groupPlace": "{{ group }} · {{ place }}º",
+    "winsShort": "VIT.",
+    "balance": "SALDO",
+    "gamesForShort": "PRÓ",
+    "rulesKicker": "COMO ESTA ORDEM É FEITA",
+    "ruleHow": "Classificam-se os 2 primeiros de cada grupo e os melhores 3º colocados, até completar 12 atletas.",
+    "ruleOrder": "Os 12 são ordenados por vitórias, depois saldo de games, depois games pró e, se ainda empatarem, pelo sorteio registrado.",
+    "ruleGroupOrder": "Atletas do mesmo grupo nunca invertem a ordem que tiveram no grupo."
   }
 }

@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { TranslocoDirective } from '@jsverse/transloco';
-import type { Player, Round, TournamentState } from '../../../core/models';
-import { usesGroupQualification } from '../../../domain/tournament-view/format';
+import type { Match, Player, Round, TournamentState } from '../../../core/models';
+import { usesCourtQueue, usesGroupQualification } from '../../../domain/tournament-view/format';
 import { roundDone } from '../../../domain/tournament-view/progress';
 import { BattleCardComponent } from '../../tournament/components/battle-card.component';
 
@@ -30,6 +30,15 @@ export class GuestRoundsComponent {
       .map((id) => names.get(id) ?? '')
       .filter(Boolean)
       .join(', ');
+  }
+
+  /** The group when the courts are shared by turns (the drawn court number means nothing), else the court. */
+  protected queued(): boolean {
+    return usesCourtQueue(this.state());
+  }
+
+  protected groupName(match: Match): string {
+    return this.state().groups?.find((group) => group.id === match.groupId)?.name ?? '';
   }
 
   protected done(round: Round): boolean {

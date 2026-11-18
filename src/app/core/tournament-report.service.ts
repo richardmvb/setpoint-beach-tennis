@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { groupSizeOf, usesGroupQualification } from '../domain/tournament-view/format';
+import { groupSizeOf, usesCourtQueue, usesGroupQualification } from '../domain/tournament-view/format';
 import { FinalMatchKind, Match, TournamentState } from './models';
 
 interface TournamentReportMatch {
@@ -40,7 +40,7 @@ export class TournamentReportService {
       const location = [
         match.finalKind ? finalLabels[match.finalKind] : undefined,
         match.groupId ? (groups.get(match.groupId) ?? match.groupId) : undefined,
-        `Quadra ${match.court}`,
+        usesCourtQueue(state) ? undefined : `Quadra ${match.court}`,
       ]
         .filter(Boolean)
         .join(' · ');

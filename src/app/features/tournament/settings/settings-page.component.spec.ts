@@ -209,6 +209,12 @@ describe('SettingsPageComponent: the 20-player format', () => {
     const size = screen.getByLabelText<HTMLSelectElement>('Grupos');
     fireEvent.change(size, { target: { value: size.options[1].value } });
     expect(tournament.state()).toMatchObject({ groupSize: 5, courts: 4 });
-    expect(screen.getByLabelText<HTMLInputElement>('Quadras por rodada').value).toBe('4 quadras');
+    const courts = screen.getByLabelText<HTMLSelectElement>('Quadras por rodada');
+    expect(courts.selectedOptions[0].textContent?.trim()).toBe('4 quadras');
+    expect([...courts.options].map((option) => option.textContent?.trim())).toEqual([
+      '4 quadras',
+      '3 quadras',
+      '2 quadras',
+    ]);
   });
 });

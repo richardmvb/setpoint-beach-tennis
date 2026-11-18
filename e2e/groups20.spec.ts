@@ -19,7 +19,12 @@ async function expectAccessible(page: Page, include?: string): Promise<void> {
   expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes.length}`)).toEqual([]);
 }
 
-async function createTournament(page: Page, groupSize: 4 | 5, pairing: 'crossed' | 'seededDraw'): Promise<void> {
+async function createTournament(
+  page: Page,
+  groupSize: 4 | 5,
+  pairing: 'crossed' | 'seededDraw',
+  courtsIndex?: number,
+): Promise<void> {
   await page.goto('/');
   await page.locator('#setupName').fill('Grupos 20');
   await page
@@ -34,6 +39,8 @@ async function createTournament(page: Page, groupSize: 4 | 5, pairing: 'crossed'
   await page.getByRole('radio', { name: pairing === 'crossed' ? /^Cruzado/ : /^Sorteio com cabeças/ }).click();
   await expect(page.locator('#setupSummary')).toContainText(groupSize === 4 ? '3' : '5');
 
+  // The courts slider lists them in ascending order: 2, 3, 4 and so on.
+  if (courtsIndex !== undefined) await page.locator('#setupCourts').fill(String(courtsIndex));
   await expectAccessible(page);
   await page.getByRole('button', { name: /Adicionar jogadores/ }).click();
   await page.locator('.batch-entry-button').click();
@@ -171,6 +178,34 @@ test.describe('Grupos 20', () => {
       .first()
       .click();
     await expect(page.getByLabel('Duplas da fase final')).toHaveValue('1: seededDraw');
+    await expectAccessible(page);
+  });
+
+  test('with fewer courts than groups every match is in one open list, and no qualification mark shows early', async ({
+    page,
+  }) => {
+    await createTournament(page, 4, 'crossed', 1);
+    await expect(page.getByText(/QUADRA \d/)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Todos os jogos' }).click();
+    await expect(page.getByRole('heading', { name: '15 jogos' })).toBeVisible();
+    await page.getByLabel('Grupo', { exact: true }).selectOption({ label: 'Grupo B' });
+    await expect(page.getByRole('heading', { name: '3 jogos' })).toBeVisible();
+    await page.getByLabel('Grupo', { exact: true }).selectOption({ label: 'Todos os grupos' });
+    await page.getByRole('checkbox', { name: 'Só pendentes' }).check();
+
+    const inputs = page.locator('input.inline-score');
+    await inputs.nth(0).fill('4');
+    await inputs.nth(1).fill('2');
+    await expect(page.getByRole('heading', { name: '14 jogos' })).toBeVisible();
+
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+    await expect(page.getByText('Ordem provisória')).toBeVisible();
+    await expect(page.getByText('Eliminado')).toHaveCount(0);
+    await expect(page.getByText('Melhor 3º')).toHaveCount(0);
     await expectAccessible(page);
   });
 });

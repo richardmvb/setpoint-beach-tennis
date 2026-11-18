@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { namedPlayers, tournamentState } from '../../testing/tournament-state';
+import { usesCourtQueue } from '../tournament-view/format';
 import {
   availableCourts,
   availableGamesToWin,
@@ -219,6 +220,24 @@ describe('Grupos 20', () => {
     const stored = normalizeStoredTournament(
       tournamentState({ size: 20, courts: 3, tournamentMode: 'groups', groupSize: 5, groupFormat: 'rotating' }),
     );
-    expect(stored).toMatchObject({ courts: 4, roundCount: 5 });
+    expect(stored).toMatchObject({ courts: 3, roundCount: 5 });
+    const tooMany = normalizeStoredTournament(
+      tournamentState({ size: 20, courts: 5, tournamentMode: 'groups', groupSize: 5, groupFormat: 'rotating' }),
+    );
+    expect(tooMany).toMatchObject({ courts: 4, roundCount: 5 });
+  });
+
+  it('the 20-player format allows fewer courts than groups, and then the courts are a queue', () => {
+    const five = withSize(groups(), 20);
+    expect(availableCourts(five)).toEqual([5, 4, 3, 2]);
+    expect(usesCourtQueue(five)).toBe(false);
+    const three = withCourts(five, 3);
+    expect(three).toMatchObject({ courts: 3, roundCount: 3 });
+    expect(usesCourtQueue(three)).toBe(true);
+    const four = withGroupSize(three, 5);
+    expect(availableCourts(four)).toEqual([4, 3, 2]);
+    expect(four.courts).toBe(4);
+    expect(usesCourtQueue(withCourts(four, 2))).toBe(true);
+    expect(usesCourtQueue(withSize(groups(), 12))).toBe(false);
   });
 });

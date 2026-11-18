@@ -241,6 +241,16 @@ export class TournamentStore {
       : 'loading';
   });
 
+  /** The 20-player format with fewer courts than matches per round: matches are played from one open list. */
+  readonly usesCourtQueue = computed(() => tournamentFormat.usesCourtQueue(this.state()));
+  /** Partidas shows the rounds one at a time, or (court queue only) every match in one list. */
+  readonly matchesView = signal<'rounds' | 'all'>('rounds');
+  readonly listPendingOnly = signal(false);
+  readonly listGroupId = signal('');
+  readonly listedMatches = computed(() =>
+    tournamentProgress.listMatches(this.state(), { pendingOnly: this.listPendingOnly(), groupId: this.listGroupId() }),
+  );
+  readonly showAllMatches = computed(() => this.usesCourtQueue() && this.matchesView() === 'all');
   readonly currentRound = computed(() => this.state().rounds[this.selectedRound()] ?? null);
   readonly completedRounds = computed(() => tournamentProgress.completedRounds(this.state()));
   readonly elapsedLabel = computed(() => tournamentProgress.elapsedLabel(this.state(), this.now()));
