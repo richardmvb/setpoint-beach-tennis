@@ -61,7 +61,7 @@
         <app-qualifiers-card [qualification]="qualification" [players]="state.players" [provisional]="!state.finals" />
       }
       @if (state.finals; as finals) {
-        <app-guest-finals [finals]="finals" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
+        <app-guest-finals [finals]="finals" [bracket]="store.bracket()" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
       }
     }
     @if (state.rounds.length) {

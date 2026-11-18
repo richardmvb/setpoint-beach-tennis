@@ -1,6 +1,7 @@
 {
   "batch-dialog": {},
   "confirm-dialog": {},
+  "dark-guest-bracket": {},
   "dark-landing": {},
   "dark-overview": {},
   "dark-players": {},
@@ -10,6 +11,8 @@
   "dark-setup": {},
   "dashboard-login": {},
   "finals": {},
+  "guest-bracket": {},
+  "guest-bracket-phone": {},
   "landing": {},
   "library-dialog": {},
   "lock-screen": {},

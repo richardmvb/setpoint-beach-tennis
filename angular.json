@@ -180,10 +180,10 @@
             "coverageInclude": ["src/app/core/**/*.ts", "src/app/domain/**/*.ts"],
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
-              "statements": 84,
-              "branches": 83,
-              "functions": 91,
-              "lines": 84
+              "statements": 85,
+              "branches": 84,
+              "functions": 92,
+              "lines": 85
             }
           }
         }

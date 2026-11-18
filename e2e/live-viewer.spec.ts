@@ -30,8 +30,11 @@ test.describe('live viewer: Grupos 20', () => {
     await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
     // One line per round (the played rounds are folded).
     await expect(page.getByText(/^Descansam: /)).toHaveCount(5);
-    await expect(page.getByText('QUARTAS DE FINAL')).toHaveCount(2);
-    await expect(page.getByText('A definir').first()).toBeVisible();
+    const bracket = page.getByRole('region', { name: 'Chave da fase final' });
+    await expect(bracket).toBeVisible();
+    await expect(bracket.getByRole('article', { name: 'Quartas 1' })).toBeVisible();
+    await expect(bracket.getByText('BYE', { exact: true })).toHaveCount(2);
+    await expect(bracket.getByText('Vencedor QF2')).toBeVisible();
     await expect(page.locator('input.inline-score')).toHaveCount(0);
   });
 });
@@ -50,6 +53,36 @@ test.describe('live viewer: Grupos 20 on a phone', () => {
     const overflow = await card
       .locator('.table-scroll')
       .evaluate((element) => element.scrollWidth - element.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe('live viewer: the bracket on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the columns slide under the tabs, and the page does not scroll sideways', async ({ page }) => {
+    const supabase = await mockSupabase(page);
+    const state = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
+    await page.goto(`/?live=${TOKEN}`);
+
+    const track = page.getByRole('region', { name: 'Chave da fase final' });
+    await track.scrollIntoViewIfNeeded();
+    const quartas = page.getByRole('button', { name: 'Quartas', exact: true });
+    const final = page.getByRole('button', { name: 'Final', exact: true });
+    await expect(quartas).toHaveAttribute('aria-pressed', 'true');
+
+    await final.click();
+    await expect(final).toHaveAttribute('aria-pressed', 'true');
+    await expect(track.getByRole('heading', { level: 3, name: 'Final', exact: true })).toBeInViewport();
+
+    await track.evaluate((element) => element.scrollTo({ left: 0, behavior: 'instant' }));
+    await expect(quartas).toHaveAttribute('aria-pressed', 'true');
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
     expect(overflow).toBeLessThanOrEqual(0);
   });
 });

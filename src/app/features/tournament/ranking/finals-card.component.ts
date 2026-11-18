@@ -1,8 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import type { FinalStage, Match } from '../../../core/models';
+import { finalsBracket } from '../../../domain/tournament-view/bracket';
+import { FinalsBracketComponent } from '../components/finals-bracket.component';
 import { FinalLiveScoreComponent } from '../components/final-live-score.component';
 import { MatchScoreFormComponent, type ScoreEdit } from '../components/match-score-form.component';
 import { TournamentStore } from '../data/tournament.store';
@@ -19,6 +21,7 @@ import { PodiumSectionComponent } from './podium-section.component';
     TranslocoDirective,
     ButtonComponent,
     FinalLiveScoreComponent,
+    FinalsBracketComponent,
     MatchScoreFormComponent,
     PodiumSectionComponent,
   ],
@@ -33,6 +36,8 @@ import { PodiumSectionComponent } from './podium-section.component';
 export class FinalsCardComponent {
   protected readonly store = inject(TournamentStore);
   readonly final = input.required<FinalStage>();
+  /** The knockout tree, for the formats that have one; the list below stays where scores are typed. */
+  protected readonly bracket = computed(() => finalsBracket(this.final(), (match) => this.store.winnerSide(match)));
 
   protected score(match: Match, edit: ScoreEdit): void {
     this.store.finalScoreChanged(match, edit.side, edit.value);

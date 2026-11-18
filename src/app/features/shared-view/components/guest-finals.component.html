@@ -1,6 +1,12 @@
 <ng-container *transloco="let t; prefix: 'shared'">
 <ng-container *transloco="let kind; prefix: 'tournament.finalKind'">
-<article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">{{ t('finals.kicker') }}</span><h2>{{ finals().complete ? t('finals.podium') : t('finals.ongoing') }}</h2>@for (match of finals().matches; track match.id) {
+<article id="guest-finals" class="surface-card shared-finals"><span class="card-kicker">{{ t('finals.kicker') }}</span><h2>{{ finals().complete ? t('finals.podium') : t('finals.ongoing') }}</h2>@if (bracket(); as view) {
+<app-finals-bracket [view]="view" [players]="players()" [highlightId]="highlightId()" />@for (match of finals().matches; track match.id) {
+  @if (match.finalKind === 'championship' && match.livePoints !== undefined) {
+  <div class="shared-final-match"><span class="card-kicker">{{ kind('championship') }}</span><app-final-live-score [match]="match" [players]="players()" /></div>
+}
+}
+} @else {@for (match of finals().matches; track match.id) {
   <div class="shared-final-match"><span class="card-kicker">@switch (match.finalKind) {
     @case ('quarterfinal') {{{ kind('quarterfinal') }}}
     @case ('semifinal') {{{ kind('semifinal') }}}
@@ -13,6 +19,7 @@
   <small class="muted">{{ t('finals.tieBreak', { a: match.tieBreakA, b: match.tieBreakB }) }}</small>
 }
 }</div>
+}
 }@if (finals().complete) {
 <app-podium [places]="podium()" [players]="players()" [highlightId]="highlightId()" />@if (highlightId()) {
 <div class="share-picker"><p class="muted">{{ t('finals.yourPlace') }} <b>{{ t('finals.place', { place: place() }) }}</b></p><button class="button primary share-picker-action" type="button" (click)="shareRequested.emit()">{{ t('finals.share') }}</button>@if (shareMessage()) {

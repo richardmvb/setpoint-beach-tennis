@@ -210,5 +210,25 @@
     "ruleHow": "Classificam-se os 2 primeiros de cada grupo e os melhores 3º colocados, até completar 12 atletas.",
     "ruleOrder": "Os 12 são ordenados por vitórias, depois saldo de games, depois games pró e, se ainda empatarem, pelo sorteio registrado.",
     "ruleGroupOrder": "Atletas do mesmo grupo nunca invertem a ordem que tiveram no grupo."
+  },
+  "bracket": {
+    "label": "Chave da fase final",
+    "stagesLabel": "Fases da chave",
+    "round": {
+      "quarterfinal": "Quartas",
+      "semifinal": "Semifinal",
+      "final": "Final"
+    },
+    "matchQf": "Quartas {{number}}",
+    "matchSf": "Semifinal {{number}}",
+    "matchBye": "BYE {{number}}",
+    "seed": "D{{n}}",
+    "bye": "BYE",
+    "winnerQf": "Vencedor QF{{number}}",
+    "winnerSf": "Vencedor SF{{number}}",
+    "loserSf": "Perdedor SF{{number}}",
+    "live": "AO VIVO",
+    "winner": "vencedora",
+    "tbd": "A definir"
   }
 }

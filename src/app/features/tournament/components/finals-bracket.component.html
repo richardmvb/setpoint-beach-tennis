@@ -1,0 +1,95 @@
+<ng-container *transloco="let t; prefix: 'tournament.bracket'">
+  <ng-container *transloco="let kind; prefix: 'tournament.finalKind'">
+    <div class="bracket-tabs" role="group" [attr.aria-label]="t('stagesLabel')">
+      <button type="button" [attr.aria-pressed]="active() === 0" (click)="show(0)">{{ t('round.quarterfinal') }}</button>
+      <button type="button" [attr.aria-pressed]="active() === 1" (click)="show(1)">{{ t('round.semifinal') }}</button>
+      <button type="button" [attr.aria-pressed]="active() === 2" (click)="show(2)">{{ t('round.final') }}</button>
+    </div>
+    <div #track class="bracket-track" role="region" tabindex="0" [attr.aria-label]="t('label')" (scroll)="follow()">
+      @for (column of columns(); track $index; let i = $index) {
+        <section class="bracket-column" [class]="'bracket-column col-' + i">
+          <h3>
+            @switch (i) {
+              @case (0) {
+                {{ t('round.quarterfinal') }}
+              }
+              @case (1) {
+                {{ t('round.semifinal') }}
+              }
+              @default {
+                {{ t('round.final') }}
+              }
+            }
+          </h3>
+          <ol>
+            @for (match of column; track match.id) {
+              <li class="bracket-cell" [class.third]="match.kind === 'third-place'">
+                <article
+                  class="bracket-match"
+                  [class]="'bracket-match ' + match.state"
+                  [attr.aria-label]="
+                    match.kind === 'quarterfinal'
+                      ? t('matchQf', { number: match.number })
+                      : match.kind === 'semifinal'
+                        ? t('matchSf', { number: match.number })
+                        : match.kind === 'championship'
+                          ? kind('championship')
+                          : match.kind === 'third-place'
+                            ? kind('thirdPlace')
+                            : t('matchBye', { number: match.number })
+                  "
+                >
+                  @if (match.kind === 'third-place') {
+                    <span class="bracket-tag">{{ kind('thirdPlace') }}</span>
+                  } @else if (match.kind === 'championship') {
+                    <span class="bracket-tag">{{ kind('championship') }}</span>
+                  }
+                  @if (match.state === 'live') {
+                    <span class="bracket-live">{{ t('live') }}</span>
+                  }
+                  @for (slot of match.slots; track $index) {
+                    @switch (slot.kind) {
+                      @case ('pair') {
+                        <div class="bracket-slot" [class.won]="slot.won" [class.me]="isMe(slot)">
+                          @if (slot.seed) {
+                            <span class="bracket-seed">{{ t('seed', { n: slot.seed }) }}</span>
+                          }
+                          <span class="bracket-names">{{ pairName(slot.playerIds) }}</span>
+                          <span class="bracket-games"
+                            >{{ slot.games ?? '–' }}@if (slot.tieBreak !== null) {
+                              <sup>{{ slot.tieBreak }}</sup>
+                            }</span
+                          >
+                          @if (slot.won) {
+                            <span class="bracket-sr">{{ t('winner') }}</span>
+                          }
+                        </div>
+                      }
+                      @case ('feed') {
+                        <div class="bracket-slot empty">
+                          @if (slot.outcome === 'loser') {
+                            {{ t('loserSf', { number: slot.number }) }}
+                          } @else if (slot.round === 'qf') {
+                            {{ t('winnerQf', { number: slot.number }) }}
+                          } @else {
+                            {{ t('winnerSf', { number: slot.number }) }}
+                          }
+                        </div>
+                      }
+                      @case ('bye') {
+                        <div class="bracket-slot bye">{{ t('bye') }}</div>
+                      }
+                      @default {
+                        <div class="bracket-slot empty">{{ t('tbd') }}</div>
+                      }
+                    }
+                  }
+                </article>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+    </div>
+  </ng-container>
+</ng-container>

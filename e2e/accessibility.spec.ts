@@ -283,6 +283,39 @@ test.describe('accessibility (axe, no new violations)', () => {
     expect(check('share-results-dialog', await scan(page, false, '[role=dialog]'), readBaseline())).toEqual([]);
   });
 
+  test.describe('guest bracket (live link, Grupos 20 finals)', () => {
+    const bracketState = (): Record<string, unknown> =>
+      JSON.parse(
+        readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
+      ) as Record<string, unknown>;
+    async function openBracket(page: Page): Promise<void> {
+      const supabase = await mockSupabase(page);
+      supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state: bracketState() });
+      await page.goto('/?live=live-read-token-123');
+      await expect(page.getByRole('region', { name: 'Chave da fase final' })).toBeVisible();
+    }
+
+    test('light', async ({ page }) => {
+      await openBracket(page);
+      expect(check('guest-bracket', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test('dark', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('setpoint.theme.v1', 'dark'));
+      await openBracket(page);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      expect(check('dark-guest-bracket', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test.describe('on a phone', () => {
+      test.use({ viewport: { width: 390, height: 844 } });
+      test('the tabs and the sliding columns', async ({ page }) => {
+        await openBracket(page);
+        expect(check('guest-bracket-phone', await scan(page), readBaseline())).toEqual([]);
+      });
+    });
+  });
+
   test.describe('dark theme', () => {
     test('overview, players, rounds, ranking and settings', async ({ page }) => {
       test.slow();

@@ -26,6 +26,7 @@ import {
   progressPercent,
   totalMatches,
 } from '../../../domain/tournament-view/progress';
+import { type BracketView, finalsBracket } from '../../../domain/tournament-view/bracket';
 import { historyRounds, spotlightRound, viewerRounds } from '../../../domain/tournament-view/rounds';
 import type { FinalWinnerSide } from '../../../domain/tournament-view/scoring';
 import { normalizeSharedState } from '../../../domain/tournament-view/shared-state';
@@ -189,6 +190,11 @@ export class SharedViewStore {
     const key = this.podiumKey();
     const finals = untracked(() => this.tournament()?.finals);
     return key && finals ? this.finals.podium(finals) : [];
+  });
+  /** The knockout tree of the finals, for the formats that have one. */
+  readonly bracket = computed<BracketView | null>(() => {
+    const finals = this.tournament()?.finals;
+    return finals ? finalsBracket(finals, this.winnerSide) : null;
   });
   readonly arena = computed<ArenaView | null>(() => {
     const state = this.tournament();
