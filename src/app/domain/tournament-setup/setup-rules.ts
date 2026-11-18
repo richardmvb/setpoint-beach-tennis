@@ -1,6 +1,8 @@
 import type {
   DoublesFormat,
+  FinalsPairing,
   GroupFormat,
+  GroupSize,
   MixedFinalFormat,
   TournamentHostingMode,
   TournamentMode,
@@ -10,9 +12,11 @@ import type {
 import {
   defaultFixedPairs,
   fixedPairsMode,
+  groupSizeOf,
   isEarlyFinalsOptionAvailable,
   isGroupTournament,
   isMixedDoubles,
+  usesGroupQualification,
 } from '../tournament-view/format';
 
 /** A tournament with nothing chosen yet: Super 8 on 2 courts, played on this device. */
@@ -41,17 +45,22 @@ export function availableGamesToWin(state: TournamentState): number[] {
 }
 
 export function availableSizes(state: TournamentState): TournamentSize[] {
-  return isGroupTournament(state) ? [8, 12, 24] : [8, 10, 12, 24];
+  if (!isGroupTournament(state)) return [8, 10, 12, 24];
+  return !fixedPairsMode(state) && !isMixedDoubles(state) ? [8, 12, 20, 24] : [8, 12, 24];
 }
 
 export function availableCourts(state: TournamentState): number[] {
-  if (isGroupTournament(state)) return [state.size / 4];
+  if (isGroupTournament(state)) return [state.size === 20 ? 20 / groupSizeOf(state) : state.size / 4];
   if (state.size === 24) return isMixedDoubles(state) ? [6, 3] : [6];
   return state.size === 12 ? [2, 3] : [2];
 }
 
 export function requiredRounds(state: TournamentState): number {
-  if (isGroupTournament(state)) return fixedPairsMode(state) ? state.size / 2 - 1 : isMixedDoubles(state) ? 2 : 3;
+  if (isGroupTournament(state)) {
+    if (fixedPairsMode(state)) return state.size / 2 - 1;
+    if (isMixedDoubles(state)) return 2;
+    return groupSizeOf(state) === 5 ? 5 : 3;
+  }
   if (state.size === 24 && isMixedDoubles(state)) {
     return state.rounds.length || (state.courts === 3 ? 24 : 12);
   }
@@ -88,11 +97,25 @@ export function withGamesToWin(state: TournamentState, gamesToWin: number): Tour
 
 export function withSize(state: TournamentState, size: number): TournamentState {
   if (!availableSizes(state).includes(size as TournamentSize)) return state;
-  let next: TournamentState = { ...state, size: size as TournamentSize };
+  let next: TournamentState = normalizeSizeAndQualification({ ...state, size: size as TournamentSize });
   next = { ...next, courts: availableCourts(next)[0] };
   next = normalizeGamesToWin(next);
   next = { ...next, roundCount: requiredRounds(next) };
   return withDefaultFixedPairs(next);
+}
+
+/** 5 groups of 4 or 4 groups of 5; only the 20-player format has the choice, and only before the draw. */
+export function withGroupSize(state: TournamentState, groupSize: GroupSize): TournamentState {
+  if (hasSchedule(state) || !usesGroupQualification(state)) return state;
+  let next: TournamentState = { ...state, groupSize };
+  next = { ...next, courts: availableCourts(next)[0] };
+  return { ...next, roundCount: requiredRounds(next) };
+}
+
+/** How the 12 qualifiers become pairs; editable until the finals exist. */
+export function withFinalsPairing(state: TournamentState, finalsPairing: FinalsPairing): TournamentState {
+  if (state.finals || !usesGroupQualification(state)) return state;
+  return { ...state, finalsPairing };
 }
 
 export function withCourts(state: TournamentState, courts: number): TournamentState {
@@ -103,7 +126,7 @@ export function withCourts(state: TournamentState, courts: number): TournamentSt
 }
 
 export function withTournamentMode(state: TournamentState, mode: TournamentMode): TournamentState {
-  let next: TournamentState = { ...state, tournamentMode: mode };
+  let next: TournamentState = normalizeSizeAndQualification({ ...state, tournamentMode: mode });
   if (!availableSizes(next).includes(next.size)) next = { ...next, size: 8 };
   next = { ...next, courts: availableCourts(next)[0] };
   next = normalizeGamesToWin(next);
@@ -111,9 +134,21 @@ export function withTournamentMode(state: TournamentState, mode: TournamentMode)
   return withDefaultFixedPairs(next);
 }
 
+/** The size and the 20-player choices only exist while the format is valid; back to the nearest size otherwise. */
+function normalizeSizeAndQualification(state: TournamentState): TournamentState {
+  let next = state;
+  if (!availableSizes(next).includes(next.size)) next = { ...next, size: next.size === 20 ? 24 : 8 };
+  if (!usesGroupQualification(next)) {
+    next = { ...next };
+    delete next.groupSize;
+    delete next.finalsPairing;
+  }
+  return next;
+}
+
 export function withDoublesFormat(state: TournamentState, format: DoublesFormat): TournamentState {
   if (hasSchedule(state)) return state;
-  let next: TournamentState = { ...state, doublesFormat: format };
+  let next: TournamentState = normalizeSizeAndQualification({ ...state, doublesFormat: format });
   if (!availableCourts(next).includes(next.courts)) next = { ...next, courts: availableCourts(next)[0] };
   if (!isEarlyFinalsOptionAvailable(next)) next = { ...next, earlyFinalsEnabled: false };
   next = { ...next, roundCount: requiredRounds(next) };
@@ -121,7 +156,7 @@ export function withDoublesFormat(state: TournamentState, format: DoublesFormat)
 }
 
 export function withGroupFormat(state: TournamentState, format: GroupFormat): TournamentState {
-  let next: TournamentState = { ...state, groupFormat: format };
+  let next: TournamentState = normalizeSizeAndQualification({ ...state, groupFormat: format });
   next = { ...next, courts: availableCourts(next)[0] };
   next = { ...next, roundCount: requiredRounds(next) };
   return withDefaultFixedPairs(next);
@@ -196,7 +231,11 @@ export function normalizeStoredTournament(stored: TournamentState): TournamentSt
     tieBreakDraws: stored.tieBreakDraws ?? [],
   };
   if (state.rounds.length) return state;
-  const courts = availableCourts(state).includes(state.courts) ? state.courts : Math.floor(state.size / 4);
+  const courts = availableCourts(state).includes(state.courts)
+    ? state.courts
+    : state.size === 20
+      ? availableCourts(state)[0]
+      : Math.floor(state.size / 4);
   const fitted = { ...state, courts };
   return { ...fitted, roundCount: requiredRounds(fitted) };
 }

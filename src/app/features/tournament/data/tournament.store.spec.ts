@@ -416,7 +416,7 @@ describe('TournamentStore: the rules form', () => {
     expect(tournament.state().courts).toBe(3);
     store.changeTournamentMode('groups');
     expect(tournament.state()).toMatchObject({ tournamentMode: 'groups', courts: 3 });
-    expect(store.availableSizes()).toEqual([8, 12, 24]);
+    expect(store.availableSizes()).toEqual([8, 12, 20, 24]);
     store.changeGroupFormat('fixed');
     expect(tournament.state().groupFormat).toBe('fixed');
     expect(store.requiredRounds()).toBe(tournament.state().size / 2 - 1);

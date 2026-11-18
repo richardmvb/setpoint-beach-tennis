@@ -139,9 +139,11 @@ export class StorageService {
     const candidate = value as Partial<TournamentState>;
     if (
       candidate.version !== 1 ||
-      (candidate.size !== 8 && candidate.size !== 10 && candidate.size !== 12 && candidate.size !== 24) ||
+      ![8, 10, 12, 20, 24].includes(candidate.size as number) ||
       (candidate.tournamentMode !== undefined && !['super', 'groups'].includes(candidate.tournamentMode)) ||
       (candidate.groupFormat !== undefined && !['fixed', 'rotating'].includes(candidate.groupFormat)) ||
+      (candidate.groupSize !== undefined && candidate.groupSize !== 4 && candidate.groupSize !== 5) ||
+      (candidate.finalsPairing !== undefined && !['crossed', 'seededDraw'].includes(candidate.finalsPairing)) ||
       (candidate.doublesFormat !== undefined && !['open', 'mixed'].includes(candidate.doublesFormat)) ||
       (candidate.mixedFinalFormat !== undefined && !['knockout', 'direct'].includes(candidate.mixedFinalFormat)) ||
       (candidate.startedAt !== undefined && Number.isNaN(Date.parse(candidate.startedAt))) ||

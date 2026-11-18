@@ -1,9 +1,11 @@
-export type TournamentSize = 8 | 10 | 12 | 24;
+export type TournamentSize = 8 | 10 | 12 | 20 | 24;
 export type TournamentMode = 'super' | 'groups';
 export type GroupFormat = 'fixed' | 'rotating';
 export type DoublesFormat = 'open' | 'mixed';
 export type PlayerGender = 'male' | 'female';
 export type MixedFinalFormat = 'knockout' | 'direct';
+export type GroupSize = 4 | 5;
+export type FinalsPairing = 'crossed' | 'seededDraw';
 type MatchPhase = 'super' | 'groups' | 'final';
 export type FinalMatchKind = 'quarterfinal' | 'semifinal' | 'championship' | 'third-place';
 type SharedTournamentStatus = 'registration' | 'ready' | 'active' | 'completed' | 'archived';
@@ -80,6 +82,10 @@ export interface TournamentState {
   qualificationStats?: boolean;
   earlyFinalsEnabled?: boolean;
   mixedFinalFormat?: MixedFinalFormat;
+  /** Players per group in the 20-player format; absent means 4. */
+  groupSize?: GroupSize;
+  /** How the 12 qualifiers become 6 pairs in the 20-player format; absent means crossed. */
+  finalsPairing?: FinalsPairing;
   sharedTournamentId?: string;
   sharedStatus?: SharedTournamentStatus;
   groupFormat?: GroupFormat;

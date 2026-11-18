@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { GroupFormat, Match, Player, Round, TournamentGroup } from './models';
+import { GroupFormat, GroupSize, Match, Player, Round, TournamentGroup } from './models';
 import { RandomSource, shuffleRoundsAndCourts, shuffled } from './schedule-shuffle';
 
 export interface GroupSchedule {
@@ -7,15 +7,35 @@ export interface GroupSchedule {
   rounds: Round[];
 }
 
+/**
+ * A group of five over five rounds, one match per round and one athlete resting: every pair of athletes is partners
+ * once and opponents twice. Each row is [resting, [teamA], [teamB]] as positions in the group.
+ */
+const GROUP_OF_FIVE_ROUNDS: readonly [number, [number, number], [number, number]][] = [
+  [0, [1, 4], [2, 3]],
+  [1, [0, 2], [3, 4]],
+  [2, [1, 3], [0, 4]],
+  [3, [2, 4], [0, 1]],
+  [4, [0, 3], [1, 2]],
+];
+
 @Injectable({ providedIn: 'root' })
 export class GroupScheduleService {
   /** Source of randomness for every draw; replaceable by a seeded source in tests. */
   random: RandomSource = Math.random;
 
-  generate(players: Player[], format: GroupFormat, fixedPairs: [string, string][] = [], mixed = false): GroupSchedule {
-    if (![8, 12, 24].includes(players.length)) {
+  generate(
+    players: Player[],
+    format: GroupFormat,
+    fixedPairs: [string, string][] = [],
+    mixed = false,
+    groupSize: GroupSize = 4,
+  ): GroupSchedule {
+    const twenty = players.length === 20 && format === 'rotating' && !mixed;
+    if (![8, 12, 24].includes(players.length) && !twenty) {
       throw new Error('O formato de grupos aceita 8, 12 ou 24 jogadores.');
     }
+    if (groupSize === 5 && !twenty) throw new Error('Grupos de cinco existem só no formato de 20 jogadores.');
     if (new Set(players.map((player) => player.id)).size !== players.length) {
       throw new Error('Cada jogador precisa ter um identificador único.');
     }
@@ -27,13 +47,13 @@ export class GroupScheduleService {
         ? this.generateFixedGroups(players, fixedPairs, mixed)
         : mixed
           ? this.generateMixedRotatingGroups(players)
-          : this.generateRotatingGroups(players);
+          : this.generateRotatingGroups(players, groupSize);
     // Groups are drawn above; here the round order and the courts are drawn too, so no group is pinned to a court.
     const rounds = shuffleRoundsAndCourts(schedule.rounds, {
       random: this.random,
       matchId: (roundNumber, match) => `group-${match.groupId}-r${roundNumber}-c${match.court}`,
     });
-    this.validate(players, schedule.groups, rounds, format, mixed);
+    this.validate(players, schedule.groups, rounds, format, mixed, groupSize);
     return { groups: schedule.groups, rounds };
   }
 
@@ -83,14 +103,15 @@ export class GroupScheduleService {
     return { groups, rounds };
   }
 
-  private generateRotatingGroups(players: Player[]): GroupSchedule {
+  private generateRotatingGroups(players: Player[], groupSize: GroupSize): GroupSchedule {
     const drawnPlayers = shuffled(players, this.random);
-    const groups = Array.from({ length: players.length / 4 }, (_, index): TournamentGroup => ({
+    const groups = Array.from({ length: players.length / groupSize }, (_, index): TournamentGroup => ({
       id: `group-${index + 1}`,
       name: `Grupo ${String.fromCharCode(65 + index)}`,
-      playerIds: drawnPlayers.slice(index * 4, index * 4 + 4).map((player) => player.id),
+      playerIds: drawnPlayers.slice(index * groupSize, index * groupSize + groupSize).map((player) => player.id),
     }));
-    const rounds: Round[] = Array.from({ length: 3 }, (_, index) => ({
+    const roundCount = groupSize === 5 ? 5 : 3;
+    const rounds: Round[] = Array.from({ length: roundCount }, (_, index) => ({
       number: index + 1,
       matches: [],
       restingPlayerIds: [],
@@ -98,30 +119,32 @@ export class GroupScheduleService {
     }));
 
     for (const [groupIndex, group] of groups.entries()) {
-      const [first, second, third, fourth] = group.playerIds;
-      const rotations = shuffled<[[string, string], [string, string]]>(
-        [
-          [
-            [first, second],
-            [third, fourth],
-          ],
-          [
-            [first, third],
-            [second, fourth],
-          ],
-          [
-            [first, fourth],
-            [second, third],
-          ],
-        ],
+      const ids = group.playerIds;
+      const rotations = shuffled(
+        groupSize === 5
+          ? GROUP_OF_FIVE_ROUNDS.map(([rest, a, b]) => ({
+              teamA: [ids[a[0]], ids[a[1]]] as [string, string],
+              teamB: [ids[b[0]], ids[b[1]]] as [string, string],
+              rest: ids[rest],
+            }))
+          : [
+              { teamA: [ids[0], ids[1]], teamB: [ids[2], ids[3]] },
+              { teamA: [ids[0], ids[2]], teamB: [ids[1], ids[3]] },
+              { teamA: [ids[0], ids[3]], teamB: [ids[1], ids[2]] },
+            ].map((entry) => ({
+              teamA: entry.teamA as [string, string],
+              teamB: entry.teamB as [string, string],
+              rest: undefined as string | undefined,
+            })),
         this.random,
       );
-      rotations.forEach(([teamA, teamB], roundIndex) => {
+      rotations.forEach(({ teamA, teamB, rest }, roundIndex) => {
         rounds[roundIndex].matches.push(this.createMatch(roundIndex, groupIndex + 1, teamA, teamB, group.id));
+        if (rest) rounds[roundIndex].restingPlayerIds.push(rest);
       });
     }
 
-    this.validate(players, groups, rounds, 'rotating');
+    this.validate(players, groups, rounds, 'rotating', false, groupSize);
     return { groups, rounds };
   }
 
@@ -180,6 +203,7 @@ export class GroupScheduleService {
     rounds: Round[],
     format: GroupFormat,
     mixed = false,
+    groupSize: GroupSize = 4,
   ): void {
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
@@ -202,12 +226,15 @@ export class GroupScheduleService {
       }
     }
 
-    const expectedGames = format === 'rotating' ? (mixed ? 2 : 3) : groups[0].fixedPairs!.length - 1;
+    const expectedGames = format === 'rotating' ? (mixed ? 2 : groupSize - 1) : groups[0].fixedPairs!.length - 1;
     if ([...gamesPlayed.values()].some((count) => count !== expectedGames)) {
       throw new Error('Os jogos não foram distribuídos igualmente nos grupos.');
     }
     if (format === 'rotating' && [...partnerCounts.values()].some((count) => count !== 1)) {
-      throw new Error('Cada jogador deve formar dupla com os outros três do grupo.');
+      throw new Error('Cada jogador deve formar dupla uma vez com cada outro atleta do grupo.');
+    }
+    if (groupSize === 5 && [...opponentCounts.values()].some((count) => count !== 2)) {
+      throw new Error('Cada atleta deve enfrentar cada outro do grupo duas vezes.');
     }
     if (format === 'fixed' && [...partnerCounts.values()].some((count) => count !== rounds.length)) {
       throw new Error('As duplas fixas devem permanecer juntas durante a fase de grupos.');
