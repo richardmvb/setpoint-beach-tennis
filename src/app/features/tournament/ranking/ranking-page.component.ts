@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import { CardComponent } from '@ui/card/card.component';
+import { QualifiersCardComponent } from '../components/qualifiers-card.component';
 import { RankingViewComponent } from '../components/ranking-view.component';
 import { TournamentStore } from '../data/tournament.store';
 import { FinalsCardComponent } from './finals-card.component';
@@ -12,7 +13,14 @@ import { FinalsCardComponent } from './finals-card.component';
  */
 @Component({
   selector: 'section[appRankingPage]',
-  imports: [TranslocoDirective, ButtonComponent, CardComponent, RankingViewComponent, FinalsCardComponent],
+  imports: [
+    TranslocoDirective,
+    ButtonComponent,
+    CardComponent,
+    RankingViewComponent,
+    QualifiersCardComponent,
+    FinalsCardComponent,
+  ],
   providers: [provideTranslocoScope('organizer')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'content-grid ranking-page' },

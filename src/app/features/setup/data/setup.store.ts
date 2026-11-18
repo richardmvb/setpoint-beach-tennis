@@ -4,7 +4,7 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import { TournamentPersistence } from '../../../core/tournament-persistence';
 import { Notices } from '../../../core/notices';
 import { LocalProfileStore } from '../../../core/local-profile.store';
-import type { Player, PlayerGender } from '../../../core/models';
+import type { FinalsPairing, GroupSize, Player, PlayerGender } from '../../../core/models';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { profileAutoJoin } from '../../../core/profile';
 import { ANALYTICS } from '../../../core/ports/analytics.port';
@@ -33,8 +33,10 @@ import {
   withCourts,
   withDoublesFormat,
   withEarlyFinals,
+  withFinalsPairing,
   withGamesToWin,
   withGroupFormat,
+  withGroupSize,
   withHostingMode,
   withMixedFinalFormat,
   withName,
@@ -49,6 +51,7 @@ import {
   isEarlyFinalsOptionAvailable,
   isGroupTournament,
   isMixedDoubles,
+  usesGroupQualification,
 } from '../../../domain/tournament-view/format';
 import { tourKey, TUTORIAL_KEY } from './setup-tour-steps';
 
@@ -83,6 +86,8 @@ export class SetupStore {
   readonly isGroup = computed(() => isGroupTournament(this.state()));
   readonly isMixed = computed(() => isMixedDoubles(this.state()));
   readonly fixedPairs = computed(() => fixedPairsMode(this.state()));
+  /** The 20-player format: its group size and finals pairing are choices of the setup. */
+  readonly groupQualification = computed(() => usesGroupQualification(this.state()));
   readonly hasSchedule = computed(() => hasSchedule(this.state()));
   readonly earlyFinalsAvailable = computed(() => isEarlyFinalsOptionAvailable(this.state()));
   readonly sizes = computed(() => availableSizes(this.state()));
@@ -173,6 +178,14 @@ export class SetupStore {
 
   setSize(size: number): void {
     this.tournament.update((state) => withSize(state, size));
+  }
+
+  setGroupSize(groupSize: GroupSize): void {
+    this.tournament.update((state) => withGroupSize(state, groupSize));
+  }
+
+  setFinalsPairing(pairing: FinalsPairing): void {
+    this.tournament.update((state) => withFinalsPairing(state, pairing));
   }
 
   setCourts(courts: number): void {

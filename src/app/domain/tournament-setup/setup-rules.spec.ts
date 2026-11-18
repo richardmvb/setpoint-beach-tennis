@@ -126,6 +126,7 @@ describe('setup rules', () => {
     expect(reviewKind(tournamentState())).toBe('super');
     expect(reviewKind(tournamentState({ tournamentMode: 'groups' }))).toBe('groups');
     expect(reviewKind(tournamentState({ tournamentMode: 'groups', groupFormat: 'fixed' }))).toBe('fixedPairs');
+    expect(reviewKind(tournamentState({ tournamentMode: 'groups', size: 20 }))).toBe('groupsQualification');
   });
 });
 

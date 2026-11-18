@@ -7,7 +7,7 @@ const DIRECT_PER_GROUP = 2;
 /** The first places of a group whose order can change who qualifies or how they are seeded. */
 const PLACES_THAT_MATTER = 3;
 
-type QualificationStatus = 'direct' | 'bestThird' | 'out';
+export type QualificationStatus = 'direct' | 'bestThird' | 'out';
 
 interface GroupStandingRow {
   standing: PlayerStanding;
@@ -59,6 +59,22 @@ export function groupQualification(state: TournamentState): GroupQualification {
  */
 export function unresolvedQualificationTie(state: TournamentState): PlayerStanding[] {
   return analyse(state).unresolved;
+}
+
+/** Where a tie that blocks the qualification sits, for the words of the tie draw. */
+export type QualificationTie =
+  { kind: 'group'; groupName: string; positions: number[] } | { kind: 'thirds' } | { kind: 'seeding' };
+
+export function describeQualificationTie(state: TournamentState, tied: readonly PlayerStanding[]): QualificationTie {
+  const ids = new Set(tied.map((row) => row.playerId));
+  const { byGroup } = analyse(state).qualification;
+  const rowsOf = (table: GroupStandingsTable) => table.rows.filter((row) => ids.has(row.standing.playerId));
+  const table = byGroup.find((candidate) => rowsOf(candidate).length === ids.size);
+  if (table) return { kind: 'group', groupName: table.name, positions: rowsOf(table).map((row) => row.position) };
+  const allThirds = byGroup.every((candidate) =>
+    rowsOf(candidate).every((row) => row.position === DIRECT_PER_GROUP + 1),
+  );
+  return { kind: allThirds ? 'thirds' : 'seeding' };
 }
 
 function analyse(state: TournamentState): Analysis {

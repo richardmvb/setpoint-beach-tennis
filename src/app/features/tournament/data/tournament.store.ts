@@ -13,7 +13,18 @@ import {
 } from '../../../core/final-live-score';
 import { FinalsService, type PodiumPlace } from '../../../core/finals.service';
 import { exportTournamentBackup } from '../../../core/backup-export';
-import type { DoublesFormat, GroupFormat, Match, Page, ThemeMode, TournamentMode } from '../../../core/models';
+import type {
+  DoublesFormat,
+  FinalStage,
+  FinalsPairing,
+  GroupFormat,
+  GroupSize,
+  Match,
+  Page,
+  ThemeMode,
+  TournamentMode,
+  TournamentState,
+} from '../../../core/models';
 import type { SyncStatus } from '../../../core/state-machines';
 import type { SyncErrorKey } from '../../../core/sync/tournament-sync';
 import { NpsFeedbackService } from '../../../core/nps-feedback.service';
@@ -32,13 +43,16 @@ import {
   withCourts,
   withDoublesFormat,
   withGamesToWin,
+  withFinalsPairing,
   withGroupFormat,
+  withGroupSize,
   withName,
   withRequiredRounds,
   withSize,
   withTournamentMode,
   withTrimmedName,
 } from '../../../domain/tournament-setup/setup-rules';
+import { pairQualifiers } from '../../../domain/tournament-play/qualifier-pairs';
 import { canGenerateFinals, earlyFinalsReady, withFinishedAt } from '../../../domain/tournament-play/finals';
 import {
   finalScoreStatus,
@@ -57,10 +71,11 @@ import {
   withoutScore,
   withRoundScore,
 } from '../../../domain/tournament-play/scores';
-import { unresolvedFinalTie } from '../../../domain/tournament-play/tie-draw';
+import { unresolvedTie } from '../../../domain/tournament-play/tie-draw';
 import * as tournamentFormat from '../../../domain/tournament-view/format';
 import { groupTables } from '../../../domain/tournament-view/group-tables';
 import * as tournamentProgress from '../../../domain/tournament-view/progress';
+import { groupQualification } from '../../../domain/tournament-view/group-qualification';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
 import type { FinalWinnerSide } from '../../../domain/tournament-view/scoring';
 import type {
@@ -192,6 +207,13 @@ export class TournamentStore {
   readonly standings = computed(() => this.standingsView().all);
   readonly maleStandings = computed(() => this.standingsView().male);
   readonly femaleStandings = computed(() => this.standingsView().female);
+  /** The 20-player format: the qualification (null for every other format). */
+  readonly qualification = computed(() =>
+    tournamentFormat.usesGroupQualification(this.state()) && this.hasSchedule()
+      ? groupQualification(this.state())
+      : null,
+  );
+  readonly groupQualification = computed(() => tournamentFormat.usesGroupQualification(this.state()));
   readonly groupTables = computed(() => groupTables(this.state(), this.standings()));
   readonly fixedPairsMode = computed(() => tournamentFormat.fixedPairsMode(this.state()));
   readonly usesMixedFinals = computed(() => tournamentFormat.usesMixedFinals(this.state()));
@@ -405,7 +427,7 @@ export class TournamentStore {
       this.notices.show(this.transloco.translate('notices.finishPhase', {}, 'organizer/pt-BR'), 'error');
       return;
     }
-    if (unresolvedFinalTie(this.state(), this.standingsView()).length) {
+    if (unresolvedTie(this.state(), this.standingsView()).length) {
       // A second tap while the first is still loading the dialog must not open another one.
       if (this.tieDrawOpening) return;
       this.tieDrawOpening = true;
@@ -509,6 +531,17 @@ export class TournamentStore {
     this.persistence.save();
   }
 
+  changeGroupSize(groupSize: GroupSize): void {
+    this.tournament.update((state) => withGroupSize(state, groupSize));
+  }
+
+  /** Editable until the finals exist, so it is saved at once (the "Salvar" button is locked with the schedule). */
+  changeFinalsPairing(pairing: FinalsPairing): void {
+    const before = this.state();
+    this.tournament.update((state) => withFinalsPairing(state, pairing));
+    if (this.state() !== before) this.persistence.save();
+  }
+
   changeGroupFormat(format: GroupFormat): void {
     this.tournament.update((state) => withGroupFormat(state, format));
   }
@@ -574,11 +607,13 @@ export class TournamentStore {
     try {
       const male = this.maleStandings();
       const female = this.femaleStandings();
-      const stage = this.usesMixedFinalBracket()
-        ? this.finals.createMixedBracket(male, female)
-        : this.usesMixedFinals()
-          ? this.finals.createMixedDirect(male, female)
-          : this.finals.create(this.standings());
+      const stage = tournamentFormat.usesGroupQualification(state)
+        ? this.createQualificationBracket(state)
+        : this.usesMixedFinalBracket()
+          ? this.finals.createMixedBracket(male, female)
+          : this.usesMixedFinals()
+            ? this.finals.createMixedDirect(male, female)
+            : this.finals.create(this.standings());
       this.drafts.set({});
       this.tournament.update((current) => ({ ...current, finals: stage }));
       this.persistence.save(
@@ -592,6 +627,7 @@ export class TournamentStore {
         tournament_mode: state.tournamentMode,
         doubles_format: state.doublesFormat ?? 'open',
         tournament_size: state.size,
+        ...tournamentFormat.groupFormatProperties(state),
       });
     } catch (error) {
       this.notices.show(
@@ -601,6 +637,14 @@ export class TournamentStore {
         'error',
       );
     }
+  }
+
+  /** The 20-player bracket: the 12 qualifiers become six pairs (the draw uses the random port), then the bracket. */
+  private createQualificationBracket(state: TournamentState): FinalStage {
+    const { seeding } = groupQualification(state);
+    return this.finals.createByeBracket(
+      pairQualifiers(seeding, state.finalsPairing ?? 'crossed', (max) => this.random.int(max)),
+    );
   }
 
   private updateLivePoints(match: Match, points: FinalLivePoint[]): void {

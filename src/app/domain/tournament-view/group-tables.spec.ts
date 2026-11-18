@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TournamentState } from '../../core/models';
+import { groups20State, strongerPairWins } from '../../testing/groups20';
 import { match, namedPlayers, round, tournamentState } from '../../testing/tournament-state';
 import { groupTables } from './group-tables';
 import { rankedStandingGroups } from './standings';
@@ -65,5 +66,23 @@ describe('groupTables', () => {
 
   it('is empty without groups', () => {
     expect(tables(tournamentState())).toEqual([]);
+  });
+
+  it('marks who goes on to the finals in the 20-player format, and nothing in the others', () => {
+    const state = groups20State(4, 3, strongerPairWins);
+    const all = groupTables(state, rankedStandingGroups(state).flat());
+    const statuses = all.flatMap((table) => table.entries.map((entry) => entry.status));
+    expect(statuses.filter((status) => status === 'direct')).toHaveLength(10);
+    expect(statuses.filter((status) => status === 'bestThird')).toHaveLength(2);
+    expect(statuses.filter((status) => status === 'out')).toHaveLength(8);
+    expect(all.every((table) => table.entries[0].status === 'direct')).toBe(true);
+    const plain = tables(
+      tournamentState({
+        tournamentMode: 'groups',
+        players: namedPlayers(4),
+        groups: [{ id: 'g', name: 'G', playerIds: ['p1', 'p2', 'p3', 'p4'] }],
+      }),
+    );
+    expect(plain[0].entries.every((entry) => entry.status === undefined)).toBe(true);
   });
 });

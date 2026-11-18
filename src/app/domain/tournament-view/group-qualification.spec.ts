@@ -4,7 +4,7 @@ import { groups20State, sideAWins, strongerPairWins } from '../../testing/groups
 import { match, namedPlayers, round, tournamentState } from '../../testing/tournament-state';
 import { seededRandom } from '../../testing/seeded-random';
 import { shuffledOrder, withTieDraw } from '../tournament-play/tie-draw';
-import { groupQualification, unresolvedQualificationTie } from './group-qualification';
+import { describeQualificationTie, groupQualification, unresolvedQualificationTie } from './group-qualification';
 import { compareStandingCriteria } from './standings';
 
 /** Records a draw for every tie the rules ask about, until none is left. */
@@ -150,6 +150,21 @@ describe('unresolvedQualificationTie', () => {
       expect(new Set(q.seeding).size).toBe(12);
       // The recorded draw is stable: asking again gives the same order.
       expect(groupQualification(state).seeding).toEqual(q.seeding);
+    }
+  });
+
+  it('says where a tie sits: in a group, among the thirds, or in the order of the qualifiers', () => {
+    const grouped = identicalGroups();
+    const thirds = unresolvedQualificationTie(grouped);
+    expect(describeQualificationTie(grouped, thirds)).toEqual({ kind: 'thirds' });
+
+    const state = groups20State(4, 5, sideAWins);
+    const tied = unresolvedQualificationTie(state);
+    const kind = describeQualificationTie(state, tied);
+    expect(['group', 'thirds', 'seeding']).toContain(kind.kind);
+    if (kind.kind === 'group') {
+      expect(kind.groupName).toMatch(/^Grupo /);
+      expect(kind.positions).toHaveLength(tied.length);
     }
   });
 });

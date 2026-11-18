@@ -1,7 +1,8 @@
 <ng-container *transloco="let t; prefix: 'organizer.tieDraw'">
   <span class="card-kicker">{{ t('kicker') }}</span>
-  <h2 [id]="titleId">{{ t('title', { positions: positions() }) }}</h2>
-  <p class="muted">{{ t('text') }}</p>
+  @let tie = qualificationTie();
+  <h2 [id]="titleId">@if (tie?.kind === 'group') {{{ t('groupTitle', { group: tie.groupName, positions: tie.positionsText }) }}} @else if (tie?.kind === 'thirds') {{{ t('thirdsTitle') }}} @else if (tie?.kind === 'seeding') {{{ t('seedingTitle') }}} @else {{{ t('title', { positions: positions() }) }}}</h2>
+  <p class="muted">{{ tie ? t('qualificationText') : t('text') }}</p>
   @if (!result().length) {
     <div class="tie-draw-participants">
       @for (id of playerIds(); track id) {

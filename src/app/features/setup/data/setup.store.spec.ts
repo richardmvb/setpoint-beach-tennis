@@ -51,6 +51,21 @@ describe('SetupStore: the format', () => {
     expect(store.courts()).toEqual([3]);
   });
 
+  it('offers the group size and the finals pairing only for the 20-player rotating groups', () => {
+    const { store, tournament } = setup();
+    store.setGroupSize(5);
+    expect(tournament.state().groupSize).toBeUndefined();
+    store.setTournamentMode('groups');
+    store.setSize(20);
+    expect(store.groupQualification()).toBe(true);
+    store.setGroupSize(5);
+    store.setFinalsPairing('seededDraw');
+    expect(tournament.state()).toMatchObject({ groupSize: 5, finalsPairing: 'seededDraw', courts: 4 });
+    expect(store.review()).toBe('groupsQualification');
+    store.setSize(12);
+    expect(store.groupQualification()).toBe(false);
+  });
+
   it('offers early finals only for the Super 24 mixed on 3 courts', () => {
     const { store, tournament, hooks } = setup();
     store.setEarlyFinals(true);

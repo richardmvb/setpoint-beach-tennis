@@ -141,6 +141,7 @@ export class TournamentLifecycle {
         tournament_mode: common.tournament_mode,
         doubles_format: common.doubles_format,
         tournament_size: common.tournament_size,
+        ...tournamentFormat.groupFormatProperties(state),
       });
     }
     this.analytics.capture('tournament_started', { ...common, round_count: state.rounds.length });

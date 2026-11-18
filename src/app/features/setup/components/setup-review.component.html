@@ -2,12 +2,14 @@
   <div id="reviewSummary" class="wizard-summary"><div><small>{{ t('format') }}</small><b>@switch (store.review()) {
     @case ('fixedPairs') {{{ t('formats.fixedPairs') }}}
     @case ('groups') {{{ t('formats.groups') }}}
+    @case ('groupsQualification') {{{ t('formats.groupsQualification') }}}
     @case ('super') {{{ t('formats.super') }}}
   }
   {{ store.state().size }}</b></div><div><small>{{ t('players') }}</small><b>{{ store.state().players.length }}</b></div><div><small>{{ t('rounds') }}</small><b>{{ store.rounds() }}</b></div><div><small>{{ t('courts') }}</small><b>{{ store.state().courts }}</b></div></div>
   <div class="callout"><b>{{ store.state().name }}</b><span>@switch (store.review()) {
     @case ('fixedPairs') {{{ t('descriptions.fixedPairs') }}}
     @case ('groups') {{{ t('descriptions.groups') }}}
+    @case ('groupsQualification') {{{ store.state().groupSize === 5 ? t('descriptions.groupsQualification5') : t('descriptions.groupsQualification4') }} {{ store.state().finalsPairing === 'seededDraw' ? t('descriptions.pairingSeededDraw') : t('descriptions.pairingCrossed') }}}
     @case ('super') {{{ t('descriptions.super') }}}
   }</span></div>
   <div class="wizard-roster"><span class="card-kicker">{{ t('players') }}</span><div class="roster-chips">@for (player of store.state().players; track player.id) {

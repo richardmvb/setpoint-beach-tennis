@@ -5,6 +5,7 @@ import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
 import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
+import { groups20State } from '../../../testing/groups20';
 import { namedPlayers, storedTournament, tournamentState } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import {
@@ -182,3 +183,32 @@ async function openWithSaved() {
   const saved = document.body;
   return { ...shown, saved };
 }
+
+describe('SettingsPageComponent: the 20-player format', () => {
+  it('edits the pairing until the finals exist, and the group size only before the schedule', async () => {
+    const { tournament, hooks } = await show(groups20State(4));
+    expect(screen.getByLabelText<HTMLSelectElement>('Grupos').disabled).toBe(true);
+    const pairing = screen.getByLabelText<HTMLSelectElement>('Duplas da fase final');
+    expect(pairing.disabled).toBe(false);
+    fireEvent.change(pairing, { target: { value: pairing.options[1].value } });
+    expect(tournament.state().finalsPairing).toBe('seededDraw');
+    expect(hooks.save).toHaveBeenCalled();
+    expect(screen.getByText(/5 grupos de 4: passam os 2 primeiros/)).toBeTruthy();
+  });
+
+  it('lets the group size change before the schedule exists', async () => {
+    const { tournament } = await show(
+      tournamentState({
+        tournamentMode: 'groups',
+        groupFormat: 'rotating',
+        size: 20,
+        courts: 5,
+        players: namedPlayers(20),
+      }),
+    );
+    const size = screen.getByLabelText<HTMLSelectElement>('Grupos');
+    fireEvent.change(size, { target: { value: size.options[1].value } });
+    expect(tournament.state()).toMatchObject({ groupSize: 5, courts: 4 });
+    expect(screen.getByLabelText<HTMLInputElement>('Quadras por rodada').value).toBe('4 quadras');
+  });
+});

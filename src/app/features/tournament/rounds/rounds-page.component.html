@@ -98,7 +98,7 @@
         <aside uiCard class="rest-card">
           <span class="card-kicker">{{ t('restKicker') }}</span>
           <h3>{{ t('restTitle') }}</h3>
-          @for (id of round.restingPlayerIds; track id) {
+          @for (id of round.restingPlayerIds; track $index) {
             <div class="rest-player">
               <app-player-avatar [name]="store.playerName(id)" [photoDataUrl]="store.playerPhoto(id)" /><b>{{
                 store.playerName(id)

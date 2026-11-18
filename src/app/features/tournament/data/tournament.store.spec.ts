@@ -7,6 +7,8 @@ import type { Match, TournamentState } from '../../../core/models';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { SelectedRound } from '../../../core/selected-round';
 import { withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { unresolvedQualificationTie } from '../../../domain/tournament-view/group-qualification';
+import { groups20State, strongerPairWins } from '../../../testing/groups20';
 import { storedTournament, tournamentState } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { ShareResultsSession } from '../share-results-dialog/share-results-session';
@@ -191,6 +193,53 @@ describe('TournamentStore: finals', () => {
     expect(tournament.state().finals?.matches.map((m) => m.finalKind)).toEqual(['championship', 'third-place']);
     expect(hooks.save).toHaveBeenCalledWith('Finais geradas com base nos oito primeiros do ranking.');
     expect(events()).toContain('finals_generated');
+  });
+
+  it.each([
+    [4, 'crossed'],
+    [4, 'seededDraw'],
+    [5, 'crossed'],
+    [5, 'seededDraw'],
+  ] as const)(
+    'builds the bracket with byes for the 20-player format (groups of %i, %s)',
+    async (groupSize, finalsPairing) => {
+      const { store, tournament, dialogs, events, analytics } = setup({
+        ...groups20State(groupSize, 4, strongerPairWins),
+        finalsPairing,
+      });
+      expect(store.qualification()?.seeding).toHaveLength(12);
+      // Equal groups tie across groups: the draws are made the way the dialog would.
+      dialogs.onOpen = () => {
+        for (let tied = unresolvedQualificationTie(tournament.state()); tied.length;) {
+          const ids = tied.map((row) => row.playerId);
+          tournament.update((state) => withTieDraw(state, ids, ids, '2026-11-18T10:00:00.000Z'));
+          tied = unresolvedQualificationTie(tournament.state());
+        }
+      };
+      await store.generateFinal();
+      const matches = tournament.state().finals!.matches;
+      expect(matches.map((m) => m.id)).toEqual([
+        'final-qfb-1',
+        'final-qfb-2',
+        'final-sf-1',
+        'final-sf-2',
+        'final-championship',
+        'final-third-place',
+      ]);
+      expect(matches.find((m) => m.id === 'final-sf-1')!.teamB).toEqual(['', '']);
+      expect(events()).toContain('finals_generated');
+      const sent = analytics.calls.find((call) => call.kind === 'capture' && call.event === 'finals_generated');
+      expect(sent).toMatchObject({ properties: { group_size: groupSize, finals_pairing: finalsPairing } });
+      expect(dialogs.opened.length).toBeLessThanOrEqual(1);
+    },
+  );
+
+  it('opens the tie draw for a qualification tie in the 20-player format', async () => {
+    const { store, tournament, dialogs } = setup(groups20State(4, 5, () => [6, 4]));
+    dialogs.openAnswer = false;
+    await store.generateFinal();
+    expect(dialogs.opened).toHaveLength(1);
+    expect(tournament.state().finals).toBeFalsy();
   });
 
   it('says so when the schedule is not over', async () => {

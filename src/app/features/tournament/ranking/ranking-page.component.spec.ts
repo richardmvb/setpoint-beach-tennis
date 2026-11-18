@@ -7,6 +7,7 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
 import { FinalsService } from '../../../core/finals.service';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
+import { groups20State, strongerPairWins } from '../../../testing/groups20';
 import { storedTournament } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { TournamentStore, type ShellRequest } from '../data/tournament.store';
@@ -126,5 +127,19 @@ describe('RankingPageComponent', () => {
     expect(requests).toContainEqual({ kind: 'finalized' });
     expect(await screen.findByText(/Duração do torneio:/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Finalizar torneio' })).toBeNull();
+  });
+});
+
+describe('RankingPageComponent: the 20-player format', () => {
+  it('marks who goes on, lists the 12 qualifiers in seed order, and words the finals for the pairing', async () => {
+    await show({ ...groups20State(4, 3, strongerPairWins), finalsPairing: 'seededDraw' });
+    expect(screen.getAllByText(/Classificado$/).length).toBeGreaterThanOrEqual(10);
+    expect(screen.getAllByText(/Melhor 3º$/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/Eliminado$/).length).toBe(8);
+    const card = screen.getByRole('heading', { name: 'Classificados' }).closest('article')!;
+    expect(within(card).getAllByRole('row')).toHaveLength(13);
+    expect(screen.getByText('Doze classificados')).toBeTruthy();
+    expect(screen.getByText(/Cada uma das 6 melhores sorteia o parceiro/)).toBeTruthy();
+    expect(screen.getByText('Sorteio registrado')).toBeTruthy();
   });
 });

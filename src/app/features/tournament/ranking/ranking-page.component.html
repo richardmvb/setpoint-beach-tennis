@@ -12,13 +12,22 @@
     [hasSchedule]="store.hasSchedule()"
     (playerSelected)="store.openPlayerMatches($event)"
   />
+  @if (store.qualification(); as qualification) {
+    <app-qualifiers-card
+      [qualification]="qualification"
+      [players]="store.state().players"
+      [provisional]="!store.canGenerateFinal() && !store.state().finals"
+    />
+  }
   @if (store.canGenerateFinal()) {
     <article uiCard class="full-card final-qualifier">
       <div>
         <span class="card-kicker">{{ t('finalPhase') }}</span>
         <h2>
           {{
-            store.usesMixedFinals()
+            store.qualification()
+              ? t('twelveQualified')
+              : store.usesMixedFinals()
               ? t('mixedAvailable')
               : store.earlyFinalsReady()
                 ? t('earlyAvailable')
@@ -27,7 +36,11 @@
         </h2>
         <p class="muted">
           {{
-            store.usesMixedFinalBracket()
+            store.qualification()
+              ? store.state().finalsPairing === 'seededDraw'
+                ? t('groupsSeededText')
+                : t('groupsCrossedText')
+              : store.usesMixedFinalBracket()
               ? t('mixedBracketText')
               : store.usesMixedFinals()
                 ? t('mixedDirectText')
@@ -54,5 +67,13 @@
     <div class="criteria">
       <b>03</b><span><strong>{{ t('criterionGamesFor') }}</strong></span>
     </div>
+    @if (store.qualification()) {
+      <div class="criteria">
+        <b>04</b><span><strong>{{ t('criterionHeadToHead') }}</strong></span>
+      </div>
+      <div class="criteria">
+        <b>05</b><span><strong>{{ t('criterionDraw') }}</strong></span>
+      </div>
+    }
   </article>
 </ng-container>

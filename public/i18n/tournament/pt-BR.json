@@ -114,7 +114,12 @@
     "emptyHint": "Cadastre os atletas e gere as rodadas.",
     "gamesOf": "{{ played }} de {{ total }} jogos",
     "movedUp": "subiu {{ count }} posições",
-    "movedDown": "caiu {{ count }} posições"
+    "movedDown": "caiu {{ count }} posições",
+    "status": {
+      "direct": "Classificado",
+      "bestThird": "Melhor 3º",
+      "out": "Eliminado"
+    }
   },
   "battle": {
     "won": "VENCEU",
@@ -187,5 +192,19 @@
     "methodExact": "Cálculo exato de todos os cenários possíveis.",
     "methodSimulated": "Estimativa por simulação; \"garantido\" e \"eliminado\" só aparecem quando são matematicamente certos.",
     "methodTail": "Todos os jogos restantes são considerados equilibrados. Empates em vitórias são decididos pelo saldo de games e depois pelo confronto direto."
+  },
+  "qualifiers": {
+    "kicker": "FASE FINAL",
+    "title": "Classificados",
+    "count": "{{ count }} atletas",
+    "provisional": "Ordem provisória: muda a cada placar até o fim da fase de grupos.",
+    "seed": "SEMENTE",
+    "player": "JOGADOR",
+    "group": "GRUPO",
+    "how": "VAGA",
+    "status": {
+      "direct": "Classificado",
+      "bestThird": "Melhor 3º"
+    }
   }
 }

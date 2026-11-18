@@ -44,16 +44,16 @@ On a shared view (`is_guest_view: true`: live link, invite or admin viewer), `ho
 
 ### Running a tournament
 
-| Event                                                            | When                                          | Properties                          |
-| ---------------------------------------------------------------- | --------------------------------------------- | ----------------------------------- |
-| `tournament_created`, `tournament_started`, `schedule_generated` | Table generated                               | mode, doubles, size, rounds, courts |
-| `match_score_recorded`, `final_score_recorded`                   | A result is entered                           | mode, round, phase                  |
-| `finals_generated`                                               | Finals created                                | mode, size                          |
-| `tournament_finalized`                                           | Finished (after typing the confirmation word) | mode, size, `duration_seconds`      |
-| `tournament_finalize_cancelled`                                  | The finalize confirmation was dismissed       | mode, hosting                       |
-| `tournament_settings_saved`                                      | Settings saved after the table exists         | mode, doubles, hosting, size        |
-| `backup_exported` / `backup_imported`                            | JSON backup                                   | mode, size, `is_finalized`          |
-| `nps_feedback_opened`                                            | The NPS survey is opened                      | `survey`                            |
+| Event                                                            | When                                          | Properties                                                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `tournament_created`, `tournament_started`, `schedule_generated` | Table generated                               | mode, doubles, size, rounds, courts; `tournament_created` also `group_size`, `finals_pairing` in the 20-player format |
+| `match_score_recorded`, `final_score_recorded`                   | A result is entered                           | mode, round, phase                                                                                                    |
+| `finals_generated`                                               | Finals created                                | mode, size; 20-player format: `group_size` (4 or 5), `finals_pairing` (`crossed` or `seededDraw`)                     |
+| `tournament_finalized`                                           | Finished (after typing the confirmation word) | mode, size, `duration_seconds`                                                                                        |
+| `tournament_finalize_cancelled`                                  | The finalize confirmation was dismissed       | mode, hosting                                                                                                         |
+| `tournament_settings_saved`                                      | Settings saved after the table exists         | mode, doubles, hosting, size                                                                                          |
+| `backup_exported` / `backup_imported`                            | JSON backup                                   | mode, size, `is_finalized`                                                                                            |
+| `nps_feedback_opened`                                            | The NPS survey is opened                      | `survey`                                                                                                              |
 
 ### Saved tournaments (Meus torneios)
 
