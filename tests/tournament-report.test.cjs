@@ -6,19 +6,29 @@ const typescript = require('typescript');
 const { PGlite } = require('@electric-sql/pglite');
 const { FAKE_SUPABASE_SQL } = require('./support/fake-supabase.cjs');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/app/core/tournament-report.service.ts'), 'utf8');
-const javascript = typescript.transpileModule(source, {
-  compilerOptions: {
-    module: typescript.ModuleKind.CommonJS,
-    target: typescript.ScriptTarget.ES2022,
-    experimentalDecorators: true,
-  },
-}).outputText;
-const reportExports = {};
-new Function('require', 'exports', javascript)(
-  (name) => (name === '@angular/core' ? { Injectable: () => (target) => target } : require(name)),
-  reportExports,
-);
+/** Loads a TypeScript file of the app as CommonJS (it only imports types, Angular's `Injectable` and the files below). */
+function load(file) {
+  const source = fs.readFileSync(path.join(__dirname, '../src/app', file), 'utf8');
+  const javascript = typescript.transpileModule(source, {
+    compilerOptions: {
+      module: typescript.ModuleKind.CommonJS,
+      target: typescript.ScriptTarget.ES2022,
+      experimentalDecorators: true,
+    },
+  }).outputText;
+  const exported = {};
+  new Function('require', 'exports', javascript)(
+    (name) =>
+      name === '@angular/core'
+        ? { Injectable: () => (target) => target }
+        : name === '../domain/tournament-view/format'
+          ? load('domain/tournament-view/format.ts')
+          : require(name),
+    exported,
+  );
+  return exported;
+}
+const reportExports = load('core/tournament-report.service.ts');
 
 const players = [
   { id: 'a', name: 'Ana' },
