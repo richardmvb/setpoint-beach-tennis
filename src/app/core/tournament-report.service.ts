@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { groupSizeOf, usesGroupQualification } from '../domain/tournament-view/format';
 import { FinalMatchKind, Match, TournamentState } from './models';
 
 interface TournamentReportMatch {
@@ -69,7 +70,15 @@ export class TournamentReportService {
     }
     const mode = state.tournamentMode === 'groups' ? 'Grupos' : 'Super';
     const doubles = state.doublesFormat === 'mixed' ? 'duplas mistas' : 'duplas abertas';
-    return { name: state.name, format: `${mode} ${state.size} · ${doubles}`, finishedAt: state.finishedAt, sections };
+    const groupsNote = usesGroupQualification(state)
+      ? ` · ${groupSizeOf(state) === 5 ? '4 grupos de 5' : '5 grupos de 4'}`
+      : '';
+    return {
+      name: state.name,
+      format: `${mode} ${state.size}${groupsNote} · ${doubles}`,
+      finishedAt: state.finishedAt,
+      sections,
+    };
   }
 
   toText(report: TournamentReport): string {

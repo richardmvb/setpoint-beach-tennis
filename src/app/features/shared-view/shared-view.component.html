@@ -57,6 +57,9 @@
       @if (state.rounds.length) {
         <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" />
       }
+      @if (store.qualification(); as qualification) {
+        <app-qualifiers-card [qualification]="qualification" [players]="state.players" [provisional]="!state.finals" />
+      }
       @if (state.finals; as finals) {
         <app-guest-finals [finals]="finals" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
       }

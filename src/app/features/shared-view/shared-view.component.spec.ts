@@ -2,6 +2,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/angular';
 import { describe, expect, it, vi } from 'vitest';
 import sharedPtBr from '../../../../public/i18n/shared/pt-BR.json';
 import tournamentPtBr from '../../../../public/i18n/tournament/pt-BR.json';
+import { FinalsService } from '../../core/finals.service';
+import { pairQualifiers } from '../../domain/tournament-play/qualifier-pairs';
+import { groupQualification } from '../../domain/tournament-view/group-qualification';
+import { groups20State, strongerPairWins } from '../../testing/groups20';
 import { translocoTesting } from '../../testing/transloco-testing';
 import { storedTournament } from '../../testing/tournament-state';
 import { sharedSnapshot, type SharedViewFakeOptions, sharedViewFakes } from './shared-view.fakes';
@@ -85,5 +89,22 @@ describe('SharedViewComponent', () => {
     expect(screen.getByRole('status').textContent?.trim()).toBe('Backup JSON exportado.');
     expect(click).toHaveBeenCalledTimes(1);
     click.mockRestore();
+  });
+
+  it('shows the 20-player format: the qualifiers, who rests in a group of 5, and the bracket with byes', async () => {
+    const played = groups20State(5, 3, strongerPairWins);
+    const finals = new FinalsService();
+    const pairs = pairQualifiers(groupQualification(played).seeding, 'crossed', () => 0);
+    await setup({ url: { liveToken: 'live' } }, ({ live }) =>
+      live.given('live', {
+        id: 'live-20',
+        status: 'active',
+        state: { ...played, finals: finals.createByeBracket(pairs) },
+      }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Classificados' })).toBeTruthy();
+    expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('QUARTAS DE FINAL').length).toBe(2);
+    expect(screen.getAllByText('A definir').length).toBeGreaterThan(0);
   });
 });

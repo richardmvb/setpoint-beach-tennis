@@ -90,7 +90,8 @@
     "historyKicker": "RODADA {{ number }}",
     "done": "ENCERRADA",
     "next": "A SEGUIR",
-    "court": "QUADRA {{ number }}"
+    "court": "QUADRA {{ number }}",
+    "resting": "Descansam: {{ names }}"
   },
   "finals": {
     "kicker": "FASE FINAL",

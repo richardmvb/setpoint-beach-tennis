@@ -7,7 +7,7 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 ## Funcionalidades
 
 - **Super:** 8, 10, 12 ou 24 atletas, com parceiros rotativos.
-- **Grupos:** 8, 12 ou 24 atletas, com parceiros rotativos ou duplas fixas.
+- **Grupos:** 8, 12 ou 24 atletas, com parceiros rotativos ou duplas fixas. Com 20 atletas (rotativos abertos), há o formato **Grupos 20**: 5 grupos de 4 ou 4 grupos de 5; passam os 2 primeiros de cada grupo e os melhores terceiros (12 atletas), que viram 6 duplas (cruzadas ou sorteadas com cabeças de chave) numa chave com byes: as duas melhores esperam nas semifinais.
 - **Duplas abertas ou mistas:** no modo misto, cada dupla tem um atleta masculino e um feminino.
 - **Sorteio a cada tabela:** a ordem de cadastro não define nada. Duplas, grupos, ordem das rodadas e quadras são sorteados a cada geração; as quadras se alternam para ninguém ficar sempre na mesma, os descansos ficam espaçados (evitando descansar em rodadas seguidas) e as regras de cada formato continuam garantidas.
 - **Seu perfil:** nome, foto e categoria do organizador, guardados só no aparelho. No primeiro acesso, ao sair da landing page, o perfil abre uma única vez para ser preenchido (dá para pular com "Agora não"; depois fica no botão do cabeçalho). O perfil preenche os campos de nome nos convites e, se a opção estiver ligada, inclui você como jogador nos novos torneios locais.
@@ -53,6 +53,8 @@ SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a t
 | Super 24 misto           |                 12 |                6 | Cada atleta joga 12 partidas, uma com cada parceiro da outra categoria.                      |
 | Super 24 misto           |                 24 |                3 | Cada dupla de rodadas equaliza os jogos; permite encerrar a classificatória antecipadamente. |
 | Grupos rotativos abertos |                  3 |      1 por grupo | Grupos de quatro; cada atleta forma parceria com os outros três.                             |
+| Grupos rotativos abertos |                  3 |      1 por grupo | Grupos 20, 5 grupos de 4: 5 quadras, 3 rodadas.                                              |
+| Grupos rotativos abertos |                  5 |      1 por grupo | Grupos 20, 4 grupos de 5: 4 quadras, 5 rodadas (um atleta descansa por grupo e rodada).      |
 | Grupos rotativos mistos  |                  2 |      1 por grupo | Grupos de quatro balanceados com dois atletas de cada categoria.                             |
 | Grupos fixos             | Todos contra todos | Conforme formato | Duplas definidas antes de iniciar.                                                           |
 

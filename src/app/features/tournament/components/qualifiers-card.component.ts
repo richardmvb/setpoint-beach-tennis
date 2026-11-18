@@ -26,12 +26,7 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
           <p class="muted">{{ t('provisional') }}</p>
         }
         <div class="table-scroll">
-          <table class="leaderboard">
-            <caption class="sr-only">
-              {{
-                t('title')
-              }}
-            </caption>
+          <table class="leaderboard" [attr.aria-label]="t('title')">
             <thead>
               <tr>
                 <th>{{ t('seed') }}</th>

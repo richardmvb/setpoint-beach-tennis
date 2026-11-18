@@ -4,12 +4,12 @@
   @if (spotlight(); as round) {
     <article class="arena-spotlight"><div class="card-title-row"><div><span class="card-kicker"><i class="spot-dot"></i> {{ t('onCourt') }}</span><h2>{{ t('round', { number: round.number }) }}</h2></div><span class="mini-tag">{{ round.matches.length === 1 ? t('oneMatch') : t('matches', { count: round.matches.length }) }}</span></div><div class="battle-list">@for (match of round.matches; track match.id) {
       <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match, live: true }" />
-    }</div></article>
+    }</div>@if (resting(round); as names) {<p class="muted">{{ t('resting', { names: names }) }}</p>}</article>
   }
   @for (round of history(); track round.number) {
     <details class="surface-card shared-round arena-history"><summary><span class="card-kicker">{{ t('historyKicker', { number: round.number }) }}</span><b>{{ t('matches', { count: round.matches.length }) }}</b><em>{{ done(round) ? t('done') : t('next') }}</em></summary><div class="battle-list">@for (match of round.matches; track match.id) {
     <ng-container *ngTemplateOutlet="matchRow; context: { $implicit: match }" />
-  }</div></details>
+  }</div>@if (resting(round); as names) {<p class="muted">{{ t('resting', { names: names }) }}</p>}</details>
   }
 </section>
 </ng-container>
