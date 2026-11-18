@@ -1,6 +1,8 @@
 import { scrollBehavior } from '../../../core/motion';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, inject } from '@angular/core';
-import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
+import { FormsModule } from '@angular/forms';
+import { provideTranslocoScope, TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import { CardComponent } from '@ui/card/card.component';
 import type { Match } from '../../../core/models';
@@ -16,6 +18,8 @@ import { TournamentStore } from '../data/tournament.store';
 @Component({
   selector: 'section[appRoundsPage]',
   imports: [
+    FormsModule,
+    NgTemplateOutlet,
     TranslocoDirective,
     ButtonComponent,
     CardComponent,
@@ -31,6 +35,7 @@ import { TournamentStore } from '../data/tournament.store';
 })
 export class RoundsPageComponent {
   protected readonly store = inject(TournamentStore);
+  private readonly transloco = inject(TranslocoService);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected select(index: number): void {
@@ -47,6 +52,14 @@ export class RoundsPageComponent {
         behavior: scrollBehavior(),
       });
     }, 0);
+  }
+
+  /** Group, then the court, or (court queue: the drawn court is meaningless) the round the match belongs to. */
+  protected matchLabel(match: Match, roundNumber: number): string {
+    const group = match.groupId ? `${this.store.groupName(match.groupId)} · ` : '';
+    return this.store.usesCourtQueue()
+      ? group + this.transloco.translate('rounds.roundTag', { number: roundNumber }, 'organizer/pt-BR')
+      : group + this.transloco.translate('rounds.court', { number: match.court }, 'organizer/pt-BR');
   }
 
   protected score(match: Match, edit: ScoreEdit): void {

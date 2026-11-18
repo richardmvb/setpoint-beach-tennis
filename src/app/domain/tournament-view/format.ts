@@ -59,6 +59,14 @@ export function groupSizeOf(state: TournamentState): GroupSize {
   return usesGroupQualification(state) && state.groupSize === 5 ? 5 : 4;
 }
 
+/**
+ * The 20-player format with fewer courts than group matches per round: the matches are all drawn, but a round does
+ * not fit the courts, so people wait and the organizer plays them in any order. Court numbers mean nothing then.
+ */
+export function usesCourtQueue(state: TournamentState): boolean {
+  return usesGroupQualification(state) && state.courts < 20 / groupSizeOf(state);
+}
+
 /** What analytics learns about the 20-player format (enums and counts only); nothing for the other formats. */
 export function groupFormatProperties(state: TournamentState): { group_size?: number; finals_pairing?: string } {
   return usesGroupQualification(state)

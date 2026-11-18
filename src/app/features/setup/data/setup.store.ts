@@ -91,7 +91,7 @@ export class SetupStore {
   readonly hasSchedule = computed(() => hasSchedule(this.state()));
   readonly earlyFinalsAvailable = computed(() => isEarlyFinalsOptionAvailable(this.state()));
   readonly sizes = computed(() => availableSizes(this.state()));
-  readonly courts = computed(() => availableCourts(this.state()));
+  readonly courts = computed(() => [...availableCourts(this.state())].sort((a, b) => a - b));
   readonly gamesToWin = computed(() => availableGamesToWin(this.state()));
   readonly rounds = computed(() => requiredRounds(this.state()));
   readonly enrollment = computed(() => enrollment(this.state()));

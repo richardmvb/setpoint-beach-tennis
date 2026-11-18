@@ -1,4 +1,4 @@
-import type { TournamentState } from '../../core/models';
+import type { Match, TournamentState } from '../../core/models';
 import { type FinalWinnerSide, isScored } from './scoring';
 
 /** Every match of the tournament, group stage and finals. */
@@ -19,6 +19,28 @@ export function completedMatches(state: TournamentState, winnerSide: FinalWinner
 /** Rounds whose matches are all scored. */
 export function completedRounds(state: TournamentState): number {
   return state.rounds.filter((r) => r.matches.every((m) => isScored(m))).length;
+}
+
+/** The group stage is over: there is a schedule and every one of its matches has a score. */
+export function groupStageComplete(state: TournamentState): boolean {
+  return state.rounds.length > 0 && state.rounds.every((round) => round.matches.every((match) => isScored(match)));
+}
+
+/** A group match with the number of the round it was drawn in. */
+export interface ListedMatch {
+  roundNumber: number;
+  match: Match;
+}
+
+/** Every group match in drawn order, for the open list; `pendingOnly` drops the scored ones, `groupId` keeps one group. */
+export function listMatches(state: TournamentState, filter: { pendingOnly: boolean; groupId: string }): ListedMatch[] {
+  return state.rounds.flatMap((round) =>
+    round.matches
+      .filter(
+        (match) => (!filter.pendingOnly || !isScored(match)) && (!filter.groupId || match.groupId === filter.groupId),
+      )
+      .map((match) => ({ roundNumber: round.number, match })),
+  );
 }
 
 /** Share of matches done, 0 to 100. */

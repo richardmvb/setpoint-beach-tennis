@@ -68,6 +68,20 @@ describe('groupTables', () => {
     expect(tables(tournamentState())).toEqual([]);
   });
 
+  it('shows no qualification mark while a group match is still open', () => {
+    const state = groups20State(4, 3, strongerPairWins);
+    const open = {
+      ...state,
+      rounds: state.rounds.map((round, index) =>
+        index === 0
+          ? { ...round, matches: [{ ...round.matches[0], scoreA: null, scoreB: null }, ...round.matches.slice(1)] }
+          : round,
+      ),
+    };
+    const all = groupTables(open, rankedStandingGroups(open).flat());
+    expect(all.flatMap((table) => table.entries).every((entry) => entry.status === undefined)).toBe(true);
+  });
+
   it('marks who goes on to the finals in the 20-player format, and nothing in the others', () => {
     const state = groups20State(4, 3, strongerPairWins);
     const all = groupTables(state, rankedStandingGroups(state).flat());

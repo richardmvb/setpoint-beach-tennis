@@ -1,6 +1,7 @@
 import type { PlayerStanding, TournamentState } from '../../core/models';
 import { fixedPairsMode, usesGroupQualification } from './format';
 import { groupQualification, type QualificationStatus } from './group-qualification';
+import { groupStageComplete } from './progress';
 
 /** One row of a group table: a player, or a fixed pair (which shares one standing). */
 export interface GroupStandingEntry {
@@ -11,7 +12,7 @@ export interface GroupStandingEntry {
   gamesAgainst: number;
   gameBalance: number;
   matchesPlayed: number;
-  /** Only in the 20-player format: does this athlete go on to the finals. */
+  /** Only in the 20-player format, and only once every group match has a score: does this athlete reach the finals. */
   status?: QualificationStatus;
 }
 
@@ -25,12 +26,13 @@ export interface GroupStandingTable {
 export function groupTables(state: TournamentState, standings: PlayerStanding[]): GroupStandingTable[] {
   const byPlayer = new Map(standings.map((row) => [row.playerId, row]));
   if (usesGroupQualification(state)) {
+    const settled = groupStageComplete(state);
     return groupQualification(state).byGroup.map((table) => ({
       id: table.groupId,
       name: table.name,
       entries: table.rows.map((row) => ({
         ...groupEntry(state, [row.standing.playerId], byPlayer),
-        status: row.status,
+        ...(settled ? { status: row.status } : {}),
       })),
     }));
   }
