@@ -11,7 +11,11 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
   imports: [TranslocoDirective, CardComponent, PlayerAvatarComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [':host{display:contents}'],
+  styles: [
+    ':host{display:contents}',
+    // Phone width: four columns must fit without a sideways scroll, so the avatar goes and the cells tighten.
+    '@media (width <= 620px){.qualifiers-card table{table-layout:fixed;width:100%;min-width:0}.qualifiers-card th,.qualifiers-card td{padding-inline:4px;white-space:normal;overflow-wrap:anywhere}.qualifiers-card th:first-child,.qualifiers-card td:first-child{width:44px}.qualifiers-card th:nth-child(3),.qualifiers-card td:nth-child(3){width:56px}.qualifiers-card th:last-child,.qualifiers-card td:last-child{width:96px}.qualifiers-card app-player-avatar{display:none}.qualifiers-card .qual-chip{padding:4px 6px;font-size:9px;white-space:normal}}',
+  ],
   template: `
     <ng-container *transloco="let t; prefix: 'tournament.qualifiers'">
       <article uiCard class="full-card qualifiers-card">
@@ -26,12 +30,7 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
           <p class="muted">{{ t('provisional') }}</p>
         }
         <div class="table-scroll">
-          <table class="leaderboard">
-            <caption class="sr-only">
-              {{
-                t('title')
-              }}
-            </caption>
+          <table class="leaderboard" [attr.aria-label]="t('title')">
             <thead>
               <tr>
                 <th>{{ t('seed') }}</th>

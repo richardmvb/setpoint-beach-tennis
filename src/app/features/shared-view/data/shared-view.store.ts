@@ -17,7 +17,8 @@ import { URL_STATE } from '../../../core/routing/url-state';
 import { ShareCardService } from '../../../core/share-card.service';
 import { type TournamentPhase, tournamentPhase } from '../../../core/state-machines';
 import { StorageService } from '../../../core/storage.service';
-import { isGroupTournament, isMixedDoubles } from '../../../domain/tournament-view/format';
+import { isGroupTournament, isMixedDoubles, usesGroupQualification } from '../../../domain/tournament-view/format';
+import { groupQualification } from '../../../domain/tournament-view/group-qualification';
 import { groupTables } from '../../../domain/tournament-view/group-tables';
 import {
   completedMatches,
@@ -146,6 +147,11 @@ export class SharedViewStore {
   readonly standings = computed(() => {
     const state = this.tournament();
     return state ? this.standingsMemo(state) : null;
+  });
+  /** The 20-player format: who goes on to the finals (null for the other formats). */
+  readonly qualification = computed(() => {
+    const state = this.tournament();
+    return state && state.rounds.length && usesGroupQualification(state) ? groupQualification(state) : null;
   });
   readonly groupTables = computed(() => {
     const state = this.tournament();

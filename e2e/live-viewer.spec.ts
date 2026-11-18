@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test } from './support/fixtures';
 import { mockSupabase, tournamentFixture } from './support/supabase-mock';
 
@@ -13,6 +15,44 @@ interface Match {
   scoreA: number | null;
   scoreB: number | null;
 }
+
+test.describe('live viewer: Grupos 20', () => {
+  test('shows the qualifiers, who rests in each round and the bracket with byes', async ({ page }) => {
+    const supabase = await mockSupabase(page);
+    const state = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
+
+    await page.goto(`/?live=${TOKEN}`);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+    // One line per round (the played rounds are folded).
+    await expect(page.getByText(/^Descansam: /)).toHaveCount(5);
+    await expect(page.getByText('QUARTAS DE FINAL')).toHaveCount(2);
+    await expect(page.getByText('A definir').first()).toBeVisible();
+    await expect(page.locator('input.inline-score')).toHaveCount(0);
+  });
+});
+
+test.describe('live viewer: Grupos 20 on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the qualifiers table fits the screen without a sideways scroll', async ({ page }) => {
+    const supabase = await mockSupabase(page);
+    const state = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
+    await page.goto(`/?live=${TOKEN}`);
+    const card = page.getByRole('heading', { name: 'Classificados' }).locator('xpath=ancestor::article');
+    await expect(card).toBeVisible();
+    const overflow = await card
+      .locator('.table-scroll')
+      .evaluate((element) => element.scrollWidth - element.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
 
 test.describe('live viewer', () => {
   test('opens from the legacy ?live= link and shows the tournament read-only', async ({ page }) => {

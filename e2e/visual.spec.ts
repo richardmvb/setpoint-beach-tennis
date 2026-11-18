@@ -20,6 +20,11 @@ const tournamentJson = readFileSync(
   'utf8',
 );
 
+const groups20Json = readFileSync(
+  join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'),
+  'utf8',
+);
+
 type Theme = 'light' | 'dark';
 interface Config {
   theme: Theme;
@@ -236,6 +241,44 @@ for (const config of CONFIGS) {
       await expect(page.getByRole('heading', { level: 1, name: 'Fixture v1' })).toBeVisible();
       await expect(page.getByRole('progressbar', { name: 'Progresso do torneio' })).toBeVisible();
       await page_(page, 'live-viewer');
+    });
+
+    test('groups 20 setup', async ({ page }) => {
+      await page.goto('/');
+      await page
+        .locator('#tournamentMode')
+        .getByRole('radio', { name: /^Grupos/ })
+        .click();
+      // The size slider lists 8, 12, 20 and 24: index 2 is 20.
+      await page.locator('#setupSize').fill('2');
+      await expect(page.getByRole('radio', { name: /4 grupos de 5/ })).toBeVisible();
+      await page_(page, 'setup-groups20');
+    });
+
+    test('groups 20 ranking and bracket', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups20Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+      await page_(page, 'ranking-groups20');
+    });
+
+    test('groups 20 live viewer', async ({ page }) => {
+      const supabase = await mockSupabase(page);
+      supabase.rpc('get_local_live_tournament', {
+        id: 'live-20',
+        status: 'active',
+        state: JSON.parse(groups20Json),
+      });
+      await page.goto('/?live=live-read-token-123');
+      await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+      await page_(page, 'live-viewer-groups20');
     });
 
     test('guest invite', async ({ page }) => {
