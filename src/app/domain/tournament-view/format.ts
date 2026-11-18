@@ -1,4 +1,4 @@
-import type { TournamentState } from '../../core/models';
+import type { GroupSize, TournamentState } from '../../core/models';
 
 export function isGroupTournament(state: TournamentState): boolean {
   return state.tournamentMode === 'groups';
@@ -47,4 +47,14 @@ export function defaultFixedPairs(state: TournamentState): [string, string][] {
     state.players[index * 2].id,
     state.players[index * 2 + 1].id,
   ]);
+}
+
+/** The 20-player rotating open groups: group standings, best third places and a bracket with byes. */
+export function usesGroupQualification(state: TournamentState): boolean {
+  return isGroupTournament(state) && !fixedPairsMode(state) && !isMixedDoubles(state) && state.size === 20;
+}
+
+/** Players per group: 5 only in the 20-player format when chosen, 4 everywhere else. */
+export function groupSizeOf(state: TournamentState): GroupSize {
+  return usesGroupQualification(state) && state.groupSize === 5 ? 5 : 4;
 }

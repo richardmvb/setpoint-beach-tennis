@@ -134,7 +134,7 @@ function buildStandings(state: TournamentState): PlayerStanding[] {
   return rows.map((row) => ({ ...row, gameBalance: row.gamesFor - row.gamesAgainst }));
 }
 
-function compareStandingCriteria(a: PlayerStanding, b: PlayerStanding): number {
+export function compareStandingCriteria(a: PlayerStanding, b: PlayerStanding): number {
   return b.setsWon - a.setsWon || b.gameBalance - a.gameBalance || b.gamesFor - a.gamesFor;
 }
 

@@ -86,6 +86,7 @@ export class TournamentLifecycle {
           previous.groupFormat ?? 'rotating',
           previous.fixedPairs ?? [],
           mixed,
+          tournamentFormat.groupSizeOf(previous),
         );
         this.tournament.set({ ...base, groups: schedule.groups, rounds: schedule.rounds });
       } else {

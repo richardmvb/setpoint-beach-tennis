@@ -95,4 +95,32 @@ test.describe('stored data from earlier releases', () => {
     await expect(page.getByText('TORNEIO COMPARTILHADO')).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
+
+  test('a v2 Grupos 20 tournament saved on the device loads its groups of five and its bracket with byes', async ({
+    page,
+  }) => {
+    const raw = fixture('tournament', 2);
+    await page.addInitScript((state: string) => {
+      if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+    }, raw);
+
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: /Partidas/ })
+      .first()
+      .click();
+
+    await expect(page.locator('.round-tabs button')).toHaveCount(5);
+    await expect(page.locator('input.inline-score').first()).toBeVisible();
+  });
+
+  test('a v2 shared Grupos 20 snapshot from the server is shown to a guest', async ({ page }) => {
+    const supabase = await mockSupabase(page);
+    supabase.rpc('get_shared_tournament', JSON.parse(fixture('shared-snapshot', 2)) as Record<string, unknown>);
+
+    await page.goto('/?invite=' + 'a'.repeat(64));
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+  });
 });

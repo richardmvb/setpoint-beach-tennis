@@ -42,6 +42,22 @@ export class FinalsService {
       this.match('third-place', 2, pair(2), pair(3)),
     ]);
   }
+  /**
+   * The 20-player bracket from the six pairs D1 to D6: D1 and D2 wait in the semifinals, the quarterfinals are
+   * D4 x D5 and D3 x D6, and the semifinal opponents are filled as those end.
+   */
+  createByeBracket(pairs: readonly [string, string][]): FinalStage {
+    if (pairs.length !== 6) throw new Error('A chave com byes exige seis duplas.');
+    const pair = (index: number): [string, string] => [pairs[index][0], pairs[index][1]];
+    return this.stage([
+      this.match('quarterfinal', 1, pair(3), pair(4), 'qfb-1'),
+      this.match('quarterfinal', 2, pair(2), pair(5), 'qfb-2'),
+      this.match('semifinal', 1, pair(0), ['', ''], 'sf-1'),
+      this.match('semifinal', 2, pair(1), ['', ''], 'sf-2'),
+      this.match('championship', 1, ['', ''], ['', '']),
+      this.match('third-place', 2, ['', ''], ['', '']),
+    ]);
+  }
   winnerSide(match: Match): 1 | 2 | null {
     const { scoreA, scoreB, tieBreakA, tieBreakB } = match;
     if (!match.teamA[0] || !match.teamB[0]) return null;
@@ -72,13 +88,21 @@ export class FinalsService {
     }));
     const byId = new Map(matches.map((match) => [match.id, match]));
     const q = ['final-qf-1', 'final-qf-2', 'final-qf-3', 'final-qf-4'].map((id) => byId.get(id));
+    const bye = ['final-qfb-1', 'final-qfb-2'].map((id) => byId.get(id));
+    if (!q.every(Boolean) && bye.every(Boolean)) {
+      // The semifinal's first team is the seed with the bye; only the opponent comes from the quarterfinal.
+      const first = byId.get('final-sf-1')!,
+        second = byId.get('final-sf-2')!;
+      this.setTeams(first, first.teamA, this.winners(bye[0]!));
+      this.setTeams(second, second.teamA, this.winners(bye[1]!));
+      this.setFinalTeams(byId, first, second);
+    }
     if (q.every(Boolean)) {
       this.setTeams(byId.get('final-sf-1')!, this.winners(q[0]!), this.winners(q[1]!));
       this.setTeams(byId.get('final-sf-2')!, this.winners(q[2]!), this.winners(q[3]!));
       const a = byId.get('final-sf-1')!,
         b = byId.get('final-sf-2')!;
-      this.setTeams(byId.get('final-championship')!, this.winners(a), this.winners(b));
-      this.setTeams(byId.get('final-third-place')!, this.losers(a), this.losers(b));
+      this.setFinalTeams(byId, a, b);
     }
     const final = byId.get('final-championship'),
       third = byId.get('final-third-place');
@@ -138,6 +162,10 @@ export class FinalsService {
   private losers(match: Match): [string, string] {
     const side = this.winnerSide(match);
     return side ? this.other(match, side) : ['', ''];
+  }
+  private setFinalTeams(byId: Map<string, Match>, first: Match, second: Match): void {
+    this.setTeams(byId.get('final-championship')!, this.winners(first), this.winners(second));
+    this.setTeams(byId.get('final-third-place')!, this.losers(first), this.losers(second));
   }
   private setTeams(match: Match, a: [string, string], b: [string, string]): void {
     if (match.teamA.join('|') === a.join('|') && match.teamB.join('|') === b.join('|')) return;

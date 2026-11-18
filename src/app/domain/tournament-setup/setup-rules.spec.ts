@@ -12,7 +12,9 @@ import {
   withCourts,
   withDoublesFormat,
   withEarlyFinals,
+  withFinalsPairing,
   withGroupFormat,
+  withGroupSize,
   withHostingMode,
   withMixedFinalFormat,
   withSize,
@@ -46,7 +48,7 @@ describe('setup rules', () => {
     expect(requiredRounds(tournamentState({ size: 10 }))).toBe(10);
     expect(requiredRounds(tournamentState({ size: 12, courts: 2 }))).toBe(12);
     const groups = tournamentState({ tournamentMode: 'groups', size: 12, courts: 3 });
-    expect(availableSizes(groups)).toEqual([8, 12, 24]);
+    expect(availableSizes(groups)).toEqual([8, 12, 20, 24]);
     expect(availableGamesToWin(groups)).toEqual([4, 5, 6]);
     expect(availableCourts(groups)).toEqual([3]);
     expect(requiredRounds(groups)).toBe(3);
@@ -165,5 +167,57 @@ describe('normalizeStoredTournament', () => {
     const state = normalizeStoredTournament(stored);
     expect(state.courts).toBe(5);
     expect(state.roundCount).toBe(1);
+  });
+});
+
+describe('Grupos 20', () => {
+  const groups = (extra = {}) => withTournamentMode(tournamentState({ size: 12, ...extra }), 'groups');
+
+  it('offers 20 only for open rotating groups', () => {
+    expect(availableSizes(groups())).toEqual([8, 12, 20, 24]);
+    expect(availableSizes(withGroupFormat(groups(), 'fixed'))).toEqual([8, 12, 24]);
+    expect(availableSizes(withDoublesFormat(groups(), 'mixed'))).toEqual([8, 12, 24]);
+    expect(availableSizes(tournamentState())).toEqual([8, 10, 12, 24]);
+  });
+
+  it('5 groups of 4 by default: 5 courts and 3 rounds; 4 groups of 5: 4 courts and 5 rounds', () => {
+    const twenty = withSize(groups(), 20);
+    expect(twenty).toMatchObject({ size: 20, courts: 5, roundCount: 3 });
+    const five = withGroupSize(twenty, 5);
+    expect(five).toMatchObject({ groupSize: 5, courts: 4, roundCount: 5 });
+    expect(withGroupSize(five, 4)).toMatchObject({ groupSize: 4, courts: 5, roundCount: 3 });
+  });
+
+  it('the group size and the pairing only exist in this format, and are cleared when it is left', () => {
+    expect(withGroupSize(groups(), 5)).toEqual(groups());
+    expect(withFinalsPairing(groups(), 'seededDraw')).toEqual(groups());
+    const chosen = withFinalsPairing(withGroupSize(withSize(groups(), 20), 5), 'seededDraw');
+    expect(chosen).toMatchObject({ groupSize: 5, finalsPairing: 'seededDraw' });
+    const smaller = withSize(chosen, 12);
+    expect(smaller.groupSize).toBeUndefined();
+    expect(smaller.finalsPairing).toBeUndefined();
+    const fixed = withGroupFormat(chosen, 'fixed');
+    expect(fixed).toMatchObject({ size: 24, courts: 6 });
+    expect(fixed.groupSize).toBeUndefined();
+    const mixed = withDoublesFormat(chosen, 'mixed');
+    expect(mixed.size).toBe(24);
+    expect(mixed.finalsPairing).toBeUndefined();
+    expect(withTournamentMode(chosen, 'super').size).toBe(24);
+  });
+
+  it('the group size is fixed once a schedule exists, and the pairing once the finals exist', () => {
+    const base = withGroupSize(withSize(groups(), 20), 5);
+    const drawn = { ...base, rounds: [{ number: 1, matches: [], restingPlayerIds: [] }] };
+    expect(withGroupSize(drawn, 4)).toBe(drawn);
+    expect(withFinalsPairing(drawn, 'seededDraw').finalsPairing).toBe('seededDraw');
+    const finished = { ...drawn, finals: { matches: [], complete: false, podiumPlayerIds: [] } };
+    expect(withFinalsPairing(finished, 'seededDraw')).toBe(finished);
+  });
+
+  it('fits the courts of a stored 20-player tournament without a schedule', () => {
+    const stored = normalizeStoredTournament(
+      tournamentState({ size: 20, courts: 3, tournamentMode: 'groups', groupSize: 5, groupFormat: 'rotating' }),
+    );
+    expect(stored).toMatchObject({ courts: 4, roundCount: 5 });
   });
 });

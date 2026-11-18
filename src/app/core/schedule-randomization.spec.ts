@@ -308,3 +308,67 @@ describe('schedule randomization', () => {
 function fixedRoundCount(size: number): number {
   return size / 2 - 1;
 }
+
+describe('Grupos 20 schedule', () => {
+  const players = roster(20, false);
+  const generate = (groupSize: 4 | 5, seed: number) => {
+    const service = new GroupScheduleService();
+    service.random = seeded(seed);
+    return service.generate(players, 'rotating', [], false, groupSize);
+  };
+
+  it('5 groups of 4: 3 rounds, 5 courts, nobody rests, each partner once', () => {
+    const { groups, rounds } = generate(4, 1);
+    expect(groups.map((group) => group.playerIds.length)).toEqual([4, 4, 4, 4, 4]);
+    expect(rounds).toHaveLength(3);
+    for (const round of rounds) {
+      expect(round.matches).toHaveLength(5);
+      expect(round.restingPlayerIds).toEqual([]);
+    }
+  });
+
+  it('4 groups of 5: 5 rounds, 4 matches each, one athlete resting per group, every pair partners once', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const { groups, rounds } = generate(5, seed);
+      expect(groups.map((group) => group.playerIds.length)).toEqual([5, 5, 5, 5]);
+      expect(rounds).toHaveLength(5);
+      const partners = new Map<string, number>();
+      const opponents = new Map<string, number>();
+      const rests = new Map<string, number>();
+      for (const round of rounds) {
+        expect(round.matches).toHaveLength(4);
+        expect(round.restingPlayerIds).toHaveLength(4);
+        const playing = new Set(round.matches.flatMap((match) => [...match.teamA, ...match.teamB]));
+        expect(playing.size).toBe(16);
+        for (const id of round.restingPlayerIds) {
+          expect(playing.has(id)).toBe(false);
+          rests.set(id, (rests.get(id) ?? 0) + 1);
+        }
+        for (const match of round.matches) {
+          for (const team of [match.teamA, match.teamB])
+            partners.set(pairKey(...team), (partners.get(pairKey(...team)) ?? 0) + 1);
+          for (const a of match.teamA)
+            for (const b of match.teamB) opponents.set(pairKey(a, b), (opponents.get(pairKey(a, b)) ?? 0) + 1);
+        }
+      }
+      expect(rests.size).toBe(20);
+      expect([...rests.values()].every((count) => count === 1)).toBe(true);
+      // 4 groups x 10 pairs each.
+      expect(partners.size).toBe(40);
+      expect([...partners.values()].every((count) => count === 1)).toBe(true);
+      expect(opponents.size).toBe(40);
+      expect([...opponents.values()].every((count) => count === 2)).toBe(true);
+      for (const group of groups) {
+        const ids = new Set(group.playerIds);
+        expect([...partners.keys()].filter((key) => key.split('|').every((id) => ids.has(id)))).toHaveLength(10);
+      }
+    }
+  });
+
+  it('refuses groups of five outside the 20-player format, and 20 players in other group formats', () => {
+    const service = new GroupScheduleService();
+    expect(() => service.generate(roster(12, false), 'rotating', [], false, 5)).toThrow();
+    expect(() => service.generate(players, 'rotating', [], true, 4)).toThrow();
+    expect(() => service.generate(players, 'fixed', [], false, 4)).toThrow();
+  });
+});
