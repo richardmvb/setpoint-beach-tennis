@@ -4,6 +4,8 @@
 
 SETPOINT é um gerenciador de torneios para uso no clube ou na quadra. Monte a tabela, registre placares, acompanhe a classificação individual e conduza finais e pódio em um único fluxo.
 
+O guia interativo do Super Nosso Misto está em [`/setpoint-beach-tennis/super-nosso-misto.html`](https://richardmvb.github.io/setpoint-beach-tennis/super-nosso-misto.html) após a publicação no GitHub Pages.
+
 ## Funcionalidades
 
 - **Super:** 8, 10, 12 ou 24 atletas, com parceiros rotativos.

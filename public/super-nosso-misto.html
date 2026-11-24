@@ -1,0 +1,1419 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#153d34" />
+    <title>Como funciona · Super Nosso Misto</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --forest: #153d34;
+        --deep: #102c27;
+        --green: #276b56;
+        --mint: #e5f1e9;
+        --cream: #f7f5ec;
+        --paper: #fff;
+        --ink: #1f302a;
+        --muted: #52665e;
+        --gold: #eab64d;
+        --line: #dce6de;
+        --red: #a94435;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 140px;
+      }
+      body {
+        margin: 0;
+        background: var(--cream);
+        color: var(--ink);
+        font:
+          16px/1.6 system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      a {
+        color: inherit;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+      :focus-visible {
+        outline: 3px solid #d88a13;
+        outline-offset: 3px;
+      }
+      .wrap {
+        width: min(1120px, calc(100% - 40px));
+        margin: auto;
+      }
+      .top {
+        background: var(--deep);
+        color: #fff;
+      }
+      .top .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+      }
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #76968a;
+        border-radius: 10px;
+        color: var(--gold);
+        font-size: 0.8rem;
+      }
+      .top-note {
+        font-size: 0.75rem;
+        color: #d4e4db;
+        text-align: right;
+      }
+      .hero {
+        background: var(--forest);
+        color: #fff;
+        overflow: hidden;
+      }
+      .hero-inner {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 46px;
+        align-items: center;
+        padding: 76px 0 70px;
+      }
+      .eyebrow {
+        display: block;
+        color: var(--green);
+        font-weight: 800;
+        font-size: 0.72rem;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+      .hero .eyebrow {
+        color: #efc76f;
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+      h1 {
+        font-size: clamp(2.7rem, 6vw, 5.3rem);
+        line-height: 1.02;
+        letter-spacing: -0.055em;
+        margin: 16px 0 20px;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--gold);
+      }
+      .hero-copy {
+        color: #e1eee5;
+        font-size: 1.08rem;
+        max-width: 530px;
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 27px;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-decoration: none;
+        padding: 12px 19px;
+        border-radius: 10px;
+        background: var(--gold);
+        color: var(--deep);
+        font-weight: 800;
+        border: 1px solid transparent;
+      }
+      .button.secondary {
+        color: #fff;
+        border-color: #78988a;
+        background: transparent;
+      }
+      .event-card {
+        background: #f8f6ea;
+        color: var(--forest);
+        border-radius: 20px;
+        padding: 26px;
+        box-shadow: 0 20px 50px #09241d66;
+        transform: rotate(2deg);
+      }
+      .event-card .label {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        font-weight: 800;
+        color: var(--green);
+      }
+      .event-card h2 {
+        font-size: 1.5rem;
+        line-height: 1.2;
+        margin: 8px 0 22px;
+      }
+      .event-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .event-grid div {
+        border-top: 1px solid #cddbd0;
+        padding-top: 12px;
+      }
+      .event-grid strong {
+        display: block;
+        font-size: 1.22rem;
+      }
+      .event-grid span {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        box-shadow: 0 5px 20px #153d340a;
+      }
+      .nav .wrap {
+        display: flex;
+        gap: 26px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: thin;
+      }
+      .nav a {
+        font-size: 0.83rem;
+        font-weight: 700;
+        color: var(--muted);
+        padding: 15px 0;
+        text-decoration: none;
+      }
+      .nav a:hover {
+        color: var(--forest);
+      }
+      .nav a[aria-current='step'] {
+        color: var(--forest);
+        box-shadow: inset 0 -3px var(--green);
+      }
+      .wizard-progress {
+        position: sticky;
+        top: 51px;
+        z-index: 4;
+        background: #e8f1e9;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 0;
+      }
+      .progress-copy {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: var(--forest);
+        font-weight: 700;
+      }
+      progress {
+        display: block;
+        width: 100%;
+        height: 8px;
+        margin-top: 8px;
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        appearance: none;
+        background: #cadbd0;
+      }
+      progress::-webkit-progress-bar {
+        background: #cadbd0;
+      }
+      progress::-webkit-progress-value {
+        background: var(--green);
+        transition: width 0.35s ease;
+      }
+      progress::-moz-progress-bar {
+        background: var(--green);
+        transition: width 0.35s ease;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .wizard-ready section:not([hidden]) .wrap {
+        animation: step-in 0.45s ease both;
+      }
+      @keyframes step-in {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .wizard-actions {
+        background: var(--cream);
+        padding: 0 0 62px;
+      }
+      .wizard-actions .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+      .wizard-actions button {
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-weight: 800;
+      }
+      .wizard-back {
+        color: var(--forest);
+        background: transparent;
+        border: 1px solid #aac3b3;
+      }
+      .wizard-back:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .wizard-next {
+        background: var(--forest);
+        color: #fff;
+        border: 1px solid var(--forest);
+      }
+      .wizard-next:hover {
+        background: var(--green);
+      }
+      .play-box {
+        margin-top: 24px;
+        border: 1px solid #bed7c5;
+        background: #edf6ed;
+        border-radius: 16px;
+        padding: 20px;
+      }
+      .play-box h3 {
+        margin: 5px 0;
+        color: var(--forest);
+      }
+      .play-box p {
+        margin: 8px 0;
+        color: var(--muted);
+      }
+      .play-box .switcher {
+        margin: 12px 0;
+      }
+      .play-box .feedback {
+        font-weight: 700;
+        color: var(--forest);
+        min-height: 1.6em;
+      }
+      .player-select {
+        display: block;
+        width: min(100%, 360px);
+        padding: 10px 12px;
+        border: 1px solid #aac3b3;
+        border-radius: 9px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+      }
+      .player-result {
+        background: #fff;
+        border-radius: 10px;
+        padding: 13px 15px;
+        min-height: 50px;
+      }
+      .balance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .balance-card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px;
+      }
+      .balance-card strong {
+        display: block;
+        color: var(--forest);
+        font-size: 2rem;
+        line-height: 1.1;
+      }
+      .balance-card span {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .balance-track {
+        display: flex;
+        gap: 6px;
+        margin-top: 12px;
+      }
+      .balance-track span {
+        height: 9px;
+        flex: 1;
+        background: #dce6de;
+        border-radius: 10px;
+        transition: background 0.3s ease;
+      }
+      .balance-track span.filled {
+        background: var(--green);
+      }
+      .balance-status {
+        font-size: 1.1rem;
+        color: var(--forest);
+        margin-top: 18px;
+      }
+      section {
+        padding: 76px 0;
+      }
+      section + section {
+        border-top: 1px solid var(--line);
+      }
+      .section-heading {
+        max-width: 720px;
+        margin-bottom: 28px;
+      }
+      .section-heading h2 {
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.1;
+        letter-spacing: -0.04em;
+        margin: 10px 0 15px;
+        color: var(--forest);
+      }
+      .section-heading p,
+      .muted {
+        color: var(--muted);
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 23px;
+      }
+      .card h3 {
+        margin: 10px 0 8px;
+        font-size: 1.12rem;
+        color: var(--forest);
+      }
+      .card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .number {
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: var(--mint);
+        color: var(--forest);
+        font-weight: 800;
+      }
+      .schedule {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .schedule .card {
+        border-top: 4px solid var(--gold);
+      }
+      .schedule strong {
+        display: block;
+        font-size: 1.35rem;
+        color: var(--forest);
+      }
+      .notice {
+        background: #fff7e2;
+        border: 1px solid #e8cf93;
+        border-radius: 14px;
+        padding: 18px 20px;
+        color: #563f16;
+        margin-top: 22px;
+      }
+      .notice p {
+        margin: 6px 0 0;
+      }
+      .demo {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px #153d340c;
+      }
+      .demo-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: var(--deep);
+        color: white;
+        padding: 16px 22px;
+      }
+      .demo-head strong {
+        display: block;
+        letter-spacing: 0.02em;
+      }
+      .demo-head span {
+        font-size: 0.75rem;
+        color: #c4d9ce;
+      }
+      .demo-tag {
+        background: #e8f4eb;
+        color: #215c43 !important;
+        border-radius: 30px;
+        font-weight: 800;
+        font-size: 0.7rem !important;
+        padding: 5px 10px;
+        white-space: nowrap;
+      }
+      .demo-body {
+        padding: 22px;
+        background: #f8faf7;
+      }
+      .demo-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .demo-title h3 {
+        font-size: 1.5rem;
+        color: var(--forest);
+        margin: 0;
+      }
+      .demo-title p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      .switcher {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .switcher button {
+        border: 1px solid #c4d7cb;
+        background: #fff;
+        color: var(--forest);
+        border-radius: 9px;
+        padding: 9px 14px;
+        font-weight: 700;
+      }
+      .switcher button[aria-pressed='true'] {
+        background: var(--forest);
+        color: #fff;
+        border-color: var(--forest);
+      }
+      .court-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .court {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 15px;
+      }
+      .court-label {
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        color: var(--green);
+      }
+      .pair {
+        margin: 12px 0;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+      .versus {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      .rests {
+        background: #e8f1e9;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 14px;
+        color: var(--forest);
+        font-size: 0.9rem;
+      }
+      .rests strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+      .hint {
+        font-size: 0.84rem;
+        color: var(--muted);
+        margin: 14px 0 0;
+      }
+      .score-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        align-items: start;
+      }
+      .score-match {
+        background: var(--forest);
+        color: #fff;
+        border-radius: 14px;
+        padding: 22px;
+      }
+      .score-match .eyebrow {
+        color: #badbca;
+      }
+      .score-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 0;
+        border-bottom: 1px solid #ffffff33;
+      }
+      .score-row strong {
+        font-size: 1.5rem;
+        color: var(--gold);
+      }
+      .score-match p {
+        margin: 15px 0 0;
+        color: #dcebe1;
+        font-size: 0.85rem;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        white-space: nowrap;
+      }
+      th {
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      td:not(:first-child),
+      th:not(:first-child) {
+        text-align: center;
+      }
+      .criteria {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin: 20px 0;
+      }
+      .criterion {
+        padding: 16px;
+        background: var(--mint);
+        border-radius: 12px;
+      }
+      .criterion strong {
+        display: block;
+        color: var(--forest);
+      }
+      .finals {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .final-card {
+        background: var(--forest);
+        color: #fff;
+        border-radius: 16px;
+        padding: 24px;
+      }
+      .final-card.bronze {
+        background: #365c4e;
+      }
+      .final-card .eyebrow {
+        color: #f0d18a;
+      }
+      .final-card h3 {
+        font-size: 1.45rem;
+        margin: 6px 0 18px;
+      }
+      .final-pair {
+        background: #ffffff14;
+        border: 1px solid #ffffff29;
+        padding: 13px;
+        border-radius: 10px;
+        font-weight: 700;
+      }
+      .final-vs {
+        text-align: center;
+        font-size: 0.75rem;
+        color: #d5e5d9;
+        margin: 8px;
+      }
+      .example-names {
+        font-size: 0.85rem;
+        color: #dfede2;
+        margin: 16px 0 0;
+      }
+      details {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        margin: 10px 0;
+        padding: 16px 20px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--forest);
+      }
+      details p {
+        margin: 12px 0 0;
+        color: var(--muted);
+      }
+      .names {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      .names p {
+        margin: 8px 0 0;
+        line-height: 1.9;
+      }
+      footer {
+        background: var(--deep);
+        color: #d5e6db;
+        padding: 35px 0;
+        font-size: 0.85rem;
+      }
+      footer strong {
+        color: #fff;
+      }
+      @media (max-width: 750px) {
+        .hero-inner {
+          grid-template-columns: 1fr;
+          gap: 30px;
+          padding: 48px 0;
+        }
+        .event-card {
+          transform: none;
+        }
+        .cards,
+        .court-grid,
+        .criteria {
+          grid-template-columns: 1fr;
+        }
+        .schedule,
+        .score-layout,
+        .finals {
+          grid-template-columns: 1fr;
+        }
+        section {
+          padding: 54px 0;
+        }
+        .nav .wrap {
+          gap: 20px;
+        }
+      }
+      @media (max-width: 450px) {
+        .wrap {
+          width: calc(100% - 28px);
+        }
+        .top-note {
+          font-size: 0.65rem;
+        }
+        .names {
+          grid-template-columns: 1fr;
+        }
+        .demo-body {
+          padding: 15px;
+        }
+        .balance-card {
+          padding: 14px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .wizard-ready section:not([hidden]) .wrap {
+          animation: none;
+        }
+        .balance-track span {
+          transition: none;
+        }
+        progress::-webkit-progress-value {
+          transition: none;
+        }
+        progress::-moz-progress-bar {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <div class="brand"><span class="brand-mark">SP</span><span>SUPER NOSSO MISTO</span></div>
+        <span class="top-note">UM GUIA PARA QUEM VAI JOGAR</span>
+      </div>
+    </header>
+    <main>
+      <div class="hero">
+        <div class="wrap hero-inner">
+          <div>
+            <span class="eyebrow">Edição natalina · 2026</span>
+            <h1>Todo mundo<br />em <em>quadra.</em></h1>
+            <p class="hero-copy">
+              Duplas mistas, parceiros diferentes e muita torcida. Avance pelas etapas, experimente os exemplos e
+              descubra o caminho até as finais.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#formato">Começar a entender <span aria-hidden="true">↓</span></a
+              ><a class="button secondary" href="#exemplo">Ver um exemplo</a>
+            </div>
+          </div>
+          <aside class="event-card" aria-label="Informações do evento">
+            <span class="label">MARQUE NA AGENDA</span>
+            <h2>Um domingo de beach tennis.</h2>
+            <div class="event-grid">
+              <div><strong>13 dez</strong><span>domingo · 2026</span></div>
+              <div><strong>07h–12h</strong><span>horário previsto</span></div>
+              <div><strong>24 atletas</strong><span>12 mulheres + 12 homens</span></div>
+              <div><strong>3 quadras</strong><span>em uso por rodada</span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navegar pelo guia">
+        <div class="wrap">
+          <a href="#formato">O formato</a><a href="#exemplo">Rodadas</a><a href="#parada">Quando parar</a
+          ><a href="#ranking">Classificação</a><a href="#finais">Finais</a><a href="#duvidas">Dúvidas</a>
+        </div>
+      </nav>
+      <div class="wizard-progress" hidden>
+        <div class="wrap">
+          <div class="progress-copy">
+            <span id="progress-label">Etapa 1 de 6 · O formato</span><span id="progress-percent">17%</span>
+          </div>
+          <progress id="progress" max="6" value="1" aria-labelledby="progress-label">1 de 6</progress>
+        </div>
+      </div>
+
+      <section id="formato">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">01 · A ideia</span>
+            <h2>Duplas mudam. Sua pontuação fica.</h2>
+            <p>O Setpoint, criado pelo Richard, sorteia os jogos e acompanha o ranking.</p>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <span class="number">01</span>
+              <h3>Duplas mistas</h3>
+              <p>Uma mulher + um homem. Sem repetir parceria.</p>
+            </article>
+            <article class="card">
+              <span class="number">02</span>
+              <h3>Três quadras</h3>
+              <p>Em cada rodada, 12 jogam e 12 descansam.</p>
+            </article>
+            <article class="card">
+              <span class="number">03</span>
+              <h3>Ranking individual</h3>
+              <p>O resultado conta para ambos os atletas da dupla.</p>
+            </article>
+          </div>
+          <div class="schedule">
+            <article class="card">
+              <span class="eyebrow">Primeira fase</span><strong>07h → perto das 11h</strong>
+              <p>Sets até 4 games.</p>
+            </article>
+            <article class="card">
+              <span class="eyebrow">Final e terceiro lugar</span><strong>Depois → até 12h</strong>
+              <p>Sets até 6 games · término previsto.</p>
+            </article>
+          </div>
+          <div class="play-box interactive" hidden>
+            <span class="eyebrow">Teste rápido</span>
+            <h3>Em uma rodada, quantas pessoas entram em quadra?</h3>
+            <p>Uma partida em cada uma das 3 quadras.</p>
+            <div class="switcher" role="group" aria-label="Quantas pessoas jogam em uma rodada?">
+              <button type="button" data-answer="6" aria-pressed="false">6 pessoas</button>
+              <button type="button" data-answer="12" aria-pressed="false">12 pessoas</button>
+              <button type="button" data-answer="24" aria-pressed="false">24 pessoas</button>
+            </div>
+            <p class="feedback" id="quiz-feedback" aria-live="polite">Escolha uma resposta para descobrir.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="exemplo">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">02 · Na prática</span>
+            <h2>Encontre seu jogo.</h2>
+            <p>Escolha seu nome e troque de rodada. É uma simulação inspirada na tela Partidas do Setpoint.</p>
+          </div>
+          <div class="demo">
+            <div class="demo-head">
+              <div><strong>SETPOINT · PARTIDAS</strong><span>Super Nosso Misto</span></div>
+              <span class="demo-tag">EXEMPLO ILUSTRATIVO</span>
+            </div>
+            <div class="demo-body">
+              <div class="demo-title">
+                <div>
+                  <span class="eyebrow">Calendário de partidas</span>
+                  <h3 id="round-title">Rodada 1 de 24</h3>
+                </div>
+                <p>3 partidas · 12 pessoas descansam</p>
+              </div>
+              <div class="switcher" role="group" aria-label="Escolha uma rodada de exemplo">
+                <button type="button" data-round="0" aria-pressed="true">Rodada 1</button>
+                <button type="button" data-round="1" aria-pressed="false">Rodada 2</button>
+              </div>
+              <div class="play-box interactive" hidden>
+                <span class="eyebrow">Experimente</span>
+                <label for="player-select"><strong>Onde você estaria nesta rodada?</strong></label>
+                <select id="player-select" class="player-select">
+                  <option value="">Selecione um nome</option>
+                  <optgroup label="Feminino">
+                    <option>TATI</option>
+                    <option>YASMIN</option>
+                    <option>THAIS</option>
+                    <option>GABI</option>
+                    <option>SARA</option>
+                    <option>RENATA</option>
+                    <option>MISS</option>
+                    <option>ANA THAIS</option>
+                    <option>DÉBORA</option>
+                    <option>BRENDA</option>
+                    <option>MARCELA</option>
+                    <option>ALINE</option>
+                  </optgroup>
+                  <optgroup label="Masculino">
+                    <option>WILSON</option>
+                    <option>DANIEL</option>
+                    <option>SAMUEL</option>
+                    <option>ERIQUE</option>
+                    <option>GABRIEL</option>
+                    <option>LUIZ GONZAGA</option>
+                    <option>DOUGLAS</option>
+                    <option>MP</option>
+                    <option>MATHEUS</option>
+                    <option>LUCAS</option>
+                    <option>GUSTAVO</option>
+                    <option>RICHARD</option>
+                  </optgroup>
+                </select>
+                <p class="player-result" id="player-result" aria-live="polite">
+                  Selecione um nome para ver se joga ou descansa.
+                </p>
+              </div>
+              <div id="round-content" aria-live="polite">
+                <div class="court-grid">
+                  <article class="court">
+                    <span class="court-label">QUADRA 1</span>
+                    <div class="pair">TATI + RICHARD</div>
+                    <span class="versus">CONTRA</span>
+                    <div class="pair">YASMIN + WILSON</div>
+                  </article>
+                  <article class="court">
+                    <span class="court-label">QUADRA 2</span>
+                    <div class="pair">THAIS + DANIEL</div>
+                    <span class="versus">CONTRA</span>
+                    <div class="pair">GABI + SAMUEL</div>
+                  </article>
+                  <article class="court">
+                    <span class="court-label">QUADRA 3</span>
+                    <div class="pair">SARA + ERIQUE</div>
+                    <span class="versus">CONTRA</span>
+                    <div class="pair">RENATA + GABRIEL</div>
+                  </article>
+                </div>
+                <div class="rests">
+                  <strong>Descansam nesta rodada</strong>MISS, ANA THAIS, DÉBORA, BRENDA, MARCELA, ALINE, LUIZ GONZAGA,
+                  DOUGLAS, MP, MATHEUS, LUCAS e GUSTAVO.
+                </div>
+              </div>
+              <p class="hint">Exemplo fictício, não é o sorteio oficial. Nas duas rodadas, cada pessoa joga uma vez.</p>
+            </div>
+          </div>
+          <p class="hint">
+            O Setpoint sorteia a tabela completa de uma vez; a organização consulta cada rodada. Parceiros não se
+            repetem.
+          </p>
+        </div>
+      </section>
+
+      <section id="parada">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">03 · De olho no relógio</span>
+            <h2>Quando podemos parar?</h2>
+            <p>Perto das 11h, todos precisam ter jogado a mesma quantidade de partidas.</p>
+          </div>
+          <div class="demo">
+            <div class="demo-head">
+              <div>
+                <strong>SIMULE O ENCERRAMENTO</strong
+                ><span>Todos os jogos das rodadas mostradas estão concluídos.</span>
+              </div>
+              <span class="demo-tag">EXEMPLO FICTÍCIO</span>
+            </div>
+            <div class="demo-body">
+              <div class="switcher" role="group" aria-label="Escolha quantas rodadas terminaram">
+                <button type="button" data-cutoff="3" aria-pressed="true">3 rodadas</button>
+                <button type="button" data-cutoff="4" aria-pressed="false">4 rodadas</button>
+              </div>
+              <div class="balance-grid">
+                <div class="balance-card">
+                  <span>12 atletas · grupo A</span><strong>2 jogos</strong>
+                  <div class="balance-track" aria-hidden="true">
+                    <span class="filled"></span><span class="filled"></span>
+                  </div>
+                </div>
+                <div class="balance-card">
+                  <span>12 atletas · grupo B</span><strong id="balance-count">1 jogo</strong>
+                  <div class="balance-track" aria-hidden="true">
+                    <span class="filled"></span><span id="balance-second"></span>
+                  </div>
+                </div>
+              </div>
+              <div aria-live="polite">
+                <p class="balance-status">
+                  <strong id="balance-title">Ainda não.</strong> <span id="balance-detail">Um grupo jogou menos.</span>
+                </p>
+              </div>
+              <p class="hint">
+                Os grupos A e B representam dois conjuntos fictícios de atletas, não grupos fixos do torneio.
+              </p>
+            </div>
+          </div>
+          <div class="notice">
+            <strong>Tempo limitado</strong>
+            <p>
+              A tabela completa tem 24 rodadas e 12 jogos por atleta. Se as finais forem antecipadas, algumas parcerias
+              não acontecerão.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="ranking">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">04 · Acompanhe</span>
+            <h2>Troque o placar. Veja o efeito.</h2>
+            <p>Cada atleta da dupla recebe o resultado individualmente.</p>
+          </div>
+          <div class="demo">
+            <div class="demo-head">
+              <div><strong>SETPOINT · RANKING</strong><span>Simulação de uma única partida</span></div>
+              <span class="demo-tag">NÃO É RESULTADO REAL</span>
+            </div>
+            <div class="demo-body">
+              <div class="score-layout">
+                <div class="score-match">
+                  <span class="eyebrow">Quadra 1 · exemplo</span>
+                  <div class="score-row"><span>TATI + RICHARD</span><strong id="score-a">4</strong></div>
+                  <div class="score-row"><span>YASMIN + WILSON</span><strong id="score-b">2</strong></div>
+                  <p>Toque para trocar o vencedor:</p>
+                  <div class="switcher" role="group" aria-label="Escolha o placar de exemplo">
+                    <button type="button" data-score="a" aria-pressed="true">4 × 2</button>
+                    <button type="button" data-score="b" aria-pressed="false">2 × 4</button>
+                  </div>
+                </div>
+                <div>
+                  <strong>Como fica para cada atleta</strong>
+                  <div class="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Atleta</th>
+                          <th>Vitórias</th>
+                          <th>A favor</th>
+                          <th>Contra</th>
+                          <th>Saldo</th>
+                        </tr>
+                      </thead>
+                      <tbody id="score-table">
+                        <tr>
+                          <td>TATI</td>
+                          <td>1</td>
+                          <td>4</td>
+                          <td>2</td>
+                          <td>+2</td>
+                        </tr>
+                        <tr>
+                          <td>RICHARD</td>
+                          <td>1</td>
+                          <td>4</td>
+                          <td>2</td>
+                          <td>+2</td>
+                        </tr>
+                        <tr>
+                          <td>YASMIN</td>
+                          <td>0</td>
+                          <td>2</td>
+                          <td>4</td>
+                          <td>−2</td>
+                        </tr>
+                        <tr>
+                          <td>WILSON</td>
+                          <td>0</td>
+                          <td>2</td>
+                          <td>4</td>
+                          <td>−2</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="hint" id="score-description" aria-live="polite">
+                    TATI e RICHARD vencem: cada um soma 1 vitória e saldo +2.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 style="margin-top: 30px">Como a classificação é ordenada?</h3>
+          <p class="muted">No Setpoint atual, os critérios são aplicados nesta ordem:</p>
+          <div class="criteria">
+            <div class="criterion">
+              <span class="eyebrow">1º critério</span><strong>Vitórias</strong>Mais partidas vencidas.
+            </div>
+            <div class="criterion">
+              <span class="eyebrow">2º critério</span><strong>Saldo de games</strong>Games a favor menos games contra.
+            </div>
+            <div class="criterion">
+              <span class="eyebrow">3º critério</span><strong>Games a favor</strong>Total de games conquistados.
+            </div>
+          </div>
+          <p class="muted">
+            Empate? Primeiro, vitórias em confrontos diretos entre empatados. Persistindo, sorteio no site, com os
+            envolvidos presentes.
+          </p>
+          <div class="notice">
+            <strong>Ordem a confirmar</strong>
+            <p>
+              A proposta do torneio coloca games a favor antes do saldo; o Setpoint usa saldo antes de games a favor. A
+              organização precisa alinhar essa diferença.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="finais">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">05 · Hora de decidir</span>
+            <h2>O caminho para o pódio.</h2>
+            <p>Avançam os 4 melhores de cada categoria. Escolha uma posição abaixo e descubra seu jogo.</p>
+          </div>
+          <div class="finals">
+            <article class="final-card">
+              <span class="eyebrow">Valendo o título</span>
+              <h3>Final</h3>
+              <div class="final-pair">1ª mulher + 1º homem</div>
+              <div class="final-vs">CONTRA</div>
+              <div class="final-pair">2ª mulher + 2º homem</div>
+              <p class="example-names">Exemplo fictício: TATI + RICHARD × YASMIN + WILSON.</p>
+            </article>
+            <article class="final-card bronze">
+              <span class="eyebrow">Valendo o pódio</span>
+              <h3>Disputa de 3º lugar</h3>
+              <div class="final-pair">3ª mulher + 3º homem</div>
+              <div class="final-vs">CONTRA</div>
+              <div class="final-pair">4ª mulher + 4º homem</div>
+              <p class="example-names">Exemplo fictício: THAIS + DANIEL × GABI + SAMUEL.</p>
+            </article>
+          </div>
+          <p class="hint">Nomes e posições fictícios. Ambas as partidas vão até 6 games.</p>
+          <div class="play-box interactive" hidden>
+            <span class="eyebrow">Imagine sua classificação</span>
+            <h3>Que jogo você disputaria?</h3>
+            <p>Escolha uma posição fictícia na sua categoria.</p>
+            <div class="switcher" role="group" aria-label="Escolha uma posição fictícia">
+              <button type="button" data-place="1" aria-pressed="false">1º ou 1ª</button>
+              <button type="button" data-place="2" aria-pressed="false">2º ou 2ª</button>
+              <button type="button" data-place="3" aria-pressed="false">3º ou 3ª</button>
+              <button type="button" data-place="4" aria-pressed="false">4º ou 4ª</button>
+            </div>
+            <p class="feedback" id="final-feedback" aria-live="polite">Selecione uma posição para descobrir.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="duvidas">
+        <div class="wrap">
+          <div class="section-heading">
+            <span class="eyebrow">06 · Pronto para jogar</span>
+            <h2>Ficou alguma dúvida?</h2>
+            <p>Abra uma pergunta ou volte para experimentar de novo.</p>
+          </div>
+          <details>
+            <summary>Vou jogar todas as rodadas?</summary>
+            <p>Não. A cada rodada, metade joga e metade descansa.</p>
+          </details>
+          <details>
+            <summary>Vou jogar com todas as pessoas da outra categoria?</summary>
+            <p>Só se a tabela completa for disputada. As finais podem ser antecipadas pelo tempo.</p>
+          </details>
+          <details>
+            <summary>Como os empates são resolvidos?</summary>
+            <p>
+              Após os critérios de classificação, contam as vitórias em confrontos diretos. Se persistir, há sorteio no
+              site com os envolvidos presentes. A ordem entre saldo e games a favor ainda precisa ser confirmada.
+            </p>
+          </details>
+          <details>
+            <summary>Esses jogos e resultados são oficiais?</summary>
+            <p>Não. São exemplos fictícios. A tabela oficial estará no Setpoint.</p>
+          </details>
+          <details>
+            <summary>Como a organização configura as finais?</summary>
+            <p>Para este formato, deve selecionar finais antecipadas e final direta no Setpoint.</p>
+          </details>
+          <details>
+            <summary>Quem são os atletas?</summary>
+            <div class="names">
+              <article class="card">
+                <span class="eyebrow">Feminino · 12 atletas</span>
+                <p>
+                  TATI · YASMIN · THAIS · GABI · SARA · RENATA · MISS · ANA THAIS · DÉBORA · BRENDA · MARCELA · ALINE
+                </p>
+              </article>
+              <article class="card">
+                <span class="eyebrow">Masculino · 12 atletas</span>
+                <p>
+                  WILSON · DANIEL · SAMUEL · ERIQUE · GABRIEL · LUIZ GONZAGA · DOUGLAS · MP · MATHEUS · LUCAS · GUSTAVO
+                  · RICHARD
+                </p>
+              </article>
+            </div>
+          </details>
+        </div>
+      </section>
+      <div class="wizard-actions" hidden>
+        <div class="wrap">
+          <button class="wizard-back" id="wizard-back" type="button">← Voltar</button>
+          <button class="wizard-next" id="wizard-next" type="button">Próximo: Rodadas →</button>
+        </div>
+      </div>
+    </main>
+    <footer>
+      <div class="wrap">
+        <strong>Super Nosso Misto · Edição Natalina</strong><br />13 de dezembro de 2026 · Guia ilustrativo. As
+        informações oficiais serão confirmadas pela organização.
+      </div>
+    </footer>
+    <script>
+      const sections = [...document.querySelectorAll('main > section')];
+      const stepLinks = [...document.querySelectorAll('.nav a')];
+      const progress = document.getElementById('progress');
+      const progressLabel = document.getElementById('progress-label');
+      const progressPercent = document.getElementById('progress-percent');
+      const backButton = document.getElementById('wizard-back');
+      const nextButton = document.getElementById('wizard-next');
+      let currentStep = 0;
+
+      function showStep(index, focus = false) {
+        currentStep = index;
+        sections.forEach((section, i) => {
+          section.hidden = i !== index;
+        });
+        stepLinks.forEach((link, i) => {
+          if (i === index) link.setAttribute('aria-current', 'step');
+          else link.removeAttribute('aria-current');
+        });
+        const nav = stepLinks[index].parentElement;
+        nav.scrollLeft += stepLinks[index].getBoundingClientRect().left - nav.getBoundingClientRect().left;
+        progress.value = index + 1;
+        progress.textContent = `${index + 1} de ${sections.length}`;
+        progressLabel.textContent = `Etapa ${index + 1} de ${sections.length} · ${stepLinks[index].textContent}`;
+        progressPercent.textContent = `${Math.round(((index + 1) / sections.length) * 100)}%`;
+        backButton.disabled = index === 0;
+        nextButton.textContent =
+          index === sections.length - 1 ? 'Recomeçar ↺' : `Próximo: ${stepLinks[index + 1].textContent} →`;
+        if (focus) {
+          const heading = sections[index].querySelector('h2');
+          heading.setAttribute('tabindex', '-1');
+          heading.focus({ preventScroll: true });
+          sections[index].scrollIntoView({ block: 'start' });
+        }
+      }
+
+      function goToStep(index) {
+        const hash = `#${sections[index].id}`;
+        if (location.hash !== hash) history.pushState(null, '', hash);
+        showStep(index, true);
+      }
+
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          const index = sections.findIndex((section) => `#${section.id}` === link.getAttribute('href'));
+          if (index < 0) return;
+          event.preventDefault();
+          goToStep(index);
+        });
+      });
+      backButton.addEventListener('click', () => goToStep(currentStep - 1));
+      nextButton.addEventListener('click', () => goToStep(currentStep === sections.length - 1 ? 0 : currentStep + 1));
+      window.addEventListener('hashchange', () => {
+        const index = sections.findIndex((section) => `#${section.id}` === location.hash);
+        showStep(index < 0 ? 0 : index, true);
+      });
+
+      document.querySelectorAll('[data-answer]').forEach((button) => {
+        button.addEventListener('click', () => {
+          document
+            .querySelectorAll('[data-answer]')
+            .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          document.getElementById('quiz-feedback').textContent =
+            button.dataset.answer === '12'
+              ? 'Isso! 3 quadras × 4 atletas = 12 jogando; os outros 12 descansam.'
+              : 'Ainda não: são 3 quadras com 4 atletas em cada uma. Tente novamente!';
+        });
+      });
+      document.querySelectorAll('[data-place]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const place = Number(button.dataset.place);
+          document
+            .querySelectorAll('[data-place]')
+            .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          const match = place <= 2 ? 'jogaria a final' : 'jogaria pelo 3º lugar';
+          const opponents = place % 2 === 1 ? place + 1 : place - 1;
+          document.getElementById('final-feedback').textContent =
+            `Você ${match} com quem ficou na ${place}ª posição da outra categoria, contra a dupla formada pelos atletas da ${opponents}ª posição.`;
+        });
+      });
+      document.querySelectorAll('[data-cutoff]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const balanced = button.dataset.cutoff === '4';
+          document
+            .querySelectorAll('[data-cutoff]')
+            .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          document.getElementById('balance-count').textContent = balanced ? '2 jogos' : '1 jogo';
+          document.getElementById('balance-second').classList.toggle('filled', balanced);
+          document.getElementById('balance-title').textContent = balanced ? 'Contagem equilibrada!' : 'Ainda não.';
+          document.getElementById('balance-detail').textContent = balanced
+            ? 'Todos jogaram 2 partidas; a organização pode seguir para as finais antecipadas.'
+            : 'Um grupo jogou menos.';
+        });
+      });
+
+      const roundContent = document.getElementById('round-content');
+      const firstRound = roundContent.innerHTML;
+      const secondRound = `
+      <div class="court-grid">
+        <article class="court"><span class="court-label">QUADRA 1</span><div class="pair">MISS + LUIZ GONZAGA</div><span class="versus">CONTRA</span><div class="pair">ANA THAIS + DOUGLAS</div></article>
+        <article class="court"><span class="court-label">QUADRA 2</span><div class="pair">DÉBORA + MP</div><span class="versus">CONTRA</span><div class="pair">BRENDA + MATHEUS</div></article>
+        <article class="court"><span class="court-label">QUADRA 3</span><div class="pair">MARCELA + LUCAS</div><span class="versus">CONTRA</span><div class="pair">ALINE + GUSTAVO</div></article>
+      </div>
+      <div class="rests"><strong>Descansam nesta rodada</strong>TATI, YASMIN, THAIS, GABI, SARA, RENATA, WILSON, DANIEL, SAMUEL, ERIQUE, GABRIEL e RICHARD.</div>`;
+      const playerSelect = document.getElementById('player-select');
+      const playerResult = document.getElementById('player-result');
+
+      function showPlayer() {
+        const name = playerSelect.value;
+        if (!name) {
+          playerResult.textContent = 'Selecione um nome para ver se joga ou descansa.';
+          return;
+        }
+        const courts = [...roundContent.querySelectorAll('.court')];
+        for (const court of courts) {
+          const pairs = [...court.querySelectorAll('.pair')].map((pair) => pair.textContent.split(' + '));
+          const side = pairs.findIndex((pair) => pair.includes(name));
+          if (side >= 0) {
+            const partner = pairs[side].find((player) => player !== name);
+            playerResult.textContent = `${name} joga na ${court.querySelector('.court-label').textContent.toLowerCase()} com ${partner}, contra ${pairs[1 - side].join(' e ')}.`;
+            return;
+          }
+        }
+        playerResult.textContent = `${name} descansa nesta rodada de exemplo.`;
+      }
+
+      playerSelect.addEventListener('change', showPlayer);
+      document.querySelectorAll('[data-round]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const second = button.dataset.round === '1';
+          document
+            .querySelectorAll('[data-round]')
+            .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          document.getElementById('round-title').textContent = `Rodada ${second ? 2 : 1} de 24`;
+          roundContent.innerHTML = second ? secondRound : firstRound;
+          showPlayer();
+        });
+      });
+      document.querySelectorAll('[data-score]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const firstWins = button.dataset.score === 'a';
+          document
+            .querySelectorAll('[data-score]')
+            .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+          document.getElementById('score-a').textContent = firstWins ? '4' : '2';
+          document.getElementById('score-b').textContent = firstWins ? '2' : '4';
+          const rows = [
+            ['TATI', firstWins],
+            ['RICHARD', firstWins],
+            ['YASMIN', !firstWins],
+            ['WILSON', !firstWins],
+          ];
+          document.getElementById('score-table').innerHTML = rows
+            .map(
+              ([name, won]) =>
+                `<tr><td>${name}</td><td>${won ? 1 : 0}</td><td>${won ? 4 : 2}</td><td>${won ? 2 : 4}</td><td>${won ? '+2' : '−2'}</td></tr>`,
+            )
+            .join('');
+          document.getElementById('score-description').textContent = firstWins
+            ? 'TATI e RICHARD vencem: cada um soma 1 vitória e saldo +2.'
+            : 'YASMIN e WILSON vencem: cada um soma 1 vitória e saldo +2.';
+        });
+      });
+
+      document.querySelectorAll('.interactive, .wizard-progress, .wizard-actions').forEach((element) => {
+        element.hidden = false;
+      });
+      document.body.classList.add('wizard-ready');
+      const initialStep = sections.findIndex((section) => `#${section.id}` === location.hash);
+      showStep(initialStep < 0 ? 0 : initialStep);
+    </script>
+  </body>
+</html>
