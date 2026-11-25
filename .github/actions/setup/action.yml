@@ -1,0 +1,15 @@
+name: Set up Node.js and install dependencies
+description: Node.js from .nvmrc with the npm cache, then a clean install from package-lock.json.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
