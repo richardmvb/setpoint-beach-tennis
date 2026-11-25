@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, ElementRef, input, signal
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { scrollBehavior } from '../../../core/motion';
 import type { Player } from '../../../core/models';
+import { PlayerAvatarComponent } from '../../player-avatar.component';
 import type { BracketMatch, BracketSlot, BracketView } from '../../../domain/tournament-view/bracket';
 
 /**
@@ -10,7 +11,7 @@ import type { BracketMatch, BracketSlot, BracketView } from '../../../domain/tou
  */
 @Component({
   selector: 'app-finals-bracket',
-  imports: [TranslocoDirective],
+  imports: [TranslocoDirective, PlayerAvatarComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './finals-bracket.component.css',
@@ -30,10 +31,14 @@ export class FinalsBracketComponent {
     return [columns[0], columns[1], thirdPlace ? [...columns[2], thirdPlace] : columns[2]];
   });
 
-  private readonly names = computed(() => new Map(this.players().map((player) => [player.id, player.name])));
+  private readonly byId = computed(() => new Map(this.players().map((player) => [player.id, player])));
+
+  protected player(id: string): Player | undefined {
+    return this.byId().get(id);
+  }
 
   protected pairName(ids: readonly string[]): string {
-    return ids.map((id) => this.names().get(id) ?? '—').join(' · ');
+    return ids.map((id) => this.player(id)?.name ?? '—').join(' · ');
   }
 
   protected isMe(slot: BracketSlot): boolean {

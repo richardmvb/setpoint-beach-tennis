@@ -467,11 +467,11 @@ export class TournamentStore {
   async finalizeTournament(): Promise<boolean> {
     if (!this.canFinalizeTournament()) return false;
     const state = this.state();
-    const confirmed = await this.dialog.confirmTyped({
+    const confirmed = await this.dialog.confirm({
       title: this.transloco.translate('confirm.finalize.title', {}, 'organizer/pt-BR'),
       text: this.transloco.translate('confirm.finalize.text', {}, 'organizer/pt-BR'),
-      phrase: this.transloco.translate('confirm.finalize.phrase', {}, 'organizer/pt-BR'),
       confirmText: this.transloco.translate('confirm.finalize.confirm', {}, 'organizer/pt-BR'),
+      cancelText: this.transloco.translate('confirm.finalize.cancel', {}, 'organizer/pt-BR'),
       tone: 'primary',
     });
     if (!confirmed) {
@@ -486,6 +486,13 @@ export class TournamentStore {
     this.tournament.update((current) => withFinishedAt(current, finishedAt));
     this.persistence.save(this.transloco.translate('notices.finalized', {}, 'organizer/pt-BR'));
     return true;
+  }
+
+  /** Finish the tournament after the confirmation, then let the shell react (the report is shown in Ajustes). */
+  async finalizeAndShow(): Promise<void> {
+    if (!(await this.finalizeTournament())) return;
+    this.finalized();
+    this.request({ kind: 'finalized' });
   }
 
   /** The analytics and the survey that follow the shell's own steps once the tournament is finished. */

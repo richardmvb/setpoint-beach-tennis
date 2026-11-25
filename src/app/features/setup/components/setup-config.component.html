@@ -1,5 +1,5 @@
 <ng-container *transloco="let t; prefix: 'setup.config'">
-  <div class="form-field"><label for="setupName">{{ t('name.label') }}</label><input id="setupName" name="setupName" [ngModel]="store.state().name" (ngModelChange)="store.setName($event)" maxlength="60" [placeholder]="t('name.placeholder')" enterkeyhint="next" (keydown.enter)="!store.isShared() && advance.emit()"></div>
+  <div class="form-field"><label for="setupName">{{ t('name.label') }}</label><input id="setupName" name="setupName" [ngModel]="store.state().name" (ngModelChange)="store.setName($event)" maxlength="60" [placeholder]="t('name.placeholder')" enterkeyhint="next" (keydown.enter)="focusChoices($event)"></div>
   @if (store.sharedConfigured) {
     <div id="hostingMode" class="form-field"><span class="form-label" id="hostingLabel">{{ t('hosting.label') }}</span><app-choice-cards labelledBy="hostingLabel" [options]="[{ value: 'local', label: t('hosting.local.label'), hint: t('hosting.local.hint') }, { value: 'shared', label: t('hosting.shared.label'), hint: t('hosting.shared.hint') }]" [value]="store.state().hostingMode ?? 'local'" (valueChange)="store.setHostingMode($event)" /></div>
   }

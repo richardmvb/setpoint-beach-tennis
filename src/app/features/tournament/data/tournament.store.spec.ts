@@ -334,21 +334,26 @@ describe('TournamentStore: finals', () => {
     expect(dialogs.confirms[0].title).toBe('Alterar o modo de placar?');
   });
 
-  it('finishes the tournament only after the typed confirmation', async () => {
+  it('finishes the tournament only after the confirmation', async () => {
     const { store, tournament, hooks, dialogs, events } = await withFinals();
     for (const kind of ['championship', 'third-place']) {
       store.finalScoreChanged(finalMatch(tournament.state(), kind), 'a', 6);
       store.finalScoreChanged(finalMatch(tournament.state(), kind), 'b', 1);
     }
-    dialogs.typedAnswer = false;
+    dialogs.confirmAnswer = false;
     expect(await store.finalizeTournament()).toBe(false);
     expect(tournament.state().finishedAt).toBeUndefined();
     expect(events()).toContain('tournament_finalize_cancelled');
-    dialogs.typedAnswer = true;
+    dialogs.confirmAnswer = true;
     expect(await store.finalizeTournament()).toBe(true);
     expect(tournament.state().finishedAt).toBeTruthy();
     expect(hooks.save).toHaveBeenLastCalledWith('Torneio finalizado.');
-    expect(dialogs.typed[0]).toMatchObject({ title: 'Finalizar o torneio?', phrase: 'finalizar' });
+    expect(dialogs.confirms[0]).toMatchObject({
+      title: 'Finalizar o torneio?',
+      confirmText: 'Finalizar torneio',
+      cancelText: 'Voltar',
+    });
+    expect(dialogs.confirms[0]).not.toHaveProperty('phrase');
     expect(store.canEditFinalScores()).toBe(false);
   });
 

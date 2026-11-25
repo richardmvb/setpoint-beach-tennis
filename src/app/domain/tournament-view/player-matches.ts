@@ -1,4 +1,5 @@
 import type { FinalMatchKind, Match, TournamentState } from '../../core/models';
+import { shownScore } from './final-score';
 import type { FinalWinnerSide } from './scoring';
 
 /** Where a match was played: a group-stage round, or a final of a given kind. */
@@ -11,7 +12,7 @@ export interface PlayerMatch {
   opponentIds: string[];
   scoreFor: number | null;
   scoreAgainst: number | null;
-  /** The tie-break of a point-by-point final, from the player's side. */
+  /** The tie-break points of a set that went to a tie-break, from the player's side. */
   tieBreak: { for: number; against: number } | null;
   result: 'win' | 'loss' | null;
 }
@@ -53,8 +54,9 @@ function playerMatch(
 ): PlayerMatch {
   const onA = match.teamA.includes(playerId);
   const team = onA ? match.teamA : match.teamB;
-  const scoreFor = onA ? match.scoreA : match.scoreB;
-  const scoreAgainst = onA ? match.scoreB : match.scoreA;
+  const shown = shownScore(match);
+  const scoreFor = onA ? shown.a : shown.b;
+  const scoreAgainst = onA ? shown.b : shown.a;
   let result: PlayerMatch['result'];
   if (match.phase === 'final') {
     const winner = winnerSide(match);
@@ -63,8 +65,8 @@ function playerMatch(
     result = scoreFor === null || scoreAgainst === null ? null : scoreFor > scoreAgainst ? 'win' : 'loss';
   }
   const tieBreak =
-    match.livePoints !== undefined && match.tieBreakA != null && match.tieBreakB != null
-      ? { for: onA ? match.tieBreakA : match.tieBreakB, against: onA ? match.tieBreakB : match.tieBreakA }
+    shown.tieBreakA !== null && shown.tieBreakB !== null
+      ? { for: onA ? shown.tieBreakA : shown.tieBreakB, against: onA ? shown.tieBreakB : shown.tieBreakA }
       : null;
   return {
     phase,

@@ -97,14 +97,20 @@ describe('finalsBracket', () => {
     expect(view.columns[1][0].slots[1]).toMatchObject({ kind: 'pair', playerIds: d(5), seed: 5 });
   });
 
-  it('shows a tie-break only at 6-6', () => {
+  it('shows a set won in the tie-break as 7-6 with the tie-break points, however it was scored', () => {
     const s = eightStage();
     s.matches[0] = { ...s.matches[0], scoreA: 6, scoreB: 6, tieBreakA: 7, tieBreakB: 5 };
     s.matches[1] = { ...s.matches[1], scoreA: 6, scoreB: 3, tieBreakA: 7, tieBreakB: 5 };
-    const [m1, m2] = finalsBracket(s, bySide)!.columns[0];
-    expect(m1.slots[0]).toMatchObject({ games: 6, tieBreak: 7 });
+    s.matches[2] = { ...s.matches[2], scoreA: 7, scoreB: 6, tieBreakA: 7, tieBreakB: 5 };
+    s.matches[3] = { ...s.matches[3], scoreA: 6, scoreB: 6, tieBreakA: 3, tieBreakB: 2 };
+    const [m1, m2, m3, m4] = finalsBracket(s, bySide)!.columns[0];
+    expect(m1.slots[0]).toMatchObject({ games: 7, tieBreak: 7 });
     expect(m1.slots[1]).toMatchObject({ games: 6, tieBreak: 5 });
     expect(m2.slots[0]).toMatchObject({ games: 6, tieBreak: null });
+    expect(m3.slots[0]).toMatchObject({ games: 7, tieBreak: 7 });
+    expect(m3.slots[1]).toMatchObject({ games: 6, tieBreak: 5 });
+    // Still being played: 6-6 stays.
+    expect(m4.slots[0]).toMatchObject({ games: 6, tieBreak: 3 });
   });
 
   it('is live only for the championship in point mode with no winner', () => {

@@ -135,10 +135,14 @@ test.describe('Grupos 20', () => {
     // D1 and D2 wait in the semifinals: their opponent is "a definir" until the quarterfinals are played.
     expect(finals!.matches[2].teamB).toEqual(['', '']);
     await expect(page.getByText('A definir').first()).toBeVisible();
+    // Scores are typed under Jogos (the default); the tree is a view of the same finals.
+    await expect(page.getByRole('region', { name: 'Chave da fase final' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Chave', exact: true }).click();
     const bracket = page.getByRole('region', { name: 'Chave da fase final' });
     await expect(bracket).toBeVisible();
     await expect(bracket.getByText('BYE', { exact: true })).toHaveCount(2);
     await expectAccessible(page);
+    await page.getByRole('button', { name: 'Jogos', exact: true }).click();
 
     await playBracket(page);
     await expect(page.getByText('Pódio').first()).toBeVisible();

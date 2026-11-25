@@ -66,6 +66,29 @@ describe('playerMatches', () => {
     expect(championship).toMatchObject({ result: 'win', tieBreak: { for: 7, against: 5 } });
   });
 
+  it('shows a hand-typed 6-6 decided in the tie-break as 7-6 with its tie-break, from the player side', () => {
+    const typed = tournamentState({
+      players: namedPlayers(4),
+      finals: {
+        matches: [
+          match('final', ['p1', 'p2'], ['p3', 'p4'], 6, 6, {
+            phase: 'final',
+            finalKind: 'championship',
+            tieBreakA: 7,
+            tieBreakB: 5,
+          }),
+        ],
+        complete: false,
+        podiumPlayerIds: [],
+      },
+    });
+    const winner = (): 1 | 2 | null => 1;
+    const [mine] = playerMatches(typed, 'p1', winner);
+    const [theirs] = playerMatches(typed, 'p3', winner);
+    expect(mine).toMatchObject({ scoreFor: 7, scoreAgainst: 6, tieBreak: { for: 7, against: 5 }, result: 'win' });
+    expect(theirs).toMatchObject({ scoreFor: 6, scoreAgainst: 7, tieBreak: { for: 5, against: 7 }, result: 'loss' });
+  });
+
   it('is empty without a player', () => {
     expect(playerMatches(state, '', winnerSide)).toEqual([]);
   });

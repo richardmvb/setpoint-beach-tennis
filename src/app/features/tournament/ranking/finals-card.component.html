@@ -7,9 +7,20 @@
         </div>
         <span class="mini-tag">{{ final().complete ? t('complete') : t('inProgress') }}</span>
       </div>
-      @if (bracket(); as view) {
-        <app-finals-bracket class="finals-bracket" [view]="view" [players]="store.state().players" />
+      @if (bracket(); as tree) {
+        <div class="finals-view" role="group" [attr.aria-label]="t('viewLabel')">
+          <button uiButton variant="secondary" type="button" [attr.aria-pressed]="view() === 'games'" (click)="setView('games')">
+            {{ t('viewGames') }}
+          </button>
+          <button uiButton variant="secondary" type="button" [attr.aria-pressed]="view() === 'bracket'" (click)="setView('bracket')">
+            {{ t('viewBracket') }}
+          </button>
+        </div>
+        @if (view() === 'bracket') {
+          <app-finals-bracket class="finals-bracket" [view]="tree" [players]="store.state().players" />
+        }
       }
+      @if (!bracket() || view() === 'games') {
       <div class="final-match-list">
         @for (match of final().matches; track match.id) {
           <article
@@ -107,6 +118,7 @@
           </article>
         }
       </div>
+      }
       @if (final().complete) {
         <app-podium-section />
       }

@@ -30,7 +30,7 @@
         <div class="tour-bar">@if (store.savedCount()) {
           <button type="button" (click)="openLibrary.emit()">{{ t('frame.saved', { count: store.savedCount() }) }}</button>
           }<button type="button" (click)="startTour()">{{ t('frame.tutorial') }}</button><button type="button" (click)="store.toggleTutorial()">{{ store.tutorialEnabled() ? t('frame.tipsOff') : t('frame.tipsOn') }}</button></div>
-        <app-setup-config (advance)="next()" />
+        <app-setup-config />
         <div class="wizard-actions"><span></span><button id="setupNext" uiButton variant="primary" type="button" (click)="next()" [disabled]="store.sharedLoading()">{{ store.sharedLoading() ? t('frame.wait') : store.isShared() ? t('frame.createShared') : t('frame.addPlayers') }} @if (!store.sharedLoading()) {
           <span>→</span>
         }</button></div>

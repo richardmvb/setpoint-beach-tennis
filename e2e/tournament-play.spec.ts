@@ -221,13 +221,12 @@ test.describe('finals', () => {
     await expect(page.getByRole('spinbutton', { name: 'Games da dupla 1 na final' }).first()).toBeVisible();
   });
 
-  test('finishing the tournament needs the typed word, lands on Ajustes and locks the finals', async ({ page }) => {
+  test('finishing the tournament asks once, lands on Ajustes and locks the finals', async ({ page }) => {
     await start(page, withFinals({ champion: [6, 2], third: [6, 4] }), /Ranking/);
     await expect(page.getByText('PÓDIO FINAL')).toBeVisible();
     await page.getByRole('button', { name: 'Finalizar torneio' }).click();
     const confirm = page.getByRole('alertdialog', { name: 'Finalizar o torneio?' });
-    await expect(confirm.getByRole('button', { name: 'Finalizar torneio' })).toBeDisabled();
-    await confirm.getByRole('textbox').fill('finalizar');
+    await expect(confirm.getByRole('textbox')).toHaveCount(0);
     await confirm.getByRole('button', { name: 'Finalizar torneio' }).click();
     await expect(confirm).toHaveCount(0);
     await expect(page.getByRole('heading', { level: 1, name: 'Ajustes' })).toBeVisible();
@@ -243,14 +242,38 @@ test.describe('finals', () => {
     for (const field of await page.locator('input.inline-score').all()) await expect(field).toBeDisabled();
   });
 
-  test('declining the typed confirmation leaves the tournament open', async ({ page }) => {
+  test('declining the confirmation leaves the tournament open', async ({ page }) => {
     await start(page, withFinals({ champion: [6, 2], third: [6, 4] }), /Ranking/);
     await page.getByRole('button', { name: 'Finalizar torneio' }).click();
     await page
       .getByRole('alertdialog', { name: 'Finalizar o torneio?' })
-      .getByRole('button', { name: 'Cancelar' })
+      .getByRole('button', { name: 'Voltar' })
       .click();
     await expect(page.getByRole('button', { name: 'Finalizar torneio' })).toBeVisible();
     expect((await stored(page)).finishedAt).toBeUndefined();
+  });
+
+  test('a banner on every page asks to finish once all the finals have a score', async ({ page }) => {
+    await start(page, withFinals({ champion: [6, 2], third: [6, 4] }), /Partidas/);
+    const banner = page.getByRole('group', { name: 'Torneio pronto para finalizar' });
+    await expect(banner).toBeVisible();
+    await page
+      .getByRole('button', { name: /Ajustes/ })
+      .first()
+      .click();
+    await expect(banner).toBeVisible();
+    await banner.getByRole('button', { name: 'Finalizar agora' }).click();
+    await page
+      .getByRole('alertdialog', { name: 'Finalizar o torneio?' })
+      .getByRole('button', { name: 'Finalizar torneio' })
+      .click();
+    await expect(page.getByRole('heading', { name: 'Relatório final' })).toBeVisible();
+    await expect(banner).toHaveCount(0);
+    expect((await stored(page)).finishedAt).toBeTruthy();
+  });
+
+  test('there is no banner while a final still has no score', async ({ page }) => {
+    await start(page, withFinals(), /Partidas/);
+    await expect(page.getByRole('group', { name: 'Torneio pronto para finalizar' })).toHaveCount(0);
   });
 });

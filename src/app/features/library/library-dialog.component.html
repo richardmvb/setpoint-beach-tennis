@@ -17,7 +17,7 @@
     @for (entry of store.entries(); track entry.id) {
       <li class="library-item" [class.current]="store.isCurrent(entry)">
         <div class="library-info">
-          <b>{{ entry.name }}</b>
+          <b>{{ entry.name }}@if (store.needsFinalizing(entry)) { <span class="mini-tag">{{ t('needsFinalizing') }}</span> }</b>
           <small><app-phase-label [phase]="entry.phase" /> · {{ t('progress', { done: entry.matchesCompleted, total: entry.matchesTotal }) }} · {{ t('players', { count: entry.playerCount }) }} · {{ entry.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</small>
         </div>
         <div class="library-actions">

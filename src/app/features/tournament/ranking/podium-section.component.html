@@ -7,7 +7,7 @@
     @if (store.canFinalizeTournament()) {
       <div class="finalize-box">
         <p class="muted">{{ t('finalizeHint') }}</p>
-        <button uiButton variant="primary" (click)="finalize()">{{ t('finalize') }}</button>
+        <button uiButton variant="primary" (click)="store.finalizeAndShow()">{{ t('finalize') }}</button>
       </div>
     }
     <app-podium [places]="store.finalPodium()" [players]="store.state().players" />

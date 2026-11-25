@@ -15,9 +15,7 @@
   }</span>@if (match.finalKind === 'championship' && match.livePoints !== undefined) {
   <app-final-live-score [match]="match" [players]="players()" />
 } @else {
-  <app-battle-card [match]="match" [players]="players()" [highlightId]="highlightId()" [label]="t('rounds.court', { number: match.court })" />@if (match.tieBreakA != null && match.tieBreakB != null) {
-  <small class="muted">{{ t('finals.tieBreak', { a: match.tieBreakA, b: match.tieBreakB }) }}</small>
-}
+  <app-battle-card [match]="match" [players]="players()" [highlightId]="highlightId()" [label]="t('rounds.court', { number: match.court })" />
 }</div>
 }
 }@if (finals().complete) {

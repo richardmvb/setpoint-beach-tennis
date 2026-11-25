@@ -175,7 +175,6 @@ for (const config of CONFIGS) {
 
       await page.getByRole('button', { name: 'Finalizar torneio' }).click();
       const confirm = page.getByRole('alertdialog', { name: /Finalizar o torneio/ });
-      await confirm.getByRole('textbox').fill('finalizar');
       await confirm.getByRole('button', { name: 'Finalizar torneio' }).click();
       await expect(confirm).toHaveCount(0);
       // Finishing opens the final report in Ajustes; the podium is on Ranking.
@@ -266,6 +265,20 @@ for (const config of CONFIGS) {
         .click();
       await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
       await page_(page, 'ranking-groups20');
+    });
+
+    test('groups 20 bracket view', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups20Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await page.getByRole('button', { name: 'Chave', exact: true }).click();
+      await expect(page.getByRole('region', { name: 'Chave da fase final' })).toBeVisible();
+      await page_(page, 'ranking-groups20-bracket');
     });
 
     test('groups 20 live viewer', async ({ page }) => {

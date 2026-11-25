@@ -61,6 +61,30 @@ describe('FinalsBracketComponent', () => {
     expect(card.querySelector('.bracket-slot.me')?.textContent).toContain('Gui');
   });
 
+  it('shows a set typed as 6-6 and won in the tie-break as 7-6 with the tie-break chips', async () => {
+    let stage = finals.updatePodium(finals.createByeBracket(pairs));
+    stage = {
+      ...stage,
+      matches: stage.matches.map((m) =>
+        m.id === 'final-qfb-1' ? { ...m, scoreA: 6, scoreB: 6, tieBreakA: 7, tieBreakB: 5 } : m,
+      ),
+    };
+    stage = finals.updatePodium(stage);
+    await show(stage);
+    const card = screen.getByRole('article', { name: 'Quartas 1' });
+    const games = Array.from(card.querySelectorAll('.bracket-games')).map((g) => g.textContent?.trim());
+    expect(games).toEqual(['7', '6']);
+    expect(within(card).getByText('TB 7')).toBeTruthy();
+    expect(within(card).getByText('TB 5')).toBeTruthy();
+    expect(within(card).getAllByText('vencedora')).toHaveLength(1);
+  });
+
+  it('shows initials for each athlete next to the pair', async () => {
+    await show(finals.updatePodium(finals.createByeBracket(pairs)));
+    const card = screen.getByRole('article', { name: 'Quartas 1' });
+    expect(card.querySelectorAll('app-player-avatar')).toHaveLength(4);
+  });
+
   it('marks AO VIVO only on the championship scored point by point', async () => {
     let stage = finals.updatePodium(finals.createByeBracket(pairs));
     for (const id of ['final-qfb-1', 'final-qfb-2', 'final-sf-1', 'final-sf-2']) stage = play(stage, id, 6, 3);

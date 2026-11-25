@@ -20,10 +20,4 @@ import { TournamentStore } from '../data/tournament.store';
 })
 export class PodiumSectionComponent {
   protected readonly store = inject(TournamentStore);
-
-  protected async finalize(): Promise<void> {
-    if (!(await this.store.finalizeTournament())) return;
-    this.store.finalized();
-    this.store.request({ kind: 'finalized' });
-  }
 }
