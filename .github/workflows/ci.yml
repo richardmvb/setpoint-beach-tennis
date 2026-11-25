@@ -112,14 +112,22 @@ jobs:
       - name: Build with bundle budgets
         run: npm run build -- --base-href /setpoint-beach-tennis/
 
-  # Timing metrics (TBT) vary from run to run on shared runners, so Lighthouse reports but never blocks a PR.
-  # The bundle budgets in the build step above are the blocking size check.
+  # One job per page (scripts/lighthouse-page.cjs): a warm-up run is discarded, then bytes, CLS and LCP must stay under
+  # the absolute limits in lighthouserc.cjs. TBT depends on the runner's CPU, so on a pull request the base branch is
+  # built and measured on the same runner, alternating runs, and the pull request fails if its TBT is clearly worse.
   lighthouse:
+    name: lighthouse (${{ matrix.page.name }})
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        page:
+          - { name: landing, path: '' }
+          - { name: live, path: '?live=lhci-token' }
+          - { name: dashboard, path: dashboard }
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -133,14 +141,32 @@ jobs:
       - name: Build
         run: npm run build -- --base-href /setpoint-beach-tennis/
 
-      - name: Lighthouse CI (production build, Supabase mocked, external hosts blocked)
-        run: npm run perf:lighthouse
+      - name: Check out the base branch
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Build the base branch
+        if: github.event_name == 'pull_request'
+        working-directory: base
+        run: |
+          npm ci
+          node scripts/generate-runtime-config.cjs
+          npm run build -- --base-href /setpoint-beach-tennis/
+
+      - name: Lighthouse (production build, Supabase mocked, external hosts blocked)
+        env:
+          PAGE: ${{ matrix.page.path }}
+          BASE_DIR: ${{ github.event_name == 'pull_request' && 'base' || '' }}
+        run: npm run perf:page -- --page "$PAGE" ${BASE_DIR:+--base "$BASE_DIR"}
 
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: lighthouse-reports
+          name: lighthouse-reports-${{ matrix.page.name }}
           path: .lighthouseci/reports
           if-no-files-found: ignore
           retention-days: 7
@@ -209,7 +235,7 @@ jobs:
         uses: ./.github/actions/playwright-chromium
 
       - name: End-to-end tests (no external services are reachable)
-        run: npm run e2e -- --shard=${{ matrix.shard }}/3 --repeat-each=$E2E_REPEAT
+        run: npm run e2e -- --shard=${{ matrix.shard }}/3 --repeat-each="$E2E_REPEAT"
 
       # Also on success: the retry of a flaky test keeps its trace.
       - name: Upload Playwright report
@@ -295,11 +321,11 @@ jobs:
           retention-days: 7
 
   # The one check to require in branch protection. A job skipped by the path filter counts as passed;
-  # a failed, cancelled or errored one does not. Lighthouse is advisory (continue-on-error), so it is not listed.
+  # a failed, cancelled or errored one does not.
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, pr-title, quality, database, e2e, e2e-production, visual]
+    needs: [changes, pr-title, quality, lighthouse, database, e2e, e2e-production, visual]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

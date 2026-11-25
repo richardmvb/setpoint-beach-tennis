@@ -9,6 +9,7 @@
     "analyze": "ng build --stats-json --named-chunks && source-map-explorer \"dist/setpoint/browser/*.js\" --no-border-checks --html dist/bundle-report.html",
     "perf:lighthouse": "lhci autorun --config=lighthouserc.cjs",
     "perf:serve": "node scripts/serve-dist.cjs",
+    "perf:page": "node scripts/lighthouse-page.cjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --no-watch",
     "test:db": "node --test tests/dashboard-activity.test.cjs tests/dashboard-insights.test.cjs tests/inactive-tournament-cleanup.test.cjs tests/local-archive.test.cjs tests/offline-sync.test.cjs tests/tournament-report.test.cjs",

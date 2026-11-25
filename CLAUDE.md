@@ -33,7 +33,8 @@ npm run e2e:visual:update # rewrite e2e/__screenshots__ (only for a change that 
 npm run e2e:prod         # production build, then the smoke tests (e2e/production.spec.ts) under the /setpoint-beach-tennis/ base path
 npm run build           # production build (run scripts/generate-runtime-config.cjs first)
 npm run analyze         # production build with stats (dist/setpoint/browser-stats.json, for esbuild's analyzer) and dist/bundle-report.html (source-map-explorer); overwrites dist/
-npm run perf:lighthouse # Lighthouse CI on dist/ (advisory in CI: its own non-blocking job); build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
+npm run perf:lighthouse # Lighthouse CI on dist/, all pages (bytes, CLS, LCP are errors, TBT only warns); build first with npm run build -- --base-href /setpoint-beach-tennis/ (Supabase mocked, see lighthouserc.cjs)
+npm run perf:page -- --page dashboard --base ../main-checkout # what CI runs per page: a warm-up run, the absolute limits, and TBT against a built base checkout on the same machine
 npm run check           # lint, styles, format, typecheck, knip, tests, build
 ```
 

@@ -39,7 +39,7 @@ Git hooks are installed by `npm ci` (`husky`):
 Bundle budgets (`angular.json`: initial, anyScript, and one per named lazy chunk) and the Lighthouse thresholds (`lighthouserc.cjs`) are a ratchet: they only get stricter. When a change makes a number better, lower the limit in the same PR. A `bundle` budget whose chunk no longer exists measures 0 and passes, so when you rename or merge a lazy component, rename its budget too.
 
 - `npm run analyze` shows what is inside each chunk (`dist/bundle-report.html`).
-- `npm run perf:lighthouse` runs after a build and writes reports to `.lighthouseci/reports`. CI uploads them as an artifact.
+- `npm run perf:lighthouse` runs after a build and writes reports to `.lighthouseci/reports`. CI runs one job per page with `npm run perf:page`: it discards a warm-up run, fails on the absolute limits for bytes, CLS and LCP, and on a pull request fails when TBT is clearly worse than the base branch measured on the same runner (TBT depends on the runner's CPU, so it has no absolute limit in CI). The reports are uploaded as artifacts.
 
 ## Releases
 
