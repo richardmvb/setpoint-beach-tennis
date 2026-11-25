@@ -9,6 +9,11 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # The runtime is Node 24 (.nvmrc), and @types/node follows the runtime's major: only minor and patch updates.
+      - dependency-name: '@types/node'
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
