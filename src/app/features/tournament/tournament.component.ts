@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { provideTranslocoScope } from '@jsverse/transloco';
 import type { Page } from '../../core/models';
+import { FinalizeBannerComponent } from './finalize-banner.component';
 import { NO_SHELL_STATE, TournamentStore, type ShellRequest, type TournamentShellState } from './data/tournament.store';
 import { OverviewPageComponent } from './overview/overview-page.component';
 import { PlayersPageComponent } from './players/players-page.component';
@@ -20,6 +21,7 @@ import { SettingsPageComponent } from './settings/settings-page.component';
 @Component({
   selector: 'app-tournament',
   imports: [
+    FinalizeBannerComponent,
     OverviewPageComponent,
     PlayersPageComponent,
     RoundsPageComponent,
@@ -31,6 +33,11 @@ import { SettingsPageComponent } from './settings/settings-page.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: contents' },
   template: `
+    @if (page() !== 'projection') {
+      @defer (on idle) {
+        <app-finalize-banner />
+      }
+    }
     @switch (page()) {
       @case ('overview') {
         <section appOverviewPage></section>

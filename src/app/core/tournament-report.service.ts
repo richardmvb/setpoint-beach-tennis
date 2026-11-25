@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { shownScore } from '../domain/tournament-view/final-score';
 import { groupSizeOf, usesCourtQueue, usesGroupQualification } from '../domain/tournament-view/format';
 import { FinalMatchKind, Match, TournamentState } from './models';
 
@@ -45,14 +46,15 @@ export class TournamentReportService {
         .filter(Boolean)
         .join(' · ');
       const team = (ids: [string, string]) => ids.map((id) => players.get(id) ?? 'A definir').join(' + ');
+      const shown = shownScore(match);
       return {
         label: location,
         teamA: team(match.teamA),
         teamB: team(match.teamB),
-        scoreA: match.scoreA === null ? '—' : String(match.scoreA),
-        scoreB: match.scoreB === null ? '—' : String(match.scoreB),
+        scoreA: shown.a === null ? '—' : String(shown.a),
+        scoreB: shown.b === null ? '—' : String(shown.b),
         tieBreak:
-          match.tieBreakA != null && match.tieBreakB != null ? `Tie-break ${match.tieBreakA}–${match.tieBreakB}` : '',
+          shown.tieBreakA !== null && shown.tieBreakB !== null ? `Tie-break ${shown.tieBreakA}–${shown.tieBreakB}` : '',
         pending: match.scoreA === null || match.scoreB === null,
       };
     };

@@ -1,3 +1,20 @@
+.finals-view {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 16px;
+}
+
+.finals-view button[aria-pressed='true'] {
+  border-color: var(--chip-secure-border);
+  background: var(--chip-secure-bg);
+  color: var(--chip-secure-fg);
+}
+
+.finals-bracket {
+  margin-block-end: 16px;
+}
+
 .tiebreak-row > b {
   align-self: center;
   margin-right: auto;

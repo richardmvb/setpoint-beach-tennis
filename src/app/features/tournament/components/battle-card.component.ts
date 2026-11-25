@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, Input, inject, input } from '@angul
 import { provideTranslocoScope, TranslocoService } from '@jsverse/transloco';
 
 import { Match, Player } from '../../../core/models';
+import { shownScore } from '../../../domain/tournament-view/final-score';
 import { PlayerAvatarComponent } from '../../player-avatar.component';
 
 /** Versus card used when watching a tournament: two teams, a big scoreboard, a clear winner. */
@@ -42,11 +43,11 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
           role="img"
           [attr.aria-label]="ariaScore"
         >
-          @for (value of [match.scoreA]; track value) {
+          @for (value of [shown.a]; track value) {
             <span class="battle-score score-a">{{ value ?? '–' }}</span>
           }
           <span class="battle-vs" aria-hidden="true">VS</span>
-          @for (value of [match.scoreB]; track value) {
+          @for (value of [shown.b]; track value) {
             <span class="battle-score score-b">{{ value ?? '–' }}</span>
           }
         </div>
@@ -62,8 +63,8 @@ import { PlayerAvatarComponent } from '../../player-avatar.component';
           }
         </div>
       </div>
-      @if (match.tieBreakA != null && match.tieBreakB != null) {
-        <small class="battle-tie">{{ tieBreakLabel }} {{ match.tieBreakA }}–{{ match.tieBreakB }}</small>
+      @if (shown.tieBreakA !== null && shown.tieBreakB !== null) {
+        <small class="battle-tie">{{ tieBreakLabel }} {{ shown.tieBreakA }}–{{ shown.tieBreakB }}</small>
       }
     </div>
   `,
@@ -77,6 +78,10 @@ export class BattleCardComponent {
   /** The round currently on court: unscored matches are shown as "em quadra". */
   readonly live = input(false);
 
+  /** The games as people read them: a set won in the tie-break is 7–6, however it was typed. */
+  get shown() {
+    return shownScore(this.match);
+  }
   get done(): boolean {
     return this.match.scoreA !== null && this.match.scoreB !== null;
   }
@@ -84,8 +89,9 @@ export class BattleCardComponent {
     return this.live() && !this.done;
   }
   get winner(): 'A' | 'B' | null {
-    if (!this.done || this.match.scoreA === this.match.scoreB) return null;
-    return (this.match.scoreA as number) > (this.match.scoreB as number) ? 'A' : 'B';
+    const { a, b } = this.shown;
+    if (a === null || b === null || a === b) return null;
+    return a > b ? 'A' : 'B';
   }
   get mine(): boolean {
     const highlightId = this.highlightId();
@@ -110,7 +116,7 @@ export class BattleCardComponent {
     return this.done
       ? this.transloco.translate(
           'battle.ariaScore',
-          { teamA: a, scoreA: this.match.scoreA, scoreB: this.match.scoreB, teamB: b },
+          { teamA: a, scoreA: this.shown.a, scoreB: this.shown.b, teamB: b },
           'tournament/pt-BR',
         )
       : this.transloco.translate('battle.ariaNoScore', { teamA: a, teamB: b }, 'tournament/pt-BR');

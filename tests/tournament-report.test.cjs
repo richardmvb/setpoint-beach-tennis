@@ -23,7 +23,9 @@ function load(file) {
         ? { Injectable: () => (target) => target }
         : name === '../domain/tournament-view/format'
           ? load('domain/tournament-view/format.ts')
-          : require(name),
+          : name === '../domain/tournament-view/final-score'
+            ? load('domain/tournament-view/final-score.ts')
+            : require(name),
     exported,
   );
   return exported;
@@ -92,6 +94,20 @@ test('relatório de finais antecipadas inclui só jogos realizados, finais e tie
   assert.match(text, /Tie-break 8–6/);
   assert.match(text, /Disputa de 3º lugar/);
   assert.doesNotMatch(text, /RODADA 2|pendente/i);
+});
+
+test('relatório mostra 6–6 decidido no tie-break digitado como 7–6', () => {
+  const service = new reportExports.TournamentReportService();
+  const state = {
+    ...base,
+    finals: {
+      complete: true,
+      podiumPlayerIds: [],
+      matches: [match('final', 6, 6, { finalKind: 'championship', tieBreakA: 7, tieBreakB: 5 })],
+    },
+  };
+  const text = service.toText(service.build(state));
+  assert.match(text, /Ana \+ Bia 7 × 6 Caio \+ Dani · Tie-break 7–5/);
 });
 
 test('relatório de grupos identifica quadras e mantém placares pendentes fora das finais antecipadas', () => {

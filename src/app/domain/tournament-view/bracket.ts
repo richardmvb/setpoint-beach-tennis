@@ -1,4 +1,5 @@
 import type { FinalMatchKind, FinalStage, Match } from '../../core/models';
+import { shownScore } from './final-score';
 import type { FinalWinnerSide } from './scoring';
 
 type Pair = readonly [string, string];
@@ -127,14 +128,14 @@ export function finalsBracket(finals: FinalStage, winnerSide: FinalWinnerSide): 
     const winner = winnerSide(match);
     const ready = known(match.teamA) && known(match.teamB);
     const feeds = layout.feeds[match.id];
-    const atSix = match.scoreA === 6 && match.scoreB === 6;
+    const shown = shownScore(match);
     const slot = (side: 0 | 1): BracketSlot => {
       const team = side === 0 ? match.teamA : match.teamB;
       if (!team[0]) return feeds?.[side] ?? { kind: 'tbd' };
       return pairSlot(
         team,
-        side === 0 ? match.scoreA : match.scoreB,
-        atSix ? (side === 0 ? match.tieBreakA : match.tieBreakB) : null,
+        side === 0 ? shown.a : shown.b,
+        side === 0 ? shown.tieBreakA : shown.tieBreakB,
         winner === side + 1,
       );
     };

@@ -170,8 +170,29 @@
   white-space: nowrap;
 }
 
+.bracket-avatars {
+  display: inline-flex;
+  flex: none;
+}
+
+.bracket-avatars app-player-avatar + app-player-avatar {
+  margin-inline-start: -8px;
+}
+
 .bracket-games {
   flex: none;
+  min-inline-size: 1ch;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Points of the tie-break, next to the games of the set that went to it. */
+.bracket-tb {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  font-size: 10px;
   font-weight: 800;
 }
 

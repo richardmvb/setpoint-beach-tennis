@@ -72,8 +72,9 @@ describe('PlayerMatchesDialogComponent', () => {
     await setup();
     const [, , , final, third] = rows();
     expect(within(final).getByText('FINAL')).toBeTruthy();
-    // The championship is undecided (no points yet), so it has a score but no result.
-    expect(within(final).getByText('6–6 (TB 5–7)')).toBeTruthy();
+    // Typed as 6-6 with the tie-break 5-7: shown as a set won in the tie-break. The test's winner rule leaves the
+    // championship without a result, so only the score is shown.
+    expect(within(final).getByText('6–7 (TB 5–7)')).toBeTruthy();
     expect(within(third).getByText('DISPUTA DE 3º LUGAR')).toBeTruthy();
     expect(within(third).getByText('6–2 · Vitória')).toBeTruthy();
   });

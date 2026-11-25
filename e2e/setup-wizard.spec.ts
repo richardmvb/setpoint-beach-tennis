@@ -52,6 +52,19 @@ test.describe('setup wizard: steps', () => {
   });
 });
 
+test.describe('setup wizard: the name field', () => {
+  test('Enter on the name keeps the step and moves to the format choices', async ({ page }) => {
+    await page.goto('/');
+    const name = page.locator('#setupName');
+    await name.fill('Copa Verão');
+    await name.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Configure a competição' })).toBeVisible();
+    // The first choice group, whichever it is for this setup (where it is kept, or the type of pair).
+    await expect(page.locator('app-choice-cards [role="radio"]:focus')).toHaveCount(1);
+    await expect(name).toHaveValue('Copa Verão');
+  });
+});
+
 test.describe('setup wizard: adding athletes', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');

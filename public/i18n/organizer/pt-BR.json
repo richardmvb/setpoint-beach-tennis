@@ -80,6 +80,9 @@
     "title": "Finais",
     "complete": "Concluídas",
     "inProgress": "Em andamento",
+    "viewLabel": "Como ver a fase final",
+    "viewGames": "Jogos",
+    "viewBracket": "Chave",
     "registered": "● Registrado",
     "pending": "○ Pendente",
     "manualMode": "Usar placar manual",
@@ -91,6 +94,11 @@
     "pair2": "Dupla 2",
     "tieBreakPoints1": "Pontos de tie-break da dupla 1",
     "tieBreakPoints2": "Pontos de tie-break da dupla 2"
+  },
+  "finalizeBanner": {
+    "label": "Torneio pronto para finalizar",
+    "text": "Todos os jogos têm placar. Finalize para liberar o pódio e o relatório.",
+    "action": "Finalizar agora"
   },
   "podium": {
     "kicker": "PÓDIO FINAL",
@@ -129,9 +137,9 @@
     },
     "finalize": {
       "title": "Finalizar o torneio?",
-      "text": "Depois disso nenhum resultado poderá ser alterado. Para confirmar, digite a palavra abaixo.",
-      "phrase": "finalizar",
-      "confirm": "Finalizar torneio"
+      "text": "Depois disso nenhum resultado poderá ser alterado.",
+      "confirm": "Finalizar torneio",
+      "cancel": "Voltar"
     }
   },
   "notices": {

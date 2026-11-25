@@ -54,12 +54,20 @@
                           @if (slot.seed) {
                             <span class="bracket-seed">{{ t('seed', { n: slot.seed }) }}</span>
                           }
+                          <span class="bracket-avatars">
+                            @for (id of slot.playerIds; track $index) {
+                              <app-player-avatar
+                                [name]="player(id)?.name ?? ''"
+                                [photoDataUrl]="player(id)?.photoDataUrl"
+                                variant="team-avatar"
+                              />
+                            }
+                          </span>
                           <span class="bracket-names">{{ pairName(slot.playerIds) }}</span>
-                          <span class="bracket-games"
-                            >{{ slot.games ?? '–' }}@if (slot.tieBreak !== null) {
-                              <sup>{{ slot.tieBreak }}</sup>
-                            }</span
-                          >
+                          <span class="bracket-games">{{ slot.games ?? '–' }}</span>
+                          @if (slot.tieBreak !== null) {
+                            <span class="bracket-tb">{{ t('tieBreak', { points: slot.tieBreak }) }}</span>
+                          }
                           @if (slot.won) {
                             <span class="bracket-sr">{{ t('winner') }}</span>
                           }

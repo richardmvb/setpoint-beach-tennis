@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { AvatarPickerComponent } from '../../avatar-picker.component';
@@ -27,6 +27,14 @@ import { SetupFeedbackComponent } from './setup-feedback.component';
 })
 export class SetupConfigComponent {
   protected readonly store = inject(SetupStore);
-  /** Enter in the name field goes on to the next step. */
-  readonly advance = output<void>();
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /**
+   * Enter in the name field (the phone keyboard's "Próximo") moves to the first format choice instead of leaving the
+   * step: every choice has a default, so going on from here would hide them. Only the button leaves the step.
+   */
+  protected focusChoices(event: Event): void {
+    event.preventDefault();
+    this.host.nativeElement.querySelector<HTMLElement>('app-choice-cards [role="radio"][tabindex="0"]')?.focus();
+  }
 }

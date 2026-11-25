@@ -1,14 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { ButtonComponent } from '@ui/button/button.component';
 import type { FinalStage, Match } from '../../../core/models';
+import { LOCAL_STORE } from '../../../core/ports/key-value-store.port';
 import { finalsBracket } from '../../../domain/tournament-view/bracket';
 import { FinalsBracketComponent } from '../components/finals-bracket.component';
 import { FinalLiveScoreComponent } from '../components/final-live-score.component';
 import { MatchScoreFormComponent, type ScoreEdit } from '../components/match-score-form.component';
 import { TournamentStore } from '../data/tournament.store';
 import { PodiumSectionComponent } from './podium-section.component';
+
+type FinalsView = 'games' | 'bracket';
+const FINALS_VIEW_KEY = 'setpoint.finals.view';
 
 /**
  * The finals: each match with its result (typed games and tie-break, or point by point for the championship), and
@@ -35,9 +39,32 @@ import { PodiumSectionComponent } from './podium-section.component';
 })
 export class FinalsCardComponent {
   protected readonly store = inject(TournamentStore);
+  private readonly local = inject(LOCAL_STORE);
+  /**
+   * What the organizer sees: the matches, where scores are typed (the default), or the knockout tree. Kept on this
+   * device, so an organizer who prefers the tree finds it again.
+   */
+  protected readonly view = signal<FinalsView>(this.storedView());
   readonly final = input.required<FinalStage>();
   /** The knockout tree, for the formats that have one; the list below stays where scores are typed. */
   protected readonly bracket = computed(() => finalsBracket(this.final(), (match) => this.store.winnerSide(match)));
+
+  protected setView(view: FinalsView): void {
+    this.view.set(view);
+    try {
+      this.local.setItem(FINALS_VIEW_KEY, view);
+    } catch {
+      // Storage can be full or blocked: the choice then lasts until the page is left.
+    }
+  }
+
+  private storedView(): FinalsView {
+    try {
+      return this.local.getItem(FINALS_VIEW_KEY) === 'bracket' ? 'bracket' : 'games';
+    } catch {
+      return 'games';
+    }
+  }
 
   protected score(match: Match, edit: ScoreEdit): void {
     this.store.finalScoreChanged(match, edit.side, edit.value);

@@ -1,0 +1,17 @@
+.finalize-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-block-end: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--orange);
+  border-radius: var(--radius-md);
+  background: var(--orange-soft);
+}
+
+.finalize-banner p {
+  flex: 1 1 16rem;
+  margin: 0;
+  font-weight: 700;
+}

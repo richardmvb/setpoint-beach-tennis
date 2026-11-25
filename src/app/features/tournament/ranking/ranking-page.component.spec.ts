@@ -39,8 +39,9 @@ function withFinals(champion: [number, number] | null, third: [number, number] |
   return { ...state, finals: finals.updatePodium(stage) };
 }
 
-async function show(state: TournamentState) {
+async function show(state: TournamentState, stored: Record<string, string> = {}) {
   const fakes = tournamentFakes();
+  for (const [key, value] of Object.entries(stored)) fakes.local.setItem(key, value);
   const hooks = fakes.hooks;
   const requests: ShellRequest[] = [];
   await render(RankingPageComponent, {
@@ -144,17 +145,43 @@ describe('RankingPageComponent: the 20-player format', () => {
     expect(screen.getByText('Sorteio registrado')).toBeTruthy();
   });
 
-  it('draws the bye bracket above the list of finals, with the score fields still in the list', async () => {
+  it('draws the bye bracket when the organizer switches to Chave, and the score fields back under Jogos', async () => {
     const finals = new FinalsService();
     const state = groups20State(5, 3, strongerPairWins);
     const pairs = Array.from({ length: 6 }, (_, i): [string, string] => [
       state.players[i * 2].id,
       state.players[i * 2 + 1].id,
     ]);
-    await show({ ...state, finals: finals.updatePodium(finals.createByeBracket(pairs)) });
+    const { local } = await show({ ...state, finals: finals.updatePodium(finals.createByeBracket(pairs)) });
+    // The score list is the default: that is where the organizer types.
+    expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
+    expect(screen.getAllByRole('spinbutton').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Jogos' }).getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chave' }));
     expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
     expect(screen.getAllByText('BYE')).toHaveLength(2);
     expect(screen.getByRole('article', { name: 'Quartas 1' })).toBeTruthy();
+    expect(screen.queryAllByRole('spinbutton')).toHaveLength(0);
+    expect(local.getItem('setpoint.finals.view')).toBe('bracket');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Jogos' }));
+    expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
     expect(screen.getAllByRole('spinbutton').length).toBeGreaterThan(0);
+  });
+
+  it('opens on the view the organizer chose last time on this device', async () => {
+    const finals = new FinalsService();
+    const state = groups20State(5, 3, strongerPairWins);
+    const pairs = Array.from({ length: 6 }, (_, i): [string, string] => [
+      state.players[i * 2].id,
+      state.players[i * 2 + 1].id,
+    ]);
+    await show(
+      { ...state, finals: finals.updatePodium(finals.createByeBracket(pairs)) },
+      { 'setpoint.finals.view': 'bracket' },
+    );
+    expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Chave' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

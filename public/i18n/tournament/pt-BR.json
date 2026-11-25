@@ -229,6 +229,7 @@
     "loserSf": "Perdedor SF{{number}}",
     "live": "AO VIVO",
     "winner": "vencedora",
+    "tieBreak": "TB {{ points }}",
     "tbd": "A definir"
   }
 }

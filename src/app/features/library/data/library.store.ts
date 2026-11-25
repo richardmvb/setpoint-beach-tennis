@@ -40,6 +40,11 @@ export class LibraryStore {
     return entry.id === this.data.currentId;
   }
 
+  /** Every match has a score and the final phase is on, but nobody finished the tournament. */
+  needsFinalizing(entry: LibraryEntry): boolean {
+    return entry.phase === 'finals' && entry.matchesTotal > 0 && entry.matchesCompleted === entry.matchesTotal;
+  }
+
   /** True when the tournament was opened, so the dialog can close. */
   open(id: string): Promise<boolean> {
     this.deleteBlocked.set(false);

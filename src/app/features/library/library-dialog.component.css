@@ -68,3 +68,7 @@
     width: 100vw;
   }
 }
+
+.library-info .mini-tag {
+  margin-inline-start: 8px;
+}

@@ -7,6 +7,7 @@
   "deleteInUse": "Este é o torneio em uso. Inicie outro antes de excluí-lo.",
   "progress": "{{ done }}/{{ total }} partidas",
   "players": "{{ count }} jogadores",
+  "needsFinalizing": "Falta finalizar",
   "inUse": "Em uso",
   "open": "Abrir",
   "delete": "Excluir",
