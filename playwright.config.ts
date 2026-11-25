@@ -9,6 +9,15 @@ const port = 4200;
  */
 const visual = !!process.env['E2E_VISUAL'];
 
+const ci = !!process.env['CI'];
+
+/**
+ * A test that fails and then passes on its retry is flaky. On pull requests it passes, and the `github` reporter
+ * lists it in the run summary and annotates the failing attempt. The nightly run sets E2E_FAIL_ON_FLAKY, so a
+ * flaky test fails it instead of hiding behind the retry.
+ */
+const failOnFlaky = !!process.env['E2E_FAIL_ON_FLAKY'];
+
 /**
  * End-to-end tests run against the real app in the browser. All traffic to hosts other than
  * localhost is blocked by e2e/support/fixtures.ts, so tests never reach Supabase or PostHog.
@@ -19,19 +28,22 @@ const visual = !!process.env['E2E_VISUAL'];
 export default defineConfig<{ routerEnabled: boolean }>({
   testDir: './e2e',
   fullyParallel: true,
-  forbidOnly: !!process.env['CI'],
-  retries: process.env['CI'] ? 1 : 0,
-  workers: process.env['CI'] ? 2 : undefined,
+  forbidOnly: ci,
+  retries: ci ? 1 : 0,
+  failOnFlakyTests: failOnFlaky,
+  // One worker per vCPU of the GitHub runner (4). CI also splits the suite into shards (--shard in ci.yml).
+  workers: ci ? 4 : undefined,
   // One environment, so no platform or project suffix in the file name.
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{arg}{ext}',
   // Exact by default. Full-page shots allow 32 pixels: 3 to 16 can differ between runs at the edge of the fixed, blurred bars (raster noise).
   expect: { toHaveScreenshot: { threshold: 0, maxDiffPixels: 0 } },
   // CI never writes a missing baseline: a new or renamed shot must be committed.
-  updateSnapshots: process.env['CI'] ? 'none' : 'missing',
-  reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  updateSnapshots: ci ? 'none' : 'missing',
+  reporter: ci ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${port}`,
-    trace: 'retain-on-failure',
+    // Recording a trace slows every test, so CI records one only for the retry of a failed test (failed again or flaky).
+    trace: ci ? 'on-first-retry' : 'retain-on-failure',
     screenshot: 'only-on-failure',
     locale: 'pt-BR',
   },
@@ -74,7 +86,7 @@ export default defineConfig<{ routerEnabled: boolean }>({
   webServer: {
     command: `npx ng serve --port ${port}`,
     url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env['CI'],
+    reuseExistingServer: !ci,
     timeout: 180_000,
   },
 });
