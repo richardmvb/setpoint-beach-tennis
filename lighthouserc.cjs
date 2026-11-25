@@ -8,17 +8,23 @@
  * bytes (CLS: +0.02, at least 0.05). They are a
  * ratchet: lower them when a change improves a number, never raise them.
  * TBT stands in for INP, which a lab run cannot measure.
+ *
+ * CI runs one job per page through scripts/lighthouse-page.cjs, which discards a warm-up run first and, on a pull
+ * request, also measures the base branch on the same runner. Bytes, CLS and LCP are stable once warm, so they are
+ * errors here. TBT follows the runner's CPU (its median doubled between runner types), so here it only warns, and
+ * the script fails a pull request whose TBT is worse than the base branch's on the same runner.
  */
 const BASE = 'http://127.0.0.1:4300/setpoint-beach-tennis/';
 
-const median = (maxNumericValue) => ['error', { maxNumericValue, aggregationMethod: 'median' }];
+const median = (level, maxNumericValue) => [level, { maxNumericValue, aggregationMethod: 'median' }];
 
 /** LCP and TBT in ms, CLS unitless, bytes as transferred (gzip). */
 const limits = ({ lcp, cls, tbt, bytes }) => ({
-  'largest-contentful-paint': median(lcp),
-  'cumulative-layout-shift': median(cls),
-  'total-blocking-time': median(tbt),
-  'total-byte-weight': median(bytes),
+  'largest-contentful-paint': median('error', lcp),
+  'cumulative-layout-shift': median('error', cls),
+  // A warning: TBT depends on the runner's CPU. CI compares it with the base branch instead (scripts/lighthouse-page.cjs).
+  'total-blocking-time': median('warn', tbt),
+  'total-byte-weight': median('error', bytes),
 });
 
 module.exports = {
