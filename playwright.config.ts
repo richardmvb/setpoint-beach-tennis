@@ -12,6 +12,15 @@ const visual = !!process.env['E2E_VISUAL'];
 const ci = !!process.env['CI'];
 
 /**
+ * The production smoke (e2e/production.spec.ts) runs against the production build served under the GitHub Pages
+ * base path by scripts/serve-dist.cjs, through `npm run e2e:prod` (which builds first) and the `e2e-production` CI job.
+ * With E2E_PROD set, only its two projects run and only that server starts; without it, the dev-server suite runs.
+ */
+const production = !!process.env['E2E_PROD'];
+const productionURL = 'http://127.0.0.1:4300/setpoint-beach-tennis/';
+const channel = process.env['E2E_BROWSER_CHANNEL'] || undefined;
+
+/**
  * A test that fails and then passes on its retry is flaky. On pull requests it passes, and the `github` reporter
  * lists it in the run summary and annotates the failing attempt. The nightly run sets E2E_FAIL_ON_FLAKY, so a
  * flaky test fails it instead of hiding behind the retry.
@@ -47,46 +56,63 @@ export default defineConfig<{ routerEnabled: boolean }>({
     screenshot: 'only-on-failure',
     locale: 'pt-BR',
   },
-  projects: [
-    {
-      name: 'chromium',
-      testIgnore: 'visual.spec.ts',
-      use: { ...devices['Desktop Chrome'], channel: process.env['E2E_BROWSER_CHANNEL'] || undefined },
-    },
-    {
-      // The same journeys that depend on the address, with the Angular Router handling it (the routerEnabled flag).
-      name: 'chromium-router',
-      testMatch: [
-        'url-contract.spec.ts',
-        'live-viewer.spec.ts',
-        'shared-invite.spec.ts',
-        'shared-view.spec.ts',
-        'tournament-flow.spec.ts',
-        'tournament-pages.spec.ts',
+  projects: production
+    ? [
+        {
+          name: 'production',
+          testMatch: 'production.spec.ts',
+          use: { ...devices['Desktop Chrome'], channel, baseURL: productionURL },
+        },
+        {
+          name: 'production-router',
+          testMatch: 'production.spec.ts',
+          use: { ...devices['Desktop Chrome'], channel, baseURL: productionURL, routerEnabled: true },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          testIgnore: ['visual.spec.ts', 'production.spec.ts'],
+          use: { ...devices['Desktop Chrome'], channel },
+        },
+        {
+          // The same journeys that depend on the address, with the Angular Router handling it (the routerEnabled flag).
+          name: 'chromium-router',
+          testMatch: [
+            'url-contract.spec.ts',
+            'live-viewer.spec.ts',
+            'shared-invite.spec.ts',
+            'shared-view.spec.ts',
+            'tournament-flow.spec.ts',
+            'tournament-pages.spec.ts',
+          ],
+          use: { ...devices['Desktop Chrome'], channel, routerEnabled: true },
+        },
+        ...(visual
+          ? [
+              {
+                // Bundled Chromium on purpose (no channel): the baselines come from the Playwright image CI also uses.
+                name: 'visual',
+                // A flaky pixel diff must fail, not pass on a retry.
+                retries: 0,
+                testMatch: 'visual.spec.ts',
+                use: { ...devices['Desktop Chrome'], timezoneId: 'UTC' },
+              },
+            ]
+          : []),
       ],
-      use: {
-        ...devices['Desktop Chrome'],
-        channel: process.env['E2E_BROWSER_CHANNEL'] || undefined,
-        routerEnabled: true,
+  webServer: production
+    ? {
+        // Serves dist/ as it is: build it first (npm run e2e:prod does).
+        command: 'node scripts/serve-dist.cjs',
+        url: productionURL,
+        reuseExistingServer: !ci,
+        timeout: 30_000,
+      }
+    : {
+        command: `npx ng serve --port ${port}`,
+        url: `http://localhost:${port}`,
+        reuseExistingServer: !ci,
+        timeout: 180_000,
       },
-    },
-    ...(visual
-      ? [
-          {
-            // Bundled Chromium on purpose (no channel): the baselines come from the Playwright image CI also uses.
-            name: 'visual',
-            // A flaky pixel diff must fail, not pass on a retry.
-            retries: 0,
-            testMatch: 'visual.spec.ts',
-            use: { ...devices['Desktop Chrome'], timezoneId: 'UTC' },
-          },
-        ]
-      : []),
-  ],
-  webServer: {
-    command: `npx ng serve --port ${port}`,
-    url: `http://localhost:${port}`,
-    reuseExistingServer: !ci,
-    timeout: 180_000,
-  },
 });
