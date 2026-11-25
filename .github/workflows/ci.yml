@@ -199,7 +199,7 @@ jobs:
   visual:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
       options: --init --ipc=host
     timeout-minutes: 15
     env:
@@ -218,7 +218,7 @@ jobs:
         run: npm ci
 
       - name: The image matches the installed Playwright version
-        run: test "$(node -p "require('@playwright/test/package.json').version")" = "1.65.0"
+        run: test "$(node -p "require('@playwright/test/package.json').version")" = "1.65.1"
 
       - name: Visual baselines
         run: npx playwright test --project visual
