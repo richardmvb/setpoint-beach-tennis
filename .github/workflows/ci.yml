@@ -52,8 +52,11 @@ jobs:
           if grep -qE "$db" <<< "$files"; then db_changed=true; fi
           printf 'app=%s\ndb=%s\n' "$app" "$db_changed" | tee -a "$GITHUB_OUTPUT"
 
+  # Dependabot writes its own titles, and a group update of one package runs past commitlint's 100 characters
+  # ("... in the minor-and-patch group across 1 directory"); a rebase restores the title, so editing it does not hold.
+  # Its pull requests are skipped (the author, not whoever triggered the run, so an edited title by a person is checked).
   pr-title:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
