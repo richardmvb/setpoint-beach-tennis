@@ -12,6 +12,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides which jobs a pull request needs. Anything that is not a pull request (the deploy on main) runs everything.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      db: ${{ steps.filter.outputs.db }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Classify the changed files
+        id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != pull_request ]; then
+            printf 'app=true\ndb=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "origin/$BASE_REF...HEAD")
+          printf 'Changed files:\n%s\n' "$files"
+          # The app jobs (e2e, visual, lighthouse) are skipped only when every file is on this list of files that
+          # cannot change what the app builds or renders. Anything else, including a file nobody listed, runs them.
+          not_app='^(docs/|supabase/|tests/[^/]+\.test\.cjs$|\.github/(dependabot\.yml|pull_request_template\.md)$|[^/]+\.md$|\.env\.example$|\.editorconfig$)'
+          # The database job runs when one of these changes.
+          db='^(supabase/|src/app/core/adapters/supabase/database\.types\.ts$|scripts/(db-lint|check-migrations)\.cjs$|package(-lock)?\.json$|\.nvmrc$|\.github/)'
+          app=false
+          db_changed=false
+          if grep -vqE "$not_app" <<< "$files"; then app=true; fi
+          if grep -qE "$db" <<< "$files"; then db_changed=true; fi
+          printf 'app=%s\ndb=%s\n' "$app" "$db_changed" | tee -a "$GITHUB_OUTPUT"
+
   pr-title:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -20,20 +56,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: Validate PR title as a Conventional Commit
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: printf '%s\n' "$PR_TITLE" | npx --no -- commitlint
 
+  # Always runs: formatting and lint cover docs too, and the build enforces the bundle budgets.
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -41,14 +72,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
@@ -86,6 +111,8 @@ jobs:
   # Timing metrics (TBT) vary from run to run on shared runners, so Lighthouse reports but never blocks a PR.
   # The bundle budgets in the build step above are the blocking size check.
   lighthouse:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 20
@@ -93,14 +120,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: Generate runtime config (no secrets, pull request safe)
         run: node scripts/generate-runtime-config.cjs
@@ -121,6 +142,8 @@ jobs:
           retention-days: 7
 
   database:
+    needs: changes
+    if: needs.changes.outputs.db == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -129,14 +152,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: Start local Supabase and apply every migration from empty
         run: npm run db:start
@@ -163,20 +180,16 @@ jobs:
           git diff --exit-code -- src/app/core/adapters/supabase/database.types.ts
 
   e2e:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -197,6 +210,8 @@ jobs:
   # Pixel comparisons only match inside one environment: the Playwright image the baselines are generated in
   # (npm run e2e:visual:update). The ubuntu runner renders fonts and emoji differently.
   visual:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.65.1-noble
@@ -208,14 +223,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
 
       - name: The image matches the installed Playwright version
         run: test "$(node -p "require('@playwright/test/package.json').version")" = "1.65.1"
@@ -232,3 +241,19 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  # The one check to require in branch protection. A job skipped by the path filter counts as passed;
+  # a failed, cancelled or errored one does not. Lighthouse is advisory (continue-on-error), so it is not listed.
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [changes, pr-title, quality, database, e2e, visual]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every required job passed or was skipped by the path filter
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
