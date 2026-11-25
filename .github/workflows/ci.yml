@@ -205,24 +205,8 @@ jobs:
       - name: Set up Node.js and install dependencies
         uses: ./.github/actions/setup
 
-      - name: Read the Playwright version
-        id: playwright
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: browsers
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}-chromium
-
-      - name: Install Playwright Chromium and its system dependencies
-        if: steps.browsers.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install the system dependencies of the cached Chromium
-        if: steps.browsers.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+      - name: Install Playwright Chromium
+        uses: ./.github/actions/playwright-chromium
 
       - name: End-to-end tests (no external services are reachable)
         run: npm run e2e -- --shard=${{ matrix.shard }}/3 --repeat-each=$E2E_REPEAT
@@ -233,6 +217,42 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.shard }}
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # The production build under the GitHub Pages base path (e2e/production.spec.ts). The shards above run the dev
+  # server, which keeps Angular's dev-mode checks; this job covers what only the production build can break.
+  e2e-production:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_FAIL_ON_FLAKY: ${{ github.event_name == 'schedule' && '1' || '' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
+
+      - name: Install Playwright Chromium
+        uses: ./.github/actions/playwright-chromium
+
+      - name: Generate runtime config (no secrets, pull request safe)
+        run: node scripts/generate-runtime-config.cjs
+
+      - name: Production build, then the smoke tests against it
+        run: npm run e2e:prod
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-production
           path: |
             playwright-report
             test-results
@@ -279,7 +299,7 @@ jobs:
   ci-passed:
     name: CI passed
     if: always()
-    needs: [changes, pr-title, quality, database, e2e, visual]
+    needs: [changes, pr-title, quality, database, e2e, e2e-production, visual]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

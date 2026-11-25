@@ -31,6 +31,7 @@
     "prepare": "husky",
     "e2e": "playwright test",
     "e2e:visual": "bash scripts/visual-baselines.sh",
+    "e2e:prod": "ng build --base-href /setpoint-beach-tennis/ && E2E_PROD=1 playwright test",
     "e2e:visual:update": "bash scripts/visual-baselines.sh --update-snapshots"
   },
   "dependencies": {

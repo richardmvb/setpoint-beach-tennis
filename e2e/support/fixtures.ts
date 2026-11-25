@@ -111,9 +111,12 @@ export { expect };
 
 export const PLAYER_NAMES = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Fabio', 'Gabi', 'Hugo'] as const;
 
-/** Wizard: 8 players added in a batch, then generate the table. The app starts at the setup page. */
-export async function createLocalTournament(page: Page, name = 'Torneio E2E'): Promise<void> {
-  await page.goto('/');
+/**
+ * Wizard: 8 players added in a batch, then generate the table. The app starts at the setup page.
+ * `start` is the app's root: `./` when the base URL carries a path (the production smoke under /setpoint-beach-tennis/).
+ */
+export async function createLocalTournament(page: Page, name = 'Torneio E2E', start = '/'): Promise<void> {
+  await page.goto(start);
   await page.locator('#setupName').fill(name);
   await page.getByRole('button', { name: /Adicionar jogadores/ }).click();
   await page.getByRole('button', { name: /Adicionar em lote/ }).click();
