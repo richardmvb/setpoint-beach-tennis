@@ -60,7 +60,7 @@ Target structure, ports and adapters, and feature folders: Phase 4 and ADR 0003 
 
 ## Engineering rules (enforced)
 
-- Conventional Commits. Enforced by commitlint on commits (husky hook) and on PR titles (CI).
+- Conventional Commits. Enforced by commitlint on commits (husky hook) and on PR titles (CI), except Dependabot's pull requests, whose titles it generates (a one-package group update is over 100 characters).
 - Never silence a gate: no `eslint-disable`, `@ts-ignore`, `stylelint-disable`, skipped tests, or baselines. Fix the code, or reduce scope and say so.
 - Ratchet: rules that legacy code cannot pass are enabled only for the folders that comply (see `eslint.config.mjs`). Widen the glob as code is migrated.
 - Persisted data (`setpoint.tournament.v1`, offline queue, shared snapshot) and database changes must stay backward compatible with the previous release.
