@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "name": "Fixture duplas fixas 12",
+  "size": 12,
+  "courts": 2,
+  "gamesToWin": 4,
+  "roundCount": 7,
+  "players": [
+    {
+      "id": "p1",
+      "name": "Ana"
+    },
+    {
+      "id": "p2",
+      "name": "Bia"
+    },
+    {
+      "id": "p3",
+      "name": "Caio"
+    },
+    {
+      "id": "p4",
+      "name": "Duda"
+    },
+    {
+      "id": "p5",
+      "name": "Edu"
+    },
+    {
+      "id": "p6",
+      "name": "Fabi"
+    },
+    {
+      "id": "p7",
+      "name": "Gui"
+    },
+    {
+      "id": "p8",
+      "name": "Hana"
+    },
+    {
+      "id": "p9",
+      "name": "Ivo"
+    },
+    {
+      "id": "p10",
+      "name": "Juca"
+    },
+    {
+      "id": "p11",
+      "name": "Kika"
+    },
+    {
+      "id": "p12",
+      "name": "Lia"
+    }
+  ],
+  "rounds": [
+    {
+      "number": 1,
+      "matches": [
+        {
+          "id": "group-group-1-r1-c1",
+          "court": 1,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p11", "p12"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r1-c2",
+          "court": 2,
+          "teamA": ["p3", "p4"],
+          "teamB": ["p7", "p8"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r1-c3",
+          "court": 3,
+          "teamA": ["p1", "p2"],
+          "teamB": ["p9", "p10"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 2,
+      "matches": [
+        {
+          "id": "group-group-1-r2-c1",
+          "court": 1,
+          "teamA": ["p3", "p4"],
+          "teamB": ["p1", "p2"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r2-c2",
+          "court": 2,
+          "teamA": ["p11", "p12"],
+          "teamB": ["p9", "p10"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r2-c3",
+          "court": 3,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p7", "p8"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 3,
+      "matches": [
+        {
+          "id": "group-group-1-r3-c1",
+          "court": 1,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p9", "p10"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r3-c2",
+          "court": 2,
+          "teamA": ["p7", "p8"],
+          "teamB": ["p1", "p2"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r3-c3",
+          "court": 3,
+          "teamA": ["p11", "p12"],
+          "teamB": ["p3", "p4"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 4,
+      "matches": [
+        {
+          "id": "group-group-1-r4-c1",
+          "court": 1,
+          "teamA": ["p7", "p8"],
+          "teamB": ["p11", "p12"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r4-c2",
+          "court": 2,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p1", "p2"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r4-c3",
+          "court": 3,
+          "teamA": ["p9", "p10"],
+          "teamB": ["p3", "p4"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 5,
+      "matches": [
+        {
+          "id": "group-group-1-r5-c1",
+          "court": 1,
+          "teamA": ["p9", "p10"],
+          "teamB": ["p7", "p8"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r5-c2",
+          "court": 2,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p3", "p4"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r5-c3",
+          "court": 3,
+          "teamA": ["p1", "p2"],
+          "teamB": ["p11", "p12"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    }
+  ],
+  "createdAt": "2026-11-13T10:00:00.000Z",
+  "tournamentMode": "groups",
+  "groupFormat": "fixed",
+  "fixedPairs": [
+    ["p1", "p2"],
+    ["p3", "p4"],
+    ["p5", "p6"],
+    ["p7", "p8"],
+    ["p9", "p10"],
+    ["p11", "p12"]
+  ],
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "Grupo A",
+      "playerIds": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12"],
+      "fixedPairs": [
+        ["p1", "p2"],
+        ["p3", "p4"],
+        ["p5", "p6"],
+        ["p7", "p8"],
+        ["p9", "p10"],
+        ["p11", "p12"]
+      ]
+    }
+  ]
+}

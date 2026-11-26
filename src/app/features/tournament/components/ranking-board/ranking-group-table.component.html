@@ -33,7 +33,10 @@
                 aria-describedby="board-open-description"
                 (click)="playerSelected.emit(entry.playerId)"
               >
-                <span class="g-name">{{ entry.name }}</span>
+                @if (entry.gender) {
+              <app-gender-icon [gender]="entry.gender" />
+            }
+            <span class="g-name">{{ entry.name }}</span>
                 @if (entry.status; as mark) {
                   <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'">
                     <span aria-hidden="true">{{ mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕' }}</span>

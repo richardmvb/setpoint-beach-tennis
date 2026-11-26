@@ -57,8 +57,9 @@
   background: var(--surface-soft);
 }
 
-/* An open group takes the whole row, so its table has room. */
-.mini-card.is-open {
+/* An open group takes the whole row, so its table has room; so does a single group (fixed pairs). */
+.mini-card.is-open,
+.mini-card:only-child {
   grid-column: 1 / -1;
 }
 

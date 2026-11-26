@@ -39,6 +39,8 @@ export class RankingBoardComponent {
   readonly highlightId = input('');
   /** Who looks: the guest starts on Resumo (it opens with their own line), the organizer on Compacto. */
   readonly role = input<'host' | 'guest'>('host');
+  /** The board folds into one row under the finals once they exist and the group stage is over (the organizer page). */
+  readonly fold = input(true);
   readonly playerSelected = output<string>();
   /** "Como funciona" was asked for: the opener shows the help dialog with its tournament. */
   readonly helpRequested = output();

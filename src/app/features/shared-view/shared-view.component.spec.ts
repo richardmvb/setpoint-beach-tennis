@@ -105,20 +105,27 @@ describe('SharedViewComponent', () => {
         state: { ...played, finals: finals.createByeBracket(pairs) },
       }),
     );
-    // The group stage is over and the finals exist: the finals come first and the board folds into one row. A guest
-    // starts on Resumo.
-    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
-    const board = document.getElementById('guest-ranking')!;
-    expect(board.tagName).toBe('APP-RANKING-BOARD');
-    expect(board.querySelector('details')?.open).toBe(false);
-    expect(screen.getByText('Fase de grupos encerrada')).toBeTruthy();
-    const bracketRegion = screen.getByRole('region', { name: 'Chave da fase final' });
-    expect(bracketRegion.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
-    expect(bracketRegion).toBeTruthy();
+    // The finals exist, so the page opens on Finais, and nothing else is on screen.
+    expect(await screen.findByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Finais' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('article', { name: 'Quartas 1' })).toBeTruthy();
     expect(screen.getAllByText('BYE')).toHaveLength(2);
     expect(screen.getByText('Vencedor QF2')).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Quem vai para a final' })).toBeNull();
+    expect(screen.queryByText(/^Descansam: /)).toBeNull();
+
+    // Ranking shows the board open (the finals are not above it any more, so it does not fold), a guest on Resumo.
+    fireEvent.click(screen.getByRole('button', { name: 'Ranking' }));
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    const board = document.getElementById('guest-ranking')!;
+    expect(board.tagName).toBe('APP-RANKING-BOARD');
+    expect(board.querySelector('details.folded')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
+
+    // Partidas shows the rounds, with who rests.
+    fireEvent.click(screen.getByRole('button', { name: 'Partidas' }));
+    expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('heading', { name: 'Quem vai para a final' })).toBeNull();
   });
 
   it('keeps the plain list of matches, with no tree, for the Super finals', async () => {
@@ -149,6 +156,7 @@ describe('SharedViewComponent: the ranking board views', () => {
     await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
       live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3) }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
     expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Resumo' }).getAttribute('aria-pressed')).toBe('true');
     // Nothing is scored yet in this tournament: the line says "hoje" and counts the matches left.
@@ -170,6 +178,7 @@ describe('SharedViewComponent: the ranking board views', () => {
     await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
       live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
     expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
   });
@@ -178,6 +187,7 @@ describe('SharedViewComponent: the ranking board views', () => {
     await setup({ url: { liveToken: 'live' }, local: withProfile() }, ({ live }) =>
       live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
     expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
     expect(screen.getByText(/Você: Ana\./)).toBeTruthy();
     // The sentence is the text of the line itself, next to the bold name.
@@ -192,6 +202,7 @@ describe('SharedViewComponent: the ranking board views', () => {
     await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
       live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3) }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
     expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
     expect(screen.queryByText(/Você:/)).toBeNull();
   });
@@ -200,7 +211,52 @@ describe('SharedViewComponent: the ranking board views', () => {
     await setup({ url: { dashboardViewerId: 't1', dashboardViewerSource: 'local' } }, ({ dashboard }) =>
       dashboard.given('local', { id: 't1', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
     );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
     expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('SharedViewComponent: one section at a time', () => {
+  const live = (state = groups20State(5, 3, strongerPairWins)) =>
+    setup({ url: { liveToken: 'live' } }, ({ live: fake }) =>
+      fake.given('live', { id: 'live-20', status: 'active', state }),
+    );
+
+  it('opens on Partidas, shows only that section, and Finais waits for the finals', async () => {
+    await live();
+    expect(await screen.findByRole('button', { name: 'Partidas' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Partidas' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Ranking' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Finais' }).disabled).toBe(true);
+    expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
+    // The ranking is not on this page until its button is pressed.
+    expect(screen.queryByRole('heading', { name: 'Quem vai para a final' })).toBeNull();
+    expect(document.getElementById('guest-ranking')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ranking' }));
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ranking' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('button', { name: 'Partidas' }).getAttribute('aria-current')).toBeNull();
+    expect(screen.queryByText(/^Descansam: /)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Partidas' }));
+    expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
+    expect(document.getElementById('guest-ranking')).toBeNull();
+  });
+
+  it('every format has the same sections: a Super tournament shows its ranking on its own too', async () => {
+    await live(storedTournament());
+    expect(await screen.findByRole('button', { name: 'Ranking' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Ranking individual' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ranking' }));
+    expect(await screen.findByRole('heading', { name: 'Ranking individual' })).toBeTruthy();
+  });
+
+  it('shows no sections before the schedule exists, only the participants and the wait', async () => {
+    await setup({ url: { inviteToken: 'invite' } }, ({ shared }) => shared.given('invite', sharedSnapshot()));
+    expect(await screen.findByText('PARTICIPANTES · 1 / 8')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ranking' })).toBeNull();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 });

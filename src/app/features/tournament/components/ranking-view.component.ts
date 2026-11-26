@@ -17,7 +17,6 @@ import { GenderIconComponent } from '../../gender-icon.component';
 import { CardComponent } from '@ui/card/card.component';
 import { RankingHint } from '../../../core/ranking-hint';
 import { RankingCriteriaComponent } from './ranking-criteria.component';
-import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tournament-view/group-tables';
 
 @Component({
   selector: 'app-ranking-view',
@@ -40,105 +39,6 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
         <p class="ranking-hint"><span aria-hidden="true">›</span> {{ t('openHint') }}</p>
       }
       <span class="visually-hidden" id="ranking-open-description">{{ t('openDescription') }}</span>
-      @for (group of groupTables(); track group.id) {
-        <article uiCard class="full-card group-ranking-card">
-          <div class="card-title-row">
-            <div>
-              <span class="card-kicker">{{ group.name }}</span>
-              <h2>{{ t('classification') }}</h2>
-            </div>
-            <span class="mini-tag">{{ fixedPairsMode() ? t('pairs') : t('athletes') }}</span>
-          </div>
-          <div class="table-scroll">
-            <table class="leaderboard">
-              <thead>
-                <tr>
-                  <th>{{ t('position') }}</th>
-                  <th>{{ fixedPairsMode() ? t('pair') : t('player') }}</th>
-                  <th class="numeric">{{ t('winsShort') }}</th>
-                  <th class="numeric">{{ t('gamesForShort') }}</th>
-                  <th class="numeric">{{ t('balance') }}</th>
-                  <th class="numeric">{{ t('matches') }}</th>
-                  <th class="row-open">
-                    <span class="visually-hidden">{{ t('open') }}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (entry of group.entries; track entry.playerIds.join('+'); let i = $index) {
-                  <tr
-                    [class.me-row]="isMine(entry)"
-                    [class.rank-gold]="i === 0"
-                    [class.rank-silver]="i === 1"
-                    [class.rank-bronze]="i === 2"
-                  >
-                    <td>
-                      <span
-                        class="rank-number"
-                        [class.top-three]="i < 3"
-                        [class.medal]="i < 3"
-                        [attr.data-place]="i + 1"
-                        >{{ i + 1 }}</span
-                      >
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        class="ranking-player-cell ranking-player-button"
-                        aria-describedby="ranking-open-description"
-                        (click)="select(entry.playerIds[0])"
-                      >
-                        @for (id of entry.playerIds; track id) {
-                          <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />
-                        }
-                        <b>{{ entry.label }}</b>
-                        @if (isMine(entry)) {
-                          <em class="row-tag me-tag">{{ t('you') }}</em>
-                        }
-                        @if (entry.status; as status) {
-                          <span
-                            class="qual-chip"
-                            [class.secure]="status === 'direct'"
-                            [class.chance]="status === 'bestThird'"
-                            ><span aria-hidden="true">{{
-                              status === 'direct' ? '✓' : status === 'bestThird' ? '★' : '✕'
-                            }}</span>
-                            @switch (status) {
-                              @case ('direct') {
-                                {{ t('status.direct') }}
-                              }
-                              @case ('bestThird') {
-                                {{ t('status.bestThird') }}
-                              }
-                              @default {
-                                {{ t('status.out') }}
-                              }
-                            }
-                          </span>
-                        }
-                      </button>
-                    </td>
-                    <td class="numeric">
-                      <b>{{ entry.setsWon }}</b>
-                    </td>
-                    <td class="numeric">{{ entry.gamesFor }}</td>
-                    <td class="numeric">
-                      <b
-                        class="balance-chip"
-                        [class.positive]="entry.gameBalance > 0"
-                        [class.negative]="entry.gameBalance < 0"
-                        >{{ entry.gameBalance > 0 ? '+' : '' }}{{ entry.gameBalance }}</b
-                      >
-                    </td>
-                    <td class="numeric">{{ entry.matchesPlayed }} / {{ scheduledMatches(entry.playerIds[0]) }}</td>
-                    <td class="row-open" aria-hidden="true">›</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </article>
-      }
       @if (showGenderRankings()) {
         <section class="gender-ranking-grid">
           <ng-container
@@ -358,7 +258,6 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
   private lastRanks = new Map<string, number>();
   private movementTimer: ReturnType<typeof setTimeout> | null = null;
   private movement = new Map<string, number>();
-  readonly groupTables = input<GroupStandingTable[]>([]);
   readonly standings = input<PlayerStanding[]>([]);
   readonly players = input<Player[]>([]);
   readonly rounds = input<Round[]>([]);
@@ -366,7 +265,6 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
   readonly femaleStandings = input<PlayerStanding[]>([]);
   readonly showGenderRankings = input(false);
   readonly genderRankingLimit = input(8);
-  readonly fixedPairsMode = input(false);
   readonly hasSchedule = input(false);
   readonly highlightId = input('');
   readonly playerSelected = output<string>();
@@ -412,10 +310,6 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
     return best ? Math.round((row.setsWon / best) * 100) : 0;
   }
 
-  isMine(entry: GroupStandingEntry): boolean {
-    const highlightId = this.highlightId();
-    return !!highlightId && entry.playerIds.includes(highlightId);
-  }
   scheduledMatches(playerId: string): number {
     return this.rounds().reduce(
       (total, round) =>

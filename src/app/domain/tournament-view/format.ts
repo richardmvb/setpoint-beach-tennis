@@ -55,17 +55,12 @@ export function usesGroupQualification(state: TournamentState): boolean {
 }
 
 /**
- * The groups that rank everybody in one list with a cut line (the ranking board): rotating open groups of 20 (12
- * places through the groups) or 24 (the top 8 of the overall ranking). Fixed pairs, mixed doubles and the smaller group
- * formats keep their own tables.
+ * The ranking board (the groups as cards and one list with a cut line) is how every group tournament is ranked: the
+ * finals take the first places of one list of athletes, whatever the groups, so the list is what matters. In fixed
+ * pairs the groups hold pairs, and the list is still of athletes (the finals take the best 8 athletes).
  */
 export function usesRankingBoard(state: TournamentState): boolean {
-  return (
-    isGroupTournament(state) &&
-    !fixedPairsMode(state) &&
-    !isMixedDoubles(state) &&
-    (state.size === 20 || state.size === 24)
-  );
+  return isGroupTournament(state);
 }
 
 /** Players per group: 5 only in the 20-player format when chosen, 4 everywhere else. */

@@ -28,6 +28,10 @@ const groups20Json = readFileSync(
 /** 24 players in 6 groups, every group match scored, no finals yet (e2e/support/groups24.json). */
 const groups24Json = readFileSync(join(__dirname, 'support', 'groups24.json'), 'utf8');
 
+/** 24 players in mixed doubles groups and 12 players in fixed pairs: every group match scored, no finals yet. */
+const mixed24Json = readFileSync(join(__dirname, 'support', 'mixed24.json'), 'utf8');
+const pairs12Json = readFileSync(join(__dirname, 'support', 'pairs12.json'), 'utf8');
+
 /** The Grupos 20 fixture without its finals: the group stage is over, so the ranking board shows open. */
 const groups20BoardJson = ((): string => {
   const state = JSON.parse(groups20Json) as Record<string, unknown>;
@@ -300,7 +304,8 @@ for (const config of CONFIGS) {
       });
       await page.goto('/?live=live-read-token-123');
       await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
-      await expect(page.getByText('Fase de grupos encerrada')).toBeVisible();
+      // The finals exist, so a guest opens on Finais.
+      await expect(page.getByRole('region', { name: 'Chave da fase final' })).toBeVisible();
       await page_(page, 'live-viewer-groups20');
     });
 
@@ -371,9 +376,48 @@ for (const config of CONFIGS) {
       });
       await page.goto('/?live=live-read-token-123');
       await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
+      await page.getByRole('button', { name: 'Ranking' }).click();
       await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
       await expect(page.getByText(/Você: Diego\./)).toBeVisible();
       await page_(page, 'live-viewer-groups20-board');
+    });
+
+    test('groups 24 mixed ranking board', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, mixed24Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Ranking geral' })).toBeVisible();
+      await page_(page, 'ranking-groups24-mixed-board');
+    });
+
+    test('fixed pairs 12 ranking board', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, pairs12Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Ranking geral' })).toBeVisible();
+      await page_(page, 'ranking-pairs12-board');
+    });
+
+    test('groups 24 mixed live viewer: matches and ranking', async ({ page }) => {
+      const supabase = await mockSupabase(page);
+      supabase.rpc('get_local_live_tournament', { id: 'live-m24', status: 'active', state: JSON.parse(mixed24Json) });
+      await page.goto('/?live=live-read-token-123');
+      await expect(page.getByRole('heading', { level: 1, name: 'Fixture Grupos 24 mistos' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Partidas' })).toHaveAttribute('aria-current', 'page');
+      await page_(page, 'live-viewer-groups24-mixed-rounds');
+      await page.getByRole('button', { name: 'Ranking' }).click();
+      await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+      await page_(page, 'live-viewer-groups24-mixed-ranking');
     });
 
     test('guest invite', async ({ page }) => {

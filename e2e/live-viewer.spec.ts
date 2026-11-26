@@ -27,15 +27,25 @@ test.describe('live viewer: Grupos 20', () => {
     await page.goto(`/?live=${TOKEN}`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
-    // The finals exist and the group stage is over: the finals come first and the groups fold into one row.
-    await expect(page.getByText('Fase de grupos encerrada')).toBeVisible();
-    // One line per round (the played rounds are folded).
-    await expect(page.getByText(/^Descansam: /)).toHaveCount(5);
+    // The finals exist, so the page opens on Finais and shows only the bracket.
     const bracket = page.getByRole('region', { name: 'Chave da fase final' });
     await expect(bracket).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Finais' })).toHaveAttribute('aria-current', 'page');
     await expect(bracket.getByRole('article', { name: 'Quartas 1' })).toBeVisible();
     await expect(bracket.getByText('BYE', { exact: true })).toHaveCount(2);
     await expect(bracket.getByText('Vencedor QF2')).toBeVisible();
+    await expect(page.getByText(/^Descansam: /)).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toHaveCount(0);
+
+    // Partidas: one line per round, with who rests (the played rounds are folded).
+    await page.getByRole('button', { name: 'Partidas' }).click();
+    await expect(page.getByText(/^Descansam: /)).toHaveCount(5);
+    await expect(bracket).toHaveCount(0);
+
+    // Ranking: the board, open (it only folds on the organizer's page, under the finals).
+    await page.getByRole('button', { name: 'Ranking' }).click();
+    await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+    await expect(page.getByText('Fase de grupos encerrada')).toHaveCount(0);
     await expect(page.locator('input.inline-score')).toHaveCount(0);
   });
 });
@@ -55,6 +65,9 @@ test.describe('live viewer: the viewer line', () => {
     supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
     await page.goto(`/?live=${TOKEN}`);
 
+    // The matches come first; the ranking is one tap away.
+    await expect(page.getByRole('button', { name: 'Partidas' })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: 'Ranking' }).click();
     await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
     await expect(page.getByText(/Você: Diego\./)).toBeVisible();
     await expect(page.getByText(/º no Grupo C\. Você (passa|ficou fora)/)).toBeVisible();
@@ -64,6 +77,7 @@ test.describe('live viewer: the viewer line', () => {
     await page.getByRole('button', { name: 'Compacto' }).click();
     await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
     await page.reload();
+    await page.getByRole('button', { name: 'Ranking' }).click();
     await expect(page.getByRole('button', { name: 'Compacto' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByText(/Você: Diego\./)).toHaveCount(0);
   });
@@ -71,21 +85,24 @@ test.describe('live viewer: the viewer line', () => {
 
 test.describe('live viewer: Grupos 20 on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
-  test('both views fit the screen without a sideways scroll', async ({ page }) => {
+  test('every section and both views fit the screen without a sideways scroll', async ({ page }) => {
     const supabase = await mockSupabase(page);
     const state = JSON.parse(
       readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
     ) as Record<string, unknown>;
+    delete state['finals'];
     supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
     await page.goto(`/?live=${TOKEN}`);
-    await page.getByText('Fase de grupos encerrada').click();
     const noSidewaysScroll = async (): Promise<void> => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(
         0,
       );
     };
+    await expect(page.getByRole('button', { name: 'Partidas' })).toHaveAttribute('aria-current', 'page');
+    await noSidewaysScroll();
 
-    // A guest starts on Resumo: the groups open in place and the two lists unfold.
+    // Ranking opens on Resumo for a guest: the groups open in place and the two lists unfold.
+    await page.getByRole('button', { name: 'Ranking' }).click();
     await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
     await page.getByText('Ordem dos 12 classificados').click();
     await page.getByText('Ranking individual (20 atletas)').click();

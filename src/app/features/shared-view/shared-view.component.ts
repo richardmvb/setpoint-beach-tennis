@@ -1,9 +1,9 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { DialogService } from '../../core/dialog.service';
 import { scrollBehavior } from '../../core/motion';
-import { fixedPairsMode, mixedFinalistCount, usesMixedFinals } from '../../domain/tournament-view/format';
+import { mixedFinalistCount, usesMixedFinals } from '../../domain/tournament-view/format';
+import { sectionOf, type UpdateTarget } from './data/update-target';
 import { RankingBoardComponent } from '../tournament/components/ranking-board/ranking-board.component';
 import { PlayerAvatarComponent } from '../player-avatar.component';
 import { RankingViewComponent } from '../tournament/components/ranking-view.component';
@@ -55,7 +55,6 @@ const CONFETTI = Array.from({ length: 30 }, (_, i) => ({
     GuestNavComponent,
     GuestRoundsComponent,
     PlayerAvatarComponent,
-    NgTemplateOutlet,
     RankingBoardComponent,
     ProjectionPanelComponent,
     RankingViewComponent,
@@ -72,19 +71,16 @@ export class SharedViewComponent {
   private readonly dialog = inject(DialogService);
   private readonly shareSession = inject(ShareResultsSession);
   protected readonly confetti = CONFETTI;
-  protected readonly format = { mixedFinalistCount, usesMixedFinals, fixedPairsMode };
+  protected readonly format = { mixedFinalistCount, usesMixedFinals };
 
   protected get shareMessage(): string {
     return this.shareSession.message();
   }
 
-  /** Scrolls to a section, leaving the projection first when it is open. */
-  protected goTo(id: string): void {
-    if (this.store.showMain()) {
-      setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
-      return;
-    }
-    document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+  /** Shows a section on its own, from its top (leaving the projection first when it is open). */
+  protected showSection(target: UpdateTarget): void {
+    this.store.showSection(sectionOf(target));
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   }
 
   protected openProjection(fromToast = false): void {
@@ -95,11 +91,7 @@ export class SharedViewComponent {
 
   protected openFirstUpdate(): void {
     const target = this.store.takeFirstUpdate();
-    if (!target) return;
-    document.getElementById(target)?.scrollIntoView({
-      behavior: scrollBehavior(),
-      block: 'start',
-    });
+    if (target) this.showSection(target);
   }
 
   /** The dialogs are lazy chunks: they load on the first click. */

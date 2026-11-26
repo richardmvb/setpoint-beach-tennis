@@ -194,7 +194,8 @@
     "overall": {
       "kicker": "RANKING GERAL · {{ slots }} VAGAS NA FINAL",
       "title": "Ranking geral",
-      "settled": "Ordem final da fase de grupos."
+      "settled": "Ordem final da fase de grupos.",
+      "kickerAll": "RANKING GERAL · TODOS VÃO PARA A FINAL"
     },
     "list": {
       "place": "POS.",
@@ -203,6 +204,12 @@
       "balance": "SALDO"
     },
     "cut": "LINHA DE CORTE · {{ slots }} VAGAS",
+    "tie": {
+      "chip": "empate",
+      "note": "{{ count }} atletas empatados disputam as últimas {{ spots }} vagas. O organizador sorteia a ordem ao gerar as finais.",
+      "noteOne": "{{ count }} atletas empatados disputam a última vaga. O organizador sorteia a ordem ao gerar as finais.",
+      "noteMany": "{{ count }} atletas estão empatados perto da linha de corte. O organizador sorteia a ordem ao gerar as finais."
+    },
     "showAll": "Ver todos ({{ count }})",
     "showLess": "Mostrar só até a linha de corte",
     "folded": {
@@ -300,13 +307,8 @@
     "toBeDecided": "A definir"
   },
   "ranking": {
-    "classification": "Classificação",
-    "pairs": "Duplas",
-    "athletes": "Atletas",
     "position": "POS.",
-    "pair": "DUPLA",
     "player": "JOGADOR",
-    "winsShort": "VIT.",
     "wins": "WINS",
     "gamesForShort": "PRÓ",
     "gamesFor": "GAMES PRÓ",

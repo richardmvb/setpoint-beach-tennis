@@ -6,8 +6,19 @@ import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
 import { FinalsService } from '../../../core/finals.service';
+import { withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { rankingBoard } from '../../../domain/tournament-view/ranking-board';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
-import { groups20State, groups24State, strongerPairWins } from '../../../testing/groups20';
+import {
+  fixedPairsState,
+  groups12State,
+  groups20State,
+  groups24State,
+  groups8State,
+  mixedGroups24State,
+  sideAWins,
+  strongerPairWins,
+} from '../../../testing/groups20';
 import { storedTournament } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { TournamentStore, type ShellRequest } from '../data/tournament.store';
@@ -427,5 +438,116 @@ describe('RankingPageComponent: the Resumo view', () => {
     // The closed group rows name the two best placed athletes by their overall place.
     const first = container.querySelectorAll<HTMLDetailsElement>('details.group-row')[1];
     expect(first.querySelector('summary')!.textContent).toMatch(/\d+º/);
+  });
+});
+
+describe('RankingPageComponent: athletes tied across the cut line', () => {
+  it('marks them with a chip and says that the organizer draws the order, until the draw is made', async () => {
+    const state = groups24State(2, strongerPairWins);
+    await show(state);
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    expect(
+      within(race).getByText(
+        '9 atletas empatados disputam as últimas 5 vagas. O organizador sorteia a ordem ao gerar as finais.',
+      ),
+    ).toBeTruthy();
+    // The list shows the 8 places and the first one out: places 4 to 9 are among the tied.
+    expect(within(race).getAllByText('empate')).toHaveLength(6);
+    fireEvent.click(within(race).getByRole('button', { name: 'Ver todos (24)' }));
+    expect(within(race).getAllByText('empate')).toHaveLength(9);
+  });
+
+  it('is gone once the tie was drawn', async () => {
+    const state = groups24State(2, strongerPairWins);
+    const ids = rankingBoard(state)!
+      .list.filter((entry) => entry.tied)
+      .map((entry) => entry.playerId);
+    await show(withTieDraw(state, ids, ids, '2026-11-26T10:00:00.000Z'));
+    expect(screen.queryByText('empate')).toBeNull();
+    expect(screen.queryByText(/atletas empatados/)).toBeNull();
+  });
+
+  it('says it once when several ties are near the cut, instead of repeating a sentence', async () => {
+    await show(groups20State(4, 3, sideAWins));
+    const board = TestBed.inject(TournamentStore).board()!;
+    expect(board.cutTies.length).toBeGreaterThan(1);
+    const total = board.cutTies.reduce((sum, tie) => sum + tie.count, 0);
+    const race = screen.getByRole('article', { name: 'Corrida para a final' });
+    expect(
+      within(race).getByText(
+        `${total} atletas estão empatados perto da linha de corte. O organizador sorteia a ordem ao gerar as finais.`,
+      ),
+    ).toBeTruthy();
+    expect(within(race).queryByText(/disputam/)).toBeNull();
+  });
+
+  it('shows the note in Resumo too', async () => {
+    await show(groups24State(2, strongerPairWins), { 'setpoint.ranking.view.host': 'summary' });
+    expect(screen.getByText(/9 atletas empatados disputam as últimas 5 vagas/)).toBeTruthy();
+  });
+
+  it('says nothing while a group match has no score', async () => {
+    const open = groups24State(2, strongerPairWins);
+    open.rounds[0].matches[0].scoreA = null;
+    open.rounds[0].matches[0].scoreB = null;
+    await show(open);
+    expect(screen.queryByText('empate')).toBeNull();
+    expect(screen.queryByText(/atletas empatados/)).toBeNull();
+  });
+});
+
+describe('RankingPageComponent: the other group formats', () => {
+  it('mixed doubles: the same board, with a gender icon on every athlete', async () => {
+    const { container } = await show(mixedGroups24State(2, strongerPairWins));
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    expect(within(groups).getAllByRole('article')).toHaveLength(6);
+    // 24 athletes in the cards and 9 in the list (the 8 that go on and the first one out).
+    expect(groups.querySelectorAll('.gender-icon.male')).toHaveLength(12);
+    expect(groups.querySelectorAll('.gender-icon.female')).toHaveLength(12);
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    expect(race.querySelectorAll('.gender-icon')).toHaveLength(9);
+    expect(container.querySelector('.group-ranking-card')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Ranking individual' })).toBeNull();
+  });
+
+  it('12 players: three groups and the cut after the 8th place', async () => {
+    await show(groups12State(2, strongerPairWins));
+    expect(within(screen.getByRole('region', { name: 'Grupos' })).getAllByRole('article')).toHaveLength(3);
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    expect(within(race).getByText('RANKING GERAL · 8 VAGAS NA FINAL')).toBeTruthy();
+    expect(within(race).getByText('LINHA DE CORTE · 8 VAGAS')).toBeTruthy();
+    expect(within(race).getByRole('button', { name: 'Ver todos (12)' })).toBeTruthy();
+  });
+
+  it('8 players: everybody goes on, so there is no cut line, no "Ver todos" and no count of those left out', async () => {
+    await show(groups8State(2, strongerPairWins));
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    expect(within(race).getByText('RANKING GERAL · TODOS VÃO PARA A FINAL')).toBeTruthy();
+    expect(within(race).queryByText(/LINHA DE CORTE/)).toBeNull();
+    expect(within(race).queryByRole('button', { name: /Ver todos/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Resumo' }));
+    expect(screen.getByText(/vão para a final/)).toBeTruthy();
+    expect(screen.queryByText(/ficam de fora/)).toBeNull();
+  });
+
+  it('fixed pairs: one group of pairs, one row per pair, a list of athletes, and no group badge', async () => {
+    const { state } = fixedPairsState(12, 3);
+    const { container } = await show(state);
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    const card = within(groups).getByRole('article', { name: 'Grupo A' });
+    const buttons = within(card).getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
+    // Six pairs, each named with both partners.
+    expect(buttons).toHaveLength(6);
+    expect(buttons[0].textContent).toMatch(/\S+ \+ \S+/);
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    // The finals take the 8 best athletes: header, the 8 that go on, the cut line and the first out.
+    expect(within(race).getAllByRole('row')).toHaveLength(11);
+    expect(container.querySelector('.gbadge')).toBeNull();
+
+    // A pair opens its first partner.
+    const store = TestBed.inject(TournamentStore);
+    const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
+    fireEvent.click(buttons[0]);
+    expect(open).toHaveBeenCalledWith(store.board()!.groups[0].entries[0].playerIds[0]);
   });
 });

@@ -48,6 +48,9 @@
                             mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕'
                           }}</span>
                         }
+                        @if (entry.gender) {
+                          <app-gender-icon [gender]="entry.gender" />
+                        }
                         <span class="mini-name">{{ entry.name }}</span>
                         @if (entry.status; as mark) {
                           <span class="visually-hidden">

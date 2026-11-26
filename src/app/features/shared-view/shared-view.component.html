@@ -37,40 +37,44 @@
         <app-projection-panel [state]="state" />
       </section>
     } @else {
-      @if (state.players.length && !state.rounds.length) {
-        <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">{{ t('participants.kicker', { count: state.players.length, size: state.size }) }}</span>@for (player of state.players; track player.id) {
-        <div class="player-row" [class.me-row]="player.id === store.guestPlayerId()"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (player.id === store.guestPlayerId()) {
-        <small>{{ t('participants.you') }}</small>
-      }</span></div>
-      }</article>
-      }
-      @if (store.status() === 'registration') {
-        <article class="surface-card shared-waiting">@if (store.mode === 'invite') {
-          <b>{{ t('waiting.inviteTitle') }}</b><span>{{ t('waiting.inviteText') }}</span>
-        } @else {
-          <b>{{ t('waiting.liveTitle') }}</b><span>{{ t('waiting.liveText') }}</span>
-        }</article>
-      }
-      @if (store.rounds().visible.length) {
-        <app-guest-rounds [state]="state" [spotlight]="store.rounds().spotlight" [history]="store.rounds().history" [players]="state.players" [highlightId]="store.guestPlayerId()" />
-      }
-      @if (store.board(); as board) {
-        <ng-container *ngTemplateOutlet="guestFinals" />
-        <app-ranking-board id="guest-ranking" [board]="board" [highlightId]="store.guestPlayerId()" [role]="store.mode === 'admin' ? 'host' : 'guest'" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
-      } @else {
-        @if (state.rounds.length) {
-          <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
+      @switch (store.activeSection()) {
+        @case ('ranking') {
+          @if (store.board(); as board) {
+            <app-ranking-board id="guest-ranking" [board]="board" [fold]="false" [highlightId]="store.guestPlayerId()" [role]="store.mode === 'admin' ? 'host' : 'guest'" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
+          } @else {
+            @if (state.rounds.length) {
+              <app-ranking-view id="guest-ranking" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
+            }
+          }
         }
-        <ng-container *ngTemplateOutlet="guestFinals" />
-      }
-      <ng-template #guestFinals>
-        @if (state.finals; as finals) {
-          <app-guest-finals [finals]="finals" [bracket]="store.bracket()" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
+        @case ('finals') {
+          @if (state.finals; as finals) {
+            <app-guest-finals [finals]="finals" [bracket]="store.bracket()" [players]="state.players" [podium]="store.podium()" [highlightId]="store.guestPlayerId()" [place]="store.guestPlace()" [shareMessage]="shareMessage" (shareRequested)="shareMyResults()" />
+          }
         }
-      </ng-template>
+        @default {
+          @if (state.players.length && !state.rounds.length) {
+            <article id="guest-participants" class="surface-card shared-participants"><span class="card-kicker">{{ t('participants.kicker', { count: state.players.length, size: state.size }) }}</span>@for (player of state.players; track player.id) {
+            <div class="player-row" [class.me-row]="player.id === store.guestPlayerId()"><app-player-avatar [name]="player.name" [photoDataUrl]="player.photoDataUrl" /><span class="player-info"><b>{{ player.name }}</b>@if (player.id === store.guestPlayerId()) {
+            <small>{{ t('participants.you') }}</small>
+          }</span></div>
+          }</article>
+          }
+          @if (store.status() === 'registration') {
+            <article class="surface-card shared-waiting">@if (store.mode === 'invite') {
+              <b>{{ t('waiting.inviteTitle') }}</b><span>{{ t('waiting.inviteText') }}</span>
+            } @else {
+              <b>{{ t('waiting.liveTitle') }}</b><span>{{ t('waiting.liveText') }}</span>
+            }</article>
+          }
+          @if (store.rounds().visible.length) {
+            <app-guest-rounds [state]="state" [spotlight]="store.rounds().spotlight" [history]="store.rounds().history" [players]="state.players" [highlightId]="store.guestPlayerId()" />
+          }
+        }
+      }
     }
     @if (state.rounds.length) {
-      <app-guest-nav [tab]="store.tab()" [projectionConfigured]="projection.configured" [projectionAvailable]="projection.available" [chance]="projection.chanceLabel" [hasNews]="projection.hasNews" [showTip]="projection.showTip" [hintVisible]="projection.hintVisible()" [hasFinals]="!!state.finals" (sectionSelected)="goTo($event)" (projectionSelected)="openProjection()" (tipDismissed)="projection.dismissTip()" />
+      <app-guest-nav [tab]="store.tab()" [section]="store.activeSection()" [hasRanking]="!!state.rounds.length" [projectionConfigured]="projection.configured" [projectionAvailable]="projection.available" [chance]="projection.chanceLabel" [hasNews]="projection.hasNews" [showTip]="projection.showTip" [hintVisible]="projection.hintVisible()" [hasFinals]="!!state.finals" (sectionSelected)="showSection($event)" (projectionSelected)="openProjection()" (tipDismissed)="projection.dismissTip()" />
     }
   }
 </section>

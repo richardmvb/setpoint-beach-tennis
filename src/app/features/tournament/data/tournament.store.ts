@@ -73,7 +73,6 @@ import {
 } from '../../../domain/tournament-play/scores';
 import { unresolvedTie } from '../../../domain/tournament-play/tie-draw';
 import * as tournamentFormat from '../../../domain/tournament-view/format';
-import { groupTables } from '../../../domain/tournament-view/group-tables';
 import { rankingBoard } from '../../../domain/tournament-view/ranking-board';
 import * as tournamentProgress from '../../../domain/tournament-view/progress';
 import { groupQualification } from '../../../domain/tournament-view/group-qualification';
@@ -219,10 +218,8 @@ export class TournamentStore {
       : null,
   );
   readonly groupQualification = computed(() => tournamentFormat.usesGroupQualification(this.state()));
-  readonly groupTables = computed(() => groupTables(this.state(), this.standings()));
   /** The ranking of the group tournaments of 20 and 24 (groups as cards and one list with a cut line); null otherwise. */
   readonly board = computed(() => rankingBoard(this.state()));
-  readonly fixedPairsMode = computed(() => tournamentFormat.fixedPairsMode(this.state()));
   readonly usesMixedFinals = computed(() => tournamentFormat.usesMixedFinals(this.state()));
   readonly usesMixedFinalBracket = computed(() => tournamentFormat.usesMixedFinalBracket(this.state()));
   readonly mixedFinalistCount = computed(() => tournamentFormat.mixedFinalistCount(this.state()));

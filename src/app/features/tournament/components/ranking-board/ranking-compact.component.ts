@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output, signal } from '@angu
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { CardComponent } from '@ui/card/card.component';
 import type { BoardEntry, BoardGroup, RankingBoard } from '../../../../domain/tournament-view/ranking-board';
+import { GenderIconComponent } from '../../../gender-icon.component';
 import { RankingGroupTableComponent } from './ranking-group-table.component';
 
 /**
@@ -11,7 +12,7 @@ import { RankingGroupTableComponent } from './ranking-group-table.component';
  */
 @Component({
   selector: 'app-ranking-compact',
-  imports: [TranslocoDirective, CardComponent, RankingGroupTableComponent],
+  imports: [TranslocoDirective, CardComponent, GenderIconComponent, RankingGroupTableComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ranking-compact.component.html',
@@ -41,6 +42,6 @@ export class RankingCompactComponent {
   }
 
   protected isMine(entry: BoardEntry): boolean {
-    return !!this.highlightId() && entry.playerId === this.highlightId();
+    return !!this.highlightId() && entry.playerIds.includes(this.highlightId());
   }
 }

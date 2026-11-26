@@ -376,6 +376,33 @@ test.describe('accessibility (axe, no new violations)', () => {
       });
     });
 
+    const mixed24 = (): string => board(['support', 'mixed24.json']);
+    const pairs12 = (): string => board(['support', 'pairs12.json']);
+
+    test('mixed doubles of 24', async ({ page }) => {
+      await openBoard(page, mixed24(), 'Ranking geral');
+      expect(check('ranking-board-mixed', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test('fixed pairs of 12', async ({ page }) => {
+      await openBoard(page, pairs12(), 'Ranking geral');
+      expect(check('ranking-board-pairs', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test.describe('the live link of mixed doubles of 24, on a phone', () => {
+      test.use({ viewport: { width: 390, height: 844 } });
+      test('the sections: Partidas and Ranking', async ({ page }) => {
+        const supabase = await mockSupabase(page);
+        supabase.rpc('get_local_live_tournament', { id: 'live-m24', status: 'active', state: JSON.parse(mixed24()) });
+        await page.goto('/?live=live-read-token-123');
+        await expect(page.getByRole('button', { name: 'Partidas' })).toHaveAttribute('aria-current', 'page');
+        expect(check('guest-rounds-mixed-phone', await scan(page), readBaseline())).toEqual([]);
+        await page.getByRole('button', { name: 'Ranking' }).click();
+        await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+        expect(check('guest-ranking-mixed-phone', await scan(page), readBaseline())).toEqual([]);
+      });
+    });
+
     /** Resumo with every group open and both lists unfolded: the most it ever shows. */
     async function openSummary(page: Page, dark = false): Promise<void> {
       await page.addInitScript(
@@ -420,6 +447,7 @@ test.describe('accessibility (axe, no new violations)', () => {
         const supabase = await mockSupabase(page);
         supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state: JSON.parse(groups20()) });
         await page.goto('/?live=live-read-token-123');
+        await page.getByRole('button', { name: 'Ranking' }).click();
         await expect(page.getByText(/Você: Diego\./)).toBeVisible();
         expect(check('guest-ranking-summary-phone', await scan(page), readBaseline())).toEqual([]);
       });

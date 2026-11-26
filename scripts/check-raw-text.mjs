@@ -32,7 +32,6 @@ const PENDING = new Set([
   'src/app/core/final-live-score.ts',
   'src/app/core/adapters/supabase/supabase-feed.ts',
   'src/app/core/adapters/supabase/supabase-client.ts',
-  'src/app/domain/tournament-view/group-tables.ts',
   'src/app/domain/tournament-setup/setup-rules.ts',
 ]);
 /** Test support and data: text there is sample data, not what the app shows. */
