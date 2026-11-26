@@ -1,0 +1,68 @@
+<ng-container *transloco="let t; prefix: 'tournament.board'">
+  <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
+    <table class="group-table">
+      <caption class="visually-hidden">
+        {{
+          t('groups.caption', { name: group().name })
+        }}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col" class="g-pos">
+            @if (kind() === 'overall') {
+              {{ t('groups.table.overall') }}
+            } @else {
+              {{ t('groups.table.place') }}
+            }
+          </th>
+          <th scope="col" class="g-who">{{ t('groups.table.player') }}</th>
+          <th scope="col" class="g-num">{{ t('groups.table.wins') }}</th>
+          <th scope="col" class="g-num">{{ t('groups.table.balance') }}</th>
+          <th scope="col" class="g-num">{{ t('groups.table.matches') }}</th>
+          <th scope="col" class="g-open"><span class="visually-hidden">{{ t('open') }}</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of group().entries; track entry.playerId; let i = $index) {
+          <tr [class.is-mine]="isMine(entry)">
+            <td class="g-pos">{{ kind() === 'overall' ? entry.place + 'º' : (entry.groupPlace ?? i + 1) }}</td>
+            <td class="g-who">
+              <button
+                type="button"
+                class="ranking-player-cell ranking-player-button row-button"
+                aria-describedby="board-open-description"
+                (click)="playerSelected.emit(entry.playerId)"
+              >
+                <span class="g-name">{{ entry.name }}</span>
+                @if (entry.status; as mark) {
+                  <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'">
+                    <span aria-hidden="true">{{ mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕' }}</span>
+                    <span class="visually-hidden">
+                      @switch (mark) {
+                        @case ('direct') {
+                          {{ status('direct') }}
+                        }
+                        @case ('bestThird') {
+                          {{ status('bestThird') }}
+                        }
+                        @default {
+                          {{ status('out') }}
+                        }
+                      }
+                    </span>
+                  </span>
+                }
+              </button>
+            </td>
+            <td class="g-num">
+              <b>{{ entry.setsWon }}</b>
+            </td>
+            <td class="g-num">{{ signed(entry.gameBalance) }}</td>
+            <td class="g-num">{{ entry.matchesPlayed }}/{{ entry.scheduled }}</td>
+            <td class="g-open" aria-hidden="true">›</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </ng-container>
+</ng-container>

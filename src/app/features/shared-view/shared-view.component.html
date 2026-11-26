@@ -56,7 +56,7 @@
       }
       @if (store.board(); as board) {
         <ng-container *ngTemplateOutlet="guestFinals" />
-        <app-ranking-board id="guest-ranking" [board]="board" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
+        <app-ranking-board id="guest-ranking" [board]="board" [highlightId]="store.guestPlayerId()" [role]="store.mode === 'admin' ? 'host' : 'guest'" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
       } @else {
         @if (state.rounds.length) {
           <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />

@@ -1,30 +1,41 @@
 <ng-container *transloco="let t; prefix: 'tournament.board'">
   <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
-    <article uiCard class="cut-card" aria-labelledby="board-race-title">
-      <div class="cut-head">
-        <div>
-          @if (kind() === 'qualification') {
-            <span class="card-kicker">{{ t('race.kicker', { slots: slots() }) }}</span>
-            <h2 id="board-race-title">{{ t('race.title') }}</h2>
-          } @else {
-            <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
-            <h2 id="board-race-title">{{ t('overall.title') }}</h2>
-          }
+    @if (bare()) {
+      <ng-container *ngTemplateOutlet="list" />
+    } @else {
+      <article uiCard class="cut-card" aria-labelledby="board-race-title">
+        <div class="cut-head">
+          <div>
+            @if (kind() === 'qualification') {
+              <span class="card-kicker">{{ t('race.kicker', { slots: slots() }) }}</span>
+              <h2 id="board-race-title">{{ t('race.title') }}</h2>
+            } @else {
+              <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
+              <h2 id="board-race-title">{{ t('overall.title') }}</h2>
+            }
+          </div>
+          <span class="mini-tag">{{ t('count', { count: entries().length }) }}</span>
         </div>
-        <span class="mini-tag">{{ t('count', { count: entries().length }) }}</span>
-      </div>
-      <p class="cut-note">
-        @if (provisional()) {
-          {{ t('provisionalNote') }}
-        } @else if (settled()) {
-          @if (kind() === 'qualification') {
-            {{ t('race.settled') }}
-          } @else {
-            {{ t('overall.settled') }}
+        <p class="cut-note">
+          @if (provisional()) {
+            {{ t('provisionalNote') }}
+          } @else if (settled()) {
+            @if (kind() === 'qualification') {
+              {{ t('race.settled') }}
+            } @else {
+              {{ t('overall.settled') }}
+            }
           }
-        }
-      </p>
-      <table class="cut-table" [attr.aria-labelledby]="'board-race-title'">
+        </p>
+        <ng-container *ngTemplateOutlet="list" />
+      </article>
+    }
+    <ng-template #list>
+      <table
+        class="cut-table"
+        [attr.aria-labelledby]="bare() ? null : 'board-race-title'"
+        [attr.aria-label]="bare() ? label() : null"
+      >
         <thead>
           <tr>
             <th scope="col" class="col-pos">{{ t('list.place') }}</th>
@@ -104,6 +115,6 @@
           }
         </button>
       }
-    </article>
+    </ng-template>
   </ng-container>
 </ng-container>

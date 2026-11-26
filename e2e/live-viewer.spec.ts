@@ -40,9 +40,38 @@ test.describe('live viewer: Grupos 20', () => {
   });
 });
 
+test.describe('live viewer: the viewer line', () => {
+  test('a guest whose name is in the tournament sees their own line, and the choice is theirs to change', async ({
+    page,
+  }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem('setpoint.profile.v1', JSON.stringify({ name: 'Diego', autoJoin: false })),
+    );
+    const supabase = await mockSupabase(page);
+    const state = JSON.parse(
+      readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    delete state['finals'];
+    supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
+    await page.goto(`/?live=${TOKEN}`);
+
+    await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+    await expect(page.getByText(/Você: Diego\./)).toBeVisible();
+    await expect(page.getByText(/º no Grupo C\. Você (passa|ficou fora)/)).toBeVisible();
+    // His group opens first.
+    await expect(page.getByRole('table', { name: 'Tabela do Grupo C' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Compacto' }).click();
+    await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Compacto' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText(/Você: Diego\./)).toHaveCount(0);
+  });
+});
+
 test.describe('live viewer: Grupos 20 on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
-  test('the groups and the race to the final fit the screen without a sideways scroll', async ({ page }) => {
+  test('both views fit the screen without a sideways scroll', async ({ page }) => {
     const supabase = await mockSupabase(page);
     const state = JSON.parse(
       readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
@@ -50,6 +79,20 @@ test.describe('live viewer: Grupos 20 on a phone', () => {
     supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
     await page.goto(`/?live=${TOKEN}`);
     await page.getByText('Fase de grupos encerrada').click();
+    const noSidewaysScroll = async (): Promise<void> => {
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(
+        0,
+      );
+    };
+
+    // A guest starts on Resumo: the groups open in place and the two lists unfold.
+    await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+    await page.getByText('Ordem dos 12 classificados').click();
+    await page.getByText('Ranking individual (20 atletas)').click();
+    await expect(page.getByRole('table', { name: 'Corrida para a final' })).toBeVisible();
+    await noSidewaysScroll();
+
+    await page.getByRole('button', { name: 'Compacto' }).click();
     const race = page.getByRole('article', { name: 'Corrida para a final' });
     await expect(race).toBeVisible();
     await page.getByRole('button', { name: 'Ver a tabela do Grupo A' }).click();
@@ -58,7 +101,7 @@ test.describe('live viewer: Grupos 20 on a phone', () => {
       const overflow = await box.evaluate((element) => element.scrollWidth - element.clientWidth);
       expect(overflow).toBeLessThanOrEqual(0);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    await noSidewaysScroll();
   });
 });
 

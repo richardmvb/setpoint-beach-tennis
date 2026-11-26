@@ -330,7 +330,39 @@ for (const config of CONFIGS) {
       await page_(page, 'ranking-groups24-board');
     });
 
+    test('groups 20 ranking summary', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        localStorage.setItem('setpoint.ranking.view.host', 'summary');
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups20BoardJson);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+      await page_(page, 'ranking-groups20-summary');
+    });
+
+    test('groups 24 ranking summary', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        localStorage.setItem('setpoint.ranking.view.host', 'summary');
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups24Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+      await page_(page, 'ranking-groups24-summary');
+    });
+
     test('groups 20 live viewer ranking board', async ({ page }) => {
+      // A guest opens on Resumo, with a line about themselves (the name saved on the device is in the tournament).
+      await page.addInitScript(() =>
+        localStorage.setItem('setpoint.profile.v1', JSON.stringify({ name: 'Diego', autoJoin: false })),
+      );
       const supabase = await mockSupabase(page);
       supabase.rpc('get_local_live_tournament', {
         id: 'live-20',
@@ -339,7 +371,8 @@ for (const config of CONFIGS) {
       });
       await page.goto('/?live=live-read-token-123');
       await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+      await expect(page.getByText(/Você: Diego\./)).toBeVisible();
       await page_(page, 'live-viewer-groups20-board');
     });
 

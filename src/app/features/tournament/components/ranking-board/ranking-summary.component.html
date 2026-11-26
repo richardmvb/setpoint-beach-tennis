@@ -1,0 +1,156 @@
+<ng-container *transloco="let t; prefix: 'tournament.board'">
+  <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
+    @let b = board();
+    <section uiCard class="summary-card" aria-labelledby="board-summary-title">
+      <div class="summary-head">
+        <span class="card-kicker">{{ t('summary.kicker') }}</span>
+        @if (b.provisional) {
+          <span class="provisional">{{ t('provisional') }}</span>
+        }
+      </div>
+      <h2 id="board-summary-title">{{ t('summary.title') }}</h2>
+      <div
+        class="progress"
+        role="progressbar"
+        aria-valuemin="0"
+        [attr.aria-valuemax]="b.matchesTotal"
+        [attr.aria-valuenow]="b.matchesDone"
+        [attr.aria-label]="t('summary.progressLabel')"
+      >
+        <i [style.width.%]="percent()"></i>
+      </div>
+      <p class="progress-text">{{ t('summary.progress', { done: b.matchesDone, total: b.matchesTotal }) }}</p>
+      <div class="counts" [class.two]="b.kind === 'overall'">
+        @if (b.kind === 'qualification') {
+          <div class="count direct">
+            <b>{{ b.directSlots }}</b>
+            <span><span aria-hidden="true">✓</span> {{ t('summary.direct') }}</span>
+          </div>
+          <div class="count third">
+            <b>{{ b.thirdSlots }}</b>
+            <span><span aria-hidden="true">★</span> {{ t('summary.third') }}</span>
+          </div>
+        } @else {
+          <div class="count direct">
+            <b>{{ b.slots }}</b>
+            <span><span aria-hidden="true">✓</span> {{ t('summary.inFinal') }}</span>
+          </div>
+        }
+        <div class="count out">
+          <b>{{ outCount() }}</b>
+          <span><span aria-hidden="true">✕</span> {{ t('summary.out') }}</span>
+        </div>
+      </div>
+      @if (viewer(); as v) {
+        <div class="you">
+          <b>{{ t('viewer.title', { name: v.entry.name }) }}</b>
+          @if (b.kind === 'qualification') {
+            @switch (v.how) {
+              @case ('direct') {
+                {{ b.provisional ? t('viewer.direct.today', { place: v.entry.groupPlace, group: v.entry.group }) : t('viewer.direct.final', { place: v.entry.groupPlace, group: v.entry.group }) }}
+              }
+              @case ('bestThird') {
+                {{ b.provisional ? t('viewer.bestThird.today', { place: v.entry.groupPlace, group: v.entry.group }) : t('viewer.bestThird.final', { place: v.entry.groupPlace, group: v.entry.group }) }}
+              }
+              @default {
+                {{ b.provisional ? t('viewer.out.today', { place: v.entry.groupPlace, group: v.entry.group }) : t('viewer.out.final', { place: v.entry.groupPlace, group: v.entry.group }) }}
+              }
+            }
+          } @else if (v.inside) {
+            {{ b.provisional ? t('viewer.inside.today', { place: v.entry.place, slots: b.slots }) : t('viewer.inside.final', { place: v.entry.place, slots: b.slots }) }}
+          } @else {
+            {{ b.provisional ? t('viewer.outside.today', { place: v.entry.place, slots: b.slots }) : t('viewer.outside.final', { place: v.entry.place, slots: b.slots }) }}
+          }
+          @if (v.matchesLeft > 0) {
+            {{ t('viewer.left', { count: v.matchesLeft }) }}
+          }
+        </div>
+      }
+    </section>
+
+    <section class="rows" aria-labelledby="board-summary-groups">
+      <h2 id="board-summary-groups" class="rows-title">{{ t('groups.title') }}</h2>
+      @for (group of b.groups; track group.id) {
+        <details class="group-row" [attr.open]="group.id === openGroupId() ? '' : null">
+          <summary>
+            <span class="group-name">{{ group.name }}</span>
+            <span class="group-line">
+              @for (entry of lineOf(group); track entry.playerId; let last = $last) {
+                <span class="line-item">
+                  @if (entry.status; as mark) {
+                    <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'" aria-hidden="true">{{
+                      mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕'
+                    }}</span>
+                    <span class="visually-hidden">
+                      @switch (mark) {
+                        @case ('direct') {
+                          {{ status('direct') }}
+                        }
+                        @case ('bestThird') {
+                          {{ status('bestThird') }}
+                        }
+                        @default {
+                          {{ status('out') }}
+                        }
+                      }
+                    </span>
+                  }
+                  {{ entry.name }}
+                  {{ b.kind === 'overall' ? entry.place + 'º' : t('summary.winsShort', { count: entry.setsWon }) }}
+                </span>
+                @if (!last) {
+                  <span aria-hidden="true"> · </span>
+                }
+              }
+            </span>
+          </summary>
+          <app-ranking-group-table
+            [group]="group"
+            [kind]="b.kind"
+            [highlightId]="highlightId()"
+            (playerSelected)="playerSelected.emit($event)"
+          />
+        </details>
+      }
+    </section>
+
+    <details class="fold">
+      <summary>
+        @if (b.kind === 'qualification') {
+          {{ t('summary.raceTitle', { slots: b.slots }) }}
+        } @else {
+          {{ t('summary.overallTitle', { count: b.list.length }) }}
+        }
+      </summary>
+      <app-ranking-cut-list
+        [bare]="true"
+        [label]="b.kind === 'qualification' ? t('race.title') : t('overall.title')"
+        [entries]="b.list"
+        [slots]="b.slots"
+        [kind]="b.kind"
+        [settled]="b.settled"
+        [provisional]="b.provisional"
+        [highlightId]="highlightId()"
+        (playerSelected)="playerSelected.emit($event)"
+      />
+    </details>
+    @if (b.individual; as individual) {
+      <details class="fold">
+        <summary>
+          {{ t('summary.individualTitle', { count: individual.length }) }}
+          <span class="fold-note">{{ t('summary.individualNote') }}</span>
+        </summary>
+        <app-ranking-cut-list
+          [bare]="true"
+          [label]="t('summary.individualLabel')"
+          [entries]="individual"
+          [slots]="individual.length"
+          kind="qualification"
+          [settled]="b.settled"
+          [highlightId]="highlightId()"
+          (playerSelected)="playerSelected.emit($event)"
+        />
+      </details>
+    }
+  </ng-container>
+</ng-container>

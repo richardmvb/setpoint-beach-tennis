@@ -123,6 +123,20 @@ test.describe('Grupos 20', () => {
     await expect(page.getByText(/Classificado ·.*Melhor 3º ·.*Eliminado/)).toBeVisible();
     await expectAccessible(page);
 
+    // Resumo is one tap away: the counts, the groups as folding rows. The choice survives a reload.
+    await page.getByRole('button', { name: 'Resumo' }).click();
+    await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+    await expect(page.getByText('15 de 15 jogos')).toBeVisible();
+    await expectAccessible(page);
+    await page.reload();
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await expect(page.getByRole('button', { name: 'Resumo' })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Compacto' }).click();
+    await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
+
     // An athlete of a group card opens the athlete with the place in the race to the final.
     await page.getByRole('region', { name: 'Grupos' }).locator('button.ranking-player-button').first().click();
     const athlete = page.getByRole('dialog', { name: /./ });

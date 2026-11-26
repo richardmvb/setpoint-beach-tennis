@@ -1,0 +1,111 @@
+:host {
+  display: block;
+}
+
+.mark {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mark.direct {
+  color: var(--chip-secure-fg);
+}
+
+.mark.third {
+  color: var(--accent-text);
+}
+
+.mark.out {
+  color: var(--chip-out-fg);
+}
+
+.group-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Two classes in every selector: the ranking and guest pages size table columns by position on a phone. */
+.group-table .g-pos {
+  width: 44px;
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+
+.group-table th.g-pos,
+.group-table th.g-who,
+.group-table th.g-num {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.group-table .g-who {
+  padding: 0 var(--space-1);
+  text-align: left;
+}
+
+.group-table .g-num {
+  width: 42px;
+  padding: var(--space-1);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.group-table .g-open {
+  width: 18px;
+  padding: 0 var(--space-1) 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  text-align: right;
+}
+
+.group-table tbody tr {
+  position: relative;
+  border-top: 1px solid var(--border);
+}
+
+.group-table tbody tr.is-mine .g-pos,
+.group-table tbody tr.is-mine .g-who,
+.group-table tbody tr.is-mine .g-num,
+.group-table tbody tr.is-mine .g-open {
+  background: var(--green-soft);
+}
+
+.group-table .row-button {
+  min-height: 40px;
+  gap: var(--space-2);
+}
+
+.group-table .row-button::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.group-table .g-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-table tbody tr:hover .g-name {
+  text-decoration: underline;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
