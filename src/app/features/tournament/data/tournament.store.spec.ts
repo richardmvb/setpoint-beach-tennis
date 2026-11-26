@@ -6,7 +6,8 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import type { Match, TournamentState } from '../../../core/models';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { SelectedRound } from '../../../core/selected-round';
-import { unresolvedPairTie, withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { openTies } from '../../../domain/tournament-view/open-ties';
 import { unresolvedQualificationTie } from '../../../domain/tournament-view/group-qualification';
 import { fixedPairs8State, fixedPairsState, groups20State, strongerPairWins } from '../../../testing/groups20';
 import { storedTournament, tournamentState } from '../../../testing/tournament-state';
@@ -260,8 +261,8 @@ describe('TournamentStore: finals', () => {
     dialogs.onOpen = () =>
       tournament.update((state) => {
         let next = state;
-        for (let step = 0; step < 4 && unresolvedPairTie(next).length; step++) {
-          const ids = unresolvedPairTie(next).map((row) => row.playerId);
+        for (let step = 0; step < 4 && openTies(next).length; step++) {
+          const ids = openTies(next)[0].players.map((row) => row.playerId);
           next = withTieDraw(next, ids, [...ids].reverse(), '2026-11-26T10:00:00.000Z');
         }
         return next;

@@ -105,6 +105,9 @@ const stored = (page: Page): Promise<Stored> =>
   page.evaluate(() => JSON.parse(localStorage.getItem('setpoint.tournament.v1') ?? '{}') as Stored);
 
 test.describe('Grupos 20', () => {
+  // These flows draw many ties; the shuffle of each draw is covered by the tie draw tests, so skip it here.
+  test.use({ reducedMotion: 'reduce' });
+
   test('5 groups of 4 with crossed pairs: from the wizard to the podium', async ({ page }) => {
     await createTournament(page, 4, 'crossed');
     await expect(page.locator('.round-tabs button')).toHaveCount(3);

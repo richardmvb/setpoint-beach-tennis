@@ -10,12 +10,12 @@ import {
 import { qualificationField, type QualificationField, type QualificationStatus } from './group-qualification';
 import { FINALIST_PAIRS, fixedPairsOf, rankedPairGroups } from './pair-standings';
 import { scheduledGroupMatches } from './player-matches';
+import { openTies } from './open-ties';
 import { groupStageComplete } from './progress';
 import {
   compareStandingCriteria,
   directWinsAgainstTiedPlayers,
   FINALIST_PLACES,
-  openStandingTies,
   rankedStandingGroups,
   storedTieDraw,
 } from './standings';
@@ -136,7 +136,7 @@ function overallPlace(state: TournamentState, playerId: string): PlaceExplanatio
     ? rankedPairGroups(state).map((group) => group.map((pair) => pair.standing))
     : rankedStandingGroups(state);
   const all = groups.flat();
-  const open = openStandingTies(state, groups, pairs ? FINALIST_PAIRS : FINALIST_PLACES);
+  const open = openTies(state, pairs ? undefined : groups).map((tie) => tie.players);
   const gender = pairs ? undefined : genderOf(state, playerId);
   const { kind, entries, slots } = decidingList(state, gender);
   const unitId = pairs ? (fixedPairsOf(state).find((pair) => pair.includes(playerId))?.[0] ?? playerId) : playerId;
@@ -290,9 +290,12 @@ function rankedReason(
   const lowerWins = directWinsAgainstTiedPlayers(state, lower.playerId, run);
   if (upperWins !== lowerWins) return { kind: 'headToHead', tiedCount: run.length, above: upperWins, below: lowerWins };
   const subset = run.filter((row) => directWinsAgainstTiedPlayers(state, row.playerId, run) === upperWins);
-  const draw = storedTieDraw(state, subset);
+  // Mixed finals draw each gender's share of a tie on its own (the two neighbours are of the same gender).
+  const gender = genderOf(state, upper.playerId);
+  const share = usesMixedFinals(state) ? subset.filter((row) => genderOf(state, row.playerId) === gender) : subset;
+  const draw = storedTieDraw(state, subset) ?? (share.length < subset.length ? storedTieDraw(state, share) : null);
   if (draw) return { kind: 'draw', drawnAt: draw.createdAt, crossGroup: false, groupOrderKept: false };
-  return { kind: 'tied', needsDraw: open.some((tie) => sameSet(tie, subset)) };
+  return { kind: 'tied', needsDraw: open.some((tie) => sameSet(tie, share)) };
 }
 
 /** Across groups (the 20-player format): the criteria, then a draw over the whole tied set (no head-to-head). */

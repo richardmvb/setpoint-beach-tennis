@@ -71,7 +71,7 @@ import {
   withoutScore,
   withRoundScore,
 } from '../../../domain/tournament-play/scores';
-import { unresolvedTie } from '../../../domain/tournament-play/tie-draw';
+import { nextOpenTie } from '../../../domain/tournament-play/tie-draw';
 import * as tournamentFormat from '../../../domain/tournament-view/format';
 import { rankedPairGroups } from '../../../domain/tournament-view/pair-standings';
 import { rankingBoard } from '../../../domain/tournament-view/ranking-board';
@@ -444,7 +444,7 @@ export class TournamentStore {
       this.notices.show(this.transloco.translate('notices.finishPhase', {}, 'organizer/pt-BR'), 'error');
       return;
     }
-    if (unresolvedTie(this.state(), this.standingsView()).length) {
+    if (nextOpenTie(this.state(), this.standingsView())) {
       // A second tap while the first is still loading the dialog must not open another one.
       if (this.tieDrawOpening) return;
       this.tieDrawOpening = true;

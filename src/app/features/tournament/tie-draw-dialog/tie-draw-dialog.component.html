@@ -1,25 +1,13 @@
 <ng-container *transloco="let t; prefix: 'organizer.tieDraw'">
   <span class="card-kicker">{{ t('kicker') }}</span>
-  @let tie = qualificationTie();
-  <h2 [id]="titleId">@if (tie?.kind === 'group') {{{ t('groupTitle', { group: tie.groupName, positions: tie.positionsText }) }}} @else if (tie?.kind === 'thirds') {{{ t('thirdsTitle') }}} @else if (tie?.kind === 'seeding') {{{ t('seedingTitle') }}} @else if (pairs()) {{{ t('titlePairs', { positions: positions() }) }}} @else {{{ t('title', { positions: positions() }) }}}</h2>
-  <p class="muted">{{ tie ? t('qualificationText') : pairs() ? t('textPairs') : t('text') }}</p>
-  @if (!result().length) {
-    <div class="tie-draw-participants">
-      @for (id of playerIds(); track id) {
-        <span>
-          @for (member of membersOf(id); track member) {
-            <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
-          }
-          {{ nameOf(id) }}
-        </span>
-      }
-    </div>
-  }
-  @if (result().length) {
-    <ol class="tie-draw-result">
-      @for (id of result(); track id; let i = $index) {
-        <li>
-          <b>{{ i + 1 }}º</b>
+  @let qualification = qualificationTie();
+  @let count = playerIds().length;
+  <h2 [id]="titleId">@if (qualification?.kind === 'group') {{{ t('groupTitle', { group: qualification.groupName, first: firstPlace(), last: lastPlace() }) }}} @else if (qualification?.kind === 'thirds') {{{ t('thirdsTitle') }}} @else if (qualification?.kind === 'seeding') {{{ t('seedingTitle') }}} @else if (pairs()) {{{ t('titlePairs', { first: firstPlace(), last: lastPlace() }) }}} @else if (tie()?.gender === 'male') {{{ t('titleMale', { first: firstPlace(), last: lastPlace() }) }}} @else if (tie()?.gender === 'female') {{{ t('titleFemale', { first: firstPlace(), last: lastPlace() }) }}} @else {{{ t('title', { first: firstPlace(), last: lastPlace() }) }}}</h2>
+  <p class="muted">@if (crossesCut()) {{{ spots() === 1 ? t('spotText', { count: count }) : t('spotsText', { count: count, spots: spots() }) }}} @else {{{ qualification ? t('qualificationText') : pairs() ? t('textPairs') : t('text') }}}</p>
+  @if (phase() !== 'done') {
+    <ol #list class="tie-draw-list" [class.is-shuffling]="phase() === 'shuffling'" [attr.aria-busy]="phase() === 'shuffling'">
+      @for (id of shown(); track id) {
+        <li [attr.data-id]="id">
           @for (member of membersOf(id); track member) {
             <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
           }
@@ -27,12 +15,40 @@
         </li>
       }
     </ol>
+  } @else {
+    <ol class="tie-draw-list tie-draw-result" [attr.start]="firstPlace()">
+      @for (id of placed(); track id; let i = $index) {
+        <li>
+          <b>{{ firstPlace() + i }}º</b>
+          @for (member of membersOf(id); track member) {
+            <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
+          }
+          <span>{{ nameOf(id) }}</span>
+        </li>
+      }
+    </ol>
+    @if (left().length) {
+      <p class="tie-draw-cut">{{ t('left') }}</p>
+      <ul class="tie-draw-list tie-draw-left">
+        @for (id of left(); track id) {
+          <li>
+            @for (member of membersOf(id); track member) {
+              <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
+            }
+            <span>{{ nameOf(id) }}</span>
+          </li>
+        }
+      </ul>
+    }
   }
+  <p class="tie-draw-status" role="status">@if (phase() === 'shuffling') {{{ t('shuffling') }}} @else if (phase() === 'done') {{{ t('drawn') }}}</p>
   <div class="tie-draw-actions">
     <button uiButton variant="secondary" (click)="cancel()">{{ t('cancel') }}</button>
-    <button uiButton variant="primary" (click)="result().length ? confirm() : draw()">
-      @if (!result().length) {
+    <button uiButton variant="primary" [disabled]="phase() === 'shuffling'" (click)="phase() === 'done' ? confirm() : draw()">
+      @if (phase() === 'ready') {
         {{ t('draw') }}
+      } @else if (phase() === 'shuffling') {
+        {{ t('shuffling') }}
       } @else if (moreTies()) {
         {{ t('confirmNext') }}
       } @else {

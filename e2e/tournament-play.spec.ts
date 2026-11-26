@@ -157,7 +157,7 @@ test.describe('finals', () => {
     await start(page, tied(), /Ranking/);
     const generate = page.getByRole('button', { name: 'Gerar finais' });
     await generate.click();
-    const dialog = page.getByRole('dialog', { name: /Empate entre/ });
+    const dialog = page.getByRole('dialog', { name: /Empate do/ });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Realizar sorteio' })).toBeVisible();
     await page.keyboard.press('Escape');
@@ -169,7 +169,7 @@ test.describe('finals', () => {
   test('drawing the tie is saved with the tournament, and confirming generates the finals', async ({ page }) => {
     await start(page, tied(), /Ranking/);
     await page.getByRole('button', { name: 'Gerar finais' }).click();
-    const dialog = page.getByRole('dialog', { name: /Empate entre/ });
+    const dialog = page.getByRole('dialog', { name: /Empate do/ });
     await dialog.getByRole('button', { name: 'Realizar sorteio' }).click();
     await expect(dialog.getByRole('listitem')).toHaveCount(8);
     await expect(page.getByText('Sorteio registrado; a classificação foi atualizada.')).toBeVisible();

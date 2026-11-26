@@ -1,39 +1,14 @@
-import type { PlayerStanding, TournamentState } from '../../core/models';
-import { fixedPairsMode, usesGroupQualification } from '../tournament-view/format';
-import { unresolvedQualificationTie } from '../tournament-view/group-qualification';
-import { FINALIST_PAIRS, rankedPairGroups } from '../tournament-view/pair-standings';
-import { FINALIST_PLACES, openStandingTies, type StandingsView } from '../tournament-view/standings';
+import type { TournamentState } from '../../core/models';
+import { openTies } from '../tournament-view/open-ties';
+import type { OpenTie, StandingsView } from '../tournament-view/standings';
 
 /**
- * The first group of players the tie-break rules could not separate among the finalists and that nobody has drawn
- * yet, or an empty list when the order is settled.
+ * The next tie the generation of the finals must have drawn first, or null when the order is settled: the
+ * qualification's in the 20-player format, between pairs in fixed pairs, in each gender's list for mixed finals, and
+ * among the finalists everywhere else (see `openTies`).
  */
-export function unresolvedFinalTie(state: TournamentState, view: StandingsView): PlayerStanding[] {
-  return openStandingTies(state, view.groups, FINALIST_PLACES)[0] ?? [];
-}
-
-/**
- * Fixed pairs: the first set of pairs that tie on everything within the four that reach the finals, and that nobody
- * has drawn yet. Each pair is stood for by its first partner (see `PairStanding`), so partners are never drawn
- * against each other.
- */
-export function unresolvedPairTie(state: TournamentState): PlayerStanding[] {
-  const groups = rankedPairGroups(state).map((group) => group.map((pair) => pair.standing));
-  return openStandingTies(state, groups, FINALIST_PAIRS)[0] ?? [];
-}
-
-/**
- * The tie the generation of the finals must have drawn first: the qualification's in the 20-player format, between
- * pairs in fixed pairs, between athletes in the rest.
- */
-export function unresolvedTie(state: TournamentState, view: StandingsView): PlayerStanding[] {
-  if (usesGroupQualification(state)) return unresolvedQualificationTie(state);
-  return fixedPairsMode(state) ? unresolvedPairTie(state) : unresolvedFinalTie(state, view);
-}
-
-/** The places the tied players hold, in order: `[4, 5]`. */
-export function tiedPositions(playerIds: readonly string[], standings: readonly PlayerStanding[]): number[] {
-  return playerIds.map((id) => standings.findIndex((row) => row.playerId === id) + 1).sort((a, b) => a - b);
+export function nextOpenTie(state: TournamentState, view: StandingsView): OpenTie | null {
+  return openTies(state, view.groups)[0] ?? null;
 }
 
 /** A random order of the ids (Fisher-Yates over an unbiased integer source). */

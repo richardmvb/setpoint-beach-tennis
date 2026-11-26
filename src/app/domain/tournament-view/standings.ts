@@ -1,4 +1,4 @@
-import type { PlayerStanding, TieBreakDraw, TournamentState } from '../../core/models';
+import type { PlayerGender, PlayerStanding, TieBreakDraw, TournamentState } from '../../core/models';
 import { isScored } from './scoring';
 
 /**
@@ -35,16 +35,28 @@ export function rankedStandingGroups(state: TournamentState): PlayerStanding[][]
       if (current && current.wins === item.wins) current.players.push(item.row);
       else headToHeadGroups.push({ wins: item.wins, players: [item.row] });
     }
-    for (const tiedPlayers of headToHeadGroups) {
-      const drawOrder = storedTieDrawOrder(state, tiedPlayers.players);
-      rankedGroups.push(
-        drawOrder
-          ? [...tiedPlayers.players].sort((a, b) => drawOrder.indexOf(a.playerId) - drawOrder.indexOf(b.playerId))
-          : tiedPlayers.players,
-      );
-    }
+    for (const tiedPlayers of headToHeadGroups) rankedGroups.push(withDrawnOrder(state, tiedPlayers.players));
   }
   return rankedGroups;
+}
+
+/**
+ * The tied players in the order a stored draw gave them. A draw of exactly these players orders them all. Otherwise
+ * a draw of only some of them (mixed finals draw each gender's list on its own) reorders those players among the
+ * places they hold, and the others keep theirs; the group stays one tie for the overall ranking.
+ */
+function withDrawnOrder(state: TournamentState, players: PlayerStanding[]): PlayerStanding[] {
+  const drawOrder = storedTieDrawOrder(state, players);
+  if (drawOrder) return [...players].sort((a, b) => drawOrder.indexOf(a.playerId) - drawOrder.indexOf(b.playerId));
+  const result = [...players];
+  const byId = new Map(players.map((row) => [row.playerId, row] as const));
+  for (const draw of state.tieBreakDraws ?? []) {
+    if (draw.order.length < 2 || !draw.order.every((id) => byId.has(id))) continue;
+    const ids = new Set(draw.order);
+    const slots = result.flatMap((row, index) => (ids.has(row.playerId) ? [index] : []));
+    slots.forEach((slot, index) => (result[slot] = byId.get(draw.order[index])!));
+  }
+  return result;
 }
 
 /** The order a stored tie-break draw gave these exact players, or null when they were never drawn. */
@@ -65,22 +77,53 @@ export function storedTieDraw(state: TournamentState, players: readonly PlayerSt
 }
 
 /**
+ * A set of players the tie-break rules could not separate, whose order changes the finals, and that nobody has drawn
+ * yet. Only the first `spots` places of the tie count (the rest are out whatever the draw says), so the draw shows
+ * the order of those places and puts everyone else out together.
+ */
+export interface OpenTie {
+  /** The tied players: athletes, or the first partner of each pair in fixed pairs (`PairStanding`). */
+  players: PlayerStanding[];
+  /** The 1-based place where the tie starts, in the list it is drawn for (the ranking, one gender, a group...). */
+  firstPlace: number;
+  /** How many of the tied places still count for the finals: all of them unless the tie crosses the cut. */
+  spots: number;
+  /** Mixed finals rank each gender on its own: the list the tie is in; null everywhere else. */
+  gender: PlayerGender | null;
+}
+
+/**
  * Every set of players the tie-break rules could not separate, that sits within the first `places` places and that
  * nobody has drawn yet, best first. Ties further down change nothing, so they are never drawn.
  */
+export function openTiesIn(
+  state: TournamentState,
+  groups: readonly PlayerStanding[][],
+  places: number,
+  gender: PlayerGender | null = null,
+): OpenTie[] {
+  const open: OpenTie[] = [];
+  let position = 0;
+  for (const tiedPlayers of groups) {
+    if (tiedPlayers.length > 1 && position < places && storedTieDrawOrder(state, tiedPlayers) === null)
+      open.push({
+        players: tiedPlayers,
+        firstPlace: position + 1,
+        spots: Math.min(tiedPlayers.length, places - position),
+        gender,
+      });
+    position += tiedPlayers.length;
+  }
+  return open;
+}
+
+/** The players of every open tie within the first `places` places: see `openTiesIn`. */
 export function openStandingTies(
   state: TournamentState,
   groups: readonly PlayerStanding[][],
   places: number,
 ): PlayerStanding[][] {
-  const open: PlayerStanding[][] = [];
-  let position = 0;
-  for (const tiedPlayers of groups) {
-    if (tiedPlayers.length > 1 && position < places && storedTieDrawOrder(state, tiedPlayers) === null)
-      open.push(tiedPlayers);
-    position += tiedPlayers.length;
-  }
-  return open;
+  return openTiesIn(state, groups, places).map((tie) => tie.players);
 }
 
 /** The ranking with the players split by gender, for the mixed finals. */
