@@ -530,24 +530,51 @@ describe('RankingPageComponent: the other group formats', () => {
     expect(screen.queryByText(/ficam de fora/)).toBeNull();
   });
 
-  it('fixed pairs: one group of pairs, one row per pair, a list of athletes, and no group badge', async () => {
+  it('fixed pairs: the groups and the list are of pairs, the best four go on, and the finals are between pairs', async () => {
     const { state } = fixedPairsState(12, 3);
     const { container } = await show(state);
     const groups = screen.getByRole('region', { name: 'Grupos' });
     const card = within(groups).getByRole('article', { name: 'Grupo A' });
+    expect(within(groups).getByText('lugar no ranking de duplas')).toBeTruthy();
     const buttons = within(card).getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
     // Six pairs, each named with both partners.
     expect(buttons).toHaveLength(6);
     expect(buttons[0].textContent).toMatch(/\S+ \+ \S+/);
-    const race = screen.getByRole('article', { name: 'Ranking geral' });
-    // The finals take the 8 best athletes: header, the 8 that go on, the cut line and the first out.
-    expect(within(race).getAllByRole('row')).toHaveLength(11);
+    const race = screen.getByRole('article', { name: 'Ranking de duplas' });
+    expect(within(race).getByText('RANKING DE DUPLAS · 4 VAGAS NA FINAL')).toBeTruthy();
+    expect(within(race).getByText('6 duplas')).toBeTruthy();
+    // The same six pairs in the list: header, the four that go on, the cut line and the first one out.
+    expect(within(race).getAllByRole('row')).toHaveLength(7);
+    expect(within(race).getByText('LINHA DE CORTE · 4 VAGAS')).toBeTruthy();
     expect(container.querySelector('.gbadge')).toBeNull();
+    // The finals card says the pairs stay together.
+    expect(screen.getByRole('heading', { name: 'Quatro duplas classificadas' })).toBeTruthy();
+    expect(screen.getByText(/A 1ª dupla enfrenta a 2ª pelo título/)).toBeTruthy();
 
     // A pair opens its first partner.
     const store = TestBed.inject(TournamentStore);
     const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
     fireEvent.click(buttons[0]);
     expect(open).toHaveBeenCalledWith(store.board()!.groups[0].entries[0].playerIds[0]);
+  });
+
+  it('fixed pairs: Resumo counts four pairs through and two out, with the ranking of pairs folded', async () => {
+    const { container } = await show(fixedPairsState(12, 3).state, { 'setpoint.ranking.view.host': 'summary' });
+    const count = (label: RegExp): string =>
+      screen.getByText(label).closest('.count')!.textContent.replace(/\s+/g, ' ');
+    expect(count(/vão para a final/)).toContain('4');
+    expect(count(/ficam de fora/)).toContain('2');
+    const fold = container.querySelector<HTMLDetailsElement>('details.fold')!;
+    expect(within(fold).getByText('Ranking de duplas (6 duplas)')).toBeTruthy();
+  });
+
+  it('fixed pairs: generating the finals keeps the pairs, and the page then shows them as teams', async () => {
+    const { tournament } = await show(fixedPairsState(8, 3).state);
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar finais' }));
+    await vi.waitFor(() => expect(tournament.state().finals).toBeTruthy());
+    for (const match of tournament.state().finals!.matches)
+      for (const team of [match.teamA, match.teamB])
+        expect(Math.abs(Number(team[0].slice(1)) - Number(team[1].slice(1)))).toBe(1);
+    expect(screen.queryByRole('button', { name: 'Gerar finais' })).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import type { PlayerGender, PlayerStanding, TournamentState } from '../../core/models';
-import { fixedPairsMode, usesGroupQualification, usesRankingBoard } from './format';
+import { usesGroupQualification, usesRankingBoard } from './format';
 import { qualificationField, type QualificationStatus } from './group-qualification';
+import { FINALIST_PAIRS, fixedPairsOf, rankedPairGroups } from './pair-standings';
 import { scheduledGroupMatches } from './player-matches';
 import { groupStageComplete } from './progress';
 import { decidingList } from './ranking-explanation';
@@ -8,9 +9,9 @@ import { isScored } from './scoring';
 import { FINALIST_PLACES, openStandingTies, rankedStandingGroups } from './standings';
 
 /**
- * One athlete of the board, with what the mini group cards and the cut list show. In the groups of a fixed pairs
- * tournament an entry is a pair: `name` joins both names, `playerId` is the first partner (who opens when tapped) and
- * `playerIds` has both.
+ * One athlete of the board, with what the mini group cards and the cut list show. In a fixed pairs tournament an
+ * entry is a pair, in the groups and in the list alike: `name` joins both names, `playerId` is the first partner (who
+ * opens when tapped, and stands for the pair) and `playerIds` has both.
  */
 export interface BoardEntry {
   playerId: string;
@@ -49,6 +50,8 @@ export interface BoardGroup {
 
 /** The ranking of a group tournament as the board shows it: the groups, and one list of athletes with a cut line. */
 export interface RankingBoard {
+  /** Fixed pairs: the groups and the list are of pairs, and the best four go to the finals. */
+  pairs: boolean;
   /** `qualification`: the groups decide who goes on (20 players); `overall`: the overall ranking decides (the rest). */
   kind: 'qualification' | 'overall';
   groups: BoardGroup[];
@@ -93,7 +96,7 @@ function groupShortName(name: string): string {
 /** The board of a group tournament; null for the other formats and before the schedule exists. */
 export function rankingBoard(state: TournamentState): RankingBoard | null {
   if (!usesRankingBoard(state) || !state.rounds.length || !state.groups?.length) return null;
-  const { entries, slots } = decidingList(state);
+  const { entries, slots, pairs } = decidingList(state);
   const settled = groupStageComplete(state);
   const field = usesGroupQualification(state) ? qualificationField(state) : null;
   const statuses = new Map(
@@ -108,7 +111,12 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
 
   // Athletes the rules cannot separate, with some inside the cut and some outside, and no draw yet: the list shows
   // them in name order, but the draw decides. Only once the group stage is over; before that everybody is tied.
-  const openTies = field ? field.open : openStandingTies(state, rankedStandingGroups(state), FINALIST_PLACES);
+  const pairGroups = rankedPairGroups(state).map((group) => group.map((pair) => pair.standing));
+  const openTies = field
+    ? field.open
+    : pairs
+      ? openStandingTies(state, pairGroups, FINALIST_PAIRS)
+      : openStandingTies(state, rankedStandingGroups(state), FINALIST_PLACES);
   const cutTies: { ids: string[]; spots: number }[] = settled
     ? openTies.flatMap((tie) => {
         const tiePlaces = tie.map((row) => places.get(row.playerId) ?? 0);
@@ -119,13 +127,14 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
   const tiedIds = new Set(cutTies.flatMap((tie) => tie.ids));
 
   const genders = new Map(state.players.map((player) => [player.id, player.gender ?? null] as const));
+  const pairOf = new Map(fixedPairsOf(state).map((pair) => [pair[0], pair] as const));
   const entryOf = (row: PlayerStanding): BoardEntry => {
     const groupId = groupIdOf.get(row.playerId) ?? '';
     return {
       playerId: row.playerId,
-      playerIds: [row.playerId],
+      playerIds: pairs ? [...(pairOf.get(row.playerId) ?? [row.playerId])] : [row.playerId],
       name: row.name,
-      gender: genders.get(row.playerId) ?? null,
+      gender: pairs ? null : (genders.get(row.playerId) ?? null),
       setsWon: row.setsWon,
       gameBalance: row.gameBalance,
       matchesPlayed: row.matchesPlayed,
@@ -140,24 +149,10 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
   const byId = new Map(entries.map((row) => [row.playerId, entryOf(row)] as const));
   const list = entries.map((row) => byId.get(row.playerId)!);
 
-  /** A fixed pair as one row: both names, the numbers of the first partner (partners share them) and the best place. */
-  const pairEntry = (pair: readonly string[]): BoardEntry | null => {
-    const partners = pair.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
-    if (!partners.length) return null;
-    return {
-      ...partners[0],
-      playerIds: partners.map((entry) => entry.playerId),
-      name: partners.map((entry) => entry.name).join(' + '),
-      gender: null,
-      place: Math.min(...partners.map((entry) => entry.place)),
-      tied: partners.some((entry) => entry.tied),
-    };
-  };
   const groups = state.groups.map((group): BoardGroup => {
-    const members =
-      fixedPairsMode(state) && group.fixedPairs
-        ? group.fixedPairs.map(pairEntry).filter((entry): entry is BoardEntry => !!entry)
-        : group.playerIds.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
+    // In fixed pairs a group lists its pairs (each is one entry of the list); otherwise its athletes.
+    const ids = pairs ? (group.fixedPairs ?? []).map((pair) => pair[0]) : group.playerIds;
+    const members = ids.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
     // The 20-player format orders a group by its own rules (head-to-head, draws); the others follow the overall place.
     members.sort((a, b) => (a.groupPlace ?? a.place) - (b.groupPlace ?? b.place));
     return { id: group.id, name: group.name, entries: members };
@@ -172,6 +167,7 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
     : null;
 
   return {
+    pairs,
     kind: field ? 'qualification' : 'overall',
     groups,
     list,
@@ -191,7 +187,7 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
 
 /** Where one athlete stands today, for the viewer's own line; null when the athlete is not in the board. */
 export function boardViewer(board: RankingBoard, playerId: string): BoardViewer | null {
-  const entry = board.list.find((candidate) => candidate.playerId === playerId);
+  const entry = board.list.find((candidate) => candidate.playerIds.includes(playerId));
   if (!entry) return null;
   const inside = entry.place <= board.slots;
   const how = board.kind === 'overall' ? null : !inside ? 'out' : (entry.groupPlace ?? 0) <= 2 ? 'direct' : 'bestThird';

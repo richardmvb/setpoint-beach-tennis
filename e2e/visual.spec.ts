@@ -404,7 +404,7 @@ for (const config of CONFIGS) {
         .getByRole('button', { name: /Ranking/ })
         .first()
         .click();
-      await expect(page.getByRole('heading', { name: 'Ranking geral' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Ranking de duplas' })).toBeVisible();
       await page_(page, 'ranking-pairs12-board');
     });
 

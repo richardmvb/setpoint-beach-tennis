@@ -45,7 +45,7 @@
       </div>
       @if (viewer(); as v) {
         <div class="you">
-          <b>{{ t('viewer.title', { name: v.entry.name }) }}</b>
+          <b>{{ b.pairs ? t('viewer.titlePairs', { name: v.entry.name }) : t('viewer.title', { name: v.entry.name }) }}</b>
           @if (b.kind === 'qualification') {
             @switch (v.how) {
               @case ('direct') {
@@ -57,6 +57,12 @@
               @default {
                 {{ b.provisional ? t('viewer.out.today', { place: v.entry.groupPlace, group: v.entry.group }) : t('viewer.out.final', { place: v.entry.groupPlace, group: v.entry.group }) }}
               }
+            }
+          } @else if (b.pairs) {
+            @if (v.inside) {
+              {{ b.provisional ? t('viewer.insidePairs.today', { place: v.entry.place, slots: b.slots }) : t('viewer.insidePairs.final', { place: v.entry.place, slots: b.slots }) }}
+            } @else {
+              {{ b.provisional ? t('viewer.outsidePairs.today', { place: v.entry.place, slots: b.slots }) : t('viewer.outsidePairs.final', { place: v.entry.place, slots: b.slots }) }}
             }
           } @else if (v.inside) {
             {{ b.provisional ? t('viewer.inside.today', { place: v.entry.place, slots: b.slots }) : t('viewer.inside.final', { place: v.entry.place, slots: b.slots }) }}
@@ -120,6 +126,8 @@
       <summary>
         @if (b.kind === 'qualification') {
           {{ t('summary.raceTitle', { slots: b.slots }) }}
+        } @else if (b.pairs) {
+          {{ t('summary.overallTitlePairs', { count: b.list.length }) }}
         } @else {
           {{ t('summary.overallTitle', { count: b.list.length }) }}
         }
@@ -127,7 +135,8 @@
       <app-ranking-cut-list
         [bare]="true"
         [showGroup]="b.groups.length > 1"
-        [label]="b.kind === 'qualification' ? t('race.title') : t('overall.title')"
+        [pairs]="b.pairs"
+        [label]="b.kind === 'qualification' ? t('race.title') : b.pairs ? t('overall.titlePairs') : t('overall.title')"
         [entries]="b.list"
         [slots]="b.slots"
         [kind]="b.kind"

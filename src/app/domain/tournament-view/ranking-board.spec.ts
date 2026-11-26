@@ -126,31 +126,43 @@ describe('rankingBoard, every group format', () => {
     }
   });
 
-  it('fixed pairs: the group lists pairs, the list is of athletes, and the pair takes the better partner place', () => {
+  it('fixed pairs: the groups and the list are of pairs, the best four go on and nobody is listed twice', () => {
     const { state, pairs } = fixedPairsState(12, 3);
     const board = rankingBoard(state)!;
-    expect(board).toMatchObject({ kind: 'overall', slots: 8 });
+    expect(board).toMatchObject({ pairs: true, kind: 'overall', slots: 4, settled: true });
     expect(board.groups).toHaveLength(1);
-    expect(board.list).toHaveLength(12);
+    // Six pairs, in the list and in the group: the same entries.
+    expect(board.list).toHaveLength(6);
     const rows = board.groups[0].entries;
-    expect(rows).toHaveLength(6);
-    for (const row of rows) {
+    expect(rows.map((row) => row.playerId)).toEqual(board.list.map((entry) => entry.playerId));
+    rows.forEach((row, index) => {
       expect(row.playerIds).toHaveLength(2);
       expect(row.playerId).toBe(row.playerIds[0]);
       expect(row.gender).toBeNull();
-      const partners = row.playerIds.map((id) => board.list.find((entry) => entry.playerId === id)!);
-      expect(row.name).toBe(partners.map((entry) => entry.name).join(' + '));
-      expect(row.place).toBe(Math.min(...partners.map((entry) => entry.place)));
-      expect(partners[1].setsWon).toBe(partners[0].setsWon);
-    }
-    expect(rows.map((row) => row.place)).toEqual([...rows.map((row) => row.place)].sort((a, b) => a - b));
+      expect(row.name).toMatch(/^\S+ \+ \S+$/);
+      expect(row.place).toBe(index + 1);
+    });
     expect(new Set(rows.flatMap((row) => row.playerIds))).toEqual(new Set(pairs.flat()));
+    expect(board.leaderName).toBe(rows[0].name);
   });
 
-  it('fixed pairs of 8: every athlete is inside, and a partner can look up their own line', () => {
+  it('fixed pairs: a tie across the cut is between pairs, never between partners', () => {
+    // Every match ends 6-4 to side A: many pairs tie on everything.
+    const board = rankingBoard(fixedPairsState(12, 3, () => [6, 4]).state)!;
+    expect(board.cutTies.length).toBeGreaterThan(0);
+    for (const tie of board.cutTies) expect(tie.spots).toBeLessThan(tie.count);
+    // Each entry is a pair: the marked ones are whole pairs, counted once.
+    const tied = board.list.filter((entry) => entry.tied);
+    expect(tied.reduce((sum) => sum + 1, 0)).toBe(board.cutTies.reduce((sum, tie) => sum + tie.count, 0));
+  });
+
+  it('fixed pairs of 8: all four pairs are inside, and a partner finds their pair', () => {
     const board = rankingBoard(fixedPairs8State().state)!;
-    expect(board.groups[0].entries).toHaveLength(4);
-    expect(boardViewer(board, 'p2')).toMatchObject({ inside: true, how: null });
+    expect(board).toMatchObject({ pairs: true, slots: 4, cutTies: [] });
+    expect(board.list).toHaveLength(4);
+    const viewer = boardViewer(board, 'p2');
+    expect(viewer).toMatchObject({ inside: true, how: null });
+    expect(viewer?.entry.playerIds).toContain('p2');
   });
 });
 

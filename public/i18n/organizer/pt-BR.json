@@ -65,7 +65,9 @@
     "earlyText": "Todos já têm a mesma quantidade de partidas. Ao gerar as finais, as rodadas restantes serão bloqueadas.",
     "standardText": "1º+3º × 2º+4º decidem o título; 5º+7º × 6º+8º, o 3º lugar.",
     "generateFinals": "Gerar finais",
-    "twelveQualified": "Doze classificados"
+    "twelveQualified": "Doze classificados",
+    "fourPairs": "Quatro duplas classificadas",
+    "pairsText": "A 1ª dupla enfrenta a 2ª pelo título; a 3ª enfrenta a 4ª pelo 3º lugar. As duplas não mudam."
   },
   "finals": {
     "kicker": "FASE FINAL · SET ÚNICO",
@@ -106,7 +108,9 @@
   "tieDraw": {
     "kicker": "DESEMPATE DA CLASSIFICAÇÃO",
     "title": "Empate entre {{ positions }}",
+    "titlePairs": "Empate entre as duplas em {{ positions }}",
     "text": "O confronto direto não resolveu. Sorteie a ordem para gerar as finais.",
+    "textPairs": "As duplas ficaram iguais em tudo. Sorteie a ordem das duplas para gerar as finais.",
     "cancel": "Cancelar",
     "draw": "Realizar sorteio",
     "confirmNext": "Confirmar e sortear próximo empate",
@@ -141,6 +145,7 @@
     "finalsMixedBracket": "Chave mista gerada com os oito melhores de cada categoria.",
     "finalsMixedDirect": "Finais diretas geradas com os quatro melhores de cada categoria.",
     "finalsStandard": "Finais geradas com base nos oito primeiros do ranking.",
+    "finalsPairs": "Finais geradas com as quatro melhores duplas.",
     "finalsFailed": "Não foi possível gerar a final.",
     "tieDrawn": "Sorteio registrado; a classificação foi atualizada.",
     "tieDrawFailed": "Não foi possível abrir o sorteio agora. Verifique a conexão e tente de novo.",

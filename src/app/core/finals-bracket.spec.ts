@@ -119,3 +119,27 @@ describe('finalsBracket over the real finals', () => {
     expect(won.slots[0]).toMatchObject({ won: true });
   });
 });
+
+describe('createFixedPairs', () => {
+  it('keeps the pairs together: the best two meet for the title, the third and fourth for the third place', () => {
+    const stage = finals.createFixedPairs(pairs);
+    expect(stage.matches).toHaveLength(2);
+    expect(stage.matches[0]).toMatchObject({ finalKind: 'championship', teamA: pairs[0], teamB: pairs[1] });
+    expect(stage.matches[1]).toMatchObject({ finalKind: 'third-place', teamA: pairs[2], teamB: pairs[3] });
+    // Only the first four pairs of the ranking play, whatever the number of pairs.
+    const everybody = stage.matches.flatMap((match) => [...match.teamA, ...match.teamB]);
+    expect(new Set(everybody)).toEqual(new Set(pairs.slice(0, 4).flat()));
+  });
+
+  it('needs four pairs', () => {
+    expect(() => finals.createFixedPairs(pairs.slice(0, 3))).toThrow();
+  });
+
+  it('gives the podium to whole pairs', () => {
+    let stage = finals.updatePodium(finals.createFixedPairs(pairs));
+    stage = play(stage, stage.matches[0].id, 6, 3);
+    stage = play(stage, stage.matches[1].id, 4, 6);
+    expect(stage.complete).toBe(true);
+    expect(stage.podiumPlayerIds).toEqual([...pairs[0], ...pairs[1], ...pairs[3], ...pairs[2]]);
+  });
+});

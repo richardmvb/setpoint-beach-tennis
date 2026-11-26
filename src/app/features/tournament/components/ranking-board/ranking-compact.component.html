@@ -5,7 +5,7 @@
         <h2 id="board-groups-title" class="groups-title">{{ t('groups.title') }}</h2>
         <span class="groups-note">
           @if (kind() === 'overall') {
-            {{ t('groups.placeNote') }}
+            {{ pairs() ? t('groups.placeNotePairs') : t('groups.placeNote') }}
           } @else {
             {{ t('groups.winsNote') }}
           }

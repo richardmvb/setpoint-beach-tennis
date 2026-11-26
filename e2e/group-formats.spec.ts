@@ -42,7 +42,7 @@ test.describe('every group format has the ranking board', () => {
     await expect(page.locator('details.group-row[open]')).toHaveCount(1);
   });
 
-  test('fixed pairs of 12: one group of pairs, and the list is of the athletes the finals take', async ({ page }) => {
+  test('fixed pairs of 12: one group of pairs, the list is of pairs, and the best four go on', async ({ page }) => {
     await page.addInitScript((state: string) => {
       if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
     }, pairs12);
@@ -55,11 +55,12 @@ test.describe('every group format has the ranking board', () => {
     const card = page.getByRole('region', { name: 'Grupos' }).getByRole('article', { name: 'Grupo A' });
     await expect(card.locator('button.ranking-player-button')).toHaveCount(6);
     await expect(card.locator('button.ranking-player-button').first()).toContainText(' + ');
-    const race = page.getByRole('article', { name: 'Ranking geral' });
-    await expect(race.getByText('LINHA DE CORTE · 8 VAGAS')).toBeVisible();
-    // A pair opens its first partner, with the place in the ranking of athletes.
+    const race = page.getByRole('article', { name: 'Ranking de duplas' });
+    await expect(race.getByText('LINHA DE CORTE · 4 VAGAS')).toBeVisible();
+    await expect(race.getByText('6 duplas')).toBeVisible();
+    // A pair opens its first partner, with the place of the pair.
     await card.locator('button.ranking-player-button').first().click();
-    await expect(page.getByRole('dialog', { name: /./ }).getByText(/º no ranking geral/)).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /./ }).getByText(/ª dupla no ranking/)).toBeVisible();
   });
 });
 

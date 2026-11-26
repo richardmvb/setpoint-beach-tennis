@@ -9,16 +9,25 @@
             @if (kind() === 'qualification') {
               <span class="card-kicker">{{ t('race.kicker', { slots: slots() }) }}</span>
               <h2 id="board-race-title">{{ t('race.title') }}</h2>
+            } @else if (pairs()) {
+              @if (slots() >= entries().length) {
+                <span class="card-kicker">{{ t('overall.kickerAllPairs') }}</span>
+              } @else {
+                <span class="card-kicker">{{ t('overall.kickerPairs', { slots: slots() }) }}</span>
+              }
+              <h2 id="board-race-title">{{ t('overall.titlePairs') }}</h2>
             } @else {
               @if (slots() >= entries().length) {
-              <span class="card-kicker">{{ t('overall.kickerAll') }}</span>
-            } @else {
-              <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
-            }
+                <span class="card-kicker">{{ t('overall.kickerAll') }}</span>
+              } @else {
+                <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
+              }
               <h2 id="board-race-title">{{ t('overall.title') }}</h2>
             }
           </div>
-          <span class="mini-tag">{{ t('count', { count: entries().length }) }}</span>
+          <span class="mini-tag">{{
+            pairs() ? t('countPairs', { count: entries().length }) : t('count', { count: entries().length })
+          }}</span>
         </div>
         <p class="cut-note">
           @if (provisional()) {
@@ -37,14 +46,22 @@
     <ng-template #list>
       @if (ties().length === 1) {
         <p class="tie-note">
-          @if (ties()[0].spots === 1) {
+          @if (pairs()) {
+            @if (ties()[0].spots === 1) {
+              {{ t('tie.noteOnePairs', { count: ties()[0].count }) }}
+            } @else {
+              {{ t('tie.notePairs', { count: ties()[0].count, spots: ties()[0].spots }) }}
+            }
+          } @else if (ties()[0].spots === 1) {
             {{ t('tie.noteOne', { count: ties()[0].count }) }}
           } @else {
             {{ t('tie.note', { count: ties()[0].count, spots: ties()[0].spots }) }}
           }
         </p>
       } @else if (ties().length > 1) {
-        <p class="tie-note">{{ t('tie.noteMany', { count: tiedCount() }) }}</p>
+        <p class="tie-note">
+          {{ pairs() ? t('tie.noteManyPairs', { count: tiedCount() }) : t('tie.noteMany', { count: tiedCount() }) }}
+        </p>
       }
       <table
         class="cut-table"

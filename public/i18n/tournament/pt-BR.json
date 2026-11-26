@@ -26,7 +26,8 @@
       "qualification": "{{ place }}º na corrida para a final",
       "overall": "{{ place }}º no ranking geral",
       "male": "{{ place }}º no ranking masculino",
-      "female": "{{ place }}º no ranking feminino"
+      "female": "{{ place }}º no ranking feminino",
+      "pairs": "{{ place }}ª dupla no ranking"
     },
     "slots": "{{ count }} vagas na final",
     "groupPlace": "{{ group }} · {{ place }}º",
@@ -48,6 +49,7 @@
       "balance": "mesmas vitórias; desempate no saldo, {{ upper }} × {{ lower }}",
       "gamesFor": "mesmas vitórias e saldo; desempate em games pró, {{ upper }} × {{ lower }}",
       "headToHead": "empate em vitórias, saldo e games pró entre {{ count }} atletas; nos jogos entre eles, {{ upper }} × {{ lower }} vitórias",
+      "headToHeadPairs": "empate em vitórias, saldo e games pró entre {{ count }} duplas; nos jogos entre elas, {{ upper }} × {{ lower }} vitórias",
       "draw": "empate em tudo; decidido no sorteio de {{ time }}",
       "drawUndated": "empate em tudo; decidido no sorteio registrado",
       "drawAcross": "empate em tudo entre atletas de grupos diferentes; decidido no sorteio de {{ time }}",
@@ -58,7 +60,6 @@
       "sameGroupDraw": "empate nos números; vale a ordem do {{ group }}, decidida no sorteio",
       "ruleDirect": "os 2 primeiros de cada grupo passam direto, mesmo com números menores",
       "ruleThirds": "só os 3º colocados disputam as vagas restantes",
-      "partners": "dupla fixa: os dois têm os mesmos números",
       "tiedDraw": "empate em tudo; o organizador vai sortear a ordem",
       "tied": "empate em tudo; aqui a ordem entre os dois não muda nada"
     },
@@ -114,7 +115,8 @@
       "balance": "Saldo (pró − contra)",
       "gamesFor": "Games pró",
       "headToHead": "Confronto direto entre os empatados",
-      "draw": "Sorteio feito pelo organizador"
+      "draw": "Sorteio feito pelo organizador",
+      "pairsTitle": "Vale o ranking das duplas, com as {{ pairs }} duplas numa lista só"
     },
     "groups20": {
       "qualifyTitle": "Quem vai para a final: {{ slots }} vagas",
@@ -133,7 +135,10 @@
     "top": {
       "title": "Os {{ slots }} primeiros vão para a final",
       "allTitle": "Os {{ players }} vão para a final",
-      "pairing": "Título: 1º e 3º contra 2º e 4º. Disputa de 3º lugar: 5º e 7º contra 6º e 8º."
+      "pairing": "Título: 1º e 3º contra 2º e 4º. Disputa de 3º lugar: 5º e 7º contra 6º e 8º.",
+      "titlePairs": "As {{ slots }} melhores duplas vão para a final",
+      "allTitlePairs": "As {{ slots }} duplas vão para a final",
+      "pairingPairs": "Título: a 1ª dupla contra a 2ª. Disputa de 3º lugar: a 3ª contra a 4ª. As duplas não mudam até o fim."
     },
     "tip": "Toque num atleta do ranking para ver a posição dele e o que decidiu cada desempate."
   },
@@ -167,7 +172,16 @@
         "today": "{{ place }}º no ranking geral. Hoje você está fora dos {{ slots }} que vão para a final.",
         "final": "{{ place }}º no ranking geral. Você ficou fora dos {{ slots }} que vão para a final."
       },
-      "left": "Jogos restantes: {{ count }}."
+      "left": "Jogos restantes: {{ count }}.",
+      "titlePairs": "Sua dupla: {{ name }}.",
+      "insidePairs": {
+        "today": "{{ place }}ª no ranking. Hoje ela está entre as {{ slots }} que vão para a final.",
+        "final": "{{ place }}ª no ranking. Ela está entre as {{ slots }} que vão para a final."
+      },
+      "outsidePairs": {
+        "today": "{{ place }}ª no ranking. Hoje ela está fora das {{ slots }} que vão para a final.",
+        "final": "{{ place }}ª no ranking. Ela ficou fora das {{ slots }} que vão para a final."
+      }
     },
     "badge": "Grupo {{ group }}",
     "badgePlace": "Grupo {{ group }}, {{ place }}º",
@@ -184,7 +198,8 @@
         "wins": "VIT.",
         "balance": "SALDO",
         "matches": "JOGOS"
-      }
+      },
+      "placeNotePairs": "lugar no ranking de duplas"
     },
     "race": {
       "kicker": "FASE FINAL · {{ slots }} VAGAS",
@@ -195,7 +210,10 @@
       "kicker": "RANKING GERAL · {{ slots }} VAGAS NA FINAL",
       "title": "Ranking geral",
       "settled": "Ordem final da fase de grupos.",
-      "kickerAll": "RANKING GERAL · TODOS VÃO PARA A FINAL"
+      "kickerAll": "RANKING GERAL · TODOS VÃO PARA A FINAL",
+      "kickerPairs": "RANKING DE DUPLAS · {{ slots }} VAGAS NA FINAL",
+      "kickerAllPairs": "RANKING DE DUPLAS · TODAS VÃO PARA A FINAL",
+      "titlePairs": "Ranking de duplas"
     },
     "list": {
       "place": "POS.",
@@ -208,7 +226,10 @@
       "chip": "empate",
       "note": "{{ count }} atletas empatados disputam as últimas {{ spots }} vagas. O organizador sorteia a ordem ao gerar as finais.",
       "noteOne": "{{ count }} atletas empatados disputam a última vaga. O organizador sorteia a ordem ao gerar as finais.",
-      "noteMany": "{{ count }} atletas estão empatados perto da linha de corte. O organizador sorteia a ordem ao gerar as finais."
+      "noteMany": "{{ count }} atletas estão empatados perto da linha de corte. O organizador sorteia a ordem ao gerar as finais.",
+      "notePairs": "{{ count }} duplas empatadas disputam as últimas {{ spots }} vagas. O organizador sorteia a ordem das duplas ao gerar as finais.",
+      "noteOnePairs": "{{ count }} duplas empatadas disputam a última vaga. O organizador sorteia a ordem das duplas ao gerar as finais.",
+      "noteManyPairs": "{{ count }} duplas estão empatadas perto da linha de corte. O organizador sorteia a ordem das duplas ao gerar as finais."
     },
     "showAll": "Ver todos ({{ count }})",
     "showLess": "Mostrar só até a linha de corte",
@@ -236,8 +257,10 @@
       "overallTitle": "Ranking geral ({{ count }} atletas)",
       "individualTitle": "Ranking individual ({{ count }} atletas)",
       "individualNote": "só informativo neste formato",
-      "individualLabel": "Ranking individual"
-    }
+      "individualLabel": "Ranking individual",
+      "overallTitlePairs": "Ranking de duplas ({{ count }} duplas)"
+    },
+    "countPairs": "{{ count }} duplas"
   },
   "shareResults": {
     "kicker": "CARD PARA INSTAGRAM",

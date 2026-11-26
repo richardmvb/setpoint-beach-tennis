@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerStanding, TournamentState } from '../../core/models';
 import {
-  fixedPairs8State,
+  fixedPairsState,
   groups20State,
   groups24State,
   identicalGroups,
@@ -135,14 +135,27 @@ describe('placeExplanation, one overall ranking', () => {
     }
   });
 
-  it('fixed pairs: the neighbours are other pairs, never the partner', () => {
-    const { state, pairs } = fixedPairs8State(3);
-    for (const player of state.players) {
-      const explanation = placeExplanation(state, player.id)!;
-      const partner = pairs.find((pair) => pair.includes(player.id))!.find((id) => id !== player.id);
-      expect(explanation.above?.standing.playerId).not.toBe(partner);
-      expect(explanation.below?.standing.playerId).not.toBe(partner);
+  it("fixed pairs: the place is the pair's, both partners get the same one, and the neighbours are pairs", () => {
+    const { state, pairs } = fixedPairsState(12, 3);
+    const list = decidingList(state);
+    expect(list).toMatchObject({ kind: 'overall', pairs: true, slots: 4 });
+    expect(list.entries).toHaveLength(6);
+    for (const [first, second] of pairs) {
+      const a = placeExplanation(state, first)!;
+      const b = placeExplanation(state, second)!;
+      expect(a).toMatchObject({ pairs: true, size: 6 });
+      expect(b.place).toBe(a.place);
+      expect(b.standing.name).toBe(a.standing.name);
+      expect(a.standing.name).toMatch(/^\S+ \+ \S+$/);
+      for (const neighbour of [a.above, a.below]) if (neighbour) expect(neighbour.standing.name).toMatch(/ \+ /);
     }
+  });
+
+  it('fixed pairs: only the first four pairs reach the finals', () => {
+    const { state, pairs } = fixedPairsState(12, 3);
+    const places = pairs.map((pair) => placeExplanation(state, pair[0])!);
+    expect(places.filter((place) => place.inside === true)).toHaveLength(4);
+    expect(places.filter((place) => place.inside === false)).toHaveLength(2);
   });
 
   it('mixed early finals: one list per gender decides', () => {

@@ -1,12 +1,17 @@
 <ng-container *transloco="let t; prefix: 'organizer.tieDraw'">
   <span class="card-kicker">{{ t('kicker') }}</span>
   @let tie = qualificationTie();
-  <h2 [id]="titleId">@if (tie?.kind === 'group') {{{ t('groupTitle', { group: tie.groupName, positions: tie.positionsText }) }}} @else if (tie?.kind === 'thirds') {{{ t('thirdsTitle') }}} @else if (tie?.kind === 'seeding') {{{ t('seedingTitle') }}} @else {{{ t('title', { positions: positions() }) }}}</h2>
-  <p class="muted">{{ tie ? t('qualificationText') : t('text') }}</p>
+  <h2 [id]="titleId">@if (tie?.kind === 'group') {{{ t('groupTitle', { group: tie.groupName, positions: tie.positionsText }) }}} @else if (tie?.kind === 'thirds') {{{ t('thirdsTitle') }}} @else if (tie?.kind === 'seeding') {{{ t('seedingTitle') }}} @else if (pairs()) {{{ t('titlePairs', { positions: positions() }) }}} @else {{{ t('title', { positions: positions() }) }}}</h2>
+  <p class="muted">{{ tie ? t('qualificationText') : pairs() ? t('textPairs') : t('text') }}</p>
   @if (!result().length) {
     <div class="tie-draw-participants">
       @for (id of playerIds(); track id) {
-        <span><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />{{ nameOf(id) }}</span>
+        <span>
+          @for (member of membersOf(id); track member) {
+            <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
+          }
+          {{ nameOf(id) }}
+        </span>
       }
     </div>
   }
@@ -14,9 +19,11 @@
     <ol class="tie-draw-result">
       @for (id of result(); track id; let i = $index) {
         <li>
-          <b>{{ i + 1 }}º</b><app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" /><span>{{
-            nameOf(id)
-          }}</span>
+          <b>{{ i + 1 }}º</b>
+          @for (member of membersOf(id); track member) {
+            <app-player-avatar [name]="nameOf(member)" [photoDataUrl]="photoOf(member)" />
+          }
+          <span>{{ nameOf(id) }}</span>
         </li>
       }
     </ol>
