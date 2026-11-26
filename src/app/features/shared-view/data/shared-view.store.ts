@@ -18,7 +18,6 @@ import { ShareCardService } from '../../../core/share-card.service';
 import { type TournamentPhase, tournamentPhase } from '../../../core/state-machines';
 import { StorageService } from '../../../core/storage.service';
 import { isGroupTournament, isMixedDoubles } from '../../../domain/tournament-view/format';
-import { groupTables } from '../../../domain/tournament-view/group-tables';
 import {
   completedMatches,
   elapsedLabel,
@@ -42,7 +41,7 @@ import {
   type SharedViewSource,
   type ViewSnapshot,
 } from './shared-view-source';
-import { type UpdateTarget, updateTarget } from './update-target';
+import { type GuestSection, type UpdateTarget, updateTarget } from './update-target';
 
 /** How often the page re-reads the tournament, in case the realtime notice does not arrive. */
 export const POLL_MS = 4000;
@@ -137,8 +136,19 @@ export class SharedViewStore {
   readonly guestGender = signal<PlayerGender | ''>(this.profile.gender ?? '');
   readonly guestAvatar = signal(this.profile.photoDataUrl ?? '');
   readonly joined = signal(false);
-  /** The guest page is one scrolling page; the projection replaces it while open. */
+  /** The guest page shows one section at a time (`section`); the projection replaces it while open. */
   readonly tab = signal<'main' | 'projection'>('main');
+  /** The section the guest chose: Partidas, Ranking or Finais. */
+  readonly section = signal<GuestSection>('rounds');
+  /** The section on screen: the chosen one, unless it has nothing to show (no finals yet, or no rounds). */
+  readonly activeSection = computed<GuestSection>(() => {
+    const state = this.tournament();
+    const section = this.section();
+    if (!state) return 'rounds';
+    if (section === 'finals' && !state.finals) return 'rounds';
+    if (section === 'ranking' && !state.rounds.length) return 'rounds';
+    return section;
+  });
   readonly updateCount = signal(0);
   readonly now = signal(this.clock.now());
   readonly chanceToast = signal<ChanceToast | null>(null);
@@ -153,11 +163,6 @@ export class SharedViewStore {
   readonly board = computed(() => {
     const state = this.tournament();
     return state ? rankingBoard(state) : null;
-  });
-  readonly groupTables = computed(() => {
-    const state = this.tournament();
-    const standings = this.standings();
-    return state && standings ? groupTables(state, standings.all) : [];
   });
   readonly rounds = computed(() => {
     const state = this.tournament();
@@ -303,7 +308,14 @@ export class SharedViewStore {
     }
   }
 
-  /** Back to the scrolling page. True when it was showing the projection (the page then scrolls without animation). */
+  /** Shows a section, leaving the projection first when it is open. True when it was showing the projection. */
+  showSection(section: GuestSection): boolean {
+    const leftProjection = this.showMain();
+    this.section.set(section);
+    return leftProjection;
+  }
+
+  /** Back to the sections. True when it was showing the projection. */
   showMain(): boolean {
     if (this.tab() !== 'projection') return false;
     this.tab.set('main');
@@ -403,6 +415,8 @@ export class SharedViewStore {
     const previous = this.tournament();
     this.snapshot.set(snapshot);
     const next = this.tournament();
+    // The first read opens on the finals once they exist, and on the matches before.
+    if (!previous && next) this.section.set(next.finals ? 'finals' : 'rounds');
     if (isUpdate && previous && next) {
       if (this.updateCount() === 0) this.firstUpdateTarget = updateTarget(previous, next);
       this.updateCount.update((count) => count + 1);

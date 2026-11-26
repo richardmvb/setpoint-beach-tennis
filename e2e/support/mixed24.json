@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "name": "Fixture Grupos 24 mistos",
+  "size": 24,
+  "courts": 6,
+  "gamesToWin": 4,
+  "roundCount": 2,
+  "players": [
+    {
+      "id": "p1",
+      "name": "Ana",
+      "gender": "male"
+    },
+    {
+      "id": "p2",
+      "name": "Bia",
+      "gender": "male"
+    },
+    {
+      "id": "p3",
+      "name": "Caio",
+      "gender": "male"
+    },
+    {
+      "id": "p4",
+      "name": "Duda",
+      "gender": "male"
+    },
+    {
+      "id": "p5",
+      "name": "Edu",
+      "gender": "male"
+    },
+    {
+      "id": "p6",
+      "name": "Fabi",
+      "gender": "male"
+    },
+    {
+      "id": "p7",
+      "name": "Gui",
+      "gender": "male"
+    },
+    {
+      "id": "p8",
+      "name": "Hana",
+      "gender": "male"
+    },
+    {
+      "id": "p9",
+      "name": "Ivo",
+      "gender": "male"
+    },
+    {
+      "id": "p10",
+      "name": "Juca",
+      "gender": "male"
+    },
+    {
+      "id": "p11",
+      "name": "Kika",
+      "gender": "male"
+    },
+    {
+      "id": "p12",
+      "name": "Lia",
+      "gender": "male"
+    },
+    {
+      "id": "p13",
+      "name": "J13",
+      "gender": "female"
+    },
+    {
+      "id": "p14",
+      "name": "J14",
+      "gender": "female"
+    },
+    {
+      "id": "p15",
+      "name": "J15",
+      "gender": "female"
+    },
+    {
+      "id": "p16",
+      "name": "J16",
+      "gender": "female"
+    },
+    {
+      "id": "p17",
+      "name": "J17",
+      "gender": "female"
+    },
+    {
+      "id": "p18",
+      "name": "J18",
+      "gender": "female"
+    },
+    {
+      "id": "p19",
+      "name": "J19",
+      "gender": "female"
+    },
+    {
+      "id": "p20",
+      "name": "J20",
+      "gender": "female"
+    },
+    {
+      "id": "p21",
+      "name": "J21",
+      "gender": "female"
+    },
+    {
+      "id": "p22",
+      "name": "J22",
+      "gender": "female"
+    },
+    {
+      "id": "p23",
+      "name": "J23",
+      "gender": "female"
+    },
+    {
+      "id": "p24",
+      "name": "J24",
+      "gender": "female"
+    }
+  ],
+  "rounds": [
+    {
+      "number": 1,
+      "matches": [
+        {
+          "id": "group-group-2-r1-c1",
+          "court": 1,
+          "teamA": ["p1", "p13"],
+          "teamB": ["p11", "p22"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-2"
+        },
+        {
+          "id": "group-group-3-r1-c2",
+          "court": 2,
+          "teamA": ["p2", "p24"],
+          "teamB": ["p10", "p19"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-3"
+        },
+        {
+          "id": "group-group-5-r1-c3",
+          "court": 3,
+          "teamA": ["p5", "p21"],
+          "teamB": ["p3", "p18"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-5"
+        },
+        {
+          "id": "group-group-6-r1-c4",
+          "court": 4,
+          "teamA": ["p4", "p17"],
+          "teamB": ["p9", "p15"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-6"
+        },
+        {
+          "id": "group-group-1-r1-c5",
+          "court": 5,
+          "teamA": ["p6", "p16"],
+          "teamB": ["p7", "p20"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-4-r1-c6",
+          "court": 6,
+          "teamA": ["p12", "p23"],
+          "teamB": ["p8", "p14"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-4"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 2,
+      "matches": [
+        {
+          "id": "group-group-6-r2-c1",
+          "court": 1,
+          "teamA": ["p4", "p15"],
+          "teamB": ["p9", "p17"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-6"
+        },
+        {
+          "id": "group-group-2-r2-c2",
+          "court": 2,
+          "teamA": ["p1", "p22"],
+          "teamB": ["p11", "p13"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-2"
+        },
+        {
+          "id": "group-group-3-r2-c3",
+          "court": 3,
+          "teamA": ["p2", "p19"],
+          "teamB": ["p10", "p24"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-3"
+        },
+        {
+          "id": "group-group-4-r2-c4",
+          "court": 4,
+          "teamA": ["p12", "p14"],
+          "teamB": ["p8", "p23"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-4"
+        },
+        {
+          "id": "group-group-5-r2-c5",
+          "court": 5,
+          "teamA": ["p5", "p18"],
+          "teamB": ["p3", "p21"],
+          "scoreA": 2,
+          "scoreB": 6,
+          "phase": "groups",
+          "groupId": "group-5"
+        },
+        {
+          "id": "group-group-1-r2-c6",
+          "court": 6,
+          "teamA": ["p6", "p20"],
+          "teamB": ["p7", "p16"],
+          "scoreA": 6,
+          "scoreB": 2,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    }
+  ],
+  "createdAt": "2026-11-13T10:00:00.000Z",
+  "tournamentMode": "groups",
+  "groupFormat": "rotating",
+  "doublesFormat": "mixed",
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "Grupo A",
+      "playerIds": ["p6", "p20", "p7", "p16"]
+    },
+    {
+      "id": "group-2",
+      "name": "Grupo B",
+      "playerIds": ["p1", "p22", "p11", "p13"]
+    },
+    {
+      "id": "group-3",
+      "name": "Grupo C",
+      "playerIds": ["p2", "p19", "p10", "p24"]
+    },
+    {
+      "id": "group-4",
+      "name": "Grupo D",
+      "playerIds": ["p12", "p23", "p8", "p14"]
+    },
+    {
+      "id": "group-5",
+      "name": "Grupo E",
+      "playerIds": ["p5", "p18", "p3", "p21"]
+    },
+    {
+      "id": "group-6",
+      "name": "Grupo F",
+      "playerIds": ["p4", "p17", "p9", "p15"]
+    }
+  ]
+}

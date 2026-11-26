@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import type { BoardEntry, BoardGroup, RankingBoard } from '../../../../domain/tournament-view/ranking-board';
+import { GenderIconComponent } from '../../../gender-icon.component';
 
 /** One group's table (place, athlete, wins, balance, matches); every row opens the athlete. */
 @Component({
   selector: 'app-ranking-group-table',
-  imports: [TranslocoDirective],
+  imports: [TranslocoDirective, GenderIconComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ranking-group-table.component.html',
@@ -18,7 +19,7 @@ export class RankingGroupTableComponent {
   readonly playerSelected = output<string>();
 
   protected isMine(entry: BoardEntry): boolean {
-    return !!this.highlightId() && entry.playerId === this.highlightId();
+    return !!this.highlightId() && entry.playerIds.includes(this.highlightId());
   }
 
   protected signed(value: number): string {

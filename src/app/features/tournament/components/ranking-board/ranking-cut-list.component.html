@@ -10,7 +10,11 @@
               <span class="card-kicker">{{ t('race.kicker', { slots: slots() }) }}</span>
               <h2 id="board-race-title">{{ t('race.title') }}</h2>
             } @else {
+              @if (slots() >= entries().length) {
+              <span class="card-kicker">{{ t('overall.kickerAll') }}</span>
+            } @else {
               <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
+            }
               <h2 id="board-race-title">{{ t('overall.title') }}</h2>
             }
           </div>
@@ -31,6 +35,17 @@
       </article>
     }
     <ng-template #list>
+      @if (ties().length === 1) {
+        <p class="tie-note">
+          @if (ties()[0].spots === 1) {
+            {{ t('tie.noteOne', { count: ties()[0].count }) }}
+          } @else {
+            {{ t('tie.note', { count: ties()[0].count, spots: ties()[0].spots }) }}
+          }
+        </p>
+      } @else if (ties().length > 1) {
+        <p class="tie-note">{{ t('tie.noteMany', { count: tiedCount() }) }}</p>
+      }
       <table
         class="cut-table"
         [attr.aria-labelledby]="bare() ? null : 'board-race-title'"
@@ -56,17 +71,25 @@
                   aria-describedby="board-open-description"
                   (click)="playerSelected.emit(entry.playerId)"
                 >
+                  @if (entry.gender) {
+                    <app-gender-icon [gender]="entry.gender" />
+                  }
                   <span class="who-name">{{ entry.name }}</span>
-                  <span class="gbadge">
-                    <span aria-hidden="true">{{ entry.group }}{{ entry.groupPlace ?? '' }}</span>
-                    <span class="visually-hidden">
-                      @if (entry.groupPlace !== null) {
-                        {{ t('badgePlace', { group: entry.group, place: entry.groupPlace }) }}
-                      } @else {
-                        {{ t('badge', { group: entry.group }) }}
-                      }
+                  @if (showGroup()) {
+                    <span class="gbadge">
+                      <span aria-hidden="true">{{ entry.group }}{{ entry.groupPlace ?? '' }}</span>
+                      <span class="visually-hidden">
+                        @if (entry.groupPlace !== null) {
+                          {{ t('badgePlace', { group: entry.group, place: entry.groupPlace }) }}
+                        } @else {
+                          {{ t('badge', { group: entry.group }) }}
+                        }
+                      </span>
                     </span>
-                  </span>
+                  }
+                  @if (entry.tied) {
+                    <span class="tie-chip">{{ t('tie.chip') }}</span>
+                  }
                   @if (entry.status; as mark) {
                     <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'">
                       <span aria-hidden="true">{{ mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕' }}</span>

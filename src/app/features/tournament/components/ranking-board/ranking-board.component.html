@@ -1,6 +1,6 @@
 <ng-container *transloco="let t; prefix: 'tournament.board'">
   @let b = board();
-  @if (b.folded) {
+  @if (b.folded && fold()) {
     <details class="folded">
       <summary>
         <span class="card-kicker">{{ t('folded.kicker') }}</span>
@@ -40,11 +40,13 @@
         (playerSelected)="select($event)"
       />
       <app-ranking-cut-list
+        [showGroup]="b.groups.length > 1"
         [entries]="b.list"
         [slots]="b.slots"
         [kind]="b.kind"
         [settled]="b.settled"
         [provisional]="b.provisional"
+        [ties]="b.cutTies"
         [highlightId]="highlightId()"
         (playerSelected)="select($event)"
       />

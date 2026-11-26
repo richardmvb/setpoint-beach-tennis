@@ -1,4 +1,4 @@
-import type { GroupSize, Match, TournamentState } from '../core/models';
+import type { GroupSize, Match, Player, TournamentState } from '../core/models';
 import { GroupScheduleService } from '../core/group-schedule.service';
 import { match, namedPlayers, round, tournamentState } from './tournament-state';
 import { seededRandom } from './seeded-random';
@@ -17,11 +17,37 @@ export function groups24State(seed = 1, score?: Score): TournamentState {
   return rotatingGroupsState(24, 4, seed, score);
 }
 
-function rotatingGroupsState(size: 20 | 24, groupSize: GroupSize, seed: number, score?: Score): TournamentState {
-  const players = namedPlayers(size);
+/** 8 players in 2 groups of 4 with rotating partners (open): everybody goes to the finals. */
+export function groups8State(seed = 1, score?: Score): TournamentState {
+  return rotatingGroupsState(8, 4, seed, score);
+}
+
+/** 12 players in 3 groups of 4 with rotating partners (open): the finals take the top 8 of 12. */
+export function groups12State(seed = 1, score?: Score): TournamentState {
+  return rotatingGroupsState(12, 4, seed, score);
+}
+
+/** 24 players in 6 groups of 4 with rotating partners in mixed doubles (12 men, 12 women), 2 rounds. */
+export function mixedGroups24State(seed = 1, score?: Score): TournamentState {
+  return rotatingGroupsState(24, 4, seed, score, true);
+}
+
+/** Men first, then women: p1..pN/2 are men and the rest women, so a mixed pair is one of each. */
+function mixedPlayers(size: number): Player[] {
+  return [...namedPlayers(size / 2, 'male'), ...namedPlayers(size, 'female').slice(size / 2)];
+}
+
+function rotatingGroupsState(
+  size: 8 | 12 | 20 | 24,
+  groupSize: GroupSize,
+  seed: number,
+  score?: Score,
+  mixed = false,
+): TournamentState {
+  const players = mixed ? mixedPlayers(size) : namedPlayers(size);
   const service = new GroupScheduleService();
   service.random = seededRandom(seed);
-  const schedule = service.generate(players, 'rotating', [], false, groupSize);
+  const schedule = service.generate(players, 'rotating', [], mixed, groupSize);
   // Strength grows with the player number, so a pair's strength decides who wins when scores are not given.
   const strength = (id: string): number => Number(id.slice(1));
   const rounds = schedule.rounds.map((round) => ({
@@ -35,10 +61,10 @@ function rotatingGroupsState(size: 20 | 24, groupSize: GroupSize, seed: number, 
   return tournamentState({
     size,
     courts: size / groupSize,
-    roundCount: groupSize === 5 ? 5 : 3,
+    roundCount: groupSize === 5 ? 5 : mixed ? 2 : 3,
     tournamentMode: 'groups',
     groupFormat: 'rotating',
-    doublesFormat: 'open',
+    doublesFormat: mixed ? 'mixed' : 'open',
     ...(size === 20 ? { groupSize } : {}),
     players,
     groups: schedule.groups,
@@ -123,25 +149,44 @@ export function identicalGroups(scoresOf?: (group: number) => [number, number][]
   });
 }
 
-/** 8 players in four fixed pairs (one group, round robin), every match 6-3 to side A. */
-export function fixedPairs8State(seed = 1): { state: TournamentState; pairs: [string, string][] } {
-  const players = namedPlayers(8);
-  const pairs: [string, string][] = [
-    ['p1', 'p2'],
-    ['p3', 'p4'],
-    ['p5', 'p6'],
-    ['p7', 'p8'],
-  ];
+/**
+ * Fixed pairs of 8, 12 or 24 players (one group, round robin): p1+p2, p3+p4, ... `score` fills every match; by default
+ * the stronger pair wins 6-2 (6-3 when equal), so the numbers follow the player numbers.
+ */
+export function fixedPairsState(
+  size: 8 | 12 | 24,
+  seed = 1,
+  score: Score | null = strongerPairWins,
+): { state: TournamentState; pairs: [string, string][] } {
+  const players = namedPlayers(size);
+  const pairs = Array.from({ length: size / 2 }, (_, index): [string, string] => [
+    `p${index * 2 + 1}`,
+    `p${index * 2 + 2}`,
+  ]);
   const service = new GroupScheduleService();
   service.random = seededRandom(seed);
   const schedule = service.generate(players, 'fixed', pairs);
+  const strength = (id: string): number => Number(id.slice(1));
   const state = tournamentState({
+    size,
     tournamentMode: 'groups',
     groupFormat: 'fixed',
     players,
     fixedPairs: pairs,
     groups: schedule.groups,
-    rounds: schedule.rounds.map((r) => ({ ...r, matches: r.matches.map((m) => ({ ...m, scoreA: 6, scoreB: 3 })) })),
+    rounds: schedule.rounds.map((r) => ({
+      ...r,
+      matches: r.matches.map((m) => {
+        if (!score) return m;
+        const [scoreA, scoreB] = score(m, strength);
+        return { ...m, scoreA, scoreB };
+      }),
+    })),
   });
   return { state, pairs };
+}
+
+/** 8 players in four fixed pairs (one group, round robin), every match 6-3 to side A. */
+export function fixedPairs8State(seed = 1): { state: TournamentState; pairs: [string, string][] } {
+  return fixedPairsState(8, seed, () => [6, 3]);
 }

@@ -10,7 +10,6 @@
     />
   } @else {
     <app-ranking-view
-      [groupTables]="store.groupTables()"
       [standings]="store.standings()"
       [players]="store.state().players"
       [rounds]="store.state().rounds"
@@ -18,7 +17,6 @@
       [femaleStandings]="store.femaleStandings()"
       [showGenderRankings]="store.usesMixedFinals()"
       [genderRankingLimit]="store.mixedFinalistCount()"
-      [fixedPairsMode]="store.fixedPairsMode()"
       [hasSchedule]="store.hasSchedule()"
       (playerSelected)="store.openPlayerMatches($event)"
       (helpRequested)="store.openRankingHelp()"

@@ -42,7 +42,8 @@ export class RankingSummaryComponent {
   protected readonly openGroupId = computed(() => {
     const { groups } = this.board();
     const mine = this.viewer()?.entry.playerId;
-    return (mine ? groups.find((group) => group.entries.some((entry) => entry.playerId === mine)) : groups[0])?.id;
+    return (mine ? groups.find((group) => group.entries.some((entry) => entry.playerIds.includes(mine))) : groups[0])
+      ?.id;
   });
 
   protected readonly outCount = computed(() => this.board().list.length - this.board().slots);

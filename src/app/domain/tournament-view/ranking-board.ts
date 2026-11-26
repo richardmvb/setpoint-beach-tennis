@@ -1,16 +1,23 @@
-import type { PlayerStanding, TournamentState } from '../../core/models';
-import { usesGroupQualification, usesRankingBoard } from './format';
+import type { PlayerGender, PlayerStanding, TournamentState } from '../../core/models';
+import { fixedPairsMode, usesGroupQualification, usesRankingBoard } from './format';
 import { qualificationField, type QualificationStatus } from './group-qualification';
 import { scheduledGroupMatches } from './player-matches';
 import { groupStageComplete } from './progress';
 import { decidingList } from './ranking-explanation';
 import { isScored } from './scoring';
-import { rankedStandingGroups } from './standings';
+import { FINALIST_PLACES, openStandingTies, rankedStandingGroups } from './standings';
 
-/** One athlete of the board, with what the mini group cards and the cut list show. */
+/**
+ * One athlete of the board, with what the mini group cards and the cut list show. In the groups of a fixed pairs
+ * tournament an entry is a pair: `name` joins both names, `playerId` is the first partner (who opens when tapped) and
+ * `playerIds` has both.
+ */
 export interface BoardEntry {
   playerId: string;
+  playerIds: string[];
   name: string;
+  /** An athlete's gender (mixed doubles show it); null for a pair. */
+  gender: PlayerGender | null;
   setsWon: number;
   gameBalance: number;
   matchesPlayed: number;
@@ -24,6 +31,14 @@ export interface BoardEntry {
   groupPlace: number | null;
   /** 20-player format, once every group match has a score: does the athlete reach the finals. */
   status: QualificationStatus | null;
+  /** Tied with others across the cut line, and nobody has drawn it yet: the draw decides who goes on. */
+  tied: boolean;
+}
+
+/** A set of athletes the rules cannot separate, some inside the cut and some outside: they compete for `spots` places. */
+export interface CutTie {
+  count: number;
+  spots: number;
 }
 
 export interface BoardGroup {
@@ -32,9 +47,9 @@ export interface BoardGroup {
   entries: BoardEntry[];
 }
 
-/** The ranking of a group tournament of 20 or 24 as the board shows it: the groups, and one list with a cut line. */
+/** The ranking of a group tournament as the board shows it: the groups, and one list of athletes with a cut line. */
 export interface RankingBoard {
-  /** `qualification`: the groups decide who goes on (20); `overall`: the overall ranking decides (24). */
+  /** `qualification`: the groups decide who goes on (20 players); `overall`: the overall ranking decides (the rest). */
   kind: 'qualification' | 'overall';
   groups: BoardGroup[];
   /** Every athlete in the order of the race to the finals. */
@@ -51,11 +66,13 @@ export interface RankingBoard {
   /** Group-stage matches with a score, and all of them. */
   matchesDone: number;
   matchesTotal: number;
-  /** 20-player format: the places for the top two of every group, and for the best third places. 0 for 24. */
+  /** 20-player format: the places for the top two of every group, and for the best third places. 0 otherwise. */
   directSlots: number;
   thirdSlots: number;
-  /** 20-player format: everybody by the plain standings (the groups do not decide it); null for 24, where `list` is it. */
+  /** 20-player format: everybody by the plain standings (the groups do not decide it); null otherwise, where `list` is it. */
   individual: BoardEntry[] | null;
+  /** Ties across the cut line that still need a draw; empty while the group stage is open (the order still moves). */
+  cutTies: CutTie[];
 }
 
 /** What the viewer's own line says: where one athlete stands today. */
@@ -73,7 +90,7 @@ function groupShortName(name: string): string {
   return name.trim().split(/\s+/).pop() ?? name;
 }
 
-/** The board of a group tournament of 20 or 24 players; null for the other formats and before the schedule exists. */
+/** The board of a group tournament; null for the other formats and before the schedule exists. */
 export function rankingBoard(state: TournamentState): RankingBoard | null {
   if (!usesRankingBoard(state) || !state.rounds.length || !state.groups?.length) return null;
   const { entries, slots } = decidingList(state);
@@ -87,12 +104,28 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
   const groupNames = new Map(state.groups.map((group) => [group.id, group.name]));
   const groupIdOf = new Map(state.groups.flatMap((group) => group.playerIds.map((id) => [id, group.id] as const)));
   const places = new Map(entries.map((row, index) => [row.playerId, index + 1] as const));
+  const total = slots ?? entries.length;
 
+  // Athletes the rules cannot separate, with some inside the cut and some outside, and no draw yet: the list shows
+  // them in name order, but the draw decides. Only once the group stage is over; before that everybody is tied.
+  const openTies = field ? field.open : openStandingTies(state, rankedStandingGroups(state), FINALIST_PLACES);
+  const cutTies: { ids: string[]; spots: number }[] = settled
+    ? openTies.flatMap((tie) => {
+        const tiePlaces = tie.map((row) => places.get(row.playerId) ?? 0);
+        const inside = tiePlaces.filter((place) => place <= total).length;
+        return inside > 0 && inside < tie.length ? [{ ids: tie.map((row) => row.playerId), spots: inside }] : [];
+      })
+    : [];
+  const tiedIds = new Set(cutTies.flatMap((tie) => tie.ids));
+
+  const genders = new Map(state.players.map((player) => [player.id, player.gender ?? null] as const));
   const entryOf = (row: PlayerStanding): BoardEntry => {
     const groupId = groupIdOf.get(row.playerId) ?? '';
     return {
       playerId: row.playerId,
+      playerIds: [row.playerId],
       name: row.name,
+      gender: genders.get(row.playerId) ?? null,
       setsWon: row.setsWon,
       gameBalance: row.gameBalance,
       matchesPlayed: row.matchesPlayed,
@@ -101,25 +134,41 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
       group: groupShortName(groupNames.get(groupId) ?? ''),
       groupPlace: field?.groupOf.get(row.playerId)?.place ?? null,
       status: settled ? (statuses.get(row.playerId) ?? null) : null,
+      tied: tiedIds.has(row.playerId),
     };
   };
   const byId = new Map(entries.map((row) => [row.playerId, entryOf(row)] as const));
   const list = entries.map((row) => byId.get(row.playerId)!);
 
+  /** A fixed pair as one row: both names, the numbers of the first partner (partners share them) and the best place. */
+  const pairEntry = (pair: readonly string[]): BoardEntry | null => {
+    const partners = pair.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
+    if (!partners.length) return null;
+    return {
+      ...partners[0],
+      playerIds: partners.map((entry) => entry.playerId),
+      name: partners.map((entry) => entry.name).join(' + '),
+      gender: null,
+      place: Math.min(...partners.map((entry) => entry.place)),
+      tied: partners.some((entry) => entry.tied),
+    };
+  };
   const groups = state.groups.map((group): BoardGroup => {
-    const members = group.playerIds.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
-    // The 20-player format orders a group by its own rules (head-to-head, draws); 24 follows the overall place.
+    const members =
+      fixedPairsMode(state) && group.fixedPairs
+        ? group.fixedPairs.map(pairEntry).filter((entry): entry is BoardEntry => !!entry)
+        : group.playerIds.map((id) => byId.get(id)).filter((entry): entry is BoardEntry => !!entry);
+    // The 20-player format orders a group by its own rules (head-to-head, draws); the others follow the overall place.
     members.sort((a, b) => (a.groupPlace ?? a.place) - (b.groupPlace ?? b.place));
     return { id: group.id, name: group.name, entries: members };
   });
 
-  const total = slots ?? list.length;
   const directSlots = field ? Math.min(total, 2 * state.groups.length) : 0;
   const matches = state.rounds.flatMap((round) => round.matches);
   const individual = field
     ? rankedStandingGroups(state)
         .flat()
-        .map((row, index) => ({ ...byId.get(row.playerId)!, place: index + 1 }))
+        .map((row, index) => ({ ...byId.get(row.playerId)!, place: index + 1, tied: false }))
     : null;
 
   return {
@@ -132,6 +181,7 @@ export function rankingBoard(state: TournamentState): RankingBoard | null {
     directSlots,
     thirdSlots: field ? total - directSlots : 0,
     individual,
+    cutTies: cutTies.map((tie) => ({ count: tie.ids.length, spots: tie.spots })),
     settled,
     provisional: !state.finals && !settled,
     folded: !!state.finals && settled,

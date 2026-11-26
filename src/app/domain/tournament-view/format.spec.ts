@@ -79,13 +79,11 @@ describe('defaultFixedPairs', () => {
     expect(defaultFixedPairs(tournamentState({ size: 8, players: namedPlayers(8) }))).toEqual([]);
   });
 
-  it('uses the ranking board for rotating open groups of 20 and 24 only', () => {
+  it('uses the ranking board for every group tournament, and for no other', () => {
     const groups = tournamentState({ tournamentMode: 'groups', groupFormat: 'rotating', doublesFormat: 'open' });
-    expect(usesRankingBoard({ ...groups, size: 20 })).toBe(true);
-    expect(usesRankingBoard({ ...groups, size: 24 })).toBe(true);
-    expect(usesRankingBoard({ ...groups, size: 12 })).toBe(false);
-    expect(usesRankingBoard({ ...groups, size: 24, groupFormat: 'fixed' })).toBe(false);
-    expect(usesRankingBoard({ ...groups, size: 24, doublesFormat: 'mixed' })).toBe(false);
+    for (const size of [8, 12, 20, 24] as const) expect(usesRankingBoard({ ...groups, size })).toBe(true);
+    expect(usesRankingBoard({ ...groups, size: 24, groupFormat: 'fixed' })).toBe(true);
+    expect(usesRankingBoard({ ...groups, size: 24, doublesFormat: 'mixed' })).toBe(true);
     expect(usesRankingBoard({ ...groups, size: 24, tournamentMode: 'super' })).toBe(false);
   });
 });

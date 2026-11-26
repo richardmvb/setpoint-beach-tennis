@@ -20,7 +20,7 @@
         <i [style.width.%]="percent()"></i>
       </div>
       <p class="progress-text">{{ t('summary.progress', { done: b.matchesDone, total: b.matchesTotal }) }}</p>
-      <div class="counts" [class.two]="b.kind === 'overall'">
+      <div class="counts" [class.two]="b.kind === 'overall' && outCount() > 0" [class.one]="b.kind === 'overall' && outCount() === 0">
         @if (b.kind === 'qualification') {
           <div class="count direct">
             <b>{{ b.directSlots }}</b>
@@ -36,10 +36,12 @@
             <span><span aria-hidden="true">✓</span> {{ t('summary.inFinal') }}</span>
           </div>
         }
-        <div class="count out">
-          <b>{{ outCount() }}</b>
-          <span><span aria-hidden="true">✕</span> {{ t('summary.out') }}</span>
-        </div>
+        @if (outCount() > 0) {
+          <div class="count out">
+            <b>{{ outCount() }}</b>
+            <span><span aria-hidden="true">✕</span> {{ t('summary.out') }}</span>
+          </div>
+        }
       </div>
       @if (viewer(); as v) {
         <div class="you">
@@ -124,12 +126,14 @@
       </summary>
       <app-ranking-cut-list
         [bare]="true"
+        [showGroup]="b.groups.length > 1"
         [label]="b.kind === 'qualification' ? t('race.title') : t('overall.title')"
         [entries]="b.list"
         [slots]="b.slots"
         [kind]="b.kind"
         [settled]="b.settled"
         [provisional]="b.provisional"
+        [ties]="b.cutTies"
         [highlightId]="highlightId()"
         (playerSelected)="playerSelected.emit($event)"
       />

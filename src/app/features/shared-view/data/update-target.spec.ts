@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { match, namedPlayers, round, tournamentState } from '../../../testing/tournament-state';
-import { updateTarget } from './update-target';
+import { sectionOf, updateTarget } from './update-target';
 
 const players = namedPlayers(4);
 const scheduled = tournamentState({ players, rounds: [round(1, [match('m1', ['p1', 'p2'], ['p3', 'p4'])])] });
@@ -28,5 +28,14 @@ describe('updateTarget', () => {
     expect(updateTarget(scheduled, { ...scheduled, name: 'Novo nome' })).toBe('guest-ranking');
     const registration = tournamentState({ players });
     expect(updateTarget(registration, { ...registration, name: 'Novo nome' })).toBe('guest-participants');
+  });
+});
+
+describe('sectionOf', () => {
+  it('maps an update to the section that shows it: the participants and the rounds are both Partidas', () => {
+    expect(sectionOf('guest-finals')).toBe('finals');
+    expect(sectionOf('guest-ranking')).toBe('ranking');
+    expect(sectionOf('guest-rounds')).toBe('rounds');
+    expect(sectionOf('guest-participants')).toBe('rounds');
   });
 });

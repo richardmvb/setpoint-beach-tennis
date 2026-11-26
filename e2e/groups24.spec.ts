@@ -21,7 +21,11 @@ test.describe('Grupos 24', () => {
     // The groups only organize the matches: one list decides, with the cut after the 8th place.
     const race = page.getByRole('article', { name: 'Ranking geral' });
     await expect(race.getByText('LINHA DE CORTE · 8 VAGAS')).toBeVisible();
+    // Nine athletes are tied for the last five places: the list says so, and the organizer will draw them.
+    await expect(race.getByText(/9 atletas empatados disputam as últimas 5 vagas/)).toBeVisible();
+    await expect(race.locator('.tie-chip').first()).toBeVisible();
     await race.getByRole('button', { name: 'Ver todos (24)' }).click();
+    await expect(race.locator('.tie-chip')).toHaveCount(9);
     const rows = await race.locator('tbody tr:not(.cut-line)').evaluateAll((trs) =>
       trs.map((tr) => ({
         name: tr.querySelector('.who-name')?.textContent?.trim() ?? '',
@@ -56,5 +60,8 @@ test.describe('Grupos 24', () => {
     expect(finalsBox!.y).toBeLessThan(foldedBox!.y);
     await folded.click();
     await expect(page.getByRole('article', { name: 'Ranking geral' })).toBeVisible();
+    // The draw was made when the finals were generated: nothing is tied across the cut any more.
+    await expect(page.locator('.tie-chip')).toHaveCount(0);
+    await expect(page.getByText(/atletas empatados disputam/)).toHaveCount(0);
   });
 });
