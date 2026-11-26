@@ -18,6 +18,18 @@ export class FinalsService {
       this.match('third-place', 2, [ids[4], ids[6]], [ids[5], ids[7]]),
     ]);
   }
+  /**
+   * The finals of a fixed pairs tournament: the pairs stay together to the end. The best pair meets the second for the
+   * title, and the third meets the fourth for the third place. `pairs` are in ranking order.
+   */
+  createFixedPairs(pairs: readonly (readonly [string, string])[]): FinalStage {
+    if (pairs.length < 4) throw new Error('A final com duplas fixas exige pelo menos quatro duplas no ranking.');
+    const team = (index: number): [string, string] => [pairs[index][0], pairs[index][1]];
+    return this.stage([
+      this.match('championship', 1, team(0), team(1)),
+      this.match('third-place', 2, team(2), team(3)),
+    ]);
+  }
   createMixedBracket(men: PlayerStanding[], women: PlayerStanding[]): FinalStage {
     if (men.length < 8 || women.length < 8)
       throw new Error('A fase final mista exige oito homens e oito mulheres no ranking.');

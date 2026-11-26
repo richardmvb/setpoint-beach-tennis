@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerStanding } from '../../core/models';
 import { match, namedPlayers, round, tournamentState } from '../../testing/tournament-state';
-import { groups20State, sideAWins } from '../../testing/groups20';
+import { fixedPairs8State, fixedPairsState, groups20State, sideAWins } from '../../testing/groups20';
 import { createStandingsMemo } from '../tournament-view/standings';
-import { shuffledOrder, tiedPositions, unresolvedFinalTie, unresolvedTie, withTieDraw } from './tie-draw';
+import {
+  shuffledOrder,
+  tiedPositions,
+  unresolvedFinalTie,
+  unresolvedPairTie,
+  unresolvedTie,
+  withTieDraw,
+} from './tie-draw';
 
 /** Everybody ties: every match ends 4 to 4, so nothing separates the players. */
 function allTied() {
@@ -87,5 +94,53 @@ describe('unresolvedTie', () => {
     expect(unresolvedTie(usual, view(usual))).toEqual(unresolvedFinalTie(usual, view(usual)));
     const twenty = groups20State(4, 5, sideAWins);
     expect(unresolvedTie(twenty, view(twenty)).length).toBeGreaterThan(1);
+  });
+});
+
+describe('unresolvedPairTie, fixed pairs', () => {
+  it('asks about tied pairs, never about partners: partners share every number and are one competitor', () => {
+    // Every match ends 6-3 to side A: the pairs that won tie with each other, the pairs that lost with each other.
+    const { state } = fixedPairs8State(3);
+    const tied = unresolvedPairTie(state);
+    expect(tied.length).toBeGreaterThan(1);
+    // One representative per pair, with the pair's name: the draw is between pairs.
+    expect(tied.every((row) => row.name.includes(' + '))).toBe(true);
+    const partners = new Set(['p1,p2', 'p3,p4', 'p5,p6', 'p7,p8']);
+    for (const row of tied) {
+      const partnerKey = [...partners].find((key) => key.split(',').includes(row.playerId))!;
+      const others = tied.filter((other) => other.playerId !== row.playerId).map((other) => other.playerId);
+      expect(others.some((id) => partnerKey.split(',').includes(id))).toBe(false);
+    }
+  });
+
+  it('is what the finals wait for in fixed pairs, instead of the athletes tie', () => {
+    const { state } = fixedPairs8State(3);
+    const view = createStandingsMemo()(state);
+    expect(unresolvedTie(state, view).map((row) => row.playerId)).toEqual(
+      unresolvedPairTie(state).map((row) => row.playerId),
+    );
+    // The athletes' rules would ask for a draw between two partners (p3 and p4 share every number), which is
+    // meaningless; the pairs' rules never name them: that pair won everything and is not tied with another pair.
+    expect(unresolvedFinalTie(state, view).map((row) => row.playerId)).toEqual(['p3', 'p4']);
+    expect(unresolvedPairTie(state).map((row) => row.playerId)).not.toContain('p3');
+  });
+
+  it('is empty once the pairs were drawn, and for a clean ranking', () => {
+    const { state } = fixedPairs8State(3);
+    const ids = unresolvedPairTie(state).map((row) => row.playerId);
+    const drawn = withTieDraw(state, ids, [...ids].reverse(), '2026-11-26T10:00:00.000Z');
+    // Another tie may follow (the pairs that lost); drawing every one ends it.
+    let next = drawn;
+    for (let step = 0; step < 4 && unresolvedPairTie(next).length; step++) {
+      const more = unresolvedPairTie(next).map((row) => row.playerId);
+      next = withTieDraw(next, more, [...more].reverse(), '2026-11-26T10:00:00.000Z');
+    }
+    expect(unresolvedPairTie(next)).toEqual([]);
+    // A tournament that ranks its pairs cleanly has nothing to draw.
+    expect(unresolvedPairTie(fixedPairsState(8, 3).state)).toEqual([]);
+  });
+
+  it('is empty for tournaments without fixed pairs', () => {
+    expect(unresolvedPairTie(groups20State(4, 3, sideAWins))).toEqual([]);
   });
 });

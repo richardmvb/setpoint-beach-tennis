@@ -26,7 +26,13 @@
       <span>{{ fixedPairs ? t('pairs.text') : t('individual.text') }}</span>
     </li>
     <li>
-      <b>{{ r.variant === 'groups20' ? t('order.groupTitle') : t('order.title', { players: r.players }) }}</b>
+      <b>{{
+        r.variant === 'groups20'
+          ? t('order.groupTitle')
+          : r.pairs
+            ? t('order.pairsTitle', { pairs: r.players / 2 })
+            : t('order.title', { players: r.players })
+      }}</b>
       <span>{{ t('order.text') }}</span>
       <span class="help-criteria">
         <span><i>1</i>{{ t('order.wins') }}</span>
@@ -73,10 +79,13 @@
       }
       @default {
         <li>
-          <b>
-            {{ r.players > r.slots ? t('top.title', { slots: r.slots }) : t('top.allTitle', { players: r.players }) }}
-          </b>
-          @if (!fixedPairs) {
+          @if (r.pairs) {
+            <b>{{ r.players / 2 > r.slots ? t('top.titlePairs', { slots: r.slots }) : t('top.allTitlePairs', { slots: r.slots }) }}</b>
+            <span>{{ t('top.pairingPairs') }}</span>
+          } @else {
+            <b>
+              {{ r.players > r.slots ? t('top.title', { slots: r.slots }) : t('top.allTitle', { players: r.players }) }}
+            </b>
             <span>{{ t('top.pairing') }}</span>
           }
         </li>

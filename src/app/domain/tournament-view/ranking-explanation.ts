@@ -8,6 +8,7 @@ import {
   usesMixedFinals,
 } from './format';
 import { qualificationField, type QualificationField, type QualificationStatus } from './group-qualification';
+import { FINALIST_PAIRS, fixedPairsOf, rankedPairGroups } from './pair-standings';
 import { scheduledGroupMatches } from './player-matches';
 import { groupStageComplete } from './progress';
 import {
@@ -37,8 +38,6 @@ type TieReason =
    * draw can have put the lower athlete first while the group order won (`groupOrderKept`).
    */
   | { kind: 'draw'; drawnAt: string; crossGroup: boolean; groupOrderKept: boolean }
-  /** Fixed partners share every number. */
-  | { kind: 'partners' }
   /** Nothing separates them yet. `needsDraw`: the order matters and the organizer will be asked to draw it. */
   | { kind: 'tied'; needsDraw: boolean };
 
@@ -61,6 +60,8 @@ export interface DecidingList {
   entries: PlayerStanding[];
   /** How many of the first places reach the finals; null when everybody does or another list decides. */
   slots: number | null;
+  /** Fixed pairs: every entry is a pair (the numbers its partners share, under both names), not an athlete. */
+  pairs: boolean;
 }
 
 export interface RankingNeighbour {
@@ -74,6 +75,8 @@ export interface RankingNeighbour {
 
 export interface PlaceExplanation {
   list: DecidingListKind;
+  /** Fixed pairs: the place is the pair's, and the neighbours are pairs. */
+  pairs: boolean;
   place: number;
   size: number;
   slots: number | null;
@@ -92,15 +95,32 @@ export interface PlaceExplanation {
 export function decidingList(state: TournamentState, gender?: 'male' | 'female'): DecidingList {
   if (usesGroupQualification(state)) {
     const field = qualificationField(state);
-    return { kind: 'qualification', entries: raceOrder(field), slots: field.qualification.qualifiers.length };
+    return {
+      kind: 'qualification',
+      entries: raceOrder(field),
+      slots: field.qualification.qualifiers.length,
+      pairs: false,
+    };
+  }
+  if (fixedPairsMode(state)) {
+    // The pairs stay together to the end: the best four pairs go to the finals, so the list is of pairs.
+    const entries = rankedPairGroups(state)
+      .flat()
+      .map((pair) => pair.standing);
+    return { kind: 'overall', entries, slots: entries.length > FINALIST_PAIRS ? FINALIST_PAIRS : null, pairs: true };
   }
   const all = rankedStandingGroups(state).flat();
   if (usesMixedFinals(state) && gender) {
     const entries = all.filter((row) => genderOf(state, row.playerId) === gender);
     const slots = mixedFinalistCount(state);
-    return { kind: gender, entries, slots: entries.length > slots ? slots : null };
+    return { kind: gender, entries, slots: entries.length > slots ? slots : null, pairs: false };
   }
-  return { kind: 'overall', entries: all, slots: all.length > FINALIST_PLACES ? FINALIST_PLACES : null };
+  return {
+    kind: 'overall',
+    entries: all,
+    slots: all.length > FINALIST_PLACES ? FINALIST_PLACES : null,
+    pairs: false,
+  };
 }
 
 /** Where the athlete stands and why; null before the schedule is drawn or for an unknown player. */
@@ -110,18 +130,21 @@ export function placeExplanation(state: TournamentState, playerId: string): Plac
 }
 
 function overallPlace(state: TournamentState, playerId: string): PlaceExplanation | null {
-  const groups = rankedStandingGroups(state);
+  const pairs = fixedPairsMode(state);
+  // In fixed pairs the ranking is of pairs, each stood for by its first partner; a partner asks about the pair.
+  const groups = pairs
+    ? rankedPairGroups(state).map((group) => group.map((pair) => pair.standing))
+    : rankedStandingGroups(state);
   const all = groups.flat();
-  const open = openStandingTies(state, groups, FINALIST_PLACES);
-  const gender = genderOf(state, playerId);
+  const open = openStandingTies(state, groups, pairs ? FINALIST_PAIRS : FINALIST_PLACES);
+  const gender = pairs ? undefined : genderOf(state, playerId);
   const { kind, entries, slots } = decidingList(state, gender);
-  const index = entries.findIndex((row) => row.playerId === playerId);
+  const unitId = pairs ? (fixedPairsOf(state).find((pair) => pair.includes(playerId))?.[0] ?? playerId) : playerId;
+  const index = entries.findIndex((row) => row.playerId === unitId);
   if (index < 0) return null;
   const me = entries[index];
-  const partner = partnerOf(state, playerId);
   const neighbour = (step: -1 | 1): RankingNeighbour | null => {
-    let at = index + step;
-    while (entries[at] && entries[at].playerId === partner) at += step;
+    const at = index + step;
     const other = entries[at];
     if (!other) return null;
     const [upper, lower] = step < 0 ? [other, me] : [me, other];
@@ -130,6 +153,7 @@ function overallPlace(state: TournamentState, playerId: string): PlaceExplanatio
   const groupName = (state.groups ?? []).find((group) => group.playerIds.includes(playerId))?.name;
   return {
     list: kind,
+    pairs,
     place: index + 1,
     size: entries.length,
     slots,
@@ -233,6 +257,7 @@ function qualificationPlace(state: TournamentState, playerId: string): PlaceExpl
   const slots = qualification.qualifiers.length;
   return {
     list: 'qualification',
+    pairs: false,
     place: index + 1,
     size: race.length,
     slots,
@@ -260,7 +285,6 @@ function rankedReason(
 ): Separation {
   const criterion = criterionBetween(upper, lower);
   if (criterion) return criterion;
-  if (partnerOf(state, upper.playerId) === lower.playerId) return { kind: 'partners' };
   const run = scope.filter((row) => compareStandingCriteria(row, upper) === 0);
   const upperWins = directWinsAgainstTiedPlayers(state, upper.playerId, run);
   const lowerWins = directWinsAgainstTiedPlayers(state, lower.playerId, run);
@@ -312,12 +336,6 @@ function genderOf(state: TournamentState, playerId: string): 'male' | 'female' |
   return state.players.find((player) => player.id === playerId)?.gender;
 }
 
-function partnerOf(state: TournamentState, playerId: string): string | null {
-  if (!fixedPairsMode(state)) return null;
-  const pair = (state.fixedPairs ?? []).find((candidate) => candidate.includes(playerId));
-  return pair ? (pair[0] === playerId ? pair[1] : pair[0]) : null;
-}
-
 function sameSet(a: readonly PlayerStanding[], b: readonly PlayerStanding[]): boolean {
   if (a.length !== b.length) return false;
   const ids = new Set(a.map((row) => row.playerId));
@@ -334,8 +352,10 @@ export interface RankingRules {
   groupSize: number | null;
   /** Group-stage matches each athlete plays. */
   matchesEach: number;
-  /** Places in the finals (per gender in `mixed`). */
+  /** Places in the finals: athletes (per gender in `mixed`), or pairs in fixed pairs. */
   slots: number;
+  /** Fixed pairs: the pairs are ranked, and the best four play the finals as the pairs they are. */
+  pairs: boolean;
   /** 20-player format: the top two of every group, and the best-third places. */
   directSlots: number;
   thirdSlots: number;
@@ -345,7 +365,9 @@ export interface RankingRules {
 export function rankingRules(state: TournamentState): RankingRules {
   const groupCount = state.groups?.length ?? 0;
   const firstPlayer = state.players[0]?.id;
+  const pairs = fixedPairsMode(state);
   const base = {
+    pairs,
     players: state.players.length,
     groupTournament: isGroupTournament(state),
     groupCount,
@@ -362,7 +384,9 @@ export function rankingRules(state: TournamentState): RankingRules {
   return {
     ...base,
     variant: 'top',
-    slots: Math.min(FINALIST_PLACES, state.players.length),
+    slots: pairs
+      ? Math.min(FINALIST_PAIRS, fixedPairsOf(state).length)
+      : Math.min(FINALIST_PLACES, state.players.length),
     directSlots: 0,
     thirdSlots: 0,
   };

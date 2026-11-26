@@ -385,7 +385,7 @@ test.describe('accessibility (axe, no new violations)', () => {
     });
 
     test('fixed pairs of 12', async ({ page }) => {
-      await openBoard(page, pairs12(), 'Ranking geral');
+      await openBoard(page, pairs12(), 'Ranking de duplas');
       expect(check('ranking-board-pairs', await scan(page), readBaseline())).toEqual([]);
     });
 

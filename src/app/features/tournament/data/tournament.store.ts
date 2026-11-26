@@ -73,6 +73,7 @@ import {
 } from '../../../domain/tournament-play/scores';
 import { unresolvedTie } from '../../../domain/tournament-play/tie-draw';
 import * as tournamentFormat from '../../../domain/tournament-view/format';
+import { rankedPairGroups } from '../../../domain/tournament-view/pair-standings';
 import { rankingBoard } from '../../../domain/tournament-view/ranking-board';
 import * as tournamentProgress from '../../../domain/tournament-view/progress';
 import { groupQualification } from '../../../domain/tournament-view/group-qualification';
@@ -220,6 +221,8 @@ export class TournamentStore {
   readonly groupQualification = computed(() => tournamentFormat.usesGroupQualification(this.state()));
   /** The ranking of the group tournaments of 20 and 24 (groups as cards and one list with a cut line); null otherwise. */
   readonly board = computed(() => rankingBoard(this.state()));
+  /** Fixed pairs: the pairs stay together to the end, and the finals are between the best four pairs. */
+  readonly fixedPairsMode = computed(() => tournamentFormat.fixedPairsMode(this.state()));
   readonly usesMixedFinals = computed(() => tournamentFormat.usesMixedFinals(this.state()));
   readonly usesMixedFinalBracket = computed(() => tournamentFormat.usesMixedFinalBracket(this.state()));
   readonly mixedFinalistCount = computed(() => tournamentFormat.mixedFinalistCount(this.state()));
@@ -641,19 +644,27 @@ export class TournamentStore {
       const female = this.femaleStandings();
       const stage = tournamentFormat.usesGroupQualification(state)
         ? this.createQualificationBracket(state)
-        : this.usesMixedFinalBracket()
-          ? this.finals.createMixedBracket(male, female)
-          : this.usesMixedFinals()
-            ? this.finals.createMixedDirect(male, female)
-            : this.finals.create(this.standings());
+        : this.fixedPairsMode()
+          ? this.finals.createFixedPairs(
+              rankedPairGroups(state)
+                .flat()
+                .map((pair) => pair.playerIds),
+            )
+          : this.usesMixedFinalBracket()
+            ? this.finals.createMixedBracket(male, female)
+            : this.usesMixedFinals()
+              ? this.finals.createMixedDirect(male, female)
+              : this.finals.create(this.standings());
       this.drafts.set({});
       this.tournament.update((current) => ({ ...current, finals: stage }));
       this.persistence.save(
-        this.usesMixedFinalBracket()
-          ? this.transloco.translate('notices.finalsMixedBracket', {}, 'organizer/pt-BR')
-          : this.usesMixedFinals()
-            ? this.transloco.translate('notices.finalsMixedDirect', {}, 'organizer/pt-BR')
-            : this.transloco.translate('notices.finalsStandard', {}, 'organizer/pt-BR'),
+        this.fixedPairsMode()
+          ? this.transloco.translate('notices.finalsPairs', {}, 'organizer/pt-BR')
+          : this.usesMixedFinalBracket()
+            ? this.transloco.translate('notices.finalsMixedBracket', {}, 'organizer/pt-BR')
+            : this.usesMixedFinals()
+              ? this.transloco.translate('notices.finalsMixedDirect', {}, 'organizer/pt-BR')
+              : this.transloco.translate('notices.finalsStandard', {}, 'organizer/pt-BR'),
       );
       this.analytics.capture('finals_generated', {
         tournament_mode: state.tournamentMode,

@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "name": "Duplas fixas 8 empatadas",
+  "size": 8,
+  "courts": 2,
+  "gamesToWin": 4,
+  "roundCount": 7,
+  "players": [
+    { "id": "p1", "name": "Ana" },
+    { "id": "p2", "name": "Bia" },
+    { "id": "p3", "name": "Caio" },
+    { "id": "p4", "name": "Duda" },
+    { "id": "p5", "name": "Edu" },
+    { "id": "p6", "name": "Fabi" },
+    { "id": "p7", "name": "Gui" },
+    { "id": "p8", "name": "Hana" }
+  ],
+  "rounds": [
+    {
+      "number": 1,
+      "matches": [
+        {
+          "id": "group-group-1-r1-c1",
+          "court": 1,
+          "teamA": ["p1", "p2"],
+          "teamB": ["p5", "p6"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r1-c2",
+          "court": 2,
+          "teamA": ["p3", "p4"],
+          "teamB": ["p7", "p8"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 2,
+      "matches": [
+        {
+          "id": "group-group-1-r2-c1",
+          "court": 1,
+          "teamA": ["p3", "p4"],
+          "teamB": ["p1", "p2"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r2-c2",
+          "court": 2,
+          "teamA": ["p5", "p6"],
+          "teamB": ["p7", "p8"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    },
+    {
+      "number": 3,
+      "matches": [
+        {
+          "id": "group-group-1-r3-c1",
+          "court": 1,
+          "teamA": ["p7", "p8"],
+          "teamB": ["p1", "p2"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        },
+        {
+          "id": "group-group-1-r3-c2",
+          "court": 2,
+          "teamA": ["p3", "p4"],
+          "teamB": ["p5", "p6"],
+          "scoreA": 6,
+          "scoreB": 3,
+          "phase": "groups",
+          "groupId": "group-1"
+        }
+      ],
+      "restingPlayerIds": [],
+      "phase": "groups"
+    }
+  ],
+  "createdAt": "2026-11-13T10:00:00.000Z",
+  "tournamentMode": "groups",
+  "groupFormat": "fixed",
+  "fixedPairs": [
+    ["p1", "p2"],
+    ["p3", "p4"],
+    ["p5", "p6"],
+    ["p7", "p8"]
+  ],
+  "groups": [
+    {
+      "id": "group-1",
+      "name": "Grupo A",
+      "playerIds": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"],
+      "fixedPairs": [
+        ["p1", "p2"],
+        ["p3", "p4"],
+        ["p5", "p6"],
+        ["p7", "p8"]
+      ]
+    }
+  ]
+}

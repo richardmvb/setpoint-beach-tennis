@@ -6,7 +6,7 @@ import { FinalsService } from '../../core/finals.service';
 import { pairQualifiers } from '../../domain/tournament-play/qualifier-pairs';
 import { createStandingsMemo } from '../../domain/tournament-view/standings';
 import { groupQualification } from '../../domain/tournament-view/group-qualification';
-import { groups20State, strongerPairWins } from '../../testing/groups20';
+import { fixedPairsState, groups20State, strongerPairWins } from '../../testing/groups20';
 import { MemoryStorage } from '../../testing/memory-storage';
 import { PROFILE_KEY } from '../../core/profile';
 import { translocoTesting } from '../../testing/transloco-testing';
@@ -258,5 +258,16 @@ describe('SharedViewComponent: one section at a time', () => {
     expect(await screen.findByText('PARTICIPANTES · 1 / 8')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Ranking' })).toBeNull();
     expect(screen.queryByRole('navigation')).toBeNull();
+  });
+
+  it("fixed pairs: a partner sees their pair's line, with the pair named", async () => {
+    const local = new MemoryStorage();
+    local.setItem(PROFILE_KEY, JSON.stringify({ name: 'Ana', autoJoin: false }));
+    await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
+      live.given('live', { id: 'live-pairs', status: 'active', state: fixedPairsState(12, 3, null).state }),
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Ranking' }));
+    expect(await screen.findByText(/Sua dupla: Ana \+ Bia\./)).toBeTruthy();
+    expect(screen.getByText(/ª no ranking\. Hoje ela está/)).toBeTruthy();
   });
 });

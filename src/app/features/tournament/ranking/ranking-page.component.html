@@ -33,11 +33,13 @@
             {{
               store.qualification()
                 ? t('twelveQualified')
-                : store.usesMixedFinals()
-                ? t('mixedAvailable')
-                : store.earlyFinalsReady()
-                  ? t('earlyAvailable')
-                  : t('eightQualified')
+                : store.fixedPairsMode()
+                  ? t('fourPairs')
+                  : store.usesMixedFinals()
+                    ? t('mixedAvailable')
+                    : store.earlyFinalsReady()
+                      ? t('earlyAvailable')
+                      : t('eightQualified')
             }}
           </h2>
           <p class="muted">
@@ -46,13 +48,15 @@
                 ? store.state().finalsPairing === 'seededDraw'
                   ? pairing('pairingSeeded')
                   : pairing('pairingCrossed')
-                : store.usesMixedFinalBracket()
-                ? t('mixedBracketText')
-                : store.usesMixedFinals()
-                  ? t('mixedDirectText')
-                  : store.earlyFinalsReady()
-                    ? t('earlyText')
-                    : t('standardText')
+                : store.fixedPairsMode()
+                  ? t('pairsText')
+                  : store.usesMixedFinalBracket()
+                    ? t('mixedBracketText')
+                    : store.usesMixedFinals()
+                      ? t('mixedDirectText')
+                      : store.earlyFinalsReady()
+                        ? t('earlyText')
+                        : t('standardText')
             }}
           </p>
         </div>

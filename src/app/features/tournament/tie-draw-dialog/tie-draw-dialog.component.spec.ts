@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
+import { fixedPairs8State } from '../../../testing/groups20';
 import { storedTournament } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { tournamentFakes } from '../tournament.fakes';
@@ -103,5 +104,30 @@ describe('TieDrawDialogComponent', () => {
     await click('Cancelar');
     expect(close).toHaveBeenCalledWith(false);
     expect(tournament.state().tieBreakDraws).toHaveLength(1);
+  });
+});
+
+describe('TieDrawDialogComponent: fixed pairs', () => {
+  it('draws between pairs, named after both partners, and never between partners', async () => {
+    // Every match ends 6-3 to side A: the pairs that won tie with each other, and so do the pairs that lost.
+    const { tournament, click } = await openWith(fixedPairs8State(3).state);
+    const title = await screen.findByRole('heading', { level: 2 });
+    expect(title.textContent).toMatch(/^Empate entre as duplas em /);
+    expect(
+      screen.getByText('As duplas ficaram iguais em tudo. Sorteie a ordem das duplas para gerar as finais.'),
+    ).toBeTruthy();
+    // Each competitor is a pair: "Ana + Bia", with both avatars.
+    const participants = [...document.querySelectorAll('.tie-draw-participants > span')].map((item) =>
+      item.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(participants.length).toBeGreaterThan(1);
+    expect(participants.every((text) => / \+ /.test(text ?? ''))).toBe(true);
+
+    await click('Realizar sorteio');
+    const stored = tournament.state().tieBreakDraws!;
+    expect(stored).toHaveLength(1);
+    // Stored with the first partner of each pair: p1, p3, p5 or p7 (never a second partner).
+    expect(stored[0].playerIds.every((id) => ['p1', 'p3', 'p5', 'p7'].includes(id))).toBe(true);
+    expect(screen.getAllByRole('listitem').length).toBe(stored[0].order.length);
   });
 });

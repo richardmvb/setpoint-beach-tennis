@@ -22,6 +22,8 @@ export class RankingCompactComponent {
   readonly groups = input.required<BoardGroup[]>();
   readonly kind = input.required<RankingBoard['kind']>();
   readonly settled = input(false);
+  /** Fixed pairs: the cards list pairs. */
+  readonly pairs = input(false);
   readonly provisional = input(false);
   readonly highlightId = input('');
   readonly playerSelected = output<string>();

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import type { TournamentState } from '../../../core/models';
 import { translocoTesting } from '../../../testing/transloco-testing';
-import { groups20State, strongerPairWins } from '../../../testing/groups20';
+import { fixedPairsState, groups20State, strongerPairWins } from '../../../testing/groups20';
 import { match, namedPlayers, round, tournamentState } from '../../../testing/tournament-state';
 import { qualificationField } from '../../../domain/tournament-view/group-qualification';
 import { PLAYER_MATCHES_TITLE_ID, PlayerMatchesDialogComponent } from './player-matches-dialog.component';
@@ -145,5 +145,20 @@ describe('PlayerMatchesDialogComponent, position', () => {
     expect(screen.getByText(/12 vagas na final/)).toBeTruthy();
     expect(screen.getByText(/Classificado/)).toBeTruthy();
     expect(screen.queryByText('provisório')).toBeNull();
+  });
+
+  it('fixed pairs: both partners get the place of the pair, with the pair as the neighbour', async () => {
+    // The builder makes the pair with the highest player numbers the strongest: p11+p12 is first, p9+p10 second.
+    const { state } = fixedPairsState(12, 3);
+    await setup('p12', state);
+    expect(screen.getByText('1ª dupla no ranking')).toBeTruthy();
+    expect(screen.getByText(/4 vagas na final/)).toBeTruthy();
+    expect(screen.getByText(/À frente de .+ \+ .+ \(2º\)/)).toBeTruthy();
+  });
+
+  it('fixed pairs: the partner sees the same place', async () => {
+    const { state } = fixedPairsState(12, 3);
+    await setup('p11', state);
+    expect(screen.getByText('1ª dupla no ranking')).toBeTruthy();
   });
 });

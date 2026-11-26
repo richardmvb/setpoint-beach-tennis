@@ -26,6 +26,8 @@ export class RankingCutListComponent {
   readonly highlightId = input('');
   /** Athletes tied across the cut line, still to be drawn: a note says so, and their rows carry a chip. */
   readonly ties = input<CutTie[]>([]);
+  /** Fixed pairs: the rows are pairs, and the texts say so. */
+  readonly pairs = input(false);
   /** The group badge ("A1") next to each name: pointless when there is only one group. */
   readonly showGroup = input(true);
   /** Only the table and "Ver todos", with no card, title or note: for a folded section that already has its own title. */

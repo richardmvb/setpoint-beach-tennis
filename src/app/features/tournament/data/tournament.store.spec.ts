@@ -6,9 +6,9 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import type { Match, TournamentState } from '../../../core/models';
 import { OwnedSharedTournament } from '../../../core/owned-shared-tournament';
 import { SelectedRound } from '../../../core/selected-round';
-import { withTieDraw } from '../../../domain/tournament-play/tie-draw';
+import { unresolvedPairTie, withTieDraw } from '../../../domain/tournament-play/tie-draw';
 import { unresolvedQualificationTie } from '../../../domain/tournament-view/group-qualification';
-import { groups20State, strongerPairWins } from '../../../testing/groups20';
+import { fixedPairs8State, fixedPairsState, groups20State, strongerPairWins } from '../../../testing/groups20';
 import { storedTournament, tournamentState } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { ShareResultsSession } from '../share-results-dialog/share-results-session';
@@ -240,6 +240,38 @@ describe('TournamentStore: finals', () => {
     await store.generateFinal();
     expect(dialogs.opened).toHaveLength(1);
     expect(tournament.state().finals).toBeFalsy();
+  });
+
+  it('fixed pairs: the finals are between the best four pairs, which stay together', async () => {
+    const { store, tournament, hooks, dialogs } = setup(fixedPairsState(8, 3).state);
+    expect(store.fixedPairsMode()).toBe(true);
+    await store.generateFinal();
+    // The pairs rank cleanly, so there is nothing to draw (partners are never drawn against each other).
+    expect(dialogs.opened).toHaveLength(0);
+    const [final, third] = tournament.state().finals!.matches;
+    // The builder makes the pair with the higher player numbers the stronger one.
+    expect(final).toMatchObject({ finalKind: 'championship', teamA: ['p7', 'p8'], teamB: ['p5', 'p6'] });
+    expect(third).toMatchObject({ finalKind: 'third-place', teamA: ['p3', 'p4'], teamB: ['p1', 'p2'] });
+    expect(hooks.save).toHaveBeenCalledWith('Finais geradas com as quatro melhores duplas.');
+  });
+
+  it('fixed pairs: asks for a draw between tied pairs, and the finals follow the draw', async () => {
+    const { store, tournament, dialogs } = setup(fixedPairs8State(3).state);
+    dialogs.onOpen = () =>
+      tournament.update((state) => {
+        let next = state;
+        for (let step = 0; step < 4 && unresolvedPairTie(next).length; step++) {
+          const ids = unresolvedPairTie(next).map((row) => row.playerId);
+          next = withTieDraw(next, ids, [...ids].reverse(), '2026-11-26T10:00:00.000Z');
+        }
+        return next;
+      });
+    await store.generateFinal();
+    expect(dialogs.opened).toHaveLength(1);
+    const teams = tournament.state().finals!.matches.flatMap((match) => [match.teamA, match.teamB]);
+    // Whatever the draw gave, every team is one of the original pairs.
+    for (const team of teams)
+      expect(fixedPairs8State(3).pairs.some((pair) => pair[0] === team[0] && pair[1] === team[1])).toBe(true);
   });
 
   it('says so when the schedule is not over', async () => {

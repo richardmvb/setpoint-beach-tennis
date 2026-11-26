@@ -16,7 +16,7 @@
               {{ t('place.female', { place: e.place }) }}
             }
             @default {
-              {{ t('place.overall', { place: e.place }) }}
+              {{ e.pairs ? t('place.pairs', { place: e.place }) : t('place.overall', { place: e.place }) }}
             }
           }
         </b>
@@ -96,7 +96,11 @@
                 }
               }
               @case ('headToHead') {
-                {{ t('reason.headToHead', { count: s.tiedCount, upper: s.above, lower: s.below }) }}
+                {{
+                  e.pairs
+                    ? t('reason.headToHeadPairs', { count: s.tiedCount, upper: s.above, lower: s.below })
+                    : t('reason.headToHead', { count: s.tiedCount, upper: s.above, lower: s.below })
+                }}
               }
               @case ('draw') {
                 @if (s.crossGroup && s.groupOrderKept) {
@@ -126,9 +130,6 @@
               }
               @case ('qualificationRule') {
                 {{ s.abovePlace <= 2 ? t('reason.ruleDirect') : t('reason.ruleThirds') }}
-              }
-              @case ('partners') {
-                {{ t('reason.partners') }}
               }
               @default {
                 {{ s.kind === 'tied' && s.needsDraw ? t('reason.tiedDraw') : t('reason.tied') }}

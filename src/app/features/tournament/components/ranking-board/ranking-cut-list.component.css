@@ -9,6 +9,11 @@
   gap: var(--space-3);
 }
 
+.cut-head .mini-tag {
+  flex: none;
+  white-space: nowrap;
+}
+
 .cut-head h2 {
   margin: var(--space-1) 0 0;
 }

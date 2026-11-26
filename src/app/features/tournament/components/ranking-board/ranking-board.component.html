@@ -32,6 +32,7 @@
       <app-ranking-summary [board]="b" [highlightId]="highlightId()" (playerSelected)="select($event)" />
     } @else {
       <app-ranking-compact
+        [pairs]="b.pairs"
         [groups]="b.groups"
         [kind]="b.kind"
         [settled]="b.settled"
@@ -40,6 +41,7 @@
         (playerSelected)="select($event)"
       />
       <app-ranking-cut-list
+        [pairs]="b.pairs"
         [showGroup]="b.groups.length > 1"
         [entries]="b.list"
         [slots]="b.slots"

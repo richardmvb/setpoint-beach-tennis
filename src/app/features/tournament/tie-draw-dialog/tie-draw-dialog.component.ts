@@ -7,8 +7,9 @@ import { TournamentPersistence } from '../../../core/tournament-persistence';
 import { CLOCK } from '../../../core/ports/clock.port';
 import { RANDOM } from '../../../core/ports/random.port';
 import { shuffledOrder, tiedPositions, unresolvedTie, withTieDraw } from '../../../domain/tournament-play/tie-draw';
-import { usesGroupQualification } from '../../../domain/tournament-view/format';
+import { fixedPairsMode, usesGroupQualification } from '../../../domain/tournament-view/format';
 import { describeQualificationTie } from '../../../domain/tournament-view/group-qualification';
+import { rankedPairGroups } from '../../../domain/tournament-view/pair-standings';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
 import { PlayerAvatarComponent } from '../../player-avatar.component';
 
@@ -48,8 +49,14 @@ export class TieDrawDialogComponent {
   protected readonly result = signal<string[]>([]);
   /** Another tie waits after the one on screen. */
   protected readonly moreTies = computed(() => unresolvedTie(this.state(), this.standings()).length > 0);
+  /** Fixed pairs: the draw is between pairs, each stood for by its first partner (`PairStanding.pairId`). */
+  protected readonly pairs = computed(() => fixedPairsMode(this.state()));
+  private readonly pairRanking = computed(() => rankedPairGroups(this.state()).flat());
   protected readonly positions = computed(() =>
-    tiedPositions(this.playerIds(), this.standings().all)
+    tiedPositions(
+      this.playerIds(),
+      this.pairs() ? this.pairRanking().map((pair) => pair.standing) : this.standings().all,
+    )
       .map((position) => `${position}º`)
       .join(' e '),
   );
@@ -65,8 +72,15 @@ export class TieDrawDialogComponent {
       : tie;
   });
 
+  /** The athletes behind a drawn id: both partners of a pair, or the athlete. */
+  protected membersOf(id: string): string[] {
+    return this.pairs() ? (this.pairRanking().find((pair) => pair.pairId === id)?.playerIds ?? [id]) : [id];
+  }
+
   protected nameOf(id: string): string {
-    return this.state().players.find((player) => player.id === id)?.name ?? '';
+    return this.membersOf(id)
+      .map((member) => this.state().players.find((player) => player.id === member)?.name ?? '')
+      .join(' + ');
   }
 
   protected photoOf(id: string): string {

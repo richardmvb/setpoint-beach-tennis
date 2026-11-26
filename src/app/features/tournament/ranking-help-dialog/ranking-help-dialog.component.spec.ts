@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/angular';
 import { describe, expect, it, vi } from 'vitest';
 import tournamentPtBr from '../../../../../public/i18n/tournament/pt-BR.json';
 import type { TournamentState } from '../../../core/models';
-import { fixedPairs8State, groups20State, groups24State } from '../../../testing/groups20';
+import { fixedPairs8State, fixedPairsState, groups20State, groups24State } from '../../../testing/groups20';
 import { storedTournament, tournamentState } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { RANKING_HELP_TITLE_ID, RankingHelpDialogComponent } from './ranking-help-dialog.component';
@@ -57,10 +57,19 @@ describe('RankingHelpDialogComponent', () => {
     expect(screen.getByText('Os 8 vão para a final')).toBeTruthy();
   });
 
-  it('fixed pairs: the pair adds up together, and no pairing sentence', async () => {
+  it('fixed pairs: the pair adds up together, and the pairs stay together to the end', async () => {
     await setup(fixedPairs8State().state);
     expect(screen.getByText('A dupla soma junta')).toBeTruthy();
+    expect(screen.getByText('Vale o ranking das duplas, com as 4 duplas numa lista só')).toBeTruthy();
+    expect(screen.getByText('As 4 duplas vão para a final')).toBeTruthy();
+    expect(screen.getByText(/Título: a 1ª dupla contra a 2ª\. Disputa de 3º lugar: a 3ª contra a 4ª\./)).toBeTruthy();
     expect(screen.queryByText(/Título: 1º e 3º/)).toBeNull();
+  });
+
+  it('fixed pairs of 12: only the best four pairs go on', async () => {
+    await setup(fixedPairsState(12).state);
+    expect(screen.getByText('As 4 melhores duplas vão para a final')).toBeTruthy();
+    expect(screen.getByText('Vale o ranking das duplas, com as 6 duplas numa lista só')).toBeTruthy();
   });
 
   it('mixed early finals: one ranking per gender', async () => {
