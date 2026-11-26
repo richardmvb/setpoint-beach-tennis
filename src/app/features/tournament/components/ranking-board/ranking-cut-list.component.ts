@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { CardComponent } from '@ui/card/card.component';
@@ -9,7 +10,7 @@ import type { BoardEntry, RankingBoard } from '../../../../domain/tournament-vie
  */
 @Component({
   selector: 'app-ranking-cut-list',
-  imports: [TranslocoDirective, CardComponent],
+  imports: [NgTemplateOutlet, TranslocoDirective, CardComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ranking-cut-list.component.html',
@@ -22,6 +23,10 @@ export class RankingCutListComponent {
   readonly settled = input(false);
   readonly provisional = input(false);
   readonly highlightId = input('');
+  /** Only the table and "Ver todos", with no card, title or note: for a folded section that already has its own title. */
+  readonly bare = input(false);
+  /** The table's accessible name when it is bare (there is no heading to name it). */
+  readonly label = input('');
   readonly playerSelected = output<string>();
 
   protected readonly showAll = signal(false);

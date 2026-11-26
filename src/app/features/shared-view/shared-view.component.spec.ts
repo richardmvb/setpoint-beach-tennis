@@ -7,6 +7,8 @@ import { pairQualifiers } from '../../domain/tournament-play/qualifier-pairs';
 import { createStandingsMemo } from '../../domain/tournament-view/standings';
 import { groupQualification } from '../../domain/tournament-view/group-qualification';
 import { groups20State, strongerPairWins } from '../../testing/groups20';
+import { MemoryStorage } from '../../testing/memory-storage';
+import { PROFILE_KEY } from '../../core/profile';
 import { translocoTesting } from '../../testing/transloco-testing';
 import { storedTournament } from '../../testing/tournament-state';
 import { sharedSnapshot, type SharedViewFakeOptions, sharedViewFakes } from './shared-view.fakes';
@@ -103,8 +105,9 @@ describe('SharedViewComponent', () => {
         state: { ...played, finals: finals.createByeBracket(pairs) },
       }),
     );
-    // The group stage is over and the finals exist: the finals come first and the board folds into one row.
-    expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
+    // The group stage is over and the finals exist: the finals come first and the board folds into one row. A guest
+    // starts on Resumo.
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
     const board = document.getElementById('guest-ranking')!;
     expect(board.tagName).toBe('APP-RANKING-BOARD');
     expect(board.querySelector('details')?.open).toBe(false);
@@ -130,5 +133,74 @@ describe('SharedViewComponent', () => {
     );
     expect(await screen.findByRole('heading', { name: 'Finais em andamento' })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Chave da fase final' })).toBeNull();
+  });
+});
+
+describe('SharedViewComponent: the ranking board views', () => {
+  /** Ana (p1) is in the tournament; the guest is her, by the name saved on the device. */
+  const withProfile = (): MemoryStorage => {
+    const local = new MemoryStorage();
+    local.setItem(PROFILE_KEY, JSON.stringify({ name: 'Ana', autoJoin: false }));
+    return local;
+  };
+
+  it('a guest opens on Resumo with their own line, and the choice is remembered for guests only', async () => {
+    const local = withProfile();
+    await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
+      live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3) }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Resumo' }).getAttribute('aria-pressed')).toBe('true');
+    // Nothing is scored yet in this tournament: the line says "hoje" and counts the matches left.
+    expect(screen.getByText(/Você: Ana\./)).toBeTruthy();
+    expect(screen.getByText(/Jogos restantes: 3\./)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compacto' }));
+    expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Quem vai para a final' })).toBeNull();
+    // The guest is marked in the list too, next to their name.
+    expect(screen.getAllByText('VOCÊ').length).toBeGreaterThan(0);
+    expect(local.getItem('setpoint.ranking.view.guest')).toBe('compact');
+    expect(local.getItem('setpoint.ranking.view.host')).toBeNull();
+  });
+
+  it('a guest comes back to the view they chose', async () => {
+    const local = withProfile();
+    local.setItem('setpoint.ranking.view.guest', 'compact');
+    await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
+      live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('says where the guest stands once the group stage is over, without "hoje"', async () => {
+    await setup({ url: { liveToken: 'live' }, local: withProfile() }, ({ live }) =>
+      live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.getByText(/Você: Ana\./)).toBeTruthy();
+    // The sentence is the text of the line itself, next to the bold name.
+    const line = screen.getByText(/º no Grupo [A-E]\. Você (passa|ficou fora)/);
+    expect(line.textContent).not.toContain('Hoje');
+    expect(line.textContent).not.toContain('Jogos restantes');
+  });
+
+  it('has no line for a guest whose name is not in the tournament', async () => {
+    const local = new MemoryStorage();
+    local.setItem(PROFILE_KEY, JSON.stringify({ name: 'Visitante', autoJoin: false }));
+    await setup({ url: { liveToken: 'live' }, local }, ({ live }) =>
+      live.given('live', { id: 'live-20', status: 'active', state: groups20State(4, 3) }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.queryByText(/Você:/)).toBeNull();
+  });
+
+  it('the admin viewer starts on Compacto, like the organizer', async () => {
+    await setup({ url: { dashboardViewerId: 't1', dashboardViewerSource: 'local' } }, ({ dashboard }) =>
+      dashboard.given('local', { id: 't1', status: 'active', state: groups20State(4, 3, strongerPairWins) }),
+    );
+    expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

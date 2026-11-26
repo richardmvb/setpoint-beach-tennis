@@ -1,0 +1,205 @@
+:host {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.summary-card h2 {
+  margin: var(--space-1) 0 var(--space-3);
+  font-size: 20px;
+}
+
+.provisional {
+  padding: 1px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--border);
+}
+
+.progress i {
+  display: block;
+  height: 100%;
+  background: var(--chip-secure-fg);
+}
+
+.progress-text {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.counts.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.count {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2) var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.count b {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.count.direct {
+  border-color: var(--chip-secure-border);
+  background: var(--chip-secure-bg);
+  color: var(--chip-secure-fg);
+}
+
+.count.third {
+  border-color: var(--border);
+  background: var(--orange-soft);
+  color: var(--accent-text);
+}
+
+/* --danger, not --chip-out-fg: at 11px the chip colour is 4.43:1 on this tint, under the 4.5:1 minimum. */
+.count.out {
+  border-color: var(--chip-out-border);
+  background: var(--chip-out-bg);
+  color: var(--danger);
+}
+
+.you {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--green-2);
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rows {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.rows-title {
+  margin: var(--space-1) 0 0;
+  font-size: 18px;
+}
+
+.group-row,
+.fold {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.group-row summary,
+.fold summary {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) var(--space-8) var(--space-3) var(--space-3);
+  font-size: 13px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.group-row summary::-webkit-details-marker,
+.fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.group-row summary::after,
+.fold summary::after {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  color: var(--muted);
+  content: '▾';
+  transform: translateY(-50%);
+}
+
+.group-row[open] summary::after,
+.fold[open] summary::after {
+  content: '▴';
+}
+
+.group-name,
+.fold summary {
+  font-weight: 800;
+}
+
+.group-row summary:focus-visible,
+.fold summary:focus-visible {
+  border-radius: var(--radius-md);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.group-line {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.line-item {
+  white-space: nowrap;
+}
+
+.mark {
+  font-weight: 800;
+}
+
+.mark.direct {
+  color: var(--chip-secure-fg);
+}
+
+.mark.third {
+  color: var(--accent-text);
+}
+
+.mark.out {
+  color: var(--chip-out-fg);
+}
+
+.fold-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.group-row app-ranking-group-table,
+.fold app-ranking-cut-list {
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

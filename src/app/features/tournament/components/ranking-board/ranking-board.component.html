@@ -16,26 +16,38 @@
   }
   <ng-template #content>
     <app-ranking-criteria (helpRequested)="helpRequested.emit()" />
+    <div class="view-switch" role="group" [attr.aria-label]="t('view.label')">
+      <button type="button" [attr.aria-pressed]="view() === 'summary'" (click)="setView('summary')">
+        {{ t('view.summary') }}
+      </button>
+      <button type="button" [attr.aria-pressed]="view() === 'compact'" (click)="setView('compact')">
+        {{ t('view.compact') }}
+      </button>
+    </div>
     @if (!hint.seen()) {
       <p class="hint"><span aria-hidden="true">›</span> {{ t('hint') }}</p>
     }
     <span class="visually-hidden" id="board-open-description">{{ t('openDescription') }}</span>
-    <app-ranking-compact
-      [groups]="b.groups"
-      [kind]="b.kind"
-      [settled]="b.settled"
-      [provisional]="b.provisional"
-      [highlightId]="highlightId()"
-      (playerSelected)="select($event)"
-    />
-    <app-ranking-cut-list
-      [entries]="b.list"
-      [slots]="b.slots"
-      [kind]="b.kind"
-      [settled]="b.settled"
-      [provisional]="b.provisional"
-      [highlightId]="highlightId()"
-      (playerSelected)="select($event)"
-    />
+    @if (view() === 'summary') {
+      <app-ranking-summary [board]="b" [highlightId]="highlightId()" (playerSelected)="select($event)" />
+    } @else {
+      <app-ranking-compact
+        [groups]="b.groups"
+        [kind]="b.kind"
+        [settled]="b.settled"
+        [provisional]="b.provisional"
+        [highlightId]="highlightId()"
+        (playerSelected)="select($event)"
+      />
+      <app-ranking-cut-list
+        [entries]="b.list"
+        [slots]="b.slots"
+        [kind]="b.kind"
+        [settled]="b.settled"
+        [provisional]="b.provisional"
+        [highlightId]="highlightId()"
+        (playerSelected)="select($event)"
+      />
+    }
   </ng-template>
 </ng-container>

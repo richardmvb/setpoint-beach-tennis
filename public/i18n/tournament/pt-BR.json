@@ -145,6 +145,30 @@
     "provisionalNote": "Ordem provisória: muda a cada placar até o fim da fase de grupos.",
     "count": "{{ count }} atletas",
     "you": "VOCÊ",
+    "viewer": {
+      "title": "Você: {{ name }}.",
+      "direct": {
+        "today": "{{ place }}º no Grupo {{ group }}. Hoje você passa direto.",
+        "final": "{{ place }}º no Grupo {{ group }}. Você passa direto."
+      },
+      "bestThird": {
+        "today": "{{ place }}º no Grupo {{ group }}. Hoje você passa como melhor 3º.",
+        "final": "{{ place }}º no Grupo {{ group }}. Você passa como melhor 3º."
+      },
+      "out": {
+        "today": "{{ place }}º no Grupo {{ group }}. Hoje você fica fora da final.",
+        "final": "{{ place }}º no Grupo {{ group }}. Você ficou fora da final."
+      },
+      "inside": {
+        "today": "{{ place }}º no ranking geral. Hoje você está entre os {{ slots }} que vão para a final.",
+        "final": "{{ place }}º no ranking geral. Você está entre os {{ slots }} que vão para a final."
+      },
+      "outside": {
+        "today": "{{ place }}º no ranking geral. Hoje você está fora dos {{ slots }} que vão para a final.",
+        "final": "{{ place }}º no ranking geral. Você ficou fora dos {{ slots }} que vão para a final."
+      },
+      "left": "Jogos restantes: {{ count }}."
+    },
     "badge": "Grupo {{ group }}",
     "badgePlace": "Grupo {{ group }}, {{ place }}º",
     "groups": {
@@ -185,6 +209,27 @@
       "kicker": "FASE DE GRUPOS",
       "title": "Fase de grupos encerrada",
       "summary": "{{ slots }} na final · {{ name }} foi o 1º"
+    },
+    "view": {
+      "label": "Ver o ranking",
+      "summary": "Resumo",
+      "compact": "Compacto"
+    },
+    "summary": {
+      "kicker": "FASE DE GRUPOS",
+      "title": "Quem vai para a final",
+      "progressLabel": "Jogos da fase de grupos",
+      "progress": "{{ done }} de {{ total }} jogos",
+      "direct": "passam direto",
+      "third": "melhores 3º",
+      "inFinal": "vão para a final",
+      "out": "ficam de fora",
+      "winsShort": "{{ count }}V",
+      "raceTitle": "Ordem dos {{ slots }} classificados",
+      "overallTitle": "Ranking geral ({{ count }} atletas)",
+      "individualTitle": "Ranking individual ({{ count }} atletas)",
+      "individualNote": "só informativo neste formato",
+      "individualLabel": "Ranking individual"
     }
   },
   "shareResults": {

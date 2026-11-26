@@ -375,6 +375,55 @@ test.describe('accessibility (axe, no new violations)', () => {
         expect(check('ranking-board-phone', await scan(page), readBaseline())).toEqual([]);
       });
     });
+
+    /** Resumo with every group open and both lists unfolded: the most it ever shows. */
+    async function openSummary(page: Page, dark = false): Promise<void> {
+      await page.addInitScript(
+        (init: { value: string; dark: boolean }) => {
+          localStorage.setItem('setpoint.ranking.view.host', 'summary');
+          if (init.dark) localStorage.setItem('setpoint.theme.v1', 'dark');
+          if (!localStorage.getItem('setpoint.tournament.v1'))
+            localStorage.setItem('setpoint.tournament.v1', init.value);
+        },
+        { value: groups20(), dark },
+      );
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Quem vai para a final' })).toBeVisible();
+      for (const summary of await page.locator('details > summary').all()) {
+        const details = summary.locator('xpath=..');
+        if ((await details.getAttribute('open')) === null) await summary.click();
+      }
+      await expect(page.getByRole('table', { name: 'Corrida para a final' })).toBeVisible();
+    }
+
+    test('Resumo, light', async ({ page }) => {
+      await openSummary(page);
+      expect(check('ranking-board-summary', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test('Resumo, dark', async ({ page }) => {
+      await openSummary(page, true);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      expect(check('dark-ranking-board-summary', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test.describe('the live link, on a phone', () => {
+      test.use({ viewport: { width: 390, height: 844 } });
+      test('Resumo with the guest line', async ({ page }) => {
+        await page.addInitScript(() =>
+          localStorage.setItem('setpoint.profile.v1', JSON.stringify({ name: 'Diego', autoJoin: false })),
+        );
+        const supabase = await mockSupabase(page);
+        supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state: JSON.parse(groups20()) });
+        await page.goto('/?live=live-read-token-123');
+        await expect(page.getByText(/Você: Diego\./)).toBeVisible();
+        expect(check('guest-ranking-summary-phone', await scan(page), readBaseline())).toEqual([]);
+      });
+    });
   });
 
   test.describe('dark theme', () => {

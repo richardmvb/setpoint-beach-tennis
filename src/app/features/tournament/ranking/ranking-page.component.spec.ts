@@ -330,3 +330,102 @@ describe('RankingPageComponent: 24 players in groups', () => {
     expect(screen.getByRole('heading', { name: 'Oito classificados' })).toBeTruthy();
   });
 });
+
+describe('RankingPageComponent: the Resumo view', () => {
+  it('opens on Compacto for the organizer, and Resumo is one tap away, remembered on this device', async () => {
+    const { local, container } = await show(groups20State(4, 3, strongerPairWins));
+    expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.queryByRole('heading', { name: 'Quem vai para a final' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resumo' }));
+    expect(screen.getByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Resumo' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.queryByRole('article', { name: 'Corrida para a final' })).toBeNull();
+    expect(local.getItem('setpoint.ranking.view.host')).toBe('summary');
+    expect(container.querySelector('app-ranking-summary')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compacto' }));
+    expect(screen.getByRole('article', { name: 'Corrida para a final' })).toBeTruthy();
+    expect(local.getItem('setpoint.ranking.view.host')).toBe('compact');
+  });
+
+  it('opens on the view this device chose last time', async () => {
+    await show(groups20State(4, 3, strongerPairWins), { 'setpoint.ranking.view.host': 'summary' });
+    expect(screen.getByRole('heading', { name: 'Quem vai para a final' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Resumo' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('falls back to the default for a stored value it does not know', async () => {
+    await show(groups20State(4, 3, strongerPairWins), { 'setpoint.ranking.view.host': 'wide' });
+    expect(screen.getByRole('button', { name: 'Compacto' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('counts who goes on, with the progress of the group stage, and has no line about the organizer', async () => {
+    const open = groups20State(4, 3, strongerPairWins);
+    open.rounds[0].matches[0].scoreA = null;
+    open.rounds[0].matches[0].scoreB = null;
+    await show(open, { 'setpoint.ranking.view.host': 'summary' });
+    const counts = (label: RegExp): string =>
+      screen.getByText(label).closest('.count')!.textContent.replace(/\s+/g, ' ');
+    // 5 groups of 4: the top two of each, and the 2 best third places.
+    expect(counts(/passam direto/)).toContain('10');
+    expect(counts(/melhores 3º/)).toContain('2');
+    expect(counts(/ficam de fora/)).toContain('8');
+    expect(screen.getByText('14 de 15 jogos')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Jogos da fase de grupos' }).getAttribute('aria-valuenow')).toBe(
+      '14',
+    );
+    expect(screen.getByText('provisório')).toBeTruthy();
+    expect(screen.queryByText(/Você:/)).toBeNull();
+  });
+
+  it('shows the groups as folding rows, with the first group open and who goes on in a line', async () => {
+    const { container } = await show(groups20State(4, 3, strongerPairWins), {
+      'setpoint.ranking.view.host': 'summary',
+    });
+    const rows = [...container.querySelectorAll<HTMLDetailsElement>('details.group-row')];
+    expect(rows).toHaveLength(5);
+    expect(rows.map((row) => row.open)).toEqual([true, false, false, false, false]);
+    // A closed row names the three that can go on, with wins and the mark of the finished group stage.
+    expect(within(rows[1]).getByText('Grupo B')).toBeTruthy();
+    expect(rows[1].querySelector('summary')!.textContent).toMatch(/Classificado/);
+    expect(rows[1].querySelector('summary')!.textContent).toMatch(/\d+V/);
+    // The open one holds its table, and the table opens the athlete.
+    const table = within(rows[0]).getByRole('table', { name: 'Tabela do Grupo A' });
+    const store = TestBed.inject(TournamentStore);
+    const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
+    fireEvent.click(within(table).getAllByRole('button')[0]);
+    expect(open).toHaveBeenCalledWith(store.board()!.groups[0].entries[0].playerId);
+  });
+
+  it('keeps the two lists folded: the race to the final and the individual ranking, informative only', async () => {
+    const { container } = await show(groups20State(4, 3, strongerPairWins), {
+      'setpoint.ranking.view.host': 'summary',
+    });
+    const folds = [...container.querySelectorAll<HTMLDetailsElement>('details.fold')];
+    expect(folds.map((fold) => fold.open)).toEqual([false, false]);
+    expect(within(folds[0]).getByText('Ordem dos 12 classificados')).toBeTruthy();
+    expect(within(folds[1]).getByText('Ranking individual (20 atletas)')).toBeTruthy();
+    expect(within(folds[1]).getByText('só informativo neste formato')).toBeTruthy();
+    // The race list has its cut line; the individual list has none.
+    expect(within(folds[0]).getByRole('table', { name: 'Corrida para a final' })).toBeTruthy();
+    expect(within(folds[0]).getByText('LINHA DE CORTE · 12 VAGAS')).toBeTruthy();
+    expect(within(folds[1]).queryByText(/LINHA DE CORTE/)).toBeNull();
+    expect(within(folds[1]).getAllByRole('row')).toHaveLength(21);
+  });
+
+  it('24 players: counts the 8 that go on and the 16 that do not, with the overall ranking folded', async () => {
+    const { container } = await show(groups24State(2, strongerPairWins), { 'setpoint.ranking.view.host': 'summary' });
+    const count = (label: RegExp): string =>
+      screen.getByText(label).closest('.count')!.textContent.replace(/\s+/g, ' ');
+    expect(count(/vão para a final/)).toContain('8');
+    expect(count(/ficam de fora/)).toContain('16');
+    expect(screen.queryByText(/passam direto/)).toBeNull();
+    const folds = [...container.querySelectorAll<HTMLDetailsElement>('details.fold')];
+    expect(folds).toHaveLength(1);
+    expect(within(folds[0]).getByText('Ranking geral (24 atletas)')).toBeTruthy();
+    // The closed group rows name the two best placed athletes by their overall place.
+    const first = container.querySelectorAll<HTMLDetailsElement>('details.group-row')[1];
+    expect(first.querySelector('summary')!.textContent).toMatch(/\d+º/);
+  });
+});

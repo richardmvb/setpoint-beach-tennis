@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output, signal } from '@angu
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { CardComponent } from '@ui/card/card.component';
 import type { BoardEntry, BoardGroup, RankingBoard } from '../../../../domain/tournament-view/ranking-board';
+import { RankingGroupTableComponent } from './ranking-group-table.component';
 
 /**
  * The groups as small cards, two to a row on a phone: each athlete's name with the wins (20 players, with the mark
@@ -10,7 +11,7 @@ import type { BoardEntry, BoardGroup, RankingBoard } from '../../../../domain/to
  */
 @Component({
   selector: 'app-ranking-compact',
-  imports: [TranslocoDirective, CardComponent],
+  imports: [TranslocoDirective, CardComponent, RankingGroupTableComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './ranking-compact.component.html',
@@ -41,9 +42,5 @@ export class RankingCompactComponent {
 
   protected isMine(entry: BoardEntry): boolean {
     return !!this.highlightId() && entry.playerId === this.highlightId();
-  }
-
-  protected signed(value: number): string {
-    return value > 0 ? `+${value}` : `${value}`;
   }
 }
