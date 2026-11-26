@@ -1,0 +1,254 @@
+:host {
+  display: block;
+}
+
+.groups-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.groups-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.groups-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.provisional {
+  padding: 1px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+@media (width >= 700px) {
+  .mini-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* auto-fit: four, five or six groups stretch to fill the row instead of leaving empty columns. */
+@media (width >= 1000px) {
+  .mini-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+.mini-card {
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+/* An open group takes the whole row, so its table has room. */
+.mini-card.is-open {
+  grid-column: 1 / -1;
+}
+
+.mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mini-head h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.mini-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -6px -6px -6px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mini-toggle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.mini-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mini-card .mini-row {
+  min-height: 32px;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  font-size: 13px;
+}
+
+.mini-card .mini-row.is-mine {
+  border-radius: var(--radius-sm);
+  background: var(--green-soft);
+  font-weight: 800;
+}
+
+.mini-card .mini-row.is-out {
+  color: var(--muted);
+}
+
+.mini-card .mini-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-card .mini-row:hover .mini-name {
+  text-decoration: underline;
+}
+
+.mini-card .mini-value {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.mark {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mark.direct {
+  color: var(--chip-secure-fg);
+}
+
+.mark.third {
+  color: var(--accent-text);
+}
+
+.mark.out {
+  color: var(--chip-out-fg);
+}
+
+.legend {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.group-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* Two classes in every selector: the ranking and guest pages size table columns by position on a phone. */
+.group-table .g-pos {
+  width: 30px;
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+}
+
+.group-table th.g-pos,
+.group-table th.g-who,
+.group-table th.g-num {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.group-table .g-who {
+  padding: 0 var(--space-1);
+  text-align: left;
+}
+
+.group-table .g-num {
+  width: 42px;
+  padding: var(--space-1);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.group-table .g-open {
+  width: 18px;
+  padding: 0 var(--space-1) 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  text-align: right;
+}
+
+.group-table tbody tr {
+  position: relative;
+  border-top: 1px solid var(--border);
+}
+
+.group-table tbody tr.is-mine .g-pos,
+.group-table tbody tr.is-mine .g-who,
+.group-table tbody tr.is-mine .g-num,
+.group-table tbody tr.is-mine .g-open {
+  background: var(--green-soft);
+}
+
+.group-table .row-button {
+  min-height: 40px;
+  gap: var(--space-2);
+}
+
+.group-table .row-button::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.group-table .g-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-table tbody tr:hover .g-name {
+  text-decoration: underline;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

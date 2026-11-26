@@ -31,6 +31,24 @@ describe('groupTables', () => {
     });
   });
 
+  it('follows the overall order: a group tie that head-to-head decides is not left to the names', () => {
+    // Caio (p3) and Edu (p5) tie and never met; Ana (p1) and Bia (p2) each win once 4-3 / lose once 3-4 (1 set, 7-7),
+    // and Bia beat Ana directly, so Bia comes first although Ana comes first alphabetically.
+    const state = tournamentState({
+      tournamentMode: 'groups',
+      groupFormat: 'rotating',
+      players: namedPlayers(6),
+      groups: [{ id: 'g1', name: 'Grupo A', playerIds: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'] }],
+      rounds: [
+        round(1, [match('m1', ['p2', 'p3'], ['p1', 'p4'], 4, 3)], ['p5', 'p6']),
+        round(2, [match('m2', ['p1', 'p5'], ['p4', 'p6'], 4, 3)], ['p2', 'p3']),
+        round(3, [match('m3', ['p3', 'p5'], ['p2', 'p6'], 4, 3)], ['p1', 'p4']),
+      ],
+    });
+    const [table] = tables(state);
+    expect(table.entries.map((entry) => entry.label)).toEqual(['Caio', 'Edu', 'Bia', 'Ana', 'Duda', 'Fabi']);
+  });
+
   it('shows a fixed pair as one row with both names', () => {
     const state = tournamentState({
       tournamentMode: 'groups',

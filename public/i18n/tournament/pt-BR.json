@@ -137,6 +137,56 @@
     },
     "tip": "Toque num atleta do ranking para ver a posição dele e o que decidiu cada desempate."
   },
+  "board": {
+    "hint": "Toque num atleta para ver os jogos e a posição",
+    "openDescription": "Abre os jogos e a posição do atleta",
+    "open": "Abrir",
+    "provisional": "provisório",
+    "provisionalNote": "Ordem provisória: muda a cada placar até o fim da fase de grupos.",
+    "count": "{{ count }} atletas",
+    "you": "VOCÊ",
+    "badge": "Grupo {{ group }}",
+    "badgePlace": "Grupo {{ group }}, {{ place }}º",
+    "groups": {
+      "title": "Grupos",
+      "winsNote": "vitórias de cada atleta",
+      "placeNote": "lugar no ranking geral",
+      "toggle": "Ver a tabela do {{ name }}",
+      "caption": "Tabela do {{ name }}",
+      "table": {
+        "place": "POS.",
+        "overall": "GERAL",
+        "player": "ATLETA",
+        "wins": "VIT.",
+        "balance": "SALDO",
+        "matches": "JOGOS"
+      }
+    },
+    "race": {
+      "kicker": "FASE FINAL · {{ slots }} VAGAS",
+      "title": "Corrida para a final",
+      "settled": "Ordem final da fase de grupos. A semente 1 é a melhor."
+    },
+    "overall": {
+      "kicker": "RANKING GERAL · {{ slots }} VAGAS NA FINAL",
+      "title": "Ranking geral",
+      "settled": "Ordem final da fase de grupos."
+    },
+    "list": {
+      "place": "POS.",
+      "player": "ATLETA",
+      "wins": "VIT.",
+      "balance": "SALDO"
+    },
+    "cut": "LINHA DE CORTE · {{ slots }} VAGAS",
+    "showAll": "Ver todos ({{ count }})",
+    "showLess": "Mostrar só até a linha de corte",
+    "folded": {
+      "kicker": "FASE DE GRUPOS",
+      "title": "Fase de grupos encerrada",
+      "summary": "{{ slots }} na final · {{ name }} foi o 1º"
+    }
+  },
   "shareResults": {
     "kicker": "CARD PARA INSTAGRAM",
     "title": "Personalize e confira",
@@ -312,24 +362,6 @@
     "methodExact": "Cálculo exato de todos os cenários possíveis.",
     "methodSimulated": "Estimativa por simulação; \"garantido\" e \"eliminado\" só aparecem quando são matematicamente certos.",
     "methodTail": "Todos os jogos restantes são considerados equilibrados. Empates em vitórias são decididos pelo saldo de games e depois pelo confronto direto."
-  },
-  "qualifiers": {
-    "kicker": "FASE FINAL",
-    "title": "Classificados",
-    "count": "{{ count }} atletas",
-    "provisional": "Ordem provisória: muda a cada placar até o fim da fase de grupos.",
-    "settled": "Ordem final da fase de grupos. A semente 1 é a melhor.",
-    "seed": "SEMENTE",
-    "player": "JOGADOR",
-    "group": "GRUPO",
-    "groupPlace": "{{ group }} · {{ place }}º",
-    "winsShort": "VIT.",
-    "balance": "SALDO",
-    "gamesForShort": "PRÓ",
-    "rulesKicker": "COMO ESTA ORDEM É FEITA",
-    "ruleHow": "Classificam-se os 2 primeiros de cada grupo e os melhores 3º colocados, até completar 12 atletas.",
-    "ruleOrder": "Os 12 são ordenados por vitórias, depois saldo de games, depois games pró e, se ainda empatarem, pelo sorteio registrado.",
-    "ruleGroupOrder": "Atletas do mesmo grupo nunca invertem a ordem que tiveram no grupo."
   },
   "bracket": {
     "label": "Chave da fase final",

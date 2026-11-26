@@ -103,9 +103,16 @@ describe('SharedViewComponent', () => {
         state: { ...played, finals: finals.createByeBracket(pairs) },
       }),
     );
-    expect(await screen.findByRole('heading', { name: 'Classificados' })).toBeTruthy();
+    // The group stage is over and the finals exist: the finals come first and the board folds into one row.
+    expect(await screen.findByRole('heading', { name: 'Corrida para a final' })).toBeTruthy();
+    const board = document.getElementById('guest-ranking')!;
+    expect(board.tagName).toBe('APP-RANKING-BOARD');
+    expect(board.querySelector('details')?.open).toBe(false);
+    expect(screen.getByText('Fase de grupos encerrada')).toBeTruthy();
+    const bracketRegion = screen.getByRole('region', { name: 'Chave da fase final' });
+    expect(bracketRegion.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getAllByText(/^Descansam: /).length).toBeGreaterThan(0);
-    expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
+    expect(bracketRegion).toBeTruthy();
     expect(screen.getByRole('article', { name: 'Quartas 1' })).toBeTruthy();
     expect(screen.getAllByText('BYE')).toHaveLength(2);
     expect(screen.getByText('Vencedor QF2')).toBeTruthy();

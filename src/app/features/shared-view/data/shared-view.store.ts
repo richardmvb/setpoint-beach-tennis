@@ -17,8 +17,7 @@ import { URL_STATE } from '../../../core/routing/url-state';
 import { ShareCardService } from '../../../core/share-card.service';
 import { type TournamentPhase, tournamentPhase } from '../../../core/state-machines';
 import { StorageService } from '../../../core/storage.service';
-import { isGroupTournament, isMixedDoubles, usesGroupQualification } from '../../../domain/tournament-view/format';
-import { groupQualification } from '../../../domain/tournament-view/group-qualification';
+import { isGroupTournament, isMixedDoubles } from '../../../domain/tournament-view/format';
 import { groupTables } from '../../../domain/tournament-view/group-tables';
 import {
   completedMatches,
@@ -30,6 +29,7 @@ import { type BracketView, finalsBracket } from '../../../domain/tournament-view
 import { historyRounds, spotlightRound, viewerRounds } from '../../../domain/tournament-view/rounds';
 import type { FinalWinnerSide } from '../../../domain/tournament-view/scoring';
 import { normalizeSharedState } from '../../../domain/tournament-view/shared-state';
+import { rankingBoard } from '../../../domain/tournament-view/ranking-board';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
 import { ProjectionController } from '../../tournament/projection/projection-controller';
 import type { SharedViewError } from './shared-view-errors';
@@ -149,10 +149,10 @@ export class SharedViewStore {
     const state = this.tournament();
     return state ? this.standingsMemo(state) : null;
   });
-  /** The 20-player format: who goes on to the finals (null for the other formats). */
-  readonly qualification = computed(() => {
+  /** The ranking of the group tournaments of 20 and 24 (groups as cards and one list with a cut line); null otherwise. */
+  readonly board = computed(() => {
     const state = this.tournament();
-    return state && state.rounds.length && usesGroupQualification(state) ? groupQualification(state) : null;
+    return state ? rankingBoard(state) : null;
   });
   readonly groupTables = computed(() => {
     const state = this.tournament();

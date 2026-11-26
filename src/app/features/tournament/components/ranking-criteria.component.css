@@ -46,8 +46,9 @@
   font-weight: 600;
 }
 
-.criteria-strip li + li::before {
-  margin-right: var(--space-1);
+/* The separator follows its item, so a wrapped line never starts with one. */
+.criteria-strip li:not(:last-child)::after {
+  margin-left: var(--space-1);
   color: var(--muted);
   content: '›';
 }

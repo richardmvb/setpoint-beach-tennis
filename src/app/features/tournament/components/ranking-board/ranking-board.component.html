@@ -1,0 +1,41 @@
+<ng-container *transloco="let t; prefix: 'tournament.board'">
+  @let b = board();
+  @if (b.folded) {
+    <details class="folded">
+      <summary>
+        <span class="card-kicker">{{ t('folded.kicker') }}</span>
+        <b>{{ t('folded.title') }}</b>
+        <span class="folded-summary">{{ t('folded.summary', { slots: b.slots, name: b.leaderName }) }}</span>
+      </summary>
+      <div class="folded-body">
+        <ng-container *ngTemplateOutlet="content" />
+      </div>
+    </details>
+  } @else {
+    <ng-container *ngTemplateOutlet="content" />
+  }
+  <ng-template #content>
+    <app-ranking-criteria (helpRequested)="helpRequested.emit()" />
+    @if (!hint.seen()) {
+      <p class="hint"><span aria-hidden="true">›</span> {{ t('hint') }}</p>
+    }
+    <span class="visually-hidden" id="board-open-description">{{ t('openDescription') }}</span>
+    <app-ranking-compact
+      [groups]="b.groups"
+      [kind]="b.kind"
+      [settled]="b.settled"
+      [provisional]="b.provisional"
+      [highlightId]="highlightId()"
+      (playerSelected)="select($event)"
+    />
+    <app-ranking-cut-list
+      [entries]="b.list"
+      [slots]="b.slots"
+      [kind]="b.kind"
+      [settled]="b.settled"
+      [provisional]="b.provisional"
+      [highlightId]="highlightId()"
+      (playerSelected)="select($event)"
+    />
+  </ng-template>
+</ng-container>

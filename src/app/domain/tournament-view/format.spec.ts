@@ -6,6 +6,7 @@ import {
   isEarlyFinalsOptionAvailable,
   mixedFinalistCount,
   usesMixedFinalBracket,
+  usesRankingBoard,
   usesMixedFinals,
 } from './format';
 
@@ -76,5 +77,15 @@ describe('defaultFixedPairs', () => {
       [],
     );
     expect(defaultFixedPairs(tournamentState({ size: 8, players: namedPlayers(8) }))).toEqual([]);
+  });
+
+  it('uses the ranking board for rotating open groups of 20 and 24 only', () => {
+    const groups = tournamentState({ tournamentMode: 'groups', groupFormat: 'rotating', doublesFormat: 'open' });
+    expect(usesRankingBoard({ ...groups, size: 20 })).toBe(true);
+    expect(usesRankingBoard({ ...groups, size: 24 })).toBe(true);
+    expect(usesRankingBoard({ ...groups, size: 12 })).toBe(false);
+    expect(usesRankingBoard({ ...groups, size: 24, groupFormat: 'fixed' })).toBe(false);
+    expect(usesRankingBoard({ ...groups, size: 24, doublesFormat: 'mixed' })).toBe(false);
+    expect(usesRankingBoard({ ...groups, size: 24, tournamentMode: 'super' })).toBe(false);
   });
 });

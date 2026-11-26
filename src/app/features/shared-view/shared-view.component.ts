@@ -1,9 +1,10 @@
-import { scrollBehavior } from '../../core/motion';
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { DialogService } from '../../core/dialog.service';
+import { scrollBehavior } from '../../core/motion';
 import { fixedPairsMode, mixedFinalistCount, usesMixedFinals } from '../../domain/tournament-view/format';
-import { QualifiersCardComponent } from '../tournament/components/qualifiers-card.component';
+import { RankingBoardComponent } from '../tournament/components/ranking-board/ranking-board.component';
 import { PlayerAvatarComponent } from '../player-avatar.component';
 import { RankingViewComponent } from '../tournament/components/ranking-view.component';
 import type {
@@ -54,7 +55,8 @@ const CONFETTI = Array.from({ length: 30 }, (_, i) => ({
     GuestNavComponent,
     GuestRoundsComponent,
     PlayerAvatarComponent,
-    QualifiersCardComponent,
+    NgTemplateOutlet,
+    RankingBoardComponent,
     ProjectionPanelComponent,
     RankingViewComponent,
     UpdatePillComponent,

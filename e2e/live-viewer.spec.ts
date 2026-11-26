@@ -27,7 +27,8 @@ test.describe('live viewer: Grupos 20', () => {
     await page.goto(`/?live=${TOKEN}`);
 
     await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+    // The finals exist and the group stage is over: the finals come first and the groups fold into one row.
+    await expect(page.getByText('Fase de grupos encerrada')).toBeVisible();
     // One line per round (the played rounds are folded).
     await expect(page.getByText(/^Descansam: /)).toHaveCount(5);
     const bracket = page.getByRole('region', { name: 'Chave da fase final' });
@@ -41,19 +42,23 @@ test.describe('live viewer: Grupos 20', () => {
 
 test.describe('live viewer: Grupos 20 on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
-  test('the qualifiers table fits the screen without a sideways scroll', async ({ page }) => {
+  test('the groups and the race to the final fit the screen without a sideways scroll', async ({ page }) => {
     const supabase = await mockSupabase(page);
     const state = JSON.parse(
       readFileSync(join(__dirname, '..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json'), 'utf8'),
     ) as Record<string, unknown>;
     supabase.rpc('get_local_live_tournament', { id: 'live-20', status: 'active', state });
     await page.goto(`/?live=${TOKEN}`);
-    const card = page.getByRole('heading', { name: 'Classificados' }).locator('xpath=ancestor::article');
-    await expect(card).toBeVisible();
-    const overflow = await card
-      .locator('.table-scroll')
-      .evaluate((element) => element.scrollWidth - element.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(0);
+    await page.getByText('Fase de grupos encerrada').click();
+    const race = page.getByRole('article', { name: 'Corrida para a final' });
+    await expect(race).toBeVisible();
+    await page.getByRole('button', { name: 'Ver a tabela do Grupo A' }).click();
+    await expect(page.getByRole('table', { name: 'Tabela do Grupo A' })).toBeVisible();
+    for (const box of [race, page.getByRole('region', { name: 'Grupos' })]) {
+      const overflow = await box.evaluate((element) => element.scrollWidth - element.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   });
 });
 

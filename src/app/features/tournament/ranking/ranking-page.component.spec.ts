@@ -7,7 +7,7 @@ import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
 import { FinalsService } from '../../../core/finals.service';
 import { createStandingsMemo } from '../../../domain/tournament-view/standings';
-import { groups20State, strongerPairWins } from '../../../testing/groups20';
+import { groups20State, groups24State, strongerPairWins } from '../../../testing/groups20';
 import { storedTournament } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { TournamentStore, type ShellRequest } from '../data/tournament.store';
@@ -44,7 +44,7 @@ async function show(state: TournamentState, stored: Record<string, string> = {})
   for (const [key, value] of Object.entries(stored)) fakes.local.setItem(key, value);
   const hooks = fakes.hooks;
   const requests: ShellRequest[] = [];
-  await render(RankingPageComponent, {
+  const { container } = await render(RankingPageComponent, {
     imports: [translocoTesting({ 'organizer/pt-BR': organizerPtBr, 'tournament/pt-BR': tournamentPtBr })],
     providers: [...fakes.providers, TournamentStore],
     configureTestBed: () => {
@@ -53,7 +53,7 @@ async function show(state: TournamentState, stored: Record<string, string> = {})
       TestBed.inject(TournamentStore).requests.subscribe((request) => requests.push(request));
     },
   });
-  return { ...fakes, hooks, requests, tournament: TestBed.inject(CurrentTournament) };
+  return { ...fakes, hooks, requests, container, tournament: TestBed.inject(CurrentTournament) };
 }
 
 describe('RankingPageComponent', () => {
@@ -158,27 +158,118 @@ describe('RankingPageComponent', () => {
 });
 
 describe('RankingPageComponent: the 20-player format', () => {
-  it('marks who goes on, lists the 12 qualifiers in seed order, and words the finals for the pairing', async () => {
+  it('shows the groups and the race to the final: the marks, the cut line after 12, and the finals worded for the pairing', async () => {
     await show({ ...groups20State(4, 3, strongerPairWins), finalsPairing: 'seededDraw' });
-    expect(screen.getAllByText(/Classificado$/).length).toBeGreaterThanOrEqual(10);
-    expect(screen.getAllByText(/Melhor 3º$/).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText(/Eliminado$/).length).toBe(8);
-    const card = screen.getByRole('heading', { name: 'Classificados' }).closest('article')!;
-    expect(within(card).getAllByRole('row')).toHaveLength(13);
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    expect(within(groups).getAllByRole('article')).toHaveLength(5);
+    // The marks appear once every group match has a score, with their legend.
+    expect(within(groups).getAllByText('Classificado')).toHaveLength(10);
+    expect(within(groups).getAllByText('Melhor 3º')).toHaveLength(2);
+    expect(within(groups).getAllByText('Eliminado')).toHaveLength(8);
+    expect(within(groups).getByText(/Classificado ·.*Melhor 3º ·.*Eliminado/)).toBeTruthy();
+    expect(within(groups).queryByText('provisório')).toBeNull();
+
+    const race = screen.getByRole('article', { name: 'Corrida para a final' });
+    expect(within(race).getByText('FASE FINAL · 12 VAGAS')).toBeTruthy();
+    // Header, the 12 that go on, the cut line and the first one out.
+    expect(within(race).getAllByRole('row')).toHaveLength(15);
+    expect(within(race).getByText('LINHA DE CORTE · 12 VAGAS')).toBeTruthy();
+    expect(within(race).getByText('Ordem final da fase de grupos. A semente 1 é a melhor.')).toBeTruthy();
     expect(screen.getByText('Doze classificados')).toBeTruthy();
     expect(screen.getByText(/Cada uma das 6 melhores sorteia o parceiro/)).toBeTruthy();
+    // The old tables are gone for this format.
+    expect(screen.queryByRole('heading', { name: 'Ranking individual' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Classificados' })).toBeNull();
   });
 
-  it('opens an athlete from a group table row too', async () => {
-    await show(groups20State(4, 3, strongerPairWins));
+  it('is provisional, with no marks, while a group match has no score', async () => {
+    await show(groups20State(4, 3));
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    expect(within(groups).getByText('provisório')).toBeTruthy();
+    expect(within(groups).queryByText('Eliminado')).toBeNull();
+    expect(within(groups).queryByText('Melhor 3º')).toBeNull();
+    expect(screen.getByText('Ordem provisória: muda a cada placar até o fim da fase de grupos.')).toBeTruthy();
+  });
+
+  it('opens an athlete from a group card and from the list, and the hint goes after the first tap', async () => {
+    const { local } = await show(groups20State(4, 3, strongerPairWins));
     const store = TestBed.inject(TournamentStore);
     const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
-    // 20 rows in the group tables and 20 in the individual ranking.
-    const rows = screen.getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
-    expect(rows).toHaveLength(40);
-    const firstGroup = store.groupTables()[0].entries[0];
-    fireEvent.click(rows[0]);
-    expect(open).toHaveBeenCalledWith(firstGroup.playerIds[0]);
+    expect(screen.getByText(/Toque num atleta para ver os jogos e a posição/)).toBeTruthy();
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    const cards = within(groups).getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
+    expect(cards).toHaveLength(20);
+    fireEvent.click(cards[0]);
+    expect(open).toHaveBeenLastCalledWith(store.board()!.groups[0].entries[0].playerId);
+    expect(screen.queryByText(/Toque num atleta para ver os jogos e a posição/)).toBeNull();
+    expect(local.getItem('setpoint.ranking.hint')).toBe('1');
+
+    const race = screen.getByRole('article', { name: 'Corrida para a final' });
+    const rows = within(race).getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
+    expect(rows).toHaveLength(13);
+    fireEvent.click(rows[2]);
+    expect(open).toHaveBeenLastCalledWith(store.board()!.list[2].playerId);
+  });
+
+  it("opens a group's table in place from the header of its card", async () => {
+    await show(groups20State(5, 3, strongerPairWins));
+    const toggle = screen.getByRole('button', { name: 'Ver a tabela do Grupo B' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const table = screen.getByRole('table', { name: 'Tabela do Grupo B' });
+    // Header and the five athletes of the group, with wins, balance and matches played.
+    expect(within(table).getAllByRole('row')).toHaveLength(6);
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((cell) => cell.textContent?.trim()),
+    ).toContain('JOGOS');
+    fireEvent.click(toggle);
+    expect(screen.queryByRole('table', { name: 'Tabela do Grupo B' })).toBeNull();
+  });
+
+  it('folds the athletes after the first one out behind "Ver todos"', async () => {
+    await show(groups20State(4, 3, strongerPairWins));
+    const race = screen.getByRole('article', { name: 'Corrida para a final' });
+    const showAll = within(race).getByRole('button', { name: 'Ver todos (20)' });
+    expect(showAll.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(showAll);
+    // Header, 20 athletes and the cut line.
+    expect(within(race).getAllByRole('row')).toHaveLength(22);
+    fireEvent.click(within(race).getByRole('button', { name: 'Mostrar só até a linha de corte' }));
+    expect(within(race).getAllByRole('row')).toHaveLength(15);
+  });
+
+  it('puts the finals first once they exist, and folds the groups into one row when the stage is over', async () => {
+    const finals = new FinalsService();
+    const state = groups20State(5, 3, strongerPairWins);
+    const pairs = Array.from({ length: 6 }, (_, i): [string, string] => [
+      state.players[i * 2].id,
+      state.players[i * 2 + 1].id,
+    ]);
+    const { container } = await show({ ...state, finals: finals.updatePodium(finals.createByeBracket(pairs)) });
+    const folded = container.querySelector('details')!;
+    expect(folded.open).toBe(false);
+    expect(within(folded).getByText('Fase de grupos encerrada')).toBeTruthy();
+    expect(within(folded).getByText(/12 na final · .+ foi o 1º/)).toBeTruthy();
+    const finalsCard = screen.getByRole('heading', { name: 'Finais' });
+    expect(finalsCard.compareDocumentPosition(folded) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('keeps the groups open under the finals when a group score was cleared', async () => {
+    const finals = new FinalsService();
+    const state = groups20State(5, 3, strongerPairWins);
+    const pairs = Array.from({ length: 6 }, (_, i): [string, string] => [
+      state.players[i * 2].id,
+      state.players[i * 2 + 1].id,
+    ]);
+    const cleared = structuredClone(state);
+    cleared.rounds[0].matches[0].scoreA = null;
+    cleared.rounds[0].matches[0].scoreB = null;
+    const { container } = await show({ ...cleared, finals: finals.updatePodium(finals.createByeBracket(pairs)) });
+    expect(container.querySelector('details')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Grupos' })).toBeTruthy();
   });
 
   it('draws the bye bracket when the organizer switches to Chave, and the score fields back under Jogos', async () => {
@@ -219,5 +310,23 @@ describe('RankingPageComponent: the 20-player format', () => {
     );
     expect(screen.getByRole('region', { name: 'Chave da fase final' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Chave' }).getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('RankingPageComponent: 24 players in groups', () => {
+  it('ranks everybody in one list: the groups show the overall place and the top 8 go to the final', async () => {
+    await show(groups24State(2, strongerPairWins));
+    const groups = screen.getByRole('region', { name: 'Grupos' });
+    expect(within(groups).getAllByRole('article')).toHaveLength(6);
+    expect(within(groups).getByText('lugar no ranking geral')).toBeTruthy();
+    // No group marks: the groups only organize the matches.
+    expect(within(groups).queryByText('Classificado')).toBeNull();
+    const race = screen.getByRole('article', { name: 'Ranking geral' });
+    expect(within(race).getByText('RANKING GERAL · 8 VAGAS NA FINAL')).toBeTruthy();
+    // Header, the 8 that go on, the cut line and the first one out.
+    expect(within(race).getAllByRole('row')).toHaveLength(11);
+    expect(within(race).getByText('LINHA DE CORTE · 8 VAGAS')).toBeTruthy();
+    expect(within(race).getByRole('button', { name: 'Ver todos (24)' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Oito classificados' })).toBeTruthy();
   });
 });
