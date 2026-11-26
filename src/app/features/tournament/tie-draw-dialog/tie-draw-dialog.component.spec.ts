@@ -1,15 +1,20 @@
 import { DialogRef } from '@angular/cdk/dialog';
 import { TestBed } from '@angular/core/testing';
 import { fireEvent, screen } from '@testing-library/angular';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import organizerPtBr from '../../../../../public/i18n/organizer/pt-BR.json';
 import { CurrentTournament } from '../../../core/current-tournament';
 import type { TournamentState } from '../../../core/models';
 import { fixedPairs8State } from '../../../testing/groups20';
-import { storedTournament } from '../../../testing/tournament-state';
+import { match, namedPlayers, round, storedTournament, tournamentState } from '../../../testing/tournament-state';
 import { translocoTesting } from '../../../testing/transloco-testing';
 import { tournamentFakes } from '../tournament.fakes';
-import { TIE_DRAW_TITLE_ID, TieDrawDialogComponent } from './tie-draw-dialog.component';
+import {
+  SHUFFLE_SETTLE_MS,
+  SHUFFLE_STEPS_MS,
+  TIE_DRAW_TITLE_ID,
+  TieDrawDialogComponent,
+} from './tie-draw-dialog.component';
 
 /** Every match ends 4 to 4, so the eight players tie and nothing the rules know can split them. */
 function allTied(): TournamentState {
@@ -23,7 +28,30 @@ function allTied(): TournamentState {
   };
 }
 
-async function openWith(state: TournamentState) {
+/**
+ * p1 and p2 win (their own tie already drawn), p11 and p12 lose, and the eight others never played: eight tie for
+ * the six places from the 3rd.
+ */
+function tiedAcrossTheCut(): TournamentState {
+  return tournamentState({
+    players: namedPlayers(12),
+    rounds: [round(1, [match('m1', ['p1', 'p2'], ['p11', 'p12'], 4, 0)])],
+    tieBreakDraws: [{ playerIds: ['p1', 'p2'], order: ['p1', 'p2'], createdAt: '2026-11-26T10:00:00.000Z' }],
+  });
+}
+
+/** What `prefers-reduced-motion` answers: most tests ask for less motion, so the result shows at once. */
+function reducedMotion(reduce: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: reduce && query.includes('reduce'), media: query }));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+
+async function openWith(state: TournamentState, { reduce = true } = {}) {
+  reducedMotion(reduce);
   const fakes = tournamentFakes();
   const close = vi.fn();
   const save = fakes.hooks.save;
@@ -51,7 +79,7 @@ describe('TieDrawDialogComponent', () => {
     await openWith(allTied());
     const title = await screen.findByRole('heading', { level: 2 });
     expect(title.id).toBe(TIE_DRAW_TITLE_ID);
-    expect(title.textContent).toBe('Empate entre 1º e 2º e 3º e 4º e 5º e 6º e 7º e 8º');
+    expect(title.textContent).toBe('Empate do 1º ao 8º lugar');
     expect(screen.getByText('O confronto direto não resolveu. Sorteie a ordem para gerar as finais.')).toBeTruthy();
   });
 
@@ -90,12 +118,57 @@ describe('TieDrawDialogComponent', () => {
     };
     const { close, click } = await openWith(tied);
     const title = () => screen.getByRole('heading', { level: 2 }).textContent;
-    expect(title()).toBe('Empate entre 1º e 2º');
+    expect(title()).toBe('Empate do 1º ao 2º lugar');
     await click('Realizar sorteio');
     await click('Confirmar e sortear próximo empate');
     expect(close).not.toHaveBeenCalled();
-    expect(title()).toBe('Empate entre 3º e 4º');
+    expect(title()).toBe('Empate do 3º ao 4º lugar');
     expect(screen.getByRole('button', { name: 'Realizar sorteio' })).toBeTruthy();
+  });
+
+  it('when the tie crosses the cut, orders only the places that go on and lists the rest as out', async () => {
+    const { tournament, click } = await openWith(tiedAcrossTheCut());
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Empate do 3º ao 10º lugar');
+    expect(
+      screen.getByText('8 empatados disputam 6 vagas. O sorteio decide quem fica com elas e em que ordem.'),
+    ).toBeTruthy();
+    await click('Realizar sorteio');
+    const order = tournament.state().tieBreakDraws!.at(-1)!.order;
+    const [placed, left] = screen.getAllByRole('list');
+    const rows = (list: HTMLElement) => [...list.querySelectorAll('li')].map((row) => row.textContent?.trim());
+    expect(rows(placed)).toHaveLength(6);
+    expect(rows(placed)[0]).toMatch(/^3º/);
+    expect(rows(placed).at(-1)).toMatch(/^8º/);
+    // The two left out show no place, in name order.
+    expect(screen.getByText('Ficam fora')).toBeTruthy();
+    const names = Object.fromEntries(tournament.state().players.map((player) => [player.id, player.name]));
+    const namesIn = (list: HTMLElement) =>
+      [...list.querySelectorAll(':scope > li > span')].map((name) => name.textContent);
+    expect(namesIn(left)).toEqual(
+      order
+        .slice(6)
+        .map((id) => names[id])
+        .sort((a, b) => a.localeCompare(b)),
+    );
+  });
+
+  it('shuffles the list before showing the result, unless the person asked for less motion', async () => {
+    vi.useFakeTimers();
+    const { fixture } = await openWith(allTied(), { reduce: false });
+    fireEvent.click(screen.getByRole('button', { name: 'Realizar sorteio' }));
+    fixture.detectChanges();
+    const busy = screen.getByRole<HTMLButtonElement>('button', { name: 'Sorteando…' });
+    expect(busy.disabled).toBe(true);
+    expect(screen.getByRole('status').textContent).toBe('Sorteando…');
+    expect(screen.getByRole('list').getAttribute('aria-busy')).toBe('true');
+    const total = SHUFFLE_STEPS_MS.reduce((sum, step) => sum + step, 0) + SHUFFLE_SETTLE_MS;
+    for (let elapsed = 0; elapsed <= total; elapsed += 50) {
+      await vi.advanceTimersByTimeAsync(50);
+      fixture.detectChanges();
+    }
+    expect(screen.getByRole('button', { name: 'Confirmar e gerar finais' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Sorteio concluído.');
+    expect(screen.getAllByRole('listitem')[0].textContent).toMatch(/^\s*1º/);
   });
 
   it('cancels with false and keeps the draws that were made', async () => {
@@ -112,12 +185,12 @@ describe('TieDrawDialogComponent: fixed pairs', () => {
     // Every match ends 6-3 to side A: the pairs that won tie with each other, and so do the pairs that lost.
     const { tournament, click } = await openWith(fixedPairs8State(3).state);
     const title = await screen.findByRole('heading', { level: 2 });
-    expect(title.textContent).toMatch(/^Empate entre as duplas em /);
+    expect(title.textContent).toMatch(/^Empate de duplas /);
     expect(
       screen.getByText('As duplas ficaram iguais em tudo. Sorteie a ordem das duplas para gerar as finais.'),
     ).toBeTruthy();
     // Each competitor is a pair: "Ana + Bia", with both avatars.
-    const participants = [...document.querySelectorAll('.tie-draw-participants > span')].map((item) =>
+    const participants = [...document.querySelectorAll('.tie-draw-list li')].map((item) =>
       item.textContent?.replace(/\s+/g, ' ').trim(),
     );
     expect(participants.length).toBeGreaterThan(1);

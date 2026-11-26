@@ -52,10 +52,10 @@ test.describe('fixed pairs stay together to the end', () => {
     await openRanking(page, pairs8Tied);
     // All four pairs are inside the cut (nothing is marked on the list), but their order is still to be drawn.
     await page.getByRole('button', { name: 'Gerar finais' }).click();
-    const dialog = page.getByRole('dialog', { name: /Empate entre as duplas/ });
+    const dialog = page.getByRole('dialog', { name: /Empate de duplas/ });
     await expect(dialog).toBeVisible();
     // Each competitor is a pair named after both partners; nobody is drawn against their own partner.
-    const first = dialog.locator('.tie-draw-participants > span');
+    const first = dialog.locator('.tie-draw-list li');
     await expect(first.first()).toContainText(' + ');
     expect(await first.count()).toBeGreaterThan(1);
     await dialog.getByRole('button', { name: 'Realizar sorteio' }).click();

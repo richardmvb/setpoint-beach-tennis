@@ -169,7 +169,7 @@ export async function completeFinalMatches(page: Page): Promise<void> {
  */
 export async function generateFinals(page: Page): Promise<void> {
   const finals = page.getByRole('heading', { name: 'Finais', exact: true });
-  const tieBreak = page.getByRole('dialog', { name: /Empate entre/ });
+  const tieBreak = page.getByRole('dialog', { name: /^Empate/ });
   await page.getByRole('button', { name: 'Gerar finais' }).click();
   for (let attempt = 0; attempt < 6; attempt++) {
     await expect(tieBreak.or(finals)).toBeVisible();

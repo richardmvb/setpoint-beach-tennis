@@ -1,5 +1,5 @@
 import type { PlayerStanding, TournamentGroup, TournamentState } from '../../core/models';
-import { compareStandingCriteria, rankedStandingGroups, storedTieDrawOrder } from './standings';
+import { compareStandingCriteria, type OpenTie, rankedStandingGroups, storedTieDrawOrder } from './standings';
 
 /** The 20-player format sends 12 athletes to the finals: the top two of every group plus the best third places. */
 const QUALIFIERS = 12;
@@ -40,7 +40,7 @@ interface Run {
 interface Analysis {
   qualification: GroupQualification;
   /** Every tie the qualification needs drawn, in the order the rules meet them (group tops, thirds cut, seeding). */
-  open: PlayerStanding[][];
+  open: OpenTie[];
   field: QualificationField;
 }
 
@@ -78,7 +78,15 @@ export function groupQualification(state: TournamentState): GroupQualification {
  * the cut among third places, and the single ranking of the qualifiers.
  */
 export function unresolvedQualificationTie(state: TournamentState): PlayerStanding[] {
-  return analyse(state).open[0] ?? [];
+  return analyse(state).open[0]?.players ?? [];
+}
+
+/**
+ * Every tie the qualification needs drawn, in the order the rules meet them, with where it starts (in the group, in
+ * the ranking of the third places, or in the seeding) and how many of its places still count.
+ */
+export function openQualificationTies(state: TournamentState): OpenTie[] {
+  return analyse(state).open;
 }
 
 /** The field in race order, the group of each athlete and every open tie: see `QualificationField`. */
@@ -104,9 +112,9 @@ export function describeQualificationTie(state: TournamentState, tied: readonly 
 
 function analyse(state: TournamentState): Analysis {
   const groups = state.groups ?? [];
-  const open: PlayerStanding[][] = [];
-  const settle = (tied: PlayerStanding[]): void => {
-    open.push(tied);
+  const open: OpenTie[] = [];
+  const settle = (players: PlayerStanding[], start: number, spots: number): void => {
+    open.push({ players, firstPlace: start + 1, spots, gender: null });
   };
 
   const orders = new Map<string, PlayerStanding[]>();
@@ -116,7 +124,8 @@ function analyse(state: TournamentState): Analysis {
     const ranking = groupStandings(state, group);
     let position = 0;
     for (const tied of ranking) {
-      if (tied.length > 1 && position < PLACES_THAT_MATTER && storedTieDrawOrder(state, tied) === null) settle(tied);
+      if (tied.length > 1 && position < PLACES_THAT_MATTER && storedTieDrawOrder(state, tied) === null)
+        settle(tied, position, Math.min(tied.length, PLACES_THAT_MATTER - position));
       position += tied.length;
     }
     const flat = ranking.flat();
@@ -135,12 +144,12 @@ function analyse(state: TournamentState): Analysis {
     const straddling = rankedThirds.runs.find(
       (run) => !run.drawn && run.start < thirdSlots && run.start + run.players.length > thirdSlots,
     );
-    if (straddling) settle(straddling.players);
+    if (straddling) settle(straddling.players, straddling.start, thirdSlots - straddling.start);
   }
   const bestThirds = rankedThirds.order.slice(0, thirdSlots);
 
   const seeding = rankAcross(state, [...direct, ...bestThirds], groupOf, positionOf);
-  for (const run of seeding.runs) if (!run.drawn) settle(run.players);
+  for (const run of seeding.runs) if (!run.drawn) settle(run.players, run.start, run.players.length);
 
   const bestThirdIds = new Set(bestThirds.map((row) => row.playerId));
   const directIds = new Set(direct.map((row) => row.playerId));
@@ -176,7 +185,7 @@ function analyse(state: TournamentState): Analysis {
       others: rankAcross(state, lower, groupOf, positionOf).order,
       groupOf: places,
       thirdSlots,
-      open,
+      open: open.map((tie) => tie.players),
     },
   };
 }

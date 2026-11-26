@@ -135,8 +135,8 @@
                 {
                   "type": "bundle",
                   "name": "tie-draw-dialog-component",
-                  "maximumWarning": "7kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "12kB",
+                  "maximumError": "13kB"
                 },
                 {
                   "type": "anyComponentStyle",

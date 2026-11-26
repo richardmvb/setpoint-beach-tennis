@@ -107,18 +107,25 @@
   },
   "tieDraw": {
     "kicker": "DESEMPATE DA CLASSIFICAÇÃO",
-    "title": "Empate entre {{ positions }}",
-    "titlePairs": "Empate entre as duplas em {{ positions }}",
+    "title": "Empate do {{ first }}º ao {{ last }}º lugar",
+    "titlePairs": "Empate de duplas do {{ first }}º ao {{ last }}º lugar",
     "text": "O confronto direto não resolveu. Sorteie a ordem para gerar as finais.",
     "textPairs": "As duplas ficaram iguais em tudo. Sorteie a ordem das duplas para gerar as finais.",
     "cancel": "Cancelar",
     "draw": "Realizar sorteio",
     "confirmNext": "Confirmar e sortear próximo empate",
     "confirmFinals": "Confirmar e gerar finais",
-    "groupTitle": "Empate no {{ group }}: {{ positions }}",
+    "groupTitle": "Empate no {{ group }} do {{ first }}º ao {{ last }}º lugar",
     "thirdsTitle": "Empate entre terceiros colocados",
     "seedingTitle": "Empate na ordem dos classificados",
-    "qualificationText": "O desempate não resolveu. Sorteie a ordem para montar a chave."
+    "qualificationText": "O desempate não resolveu. Sorteie a ordem para montar a chave.",
+    "titleMale": "Empate no ranking masculino do {{ first }}º ao {{ last }}º lugar",
+    "titleFemale": "Empate no ranking feminino do {{ first }}º ao {{ last }}º lugar",
+    "spotsText": "{{ count }} empatados disputam {{ spots }} vagas. O sorteio decide quem fica com elas e em que ordem.",
+    "spotText": "{{ count }} empatados disputam 1 vaga. O sorteio decide quem fica com ela.",
+    "shuffling": "Sorteando…",
+    "drawn": "Sorteio concluído.",
+    "left": "Ficam fora"
   },
   "confirm": {
     "clearScore": {

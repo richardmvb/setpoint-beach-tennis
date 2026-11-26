@@ -205,10 +205,12 @@ test.describe('accessibility (axe, no new violations)', () => {
       .first()
       .click();
     await page.getByRole('button', { name: 'Gerar finais' }).click();
-    const dialog = page.getByRole('dialog', { name: /Empate entre/ });
+    const dialog = page.getByRole('dialog', { name: /Empate do/ });
     await expect(dialog).toBeVisible();
     const problems = check('tie-draw-dialog', await scan(page, false, '[role=dialog]'), baseline);
     await dialog.getByRole('button', { name: 'Realizar sorteio' }).click();
+    // The list shuffles first; scan the settled result.
+    await expect(dialog.getByRole('status')).toHaveText('Sorteio concluído.');
     await expect(dialog.getByRole('listitem')).toHaveCount(8);
     problems.push(...check('tie-draw-dialog-drawn', await scan(page, false, '[role=dialog]'), baseline));
     expect(problems).toEqual([]);
