@@ -1,0 +1,109 @@
+<ng-container *transloco="let t; prefix: 'tournament.board'">
+  <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
+    <article uiCard class="cut-card" aria-labelledby="board-race-title">
+      <div class="cut-head">
+        <div>
+          @if (kind() === 'qualification') {
+            <span class="card-kicker">{{ t('race.kicker', { slots: slots() }) }}</span>
+            <h2 id="board-race-title">{{ t('race.title') }}</h2>
+          } @else {
+            <span class="card-kicker">{{ t('overall.kicker', { slots: slots() }) }}</span>
+            <h2 id="board-race-title">{{ t('overall.title') }}</h2>
+          }
+        </div>
+        <span class="mini-tag">{{ t('count', { count: entries().length }) }}</span>
+      </div>
+      <p class="cut-note">
+        @if (provisional()) {
+          {{ t('provisionalNote') }}
+        } @else if (settled()) {
+          @if (kind() === 'qualification') {
+            {{ t('race.settled') }}
+          } @else {
+            {{ t('overall.settled') }}
+          }
+        }
+      </p>
+      <table class="cut-table" [attr.aria-labelledby]="'board-race-title'">
+        <thead>
+          <tr>
+            <th scope="col" class="col-pos">{{ t('list.place') }}</th>
+            <th scope="col" class="col-who">{{ t('list.player') }}</th>
+            <th scope="col" class="col-num">{{ t('list.wins') }}</th>
+            <th scope="col" class="col-num col-balance">{{ t('list.balance') }}</th>
+            <th scope="col" class="col-open"><span class="visually-hidden">{{ t('open') }}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of visible(); track entry.playerId; let i = $index) {
+            <tr [class.me-row]="isMine(entry)" [class.is-out]="i >= slots()">
+              <td class="col-pos">{{ entry.place }}</td>
+              <td class="col-who">
+                <button
+                  type="button"
+                  class="ranking-player-cell ranking-player-button row-button"
+                  aria-describedby="board-open-description"
+                  (click)="playerSelected.emit(entry.playerId)"
+                >
+                  <span class="who-name">{{ entry.name }}</span>
+                  <span class="gbadge">
+                    <span aria-hidden="true">{{ entry.group }}{{ entry.groupPlace ?? '' }}</span>
+                    <span class="visually-hidden">
+                      @if (entry.groupPlace !== null) {
+                        {{ t('badgePlace', { group: entry.group, place: entry.groupPlace }) }}
+                      } @else {
+                        {{ t('badge', { group: entry.group }) }}
+                      }
+                    </span>
+                  </span>
+                  @if (entry.status; as mark) {
+                    <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'">
+                      <span aria-hidden="true">{{ mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕' }}</span>
+                      <span class="visually-hidden">
+                        @switch (mark) {
+                          @case ('direct') {
+                            {{ status('direct') }}
+                          }
+                          @case ('bestThird') {
+                            {{ status('bestThird') }}
+                          }
+                          @default {
+                            {{ status('out') }}
+                          }
+                        }
+                      </span>
+                    </span>
+                  }
+                  @if (isMine(entry)) {
+                    <em class="me-tag">{{ t('you') }}</em>
+                  }
+                </button>
+              </td>
+              <td class="col-num">
+                <b>{{ entry.setsWon }}</b>
+              </td>
+              <td class="col-num col-balance">{{ signed(entry.gameBalance) }}</td>
+              <td class="col-open" aria-hidden="true">›</td>
+            </tr>
+            @if (i === slots() - 1 && slots() < entries().length) {
+              <tr class="cut-line">
+                <td colspan="5">
+                  <span class="cut-label">{{ t('cut', { slots: slots() }) }}</span>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+      @if (canFold()) {
+        <button type="button" class="show-all" [attr.aria-expanded]="showAll()" (click)="showAll.set(!showAll())">
+          @if (showAll()) {
+            {{ t('showLess') }}
+          } @else {
+            {{ t('showAll', { count: entries().length }) }}
+          }
+        </button>
+      }
+    </article>
+  </ng-container>
+</ng-container>

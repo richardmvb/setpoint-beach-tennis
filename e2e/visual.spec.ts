@@ -25,6 +25,16 @@ const groups20Json = readFileSync(
   'utf8',
 );
 
+/** 24 players in 6 groups, every group match scored, no finals yet (e2e/support/groups24.json). */
+const groups24Json = readFileSync(join(__dirname, 'support', 'groups24.json'), 'utf8');
+
+/** The Grupos 20 fixture without its finals: the group stage is over, so the ranking board shows open. */
+const groups20BoardJson = ((): string => {
+  const state = JSON.parse(groups20Json) as Record<string, unknown>;
+  delete state['finals'];
+  return JSON.stringify(state);
+})();
+
 type Theme = 'light' | 'dark';
 interface Config {
   theme: Theme;
@@ -263,7 +273,7 @@ for (const config of CONFIGS) {
         .getByRole('button', { name: /Ranking/ })
         .first()
         .click();
-      await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+      await expect(page.getByText('Fase de grupos encerrada')).toBeVisible();
       await page_(page, 'ranking-groups20');
     });
 
@@ -290,8 +300,47 @@ for (const config of CONFIGS) {
       });
       await page.goto('/?live=live-read-token-123');
       await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+      await expect(page.getByText('Fase de grupos encerrada')).toBeVisible();
       await page_(page, 'live-viewer-groups20');
+    });
+
+    test('groups 20 ranking board', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups20BoardJson);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
+      await page_(page, 'ranking-groups20-board');
+    });
+
+    test('groups 24 ranking board', async ({ page }) => {
+      await page.addInitScript((state: string) => {
+        if (!localStorage.getItem('setpoint.tournament.v1')) localStorage.setItem('setpoint.tournament.v1', state);
+      }, groups24Json);
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: 'Ranking geral' })).toBeVisible();
+      await page_(page, 'ranking-groups24-board');
+    });
+
+    test('groups 20 live viewer ranking board', async ({ page }) => {
+      const supabase = await mockSupabase(page);
+      supabase.rpc('get_local_live_tournament', {
+        id: 'live-20',
+        status: 'active',
+        state: JSON.parse(groups20BoardJson),
+      });
+      await page.goto('/?live=live-read-token-123');
+      await expect(page.getByRole('heading', { level: 1, name: 'Fixture v2 Grupos 20' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
+      await page_(page, 'live-viewer-groups20-board');
     });
 
     test('guest invite', async ({ page }) => {

@@ -1,62 +1,71 @@
 <ng-container *transloco="let t; prefix: 'organizer.ranking'">
   <ng-container *transloco="let pairing; prefix: 'tournament.rankingHelp.groups20'">
-  <app-ranking-view
-    [groupTables]="store.groupTables()"
-    [standings]="store.standings()"
-    [players]="store.state().players"
-    [rounds]="store.state().rounds"
-    [maleStandings]="store.maleStandings()"
-    [femaleStandings]="store.femaleStandings()"
-    [showGenderRankings]="store.usesMixedFinals()"
-    [genderRankingLimit]="store.mixedFinalistCount()"
-    [fixedPairsMode]="store.fixedPairsMode()"
-    [hasSchedule]="store.hasSchedule()"
-    (playerSelected)="store.openPlayerMatches($event)"
-    (helpRequested)="store.openRankingHelp()"
-  />
-  @if (store.qualification(); as qualification) {
-    <app-qualifiers-card
-      [qualification]="qualification"
-      [players]="store.state().players"
-      [provisional]="!store.canGenerateFinal() && !store.state().finals"
+  @if (store.board(); as board) {
+    <ng-container *ngTemplateOutlet="finalsCard" />
+    <ng-container *ngTemplateOutlet="generateCard" />
+    <app-ranking-board
+      [board]="board"
+      (playerSelected)="store.openPlayerMatches($event)"
+      (helpRequested)="store.openRankingHelp()"
     />
+  } @else {
+    <app-ranking-view
+      [groupTables]="store.groupTables()"
+      [standings]="store.standings()"
+      [players]="store.state().players"
+      [rounds]="store.state().rounds"
+      [maleStandings]="store.maleStandings()"
+      [femaleStandings]="store.femaleStandings()"
+      [showGenderRankings]="store.usesMixedFinals()"
+      [genderRankingLimit]="store.mixedFinalistCount()"
+      [fixedPairsMode]="store.fixedPairsMode()"
+      [hasSchedule]="store.hasSchedule()"
+      (playerSelected)="store.openPlayerMatches($event)"
+      (helpRequested)="store.openRankingHelp()"
+    />
+    <ng-container *ngTemplateOutlet="generateCard" />
+    <ng-container *ngTemplateOutlet="finalsCard" />
   }
-  @if (store.canGenerateFinal()) {
-    <article uiCard class="full-card final-qualifier">
-      <div>
-        <span class="card-kicker">{{ t('finalPhase') }}</span>
-        <h2>
-          {{
-            store.qualification()
-              ? t('twelveQualified')
-              : store.usesMixedFinals()
-              ? t('mixedAvailable')
-              : store.earlyFinalsReady()
-                ? t('earlyAvailable')
-                : t('eightQualified')
-          }}
-        </h2>
-        <p class="muted">
-          {{
-            store.qualification()
-              ? store.state().finalsPairing === 'seededDraw'
-                ? pairing('pairingSeeded')
-                : pairing('pairingCrossed')
-              : store.usesMixedFinalBracket()
-              ? t('mixedBracketText')
-              : store.usesMixedFinals()
-                ? t('mixedDirectText')
+  <ng-template #generateCard>
+    @if (store.canGenerateFinal()) {
+      <article uiCard class="full-card final-qualifier">
+        <div>
+          <span class="card-kicker">{{ t('finalPhase') }}</span>
+          <h2>
+            {{
+              store.qualification()
+                ? t('twelveQualified')
+                : store.usesMixedFinals()
+                ? t('mixedAvailable')
                 : store.earlyFinalsReady()
-                  ? t('earlyText')
-                  : t('standardText')
-          }}
-        </p>
-      </div>
-      <button uiButton variant="primary" (click)="store.generateFinal()">{{ t('generateFinals') }}</button>
-    </article>
-  }
-  @if (store.state().finals; as final) {
-    <article appFinalsCard [final]="final"></article>
-  }
+                  ? t('earlyAvailable')
+                  : t('eightQualified')
+            }}
+          </h2>
+          <p class="muted">
+            {{
+              store.qualification()
+                ? store.state().finalsPairing === 'seededDraw'
+                  ? pairing('pairingSeeded')
+                  : pairing('pairingCrossed')
+                : store.usesMixedFinalBracket()
+                ? t('mixedBracketText')
+                : store.usesMixedFinals()
+                  ? t('mixedDirectText')
+                  : store.earlyFinalsReady()
+                    ? t('earlyText')
+                    : t('standardText')
+            }}
+          </p>
+        </div>
+        <button uiButton variant="primary" (click)="store.generateFinal()">{{ t('generateFinals') }}</button>
+      </article>
+    }
+  </ng-template>
+  <ng-template #finalsCard>
+    @if (store.state().finals; as final) {
+      <article appFinalsCard [final]="final"></article>
+    }
+  </ng-template>
 </ng-container>
 </ng-container>

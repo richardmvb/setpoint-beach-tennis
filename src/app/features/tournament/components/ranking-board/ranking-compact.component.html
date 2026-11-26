@@ -1,0 +1,151 @@
+<ng-container *transloco="let t; prefix: 'tournament.board'">
+  <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
+    <section uiCard class="groups-card" aria-labelledby="board-groups-title">
+      <div class="groups-head">
+        <h2 id="board-groups-title" class="groups-title">{{ t('groups.title') }}</h2>
+        <span class="groups-note">
+          @if (kind() === 'overall') {
+            {{ t('groups.placeNote') }}
+          } @else {
+            {{ t('groups.winsNote') }}
+          }
+        </span>
+        @if (provisional()) {
+          <span class="provisional">{{ t('provisional') }}</span>
+        }
+      </div>
+      <div class="mini-grid">
+        @for (group of groups(); track group.id) {
+          <article class="mini-card" [class.is-open]="isOpen(group.id)" [attr.aria-labelledby]="'mini-title-' + group.id">
+            <header class="mini-head">
+              <h3 [id]="'mini-title-' + group.id">{{ group.name }}</h3>
+              <button
+                type="button"
+                class="mini-toggle"
+                [attr.aria-expanded]="isOpen(group.id)"
+                [attr.aria-controls]="'mini-body-' + group.id"
+                [attr.aria-label]="t('groups.toggle', { name: group.name })"
+                (click)="toggle(group.id)"
+              >
+                <span aria-hidden="true">{{ isOpen(group.id) ? '▴' : '›' }}</span>
+              </button>
+            </header>
+            <div [id]="'mini-body-' + group.id">
+              @if (!isOpen(group.id)) {
+                <ul class="mini-list">
+                  @for (entry of group.entries; track entry.playerId) {
+                    <li>
+                      <button
+                        type="button"
+                        class="ranking-player-cell ranking-player-button mini-row"
+                        [class.is-mine]="isMine(entry)"
+                        [class.is-out]="entry.status === 'out'"
+                        aria-describedby="board-open-description"
+                        (click)="playerSelected.emit(entry.playerId)"
+                      >
+                        @if (entry.status; as mark) {
+                          <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'" aria-hidden="true">{{
+                            mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕'
+                          }}</span>
+                        }
+                        <span class="mini-name">{{ entry.name }}</span>
+                        @if (entry.status; as mark) {
+                          <span class="visually-hidden">
+                            @switch (mark) {
+                              @case ('direct') {
+                                {{ status('direct') }}
+                              }
+                              @case ('bestThird') {
+                                {{ status('bestThird') }}
+                              }
+                              @default {
+                                {{ status('out') }}
+                              }
+                            }
+                          </span>
+                        }
+                        <span class="mini-value">{{ kind() === 'overall' ? entry.place + 'º' : entry.setsWon }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <table class="group-table">
+                  <caption class="visually-hidden">
+                    {{
+                      t('groups.caption', { name: group.name })
+                    }}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" class="g-pos">
+                        @if (kind() === 'overall') {
+                          {{ t('groups.table.overall') }}
+                        } @else {
+                          {{ t('groups.table.place') }}
+                        }
+                      </th>
+                      <th scope="col" class="g-who">{{ t('groups.table.player') }}</th>
+                      <th scope="col" class="g-num">{{ t('groups.table.wins') }}</th>
+                      <th scope="col" class="g-num">{{ t('groups.table.balance') }}</th>
+                      <th scope="col" class="g-num">{{ t('groups.table.matches') }}</th>
+                      <th scope="col" class="g-open"><span class="visually-hidden">{{ t('open') }}</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of group.entries; track entry.playerId; let i = $index) {
+                      <tr [class.is-mine]="isMine(entry)">
+                        <td class="g-pos">{{ kind() === 'overall' ? entry.place + 'º' : (entry.groupPlace ?? i + 1) }}</td>
+                        <td class="g-who">
+                          <button
+                            type="button"
+                            class="ranking-player-cell ranking-player-button row-button"
+                            aria-describedby="board-open-description"
+                            (click)="playerSelected.emit(entry.playerId)"
+                          >
+                            <span class="g-name">{{ entry.name }}</span>
+                            @if (entry.status; as mark) {
+                              <span class="mark" [class.direct]="mark === 'direct'" [class.third]="mark === 'bestThird'" [class.out]="mark === 'out'">
+                                <span aria-hidden="true">{{ mark === 'direct' ? '✓' : mark === 'bestThird' ? '★' : '✕' }}</span>
+                                <span class="visually-hidden">
+                                  @switch (mark) {
+                                    @case ('direct') {
+                                      {{ status('direct') }}
+                                    }
+                                    @case ('bestThird') {
+                                      {{ status('bestThird') }}
+                                    }
+                                    @default {
+                                      {{ status('out') }}
+                                    }
+                                  }
+                                </span>
+                              </span>
+                            }
+                          </button>
+                        </td>
+                        <td class="g-num">
+                          <b>{{ entry.setsWon }}</b>
+                        </td>
+                        <td class="g-num">{{ signed(entry.gameBalance) }}</td>
+                        <td class="g-num">{{ entry.matchesPlayed }}/{{ entry.scheduled }}</td>
+                        <td class="g-open" aria-hidden="true">›</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          </article>
+        }
+      </div>
+      @if (settled() && kind() === 'qualification') {
+        <p class="legend">
+          <span class="mark direct" aria-hidden="true">✓</span> {{ status('direct') }} ·
+          <span class="mark third" aria-hidden="true">★</span> {{ status('bestThird') }} ·
+          <span class="mark out" aria-hidden="true">✕</span> {{ status('out') }}
+        </p>
+      }
+    </section>
+  </ng-container>
+</ng-container>

@@ -322,6 +322,61 @@ test.describe('accessibility (axe, no new violations)', () => {
     });
   });
 
+  test.describe('ranking board (groups of 20 and 24)', () => {
+    const board = (file: string[], withFinals = false): string => {
+      const state = JSON.parse(readFileSync(join(__dirname, ...file), 'utf8')) as Record<string, unknown>;
+      if (!withFinals) delete state['finals'];
+      return JSON.stringify(state);
+    };
+    const groups20 = (): string => board(['..', 'tests', 'fixtures', 'persisted', 'tournament', 'v2.json']);
+    const groups24 = (): string => board(['support', 'groups24.json']);
+
+    /** The groups open in place and the whole list unfolded: the most the board ever shows. */
+    async function openBoard(page: Page, state: string, heading: string, dark = false): Promise<void> {
+      await page.addInitScript(
+        (init: { value: string; dark: boolean }) => {
+          if (init.dark) localStorage.setItem('setpoint.theme.v1', 'dark');
+          if (!localStorage.getItem('setpoint.tournament.v1'))
+            localStorage.setItem('setpoint.tournament.v1', init.value);
+        },
+        { value: state, dark },
+      );
+      await page.goto('/');
+      await page
+        .getByRole('button', { name: /Ranking/ })
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+      await page.getByRole('button', { name: 'Ver a tabela do Grupo A' }).click();
+      await expect(page.getByRole('table', { name: 'Tabela do Grupo A' })).toBeVisible();
+      await page.getByRole('button', { name: /^Ver todos/ }).click();
+    }
+
+    test('Grupos 20, light', async ({ page }) => {
+      await openBoard(page, groups20(), 'Corrida para a final');
+      expect(check('ranking-board', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test('Grupos 20, dark', async ({ page }) => {
+      await openBoard(page, groups20(), 'Corrida para a final', true);
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      expect(check('dark-ranking-board', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test('24 in groups, light', async ({ page }) => {
+      await openBoard(page, groups24(), 'Ranking geral');
+      expect(check('ranking-board-24', await scan(page), readBaseline())).toEqual([]);
+    });
+
+    test.describe('on a phone', () => {
+      test.use({ viewport: { width: 390, height: 844 } });
+      test('Grupos 20', async ({ page }) => {
+        await openBoard(page, groups20(), 'Corrida para a final');
+        expect(check('ranking-board-phone', await scan(page), readBaseline())).toEqual([]);
+      });
+    });
+  });
+
   test.describe('dark theme', () => {
     test('overview, players, rounds, ranking and settings', async ({ page }) => {
       test.slow();

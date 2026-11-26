@@ -1,0 +1,215 @@
+:host {
+  display: block;
+}
+
+.cut-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.cut-head h2 {
+  margin: var(--space-1) 0 0;
+}
+
+.cut-note {
+  margin: var(--space-2) 0 var(--space-3);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cut-note:empty {
+  display: none;
+}
+
+/* Every selector has two classes: the ranking and guest pages style their tables by column position on a phone. */
+.cut-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.cut-table .col-pos {
+  width: 34px;
+  padding: var(--space-1) var(--space-1) var(--space-1) 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.cut-table th.col-pos,
+.cut-table th.col-who,
+.cut-table th.col-num {
+  padding-block: var(--space-1);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.cut-table .col-who {
+  padding: 0 var(--space-1);
+  text-align: left;
+}
+
+.cut-table .col-num {
+  width: 40px;
+  padding: var(--space-1) var(--space-1);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.cut-table .col-balance {
+  width: 48px;
+}
+
+.cut-table .col-open {
+  width: 20px;
+  padding: 0 var(--space-1) 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  text-align: right;
+}
+
+.cut-table tbody tr {
+  position: relative;
+  border-top: 1px solid var(--border);
+}
+
+.cut-table tbody tr.cut-line {
+  border-top: 0;
+}
+
+.cut-table .who-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cut-table tbody .is-out .who-name,
+.cut-table tbody .is-out .col-pos,
+.cut-table tbody .is-out .col-num {
+  color: var(--muted);
+}
+
+.cut-table tbody .me-row .col-pos,
+.cut-table tbody .me-row .col-who,
+.cut-table tbody .me-row .col-num,
+.cut-table tbody .me-row .col-open {
+  background: var(--green-soft);
+}
+
+/* The athlete's button covers the row: a tap anywhere on it opens the athlete (one button, one tab stop). */
+.cut-table .row-button {
+  min-height: 40px;
+  gap: var(--space-2);
+}
+
+.cut-table .row-button::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.cut-table tbody tr:hover .who-name {
+  text-decoration: underline;
+}
+
+.cut-table .cut-line td {
+  height: 22px;
+  padding: 0;
+}
+
+.cut-table tbody tr:has(.row-button:active) td {
+  background: var(--surface-soft);
+}
+
+.cut-table .gbadge {
+  flex: none;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.cut-table .mark {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cut-table .mark.direct {
+  color: var(--chip-secure-fg);
+}
+
+.cut-table .mark.third {
+  color: var(--accent-text);
+}
+
+.cut-table .mark.out {
+  color: var(--chip-out-fg);
+}
+
+.cut-table .me-tag {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--orange-soft);
+  color: var(--accent-text);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.cut-table .cut-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.cut-table .cut-label::before {
+  flex: 1;
+  border-top: 2px dashed var(--danger);
+  content: '';
+}
+
+.show-all {
+  min-height: 40px;
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.show-all:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -116,14 +116,15 @@ test.describe('Grupos 20', () => {
       .click();
     await expect(page.getByRole('heading', { name: 'Doze classificados' })).toBeVisible();
     await expect(page.getByText(/Duplas cruzadas pelo ranking/)).toBeVisible();
-    const qualifiers = page.getByRole('heading', { name: 'Classificados' }).locator('xpath=ancestor::article');
-    await expect(qualifiers.getByRole('row')).toHaveCount(13);
-    await expect(page.getByText('Melhor 3º').first()).toBeVisible();
-    await expect(page.getByText('Eliminado').first()).toBeVisible();
+    // Header, the 12 that go on, the dashed cut line and the first one out.
+    const race = page.getByRole('article', { name: 'Corrida para a final' });
+    await expect(race.getByRole('row')).toHaveCount(15);
+    await expect(race.getByText('LINHA DE CORTE · 12 VAGAS')).toBeVisible();
+    await expect(page.getByText(/Classificado ·.*Melhor 3º ·.*Eliminado/)).toBeVisible();
     await expectAccessible(page);
 
-    // A group table row opens the athlete with the place in the race to the final.
-    await page.locator('.group-ranking-card button.ranking-player-button').first().click();
+    // An athlete of a group card opens the athlete with the place in the race to the final.
+    await page.getByRole('region', { name: 'Grupos' }).locator('button.ranking-player-button').first().click();
     const athlete = page.getByRole('dialog', { name: /./ });
     await expect(athlete.getByText(/º na corrida para a final/)).toBeVisible();
     await expect(athlete.getByText(/12 vagas na final/)).toBeVisible();
@@ -217,7 +218,7 @@ test.describe('Grupos 20', () => {
       .getByRole('button', { name: /Ranking/ })
       .first()
       .click();
-    await expect(page.getByRole('heading', { name: 'Classificados' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Corrida para a final' })).toBeVisible();
     await expect(page.getByText('Ordem provisória')).toBeVisible();
     await expect(page.getByText('Eliminado')).toHaveCount(0);
     await expect(page.getByText('Melhor 3º')).toHaveCount(0);

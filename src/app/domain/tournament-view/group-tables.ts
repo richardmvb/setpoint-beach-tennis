@@ -22,9 +22,13 @@ export interface GroupStandingTable {
   entries: GroupStandingEntry[];
 }
 
-/** The table of each group, sorted by sets won, game balance, games won, then name. */
+/**
+ * The table of each group: in the 20-player format by the qualification rules, in the other formats by the overall
+ * order of `standings` (sets won, game balance, games won, head-to-head, recorded draws, then name).
+ */
 export function groupTables(state: TournamentState, standings: PlayerStanding[]): GroupStandingTable[] {
   const byPlayer = new Map(standings.map((row) => [row.playerId, row]));
+  const order = new Map(standings.map((row, index) => [row.playerId, index]));
   if (usesGroupQualification(state)) {
     const settled = groupStageComplete(state);
     return groupQualification(state).byGroup.map((table) => ({
@@ -42,13 +46,8 @@ export function groupTables(state: TournamentState, standings: PlayerStanding[])
       pairs && group.fixedPairs
         ? group.fixedPairs.map((pair) => groupEntry(state, pair, byPlayer))
         : group.playerIds.map((playerId) => groupEntry(state, [playerId], byPlayer));
-    entries.sort(
-      (a, b) =>
-        b.setsWon - a.setsWon ||
-        b.gameBalance - a.gameBalance ||
-        b.gamesFor - a.gamesFor ||
-        a.label.localeCompare(b.label),
-    );
+    // The overall order (criteria, head-to-head, recorded draws), so a group never contradicts the ranking.
+    entries.sort((a, b) => order.get(a.playerIds[0])! - order.get(b.playerIds[0])!);
     return { id: group.id, name: group.name, entries };
   });
 }
