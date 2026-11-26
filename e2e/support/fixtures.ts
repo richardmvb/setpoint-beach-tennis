@@ -10,6 +10,8 @@ export interface Onboarding {
   disableTour: boolean;
   /** Mark the welcome profile prompt as already shown (default true). */
   skipProfilePrompt: boolean;
+  /** Hide the "tap an athlete" hint above the ranking, as if an athlete was opened before (default true). */
+  skipRankingHint?: boolean;
 }
 
 interface Fixtures {
@@ -57,6 +59,7 @@ export const test = base.extend<Fixtures>({
         if (flags.skipLanding) localStorage.setItem('setpoint.landing.seen', 'true');
         if (flags.disableTour) localStorage.setItem('setpoint.tutorial.setup', 'off');
         if (flags.skipProfilePrompt) localStorage.setItem('setpoint.profile.prompted', 'true');
+        if (flags.skipRankingHint !== false) localStorage.setItem('setpoint.ranking.hint', '1');
       } catch {
         /* storage unavailable: the app handles it the same way */
       }

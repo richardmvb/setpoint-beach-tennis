@@ -1,75 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { TournamentState } from '../../core/models';
-import { groups20State, sideAWins, strongerPairWins } from '../../testing/groups20';
-import { match, namedPlayers, round, tournamentState } from '../../testing/tournament-state';
-import { seededRandom } from '../../testing/seeded-random';
-import { shuffledOrder, withTieDraw } from '../tournament-play/tie-draw';
+import { groups20State, identicalGroups, settleAllTies, sideAWins, strongerPairWins } from '../../testing/groups20';
+import { namedPlayers, tournamentState } from '../../testing/tournament-state';
+import { withTieDraw } from '../tournament-play/tie-draw';
 import { describeQualificationTie, groupQualification, unresolvedQualificationTie } from './group-qualification';
 import { compareStandingCriteria } from './standings';
-
-/** Records a draw for every tie the rules ask about, until none is left. */
-function settleAllTies(initial: TournamentState, seed = 7): TournamentState {
-  const random = seededRandom(seed);
-  const randomInt = (max: number): number => Math.floor(random() * max);
-  let state = initial;
-  for (let step = 0; step < 300; step++) {
-    const tied = unresolvedQualificationTie(state);
-    if (!tied.length) return state;
-    const ids = tied.map((row) => row.playerId);
-    state = withTieDraw(state, ids, shuffledOrder(ids, randomInt), '2026-11-18T10:00:00.000Z');
-  }
-  throw new Error('The ties never settled.');
-}
-
-/** Five groups of four, every group scored the same way, so the thirds of all groups are exactly tied. */
-function identicalGroups(): TournamentState {
-  const players = namedPlayers(20);
-  const groups = Array.from({ length: 5 }, (_, g) => ({
-    id: `group-${g + 1}`,
-    name: `Grupo ${String.fromCharCode(65 + g)}`,
-    playerIds: [1, 2, 3, 4].map((n) => `p${g * 4 + n}`),
-  }));
-  const rounds = [0, 1, 2].map((r) =>
-    round(
-      r + 1,
-      groups.map((group, g) => {
-        const [a, b, c, d] = group.playerIds;
-        const teams: [[string, string], [string, string]][] = [
-          [
-            [a, b],
-            [c, d],
-          ],
-          [
-            [a, c],
-            [b, d],
-          ],
-          [
-            [a, d],
-            [b, c],
-          ],
-        ];
-        const scores: [number, number][] = [
-          [6, 1],
-          [6, 2],
-          [6, 3],
-        ];
-        return match(`g${g}-r${r}`, teams[r][0], teams[r][1], scores[r][0], scores[r][1], {
-          groupId: group.id,
-          phase: 'groups',
-        });
-      }),
-    ),
-  );
-  return tournamentState({
-    size: 20,
-    courts: 5,
-    tournamentMode: 'groups',
-    groupFormat: 'rotating',
-    players,
-    groups,
-    rounds,
-  });
-}
 
 describe('groupQualification', () => {
   it('5 groups of 4: 10 direct places plus the 2 best thirds', () => {

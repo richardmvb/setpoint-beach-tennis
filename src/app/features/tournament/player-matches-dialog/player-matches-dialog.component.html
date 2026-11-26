@@ -12,6 +12,9 @@
       <span>{{ t('playerMatches.qualifying', { played, total }) }}</span>
     </div>
   }
+  @if (position) {
+    <app-player-position [explanation]="position" />
+  }
   <div class="player-match-list">
     @for (item of matches; track $index) {
       <article class="player-match-detail">

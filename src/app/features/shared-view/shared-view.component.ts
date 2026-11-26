@@ -10,6 +10,10 @@ import type {
   PlayerMatchesDialogComponent,
   PlayerMatchesDialogData,
 } from '../tournament/player-matches-dialog/player-matches-dialog.component';
+import type {
+  RankingHelpDialogComponent,
+  RankingHelpDialogData,
+} from '../tournament/ranking-help-dialog/ranking-help-dialog.component';
 import { ProjectionController } from '../tournament/projection/projection-controller';
 import { ProjectionPanelComponent } from '../tournament/projection/projection-panel.component';
 import type {
@@ -104,6 +108,19 @@ export class SharedViewComponent {
       await import('../tournament/player-matches-dialog/player-matches-dialog.component');
     await this.dialog.open<void, PlayerMatchesDialogData, PlayerMatchesDialogComponent>(component, {
       data: { state, playerId },
+      labelledBy,
+      sheetBelow: 620,
+    });
+  }
+
+  /** "Como funciona o ranking", with this tournament's numbers. */
+  protected async openRankingHelp(): Promise<void> {
+    const state = this.store.tournament();
+    if (!state) return;
+    const { RankingHelpDialogComponent: component, RANKING_HELP_TITLE_ID: labelledBy } =
+      await import('../tournament/ranking-help-dialog/ranking-help-dialog.component');
+    await this.dialog.open<void, RankingHelpDialogData, RankingHelpDialogComponent>(component, {
+      data: { state },
       labelledBy,
       sheetBelow: 620,
     });

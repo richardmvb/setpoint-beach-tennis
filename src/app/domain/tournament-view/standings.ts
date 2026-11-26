@@ -1,5 +1,11 @@
-import type { PlayerStanding, TournamentState } from '../../core/models';
+import type { PlayerStanding, TieBreakDraw, TournamentState } from '../../core/models';
 import { isScored } from './scoring';
+
+/**
+ * How many of the top places the finals use (`FinalsService.create` takes the first 8): a tie that only touches places
+ * after the 8th does not matter.
+ */
+export const FINALIST_PLACES = 8;
 
 /** The ranking, as groups of players that the tie-break rules could not separate (most groups have one player). */
 export function rankedStandingGroups(state: TournamentState): PlayerStanding[][] {
@@ -43,14 +49,38 @@ export function rankedStandingGroups(state: TournamentState): PlayerStanding[][]
 
 /** The order a stored tie-break draw gave these exact players, or null when they were never drawn. */
 export function storedTieDrawOrder(state: TournamentState, players: PlayerStanding[]): string[] | null {
+  return storedTieDraw(state, players)?.order ?? null;
+}
+
+/** The stored tie-break draw of exactly these players (the same set, in any order), or null. */
+export function storedTieDraw(state: TournamentState, players: readonly PlayerStanding[]): TieBreakDraw | null {
   const playerIds = players.map((player) => player.playerId).sort();
   return (
     state.tieBreakDraws?.find(
       (draw) =>
         draw.playerIds.length === playerIds.length &&
         [...draw.playerIds].sort().every((id, index) => id === playerIds[index]),
-    )?.order ?? null
+    ) ?? null
   );
+}
+
+/**
+ * Every set of players the tie-break rules could not separate, that sits within the first `places` places and that
+ * nobody has drawn yet, best first. Ties further down change nothing, so they are never drawn.
+ */
+export function openStandingTies(
+  state: TournamentState,
+  groups: readonly PlayerStanding[][],
+  places: number,
+): PlayerStanding[][] {
+  const open: PlayerStanding[][] = [];
+  let position = 0;
+  for (const tiedPlayers of groups) {
+    if (tiedPlayers.length > 1 && position < places && storedTieDrawOrder(state, tiedPlayers) === null)
+      open.push(tiedPlayers);
+    position += tiedPlayers.length;
+  }
+  return open;
 }
 
 /** The ranking with the players split by gender, for the mixed finals. */
@@ -138,7 +168,15 @@ export function compareStandingCriteria(a: PlayerStanding, b: PlayerStanding): n
   return b.setsWon - a.setsWon || b.gameBalance - a.gameBalance || b.gamesFor - a.gamesFor;
 }
 
-function directWinsAgainstTiedPlayers(state: TournamentState, playerId: string, tiedPlayers: PlayerStanding[]): number {
+/**
+ * The head-to-head criterion: how many tied players this player beat as an opponent. A win against a side with two
+ * tied players counts twice, and it is counted once over the whole tied set.
+ */
+export function directWinsAgainstTiedPlayers(
+  state: TournamentState,
+  playerId: string,
+  tiedPlayers: readonly PlayerStanding[],
+): number {
   const tiedIds = new Set(tiedPlayers.map((player) => player.playerId).filter((id) => id !== playerId));
   let wins = 0;
   for (const round of state.rounds)

@@ -57,11 +57,36 @@ async function show(state: TournamentState, stored: Record<string, string> = {})
 }
 
 describe('RankingPageComponent', () => {
-  it('shows the individual ranking and the tie-break rules', async () => {
+  it('shows the individual ranking under the tie-break order, all five criteria', async () => {
     await show(played());
     expect(screen.getByRole('heading', { name: 'Ranking individual' })).toBeTruthy();
-    expect(screen.getByText('DESEMPATE')).toBeTruthy();
-    expect(screen.getByText('Saldo de games')).toBeTruthy();
+    const criteria = screen.getByRole('list', { name: 'DESEMPATE' });
+    expect(
+      within(criteria)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent?.trim()),
+    ).toEqual(['1Vitórias', '2Saldo', '3Games pró', '4Confronto', '5Sorteio']);
+  });
+
+  it('opens "Como funciona" from the criteria strip', async () => {
+    await show(played());
+    const store = TestBed.inject(TournamentStore);
+    const open = vi.spyOn(store, 'openRankingHelp').mockResolvedValue();
+    fireEvent.click(screen.getByRole('button', { name: /Como funciona/ }));
+    expect(open).toHaveBeenCalled();
+  });
+
+  it('every row opens the athlete, and the hint above the ranking goes after the first tap', async () => {
+    const { local } = await show(played());
+    const store = TestBed.inject(TournamentStore);
+    const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
+    expect(screen.getByText(/Toque num atleta para ver os jogos e a posição/)).toBeTruthy();
+    const rows = screen.getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
+    expect(rows).toHaveLength(8);
+    fireEvent.click(rows[0]);
+    expect(open).toHaveBeenCalledWith(store.standings()[0].playerId);
+    expect(screen.queryByText(/Toque num atleta para ver os jogos e a posição/)).toBeNull();
+    expect(local.getItem('setpoint.ranking.hint')).toBe('1');
   });
 
   it('offers the finals once every match is played, and generates them', async () => {
@@ -142,7 +167,18 @@ describe('RankingPageComponent: the 20-player format', () => {
     expect(within(card).getAllByRole('row')).toHaveLength(13);
     expect(screen.getByText('Doze classificados')).toBeTruthy();
     expect(screen.getByText(/Cada uma das 6 melhores sorteia o parceiro/)).toBeTruthy();
-    expect(screen.getByText('Sorteio registrado')).toBeTruthy();
+  });
+
+  it('opens an athlete from a group table row too', async () => {
+    await show(groups20State(4, 3, strongerPairWins));
+    const store = TestBed.inject(TournamentStore);
+    const open = vi.spyOn(store, 'openPlayerMatches').mockResolvedValue();
+    // 20 rows in the group tables and 20 in the individual ranking.
+    const rows = screen.getAllByRole('button', { description: 'Abre os jogos e a posição do atleta' });
+    expect(rows).toHaveLength(40);
+    const firstGroup = store.groupTables()[0].entries[0];
+    fireEvent.click(rows[0]);
+    expect(open).toHaveBeenCalledWith(firstGroup.playerIds[0]);
   });
 
   it('draws the bye bracket when the organizer switches to Chave, and the score fields back under Jogos', async () => {

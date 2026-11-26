@@ -59,4 +59,50 @@ test.describe('ranking: matches of one player', () => {
     await dialog.getByRole('button', { name: 'Fechar' }).click();
     await expect(dialog).toHaveCount(0);
   });
+
+  test('explains the place in the Posição block, and the comparison opens from it', async ({ page }) => {
+    await createLocalTournament(page);
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await page.locator('button.ranking-player-button').nth(1).click();
+    const dialog = page.getByRole('dialog', { name: /./ });
+    await expect(dialog.getByRole('heading', { name: 'POSIÇÃO' })).toBeVisible();
+    await expect(dialog.getByText(/2º no ranking geral/)).toBeVisible();
+    await expect(dialog.getByText(/^Atrás de .+ \(1º\)$/)).toBeVisible();
+    await expect(dialog.getByText(/^À frente de .+ \(3º\)$/)).toBeVisible();
+  });
+});
+
+test.describe('ranking: the tie-break order and the hint', () => {
+  test.use({ onboarding: { skipLanding: true, disableTour: true, skipProfilePrompt: true, skipRankingHint: false } });
+
+  test('shows the hint until an athlete is opened, and "Como funciona" explains the format', async ({ page }) => {
+    await createLocalTournament(page);
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    const hint = page.getByText('Toque num atleta para ver os jogos e a posição');
+    await expect(hint).toBeVisible();
+    await expect(page.getByRole('list', { name: 'DESEMPATE' }).getByRole('listitem')).toHaveCount(5);
+
+    await page.getByRole('button', { name: /Como funciona/ }).click();
+    const help = page.getByRole('dialog', { name: 'Como funciona o ranking' });
+    await expect(help.getByText('Os 8 vão para a final')).toBeVisible();
+    await help.getByRole('button', { name: 'Entendi' }).click();
+    await expect(help).toHaveCount(0);
+
+    await page.locator('button.ranking-player-button').first().click();
+    await page.getByRole('dialog', { name: /./ }).getByRole('button', { name: 'Fechar' }).click();
+    await expect(hint).toHaveCount(0);
+    await page.reload();
+    await page
+      .getByRole('button', { name: /Ranking/ })
+      .first()
+      .click();
+    await expect(page.getByRole('heading', { name: 'Ranking individual' })).toBeVisible();
+    await expect(hint).toHaveCount(0);
+  });
 });

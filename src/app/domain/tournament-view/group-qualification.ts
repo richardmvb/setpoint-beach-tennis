@@ -39,7 +39,27 @@ interface Run {
 
 interface Analysis {
   qualification: GroupQualification;
-  unresolved: PlayerStanding[];
+  /** Every tie the qualification needs drawn, in the order the rules meet them (group tops, thirds cut, seeding). */
+  open: PlayerStanding[][];
+  field: QualificationField;
+}
+
+/**
+ * The whole field of the 20-player format in the order of the race to the finals, with what the explanations need:
+ * the qualifiers in seed order, then the third places that missed out (closest to the cut), then everyone else.
+ */
+export interface QualificationField {
+  qualification: GroupQualification;
+  /** Third places that did not get a best-third place, best first. */
+  missedThirds: PlayerStanding[];
+  /** Fourth places and below, ranked across groups with the same rule (a group's order is kept). */
+  others: PlayerStanding[];
+  /** The group name and 1-based place of every athlete. */
+  groupOf: Map<string, { groupId: string; name: string; place: number }>;
+  /** How many best-third places there are (12 minus the direct places). */
+  thirdSlots: number;
+  /** Every tie the qualification needs drawn and nobody has drawn yet. */
+  open: PlayerStanding[][];
 }
 
 /** One group's table: sets won, game balance, games won, then head-to-head, then a recorded draw. */
@@ -58,7 +78,12 @@ export function groupQualification(state: TournamentState): GroupQualification {
  * the cut among third places, and the single ranking of the qualifiers.
  */
 export function unresolvedQualificationTie(state: TournamentState): PlayerStanding[] {
-  return analyse(state).unresolved;
+  return analyse(state).open[0] ?? [];
+}
+
+/** The field in race order, the group of each athlete and every open tie: see `QualificationField`. */
+export function qualificationField(state: TournamentState): QualificationField {
+  return analyse(state).field;
 }
 
 /** Where a tie that blocks the qualification sits, for the words of the tie draw. */
@@ -79,9 +104,9 @@ export function describeQualificationTie(state: TournamentState, tied: readonly 
 
 function analyse(state: TournamentState): Analysis {
   const groups = state.groups ?? [];
-  let unresolved: PlayerStanding[] = [];
+  const open: PlayerStanding[][] = [];
   const settle = (tied: PlayerStanding[]): void => {
-    if (!unresolved.length) unresolved = tied;
+    open.push(tied);
   };
 
   const orders = new Map<string, PlayerStanding[]>();
@@ -115,8 +140,7 @@ function analyse(state: TournamentState): Analysis {
   const bestThirds = rankedThirds.order.slice(0, thirdSlots);
 
   const seeding = rankAcross(state, [...direct, ...bestThirds], groupOf, positionOf);
-  const undrawn = seeding.runs.find((run) => !run.drawn);
-  if (undrawn) settle(undrawn.players);
+  for (const run of seeding.runs) if (!run.drawn) settle(run.players);
 
   const bestThirdIds = new Set(bestThirds.map((row) => row.playerId));
   const directIds = new Set(direct.map((row) => row.playerId));
@@ -129,14 +153,31 @@ function analyse(state: TournamentState): Analysis {
       status: directIds.has(standing.playerId) ? 'direct' : bestThirdIds.has(standing.playerId) ? 'bestThird' : 'out',
     })),
   }));
+  const qualification: GroupQualification = {
+    byGroup,
+    thirdsRanked: rankedThirds.order,
+    qualifiers: seeding.order,
+    seeding: seeding.order.map((row) => row.playerId),
+  };
+  const lower = groups.flatMap((group) => orders.get(group.id)!.slice(DIRECT_PER_GROUP + 1));
+  const nameOf = new Map(groups.map((group) => [group.id, group.name]));
+  const places = new Map(
+    [...positionOf].map(([playerId, place]) => {
+      const groupId = groupOf.get(playerId)!;
+      return [playerId, { groupId, name: nameOf.get(groupId)!, place }] as const;
+    }),
+  );
   return {
-    qualification: {
-      byGroup,
-      thirdsRanked: rankedThirds.order,
-      qualifiers: seeding.order,
-      seeding: seeding.order.map((row) => row.playerId),
+    qualification,
+    open,
+    field: {
+      qualification,
+      missedThirds: rankedThirds.order.slice(thirdSlots),
+      others: rankAcross(state, lower, groupOf, positionOf).order,
+      groupOf: places,
+      thirdSlots,
+      open,
     },
-    unresolved,
   };
 }
 

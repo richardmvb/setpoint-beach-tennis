@@ -65,15 +65,7 @@
     "earlyText": "Todos já têm a mesma quantidade de partidas. Ao gerar as finais, as rodadas restantes serão bloqueadas.",
     "standardText": "1º+3º × 2º+4º decidem o título; 5º+7º × 6º+8º, o 3º lugar.",
     "generateFinals": "Gerar finais",
-    "tieBreak": "DESEMPATE",
-    "criterionWins": "Vitórias",
-    "criterionBalance": "Saldo de games",
-    "criterionGamesFor": "Games pró",
-    "twelveQualified": "Doze classificados",
-    "groupsCrossedText": "Duplas cruzadas pelo ranking dos 12 (1º+3º, 2º+4º, 5º+7º, 6º+8º, 9º+11º, 10º+12º). As duas melhores esperam nas semifinais; as outras quatro jogam as quartas.",
-    "groupsSeededText": "Cada uma das 6 melhores sorteia o parceiro entre o 7º e o 12º. As duas melhores esperam nas semifinais; as outras quatro jogam as quartas.",
-    "criterionHeadToHead": "Confronto direto no grupo",
-    "criterionDraw": "Sorteio registrado"
+    "twelveQualified": "Doze classificados"
   },
   "finals": {
     "kicker": "FASE FINAL · SET ÚNICO",
