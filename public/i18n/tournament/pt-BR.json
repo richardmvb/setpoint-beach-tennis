@@ -20,6 +20,123 @@
     "win": "Vitória",
     "loss": "Derrota"
   },
+  "position": {
+    "title": "POSIÇÃO",
+    "place": {
+      "qualification": "{{ place }}º na corrida para a final",
+      "overall": "{{ place }}º no ranking geral",
+      "male": "{{ place }}º no ranking masculino",
+      "female": "{{ place }}º no ranking feminino"
+    },
+    "slots": "{{ count }} vagas na final",
+    "groupPlace": "{{ group }} · {{ place }}º",
+    "inside": "Na final",
+    "outside": "Fora da final",
+    "provisional": "provisório",
+    "tiles": {
+      "wins": "vitórias",
+      "balance": "saldo",
+      "gamesFor": "games pró",
+      "against": "contra"
+    },
+    "behind": "Atrás de {{ name }} ({{ place }}º)",
+    "behindGroup": "Atrás de {{ name }} ({{ place }}º no grupo)",
+    "ahead": "À frente de {{ name }} ({{ place }}º)",
+    "aheadGroup": "À frente de {{ name }} ({{ place }}º no grupo)",
+    "reason": {
+      "wins": "mais vitórias, {{ upper }} × {{ lower }}",
+      "balance": "mesmas vitórias; desempate no saldo, {{ upper }} × {{ lower }}",
+      "gamesFor": "mesmas vitórias e saldo; desempate em games pró, {{ upper }} × {{ lower }}",
+      "headToHead": "empate em vitórias, saldo e games pró entre {{ count }} atletas; nos jogos entre eles, {{ upper }} × {{ lower }} vitórias",
+      "draw": "empate em tudo; decidido no sorteio de {{ time }}",
+      "drawUndated": "empate em tudo; decidido no sorteio registrado",
+      "drawAcross": "empate em tudo entre atletas de grupos diferentes; decidido no sorteio de {{ time }}",
+      "drawAcrossUndated": "empate em tudo entre atletas de grupos diferentes; decidido no sorteio registrado",
+      "drawGroupOrder": "empate em tudo entre atletas de grupos diferentes; no sorteio, cada grupo manteve a sua ordem",
+      "sameGroup": "empate nos números; vale a ordem do {{ group }}",
+      "sameGroupHeadToHead": "empate nos números; vale a ordem do {{ group }}, decidida no confronto direto",
+      "sameGroupDraw": "empate nos números; vale a ordem do {{ group }}, decidida no sorteio",
+      "ruleDirect": "os 2 primeiros de cada grupo passam direto, mesmo com números menores",
+      "ruleThirds": "só os 3º colocados disputam as vagas restantes",
+      "partners": "dupla fixa: os dois têm os mesmos números",
+      "tiedDraw": "empate em tudo; o organizador vai sortear a ordem",
+      "tied": "empate em tudo; aqui a ordem entre os dois não muda nada"
+    },
+    "compare": {
+      "show": "Comparar com {{ name }}",
+      "caption": "Desempate entre {{ me }} e {{ other }}",
+      "criterion": "Critério",
+      "wins": "Vitórias",
+      "balance": "Saldo",
+      "gamesFor": "Games pró",
+      "headToHead": "Confronto direto",
+      "draw": "Sorteio",
+      "decided": "decidiu",
+      "notNeeded": "não foi preciso",
+      "pending": "a sortear",
+      "tie": "empate",
+      "drawn": "sorteio"
+    }
+  },
+  "criteria": {
+    "label": "DESEMPATE",
+    "wins": "Vitórias",
+    "balance": "Saldo",
+    "gamesFor": "Games pró",
+    "headToHead": "Confronto",
+    "draw": "Sorteio",
+    "help": "Como funciona"
+  },
+  "rankingHelp": {
+    "kicker": "RANKING",
+    "title": "Como funciona o ranking",
+    "close": "Fechar",
+    "ok": "Entendi",
+    "subtitle": "{{ players }} atletas · cada atleta joga {{ matches }} jogos",
+    "subtitleGroups": "{{ players }} atletas · {{ groups }} grupos de {{ size }} · cada atleta joga {{ matches }} jogos",
+    "groupsOnly": {
+      "title": "Os grupos só organizam os jogos",
+      "text": "Você joga com e contra quem está no seu grupo. Não existe classificado por grupo: vale o ranking geral."
+    },
+    "individual": {
+      "title": "Cada vitória é sua",
+      "text": "Você troca de parceiro a cada jogo. A vitória, os games pró e os games contra contam para cada atleta da dupla."
+    },
+    "pairs": {
+      "title": "A dupla soma junta",
+      "text": "A dupla joga unida o torneio todo, e os dois atletas somam os mesmos números."
+    },
+    "order": {
+      "groupTitle": "A ordem dentro do grupo",
+      "title": "Vale o ranking geral, com os {{ players }} atletas numa lista só",
+      "text": "Quem tem mais vitórias fica na frente. Se empatar, vale o próximo critério:",
+      "wins": "Vitórias",
+      "balance": "Saldo (pró − contra)",
+      "gamesFor": "Games pró",
+      "headToHead": "Confronto direto entre os empatados",
+      "draw": "Sorteio feito pelo organizador"
+    },
+    "groups20": {
+      "qualifyTitle": "Quem vai para a final: {{ slots }} vagas",
+      "qualifyAllThirds": "Os 2 primeiros de cada grupo ({{ direct }}) e os {{ thirds }} terceiros colocados.",
+      "qualifySomeThirds": "Os 2 primeiros de cada grupo ({{ direct }}) e os {{ thirds }} melhores entre os {{ groups }} terceiros colocados. Os 3º são comparados por vitórias, saldo, games pró e sorteio.",
+      "legend": "Verde: passa direto · Laranja: 3º colocado · Cinza: fora",
+      "seedTitle": "A ordem dos 12 decide a chave",
+      "seedText": "Os 12 entram numa lista só, por vitórias, saldo, games pró e sorteio. Dois atletas do mesmo grupo nunca trocam de ordem.",
+      "pairingCrossed": "Duplas cruzadas pelo ranking dos 12 (1º+3º, 2º+4º, 5º+7º, 6º+8º, 9º+11º, 10º+12º). As duas melhores esperam nas semifinais; as outras quatro jogam as quartas.",
+      "pairingSeeded": "Cada uma das 6 melhores sorteia o parceiro entre o 7º e o 12º. As duas melhores esperam nas semifinais; as outras quatro jogam as quartas."
+    },
+    "mixed": {
+      "title": "Um ranking para cada gênero",
+      "text": "Os {{ slots }} melhores homens e as {{ slots }} melhores mulheres vão para a final."
+    },
+    "top": {
+      "title": "Os {{ slots }} primeiros vão para a final",
+      "allTitle": "Os {{ players }} vão para a final",
+      "pairing": "Título: 1º e 3º contra 2º e 4º. Disputa de 3º lugar: 5º e 7º contra 6º e 8º."
+    },
+    "tip": "Toque num atleta do ranking para ver a posição dele e o que decidiu cada desempate."
+  },
   "shareResults": {
     "kicker": "CARD PARA INSTAGRAM",
     "title": "Personalize e confira",
@@ -119,7 +236,10 @@
       "direct": "Classificado",
       "bestThird": "Melhor 3º",
       "out": "Eliminado"
-    }
+    },
+    "openHint": "Toque num atleta para ver os jogos e a posição",
+    "openDescription": "Abre os jogos e a posição do atleta",
+    "open": "Abrir"
   },
   "battle": {
     "won": "VENCEU",

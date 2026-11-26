@@ -1,0 +1,48 @@
+:host {
+  display: contents;
+}
+
+.ranking-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The athlete's button covers the whole row, so a tap anywhere on it opens the athlete (one button, one tab stop). */
+.leaderboard tbody tr {
+  position: relative;
+}
+
+.ranking-player-button::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.leaderboard tbody tr:hover .ranking-player-button > b,
+.leaderboard tbody tr:hover .ranking-player-name b {
+  text-decoration: underline;
+}
+
+.leaderboard tbody tr:has(.ranking-player-button:active) td {
+  background: var(--surface-soft);
+}
+
+.row-open {
+  width: 18px;
+  padding-inline: 0 4px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  text-align: right;
+}

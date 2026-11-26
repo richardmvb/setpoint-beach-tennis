@@ -15,17 +15,31 @@ import { Player, PlayerStanding, Round } from '../../../core/models';
 import { PlayerAvatarComponent } from '../../player-avatar.component';
 import { GenderIconComponent } from '../../gender-icon.component';
 import { CardComponent } from '@ui/card/card.component';
+import { RankingHint } from '../../../core/ranking-hint';
+import { RankingCriteriaComponent } from './ranking-criteria.component';
 import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tournament-view/group-tables';
 
 @Component({
   selector: 'app-ranking-view',
   standalone: true,
-  imports: [CommonModule, PlayerAvatarComponent, GenderIconComponent, CardComponent, TranslocoDirective],
+  imports: [
+    CommonModule,
+    PlayerAvatarComponent,
+    GenderIconComponent,
+    CardComponent,
+    TranslocoDirective,
+    RankingCriteriaComponent,
+  ],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [':host{display:contents}'],
+  styleUrl: './ranking-view.component.css',
   template: `
     <ng-container *transloco="let t; prefix: 'tournament.ranking'">
+      <app-ranking-criteria (helpRequested)="helpRequested.emit()" />
+      @if (hasSchedule() && !hint.seen()) {
+        <p class="ranking-hint"><span aria-hidden="true">›</span> {{ t('openHint') }}</p>
+      }
+      <span class="visually-hidden" id="ranking-open-description">{{ t('openDescription') }}</span>
       @for (group of groupTables(); track group.id) {
         <article uiCard class="full-card group-ranking-card">
           <div class="card-title-row">
@@ -45,6 +59,9 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                   <th class="numeric">{{ t('gamesForShort') }}</th>
                   <th class="numeric">{{ t('balance') }}</th>
                   <th class="numeric">{{ t('matches') }}</th>
+                  <th class="row-open">
+                    <span class="visually-hidden">{{ t('open') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -65,7 +82,12 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       >
                     </td>
                     <td>
-                      <span class="ranking-player-cell">
+                      <button
+                        type="button"
+                        class="ranking-player-cell ranking-player-button"
+                        aria-describedby="ranking-open-description"
+                        (click)="select(entry.playerIds[0])"
+                      >
                         @for (id of entry.playerIds; track id) {
                           <app-player-avatar [name]="nameOf(id)" [photoDataUrl]="photoOf(id)" />
                         }
@@ -94,7 +116,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                             }
                           </span>
                         }
-                      </span>
+                      </button>
                     </td>
                     <td class="numeric">
                       <b>{{ entry.setsWon }}</b>
@@ -109,6 +131,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       >
                     </td>
                     <td class="numeric">{{ entry.matchesPlayed }} / {{ scheduledMatches(entry.playerIds[0]) }}</td>
+                    <td class="row-open" aria-hidden="true">›</td>
                   </tr>
                 }
               </tbody>
@@ -153,6 +176,9 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                   <th class="numeric">{{ t('against') }}</th>
                   <th class="numeric">{{ t('balance') }}</th>
                   <th class="numeric">{{ t('rests') }}</th>
+                  <th class="row-open">
+                    <span class="visually-hidden">{{ t('open') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -176,7 +202,8 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       <button
                         type="button"
                         class="ranking-player-cell ranking-player-button"
-                        (click)="playerSelected.emit(row.playerId)"
+                        aria-describedby="ranking-open-description"
+                        (click)="select(row.playerId)"
                       >
                         <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" /><app-gender-icon
                           [gender]="icon"
@@ -203,6 +230,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       >
                     </td>
                     <td class="numeric">{{ row.rests }}</td>
+                    <td class="row-open" aria-hidden="true">›</td>
                   </tr>
                 }
               </tbody>
@@ -237,6 +265,9 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                   <th class="numeric">{{ t('against') }}</th>
                   <th class="numeric">{{ t('balance') }}</th>
                   <th class="numeric">{{ t('rests') }}</th>
+                  <th class="row-open">
+                    <span class="visually-hidden">{{ t('open') }}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +291,8 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       <button
                         type="button"
                         class="ranking-player-cell ranking-player-button"
-                        (click)="playerSelected.emit(row.playerId)"
+                        aria-describedby="ranking-open-description"
+                        (click)="select(row.playerId)"
                       >
                         <app-player-avatar [name]="row.name" [photoDataUrl]="photoOf(row.playerId)" />
                         @if (genderOf(row.playerId)) {
@@ -309,6 +341,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
                       >
                     </td>
                     <td class="numeric">{{ row.rests }}</td>
+                    <td class="row-open" aria-hidden="true">›</td>
                   </tr>
                 }
               </tbody>
@@ -321,6 +354,7 @@ import type { GroupStandingEntry, GroupStandingTable } from '../../../domain/tou
 })
 export class RankingViewComponent implements OnChanges, OnDestroy {
   private readonly changeDetector = inject(ChangeDetectorRef);
+  protected readonly hint = inject(RankingHint);
   private lastRanks = new Map<string, number>();
   private movementTimer: ReturnType<typeof setTimeout> | null = null;
   private movement = new Map<string, number>();
@@ -336,6 +370,13 @@ export class RankingViewComponent implements OnChanges, OnDestroy {
   readonly hasSchedule = input(false);
   readonly highlightId = input('');
   readonly playerSelected = output<string>();
+  /** "Como funciona" was asked for: the opener shows the help dialog with its tournament. */
+  readonly helpRequested = output();
+
+  protected select(playerId: string): void {
+    this.hint.markSeen();
+    this.playerSelected.emit(playerId);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!changes['standings']) return;

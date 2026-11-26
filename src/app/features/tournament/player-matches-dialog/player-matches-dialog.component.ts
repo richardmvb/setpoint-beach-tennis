@@ -4,8 +4,10 @@ import { provideTranslocoScope, TranslocoDirective } from '@jsverse/transloco';
 import { FinalsService } from '../../../core/finals.service';
 import type { FinalMatchKind, Player, TournamentState } from '../../../core/models';
 import { playerMatches, scheduledGroupMatches } from '../../../domain/tournament-view/player-matches';
+import { placeExplanation } from '../../../domain/tournament-view/ranking-explanation';
 import { rankedStandingGroups } from '../../../domain/tournament-view/standings';
 import { PlayerAvatarComponent } from '../../player-avatar.component';
+import { PlayerPositionComponent } from './player-position.component';
 
 export interface PlayerMatchesDialogData {
   /** The tournament as it was when the dialog opened. */
@@ -29,12 +31,12 @@ interface MatchRow {
 export const PLAYER_MATCHES_TITLE_ID = 'player-matches-title';
 
 /**
- * Every match of one player, opened from the ranking. Open it with `DialogService.open` (focus trap, Escape and a
+ * Every match of one player, opened from the ranking, under the player's place and why (`PlayerPositionComponent`). Open it with `DialogService.open` (focus trap, Escape and a
  * click outside close it). The look lives in the global `.player-matches-modal` rules (src/styles.css).
  */
 @Component({
   selector: 'app-player-matches-dialog',
-  imports: [TranslocoDirective, PlayerAvatarComponent],
+  imports: [TranslocoDirective, PlayerAvatarComponent, PlayerPositionComponent],
   providers: [provideTranslocoScope('tournament')],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'player-matches-modal' },
@@ -54,6 +56,8 @@ export class PlayerMatchesDialogComponent {
       .flat()
       .find((row) => row.playerId === this.data.playerId)?.matchesPlayed ?? 0;
   protected readonly total = scheduledGroupMatches(this.data.state, this.data.playerId);
+  /** Where the player stands and why (null before the schedule exists). A snapshot, like the rest of the dialog. */
+  protected readonly position = placeExplanation(this.data.state, this.data.playerId);
   protected readonly matches: MatchRow[] = this.buildRows();
 
   close(): void {

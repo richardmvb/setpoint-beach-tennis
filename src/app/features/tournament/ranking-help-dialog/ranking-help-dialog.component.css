@@ -1,0 +1,132 @@
+:host {
+  display: block;
+  box-sizing: border-box;
+  width: min(520px, 100vw);
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 28px 90px var(--black-35);
+}
+
+h2 {
+  margin: 6px 0 0;
+  font-size: 22px;
+}
+
+.help-subtitle,
+.help-tip {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.help-steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.help-steps > li {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  padding-left: 34px;
+  font-size: 13px;
+  line-height: 1.5;
+  counter-increment: step;
+}
+
+.help-steps > li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--text);
+  color: var(--surface);
+  font-size: 12px;
+  font-weight: 800;
+  content: counter(step);
+}
+
+.help-steps b {
+  font-size: 14px;
+}
+
+.help-criteria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.help-criteria > span {
+  padding: 1px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.help-criteria i {
+  margin-right: var(--space-1);
+  color: var(--muted);
+  font-style: normal;
+}
+
+.help-diagram {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.help-group {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.help-group-name {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.help-place {
+  display: block;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.help-place.direct {
+  background: var(--chip-secure-fg);
+}
+
+.help-place.third {
+  background: var(--orange);
+}
+
+.help-place.out {
+  background: var(--border);
+}
+
+.help-legend {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.help-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}

@@ -55,7 +55,7 @@
         <app-guest-rounds [state]="state" [spotlight]="store.rounds().spotlight" [history]="store.rounds().history" [players]="state.players" [highlightId]="store.guestPlayerId()" />
       }
       @if (state.rounds.length) {
-        <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" />
+        <app-ranking-view id="guest-ranking" [groupTables]="store.groupTables()" [standings]="store.standings()?.all ?? []" [players]="state.players" [rounds]="state.rounds" [maleStandings]="store.standings()?.male ?? []" [femaleStandings]="store.standings()?.female ?? []" [showGenderRankings]="format.usesMixedFinals(state)" [genderRankingLimit]="format.mixedFinalistCount(state)" [fixedPairsMode]="format.fixedPairsMode(state)" [hasSchedule]="true" [highlightId]="store.guestPlayerId()" (playerSelected)="openPlayerMatches($event)" (helpRequested)="openRankingHelp()" />
       }
       @if (store.qualification(); as qualification) {
         <app-qualifiers-card [qualification]="qualification" [players]="state.players" [provisional]="!state.finals" />

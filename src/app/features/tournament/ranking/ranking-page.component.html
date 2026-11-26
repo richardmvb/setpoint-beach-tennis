@@ -1,4 +1,5 @@
 <ng-container *transloco="let t; prefix: 'organizer.ranking'">
+  <ng-container *transloco="let pairing; prefix: 'tournament.rankingHelp.groups20'">
   <app-ranking-view
     [groupTables]="store.groupTables()"
     [standings]="store.standings()"
@@ -11,6 +12,7 @@
     [fixedPairsMode]="store.fixedPairsMode()"
     [hasSchedule]="store.hasSchedule()"
     (playerSelected)="store.openPlayerMatches($event)"
+    (helpRequested)="store.openRankingHelp()"
   />
   @if (store.qualification(); as qualification) {
     <app-qualifiers-card
@@ -38,8 +40,8 @@
           {{
             store.qualification()
               ? store.state().finalsPairing === 'seededDraw'
-                ? t('groupsSeededText')
-                : t('groupsCrossedText')
+                ? pairing('pairingSeeded')
+                : pairing('pairingCrossed')
               : store.usesMixedFinalBracket()
               ? t('mixedBracketText')
               : store.usesMixedFinals()
@@ -56,24 +58,5 @@
   @if (store.state().finals; as final) {
     <article appFinalsCard [final]="final"></article>
   }
-  <article uiCard class="full-card ranking-rules">
-    <span class="card-kicker">{{ t('tieBreak') }}</span>
-    <div class="criteria">
-      <b>01</b><span><strong>{{ t('criterionWins') }}</strong></span>
-    </div>
-    <div class="criteria">
-      <b>02</b><span><strong>{{ t('criterionBalance') }}</strong></span>
-    </div>
-    <div class="criteria">
-      <b>03</b><span><strong>{{ t('criterionGamesFor') }}</strong></span>
-    </div>
-    @if (store.qualification()) {
-      <div class="criteria">
-        <b>04</b><span><strong>{{ t('criterionHeadToHead') }}</strong></span>
-      </div>
-      <div class="criteria">
-        <b>05</b><span><strong>{{ t('criterionDraw') }}</strong></span>
-      </div>
-    }
-  </article>
+</ng-container>
 </ng-container>

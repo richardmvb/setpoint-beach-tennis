@@ -1,0 +1,209 @@
+<ng-container *transloco="let t; prefix: 'tournament.position'">
+  <ng-container *transloco="let status; prefix: 'tournament.ranking.status'">
+    @let e = explanation();
+    <section class="player-position" aria-labelledby="player-position-title">
+      <h3 id="player-position-title" class="card-kicker">{{ t('title') }}</h3>
+      <p class="position-place">
+        <b>
+          @switch (e.list) {
+            @case ('qualification') {
+              {{ t('place.qualification', { place: e.place }) }}
+            }
+            @case ('male') {
+              {{ t('place.male', { place: e.place }) }}
+            }
+            @case ('female') {
+              {{ t('place.female', { place: e.place }) }}
+            }
+            @default {
+              {{ t('place.overall', { place: e.place }) }}
+            }
+          }
+        </b>
+        @if (e.slots !== null) {
+          <span class="position-slots"> · {{ t('slots', { count: e.slots }) }}</span>
+        }
+      </p>
+      <p class="position-status">
+        @if (e.group; as group) {
+          <span>{{ group.place !== null ? t('groupPlace', { group: group.name, place: group.place }) : group.name }}</span>
+        }
+        @if (e.group?.status; as qualification) {
+          <span
+            class="position-chip"
+            [class.inside]="qualification !== 'out'"
+            [class.outside]="qualification === 'out'"
+            ><span aria-hidden="true">{{
+              qualification === 'direct' ? '✓' : qualification === 'bestThird' ? '★' : '✕'
+            }}</span>
+            @switch (qualification) {
+              @case ('direct') {
+                {{ status('direct') }}
+              }
+              @case ('bestThird') {
+                {{ status('bestThird') }}
+              }
+              @default {
+                {{ status('out') }}
+              }
+            }
+          </span>
+        } @else if (e.inside !== null) {
+          <span class="position-chip" [class.inside]="e.inside" [class.outside]="!e.inside"
+            ><span aria-hidden="true">{{ e.inside ? '✓' : '✕' }}</span> {{ e.inside ? t('inside') : t('outside') }}</span
+          >
+        }
+        @if (e.provisional) {
+          <span class="position-provisional">{{ t('provisional') }}</span>
+        }
+      </p>
+      <dl class="position-tiles">
+        <div>
+          <dt>{{ t('tiles.wins') }}</dt>
+          <dd>{{ e.standing.setsWon }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('tiles.balance') }}</dt>
+          <dd>{{ signed(e.standing.gameBalance) }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('tiles.gamesFor') }}</dt>
+          <dd>{{ e.standing.gamesFor }}</dd>
+        </div>
+        <div>
+          <dt>{{ t('tiles.against') }}</dt>
+          <dd>{{ e.standing.gamesAgainst }}</dd>
+        </div>
+      </dl>
+      @for (n of neighbours(); track n.direction) {
+        <div class="position-neighbour">
+          <p>
+            <span class="position-arrow" aria-hidden="true">{{ n.direction === 'behind' ? '↑' : '↓' }}</span>
+            <b>{{ n.direction === 'behind' ? (n.neighbour.scope === 'group' ? t('behindGroup', { name: n.neighbour.standing.name, place: n.neighbour.place }) : t('behind', { name: n.neighbour.standing.name, place: n.neighbour.place })) : n.neighbour.scope === 'group' ? t('aheadGroup', { name: n.neighbour.standing.name, place: n.neighbour.place }) : t('ahead', { name: n.neighbour.standing.name, place: n.neighbour.place }) }}</b>
+            @let s = n.separation;
+            @switch (s.kind) {
+              @case ('criterion') {
+                @switch (s.criterion) {
+                  @case ('wins') {
+                    {{ t('reason.wins', { upper: s.above, lower: s.below }) }}
+                  }
+                  @case ('balance') {
+                    {{ t('reason.balance', { upper: signed(s.above), lower: signed(s.below) }) }}
+                  }
+                  @default {
+                    {{ t('reason.gamesFor', { upper: s.above, lower: s.below }) }}
+                  }
+                }
+              }
+              @case ('headToHead') {
+                {{ t('reason.headToHead', { count: s.tiedCount, upper: s.above, lower: s.below }) }}
+              }
+              @case ('draw') {
+                @if (s.crossGroup && s.groupOrderKept) {
+                  {{ t('reason.drawGroupOrder') }}
+                } @else if (validTime(s.drawnAt)) {
+                  {{
+                    s.crossGroup
+                      ? t('reason.drawAcross', { time: s.drawnAt | date: 'dd/MM HH:mm' })
+                      : t('reason.draw', { time: s.drawnAt | date: 'dd/MM HH:mm' })
+                  }}
+                } @else {
+                  {{ s.crossGroup ? t('reason.drawAcrossUndated') : t('reason.drawUndated') }}
+                }
+              }
+              @case ('sameGroup') {
+                @switch (s.within.kind) {
+                  @case ('headToHead') {
+                    {{ t('reason.sameGroupHeadToHead', { group: s.groupName }) }}
+                  }
+                  @case ('draw') {
+                    {{ t('reason.sameGroupDraw', { group: s.groupName }) }}
+                  }
+                  @default {
+                    {{ t('reason.sameGroup', { group: s.groupName }) }}
+                  }
+                }
+              }
+              @case ('qualificationRule') {
+                {{ s.abovePlace <= 2 ? t('reason.ruleDirect') : t('reason.ruleThirds') }}
+              }
+              @case ('partners') {
+                {{ t('reason.partners') }}
+              }
+              @default {
+                {{ s.kind === 'tied' && s.needsDraw ? t('reason.tiedDraw') : t('reason.tied') }}
+              }
+            }
+          </p>
+          @if (n.compare; as rows) {
+            <button
+              type="button"
+              class="position-compare-toggle"
+              [attr.aria-expanded]="openCompare() === n.direction"
+              [attr.aria-controls]="'position-compare-' + n.direction"
+              (click)="toggleCompare(n.direction)"
+            >
+              {{ t('compare.show', { name: n.neighbour.standing.name }) }}
+              <span aria-hidden="true">{{ openCompare() === n.direction ? '▴' : '▾' }}</span>
+            </button>
+            @if (openCompare() === n.direction) {
+              <table class="position-compare" [id]="'position-compare-' + n.direction">
+                <caption class="visually-hidden">
+                  {{
+                    t('compare.caption', { me: e.standing.name, other: n.neighbour.standing.name })
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{{ t('compare.criterion') }}</th>
+                    <th scope="col">{{ e.standing.name }}</th>
+                    <th scope="col">{{ n.neighbour.standing.name }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of rows; track row.criterion; let i = $index) {
+                    <tr [class.decided]="row.state === 'decided'">
+                      <th scope="row">
+                        {{ i + 1 }}
+                        @switch (row.criterion) {
+                          @case ('wins') {
+                            {{ t('compare.wins') }}
+                          }
+                          @case ('balance') {
+                            {{ t('compare.balance') }}
+                          }
+                          @case ('gamesFor') {
+                            {{ t('compare.gamesFor') }}
+                          }
+                          @case ('headToHead') {
+                            {{ t('compare.headToHead') }}
+                          }
+                          @default {
+                            {{ t('compare.draw') }}
+                          }
+                        }
+                        @if (row.state === 'decided') {
+                          <em><span aria-hidden="true">✓</span> {{ t('compare.decided') }}</em>
+                        }
+                      </th>
+                      @if (row.state === 'notNeeded') {
+                        <td colspan="2">{{ t('compare.notNeeded') }}</td>
+                      } @else if (row.state === 'pending') {
+                        <td colspan="2">{{ t('compare.pending') }}</td>
+                      } @else if (row.values; as values) {
+                        <td>{{ row.criterion === 'balance' ? signed(values[0]) : values[0] }}</td>
+                        <td>{{ row.criterion === 'balance' ? signed(values[1]) : values[1] }}</td>
+                      } @else {
+                        <td colspan="2">{{ row.state === 'decided' ? t('compare.drawn') : t('compare.tie') }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          }
+        </div>
+      }
+    </section>
+  </ng-container>
+</ng-container>

@@ -266,6 +266,12 @@ test.describe('accessibility (axe, no new violations)', () => {
     await page.locator('button.ranking-player-button').first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     problems.push(...check('player-matches-dialog', await scan(page, false, '[role=dialog]'), baseline));
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.getByRole('button', { name: /Como funciona/ }).click();
+    await expect(page.getByRole('dialog', { name: 'Como funciona o ranking' })).toBeVisible();
+    problems.push(...check('ranking-help-dialog', await scan(page, false, '[role=dialog]'), baseline));
     expect(problems).toEqual([]);
   });
 

@@ -117,8 +117,14 @@
                 {
                   "type": "bundle",
                   "name": "player-matches-dialog-component",
-                  "maximumWarning": "7kB",
-                  "maximumError": "8kB"
+                  "maximumWarning": "22kB",
+                  "maximumError": "24kB"
+                },
+                {
+                  "type": "bundle",
+                  "name": "ranking-help-dialog-component",
+                  "maximumWarning": "9kB",
+                  "maximumError": "10kB"
                 },
                 {
                   "type": "bundle",
@@ -180,8 +186,8 @@
             "coverageInclude": ["src/app/core/**/*.ts", "src/app/domain/**/*.ts"],
             "coverageExclude": ["src/**/*.spec.ts"],
             "coverageThresholds": {
-              "statements": 85,
-              "branches": 84,
+              "statements": 86,
+              "branches": 85,
               "functions": 92,
               "lines": 85
             }

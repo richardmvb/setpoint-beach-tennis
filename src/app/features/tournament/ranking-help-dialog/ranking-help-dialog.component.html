@@ -1,0 +1,90 @@
+<ng-container *transloco="let t; prefix: 'tournament.rankingHelp'">
+  @let r = rules;
+  <div class="batch-modal-header">
+    <div>
+      <span class="card-kicker">{{ t('kicker') }}</span>
+      <h2 [id]="titleId">{{ t('title') }}</h2>
+    </div>
+    <button type="button" class="modal-close" (click)="close()" [attr.aria-label]="t('close')">×</button>
+  </div>
+  <p class="help-subtitle">
+    @if (r.groupTournament && r.groupSize !== null) {
+      {{ t('subtitleGroups', { players: r.players, groups: r.groupCount, size: r.groupSize, matches: r.matchesEach }) }}
+    } @else {
+      {{ t('subtitle', { players: r.players, matches: r.matchesEach }) }}
+    }
+  </p>
+  <ol class="help-steps">
+    @if (r.groupTournament && r.variant !== 'groups20') {
+      <li>
+        <b>{{ t('groupsOnly.title') }}</b>
+        <span>{{ t('groupsOnly.text') }}</span>
+      </li>
+    }
+    <li>
+      <b>{{ fixedPairs ? t('pairs.title') : t('individual.title') }}</b>
+      <span>{{ fixedPairs ? t('pairs.text') : t('individual.text') }}</span>
+    </li>
+    <li>
+      <b>{{ r.variant === 'groups20' ? t('order.groupTitle') : t('order.title', { players: r.players }) }}</b>
+      <span>{{ t('order.text') }}</span>
+      <span class="help-criteria">
+        <span><i>1</i>{{ t('order.wins') }}</span>
+        <span><i>2</i>{{ t('order.balance') }}</span>
+        <span><i>3</i>{{ t('order.gamesFor') }}</span>
+        <span><i>4</i>{{ t('order.headToHead') }}</span>
+        <span><i>5</i>{{ t('order.draw') }}</span>
+      </span>
+    </li>
+    @switch (r.variant) {
+      @case ('groups20') {
+        <li>
+          <b>{{ t('groups20.qualifyTitle', { slots: r.slots }) }}</b>
+          <span>
+            {{
+              r.thirdSlots >= r.groupCount
+                ? t('groups20.qualifyAllThirds', { direct: r.directSlots, thirds: r.thirdSlots })
+                : t('groups20.qualifySomeThirds', { direct: r.directSlots, thirds: r.thirdSlots, groups: r.groupCount })
+            }}
+          </span>
+          <span class="help-diagram" aria-hidden="true">
+            @for (group of diagram; track group.name) {
+              <span class="help-group">
+                <span class="help-group-name">{{ group.name }}</span>
+                @for (place of group.places; track $index) {
+                  <i [class]="'help-place ' + place"></i>
+                }
+              </span>
+            }
+          </span>
+          <span class="help-legend">{{ t('groups20.legend') }}</span>
+        </li>
+        <li>
+          <b>{{ t('groups20.seedTitle') }}</b>
+          <span>{{ t('groups20.seedText') }}</span>
+          <span>{{ r.pairing === 'seededDraw' ? t('groups20.pairingSeeded') : t('groups20.pairingCrossed') }}</span>
+        </li>
+      }
+      @case ('mixed') {
+        <li>
+          <b>{{ t('mixed.title') }}</b>
+          <span>{{ t('mixed.text', { slots: r.slots }) }}</span>
+        </li>
+      }
+      @default {
+        <li>
+          <b>
+            {{ r.players > r.slots ? t('top.title', { slots: r.slots }) : t('top.allTitle', { players: r.players }) }}
+          </b>
+          @if (!fixedPairs) {
+            <span>{{ t('top.pairing') }}</span>
+          }
+        </li>
+      }
+    }
+  </ol>
+  <p class="help-tip">{{ t('tip') }}</p>
+  <div class="help-actions">
+    <button uiButton variant="primary" type="button" (click)="close()">{{ t('ok') }}</button>
+  </div>
+</ng-container>

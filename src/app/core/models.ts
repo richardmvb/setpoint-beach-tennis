@@ -57,7 +57,7 @@ export interface FinalStage {
   podiumPlayerIds: string[];
 }
 
-interface TieBreakDraw {
+export interface TieBreakDraw {
   playerIds: string[];
   order: string[];
   createdAt: string;

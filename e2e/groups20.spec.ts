@@ -122,6 +122,14 @@ test.describe('Grupos 20', () => {
     await expect(page.getByText('Eliminado').first()).toBeVisible();
     await expectAccessible(page);
 
+    // A group table row opens the athlete with the place in the race to the final.
+    await page.locator('.group-ranking-card button.ranking-player-button').first().click();
+    const athlete = page.getByRole('dialog', { name: /./ });
+    await expect(athlete.getByText(/º na corrida para a final/)).toBeVisible();
+    await expect(athlete.getByText(/12 vagas na final/)).toBeVisible();
+    await athlete.getByRole('button', { name: 'Fechar' }).click();
+    await expect(athlete).toHaveCount(0);
+
     await generateFinals(page);
     const { finals } = await stored(page);
     expect(finals!.matches.map((match) => match.id)).toEqual([

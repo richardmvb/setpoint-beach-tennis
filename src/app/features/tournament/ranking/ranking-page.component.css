@@ -1,49 +1,6 @@
-.ranking-rules {
-  display: flex;
-  gap: 22px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-@media (width <=760px) {
-  .ranking-rules {
-    display: grid;
-    gap: 12px;
-  }
-}
-
-.criteria small {
-  display: block;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.5;
-  margin-top: 3px;
-}
-
-.criteria > b {
-  font:
-    800 12px Inter,
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
-  color: var(--accent-text);
-  padding-top: 1px;
-}
-
-.criteria strong {
-  display: block;
-  font-size: 11px;
-}
-
 .final-qualifier p {
   margin-bottom: 0;
   font-size: 12px;
-}
-
-@media (width <=600px) {
-  :host .ranking-rules {
-    display: none;
-  }
 }
 
 .final-qualifier {
@@ -62,15 +19,4 @@
 
 .final-qualifier h2 {
   margin-bottom: 5px;
-}
-
-.ranking-rules > .card-kicker {
-  margin-right: 4px;
-}
-
-.criteria {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  min-width: 190px;
 }
