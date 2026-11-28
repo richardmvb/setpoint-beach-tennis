@@ -1,0 +1,62 @@
+name: Deploy Manual (no CI)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-manual
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js and install dependencies
+        uses: ./.github/actions/setup
+
+      - name: Generate runtime config (fails when Supabase settings are missing)
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NG_APP_POSTHOG_PROJECT_TOKEN: ${{ vars.NG_APP_POSTHOG_PROJECT_TOKEN }}
+          NG_APP_POSTHOG_HOST: ${{ vars.NG_APP_POSTHOG_HOST }}
+          NG_APP_LOCK_SCREEN_ENABLED: ${{ vars.NG_APP_LOCK_SCREEN_ENABLED }}
+          NG_APP_ROUTER_ENABLED: ${{ vars.NG_APP_ROUTER_ENABLED }}
+          BUILD_ID: ${{ github.sha }}
+        run: node scripts/generate-runtime-config.cjs --require-values
+
+      - name: Build Angular app
+        env:
+          POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
+          POSTHOG_CLI_PROJECT_ID: ${{ vars.POSTHOG_CLI_PROJECT_ID }}
+          POSTHOG_CLI_HOST: ${{ vars.POSTHOG_CLI_HOST }}
+        run: npm run build -- --base-href /setpoint-beach-tennis/
+
+      - name: Enable Angular route fallback on Pages
+        run: cp dist/setpoint/browser/index.html dist/setpoint/browser/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/setpoint/browser
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
