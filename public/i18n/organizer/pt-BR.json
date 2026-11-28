@@ -157,7 +157,6 @@
     "finalsFailed": "Não foi possível gerar a final.",
     "tieDrawn": "Sorteio registrado; a classificação foi atualizada.",
     "tieDrawFailed": "Não foi possível abrir o sorteio agora. Verifique a conexão e tente de novo.",
-    "settingsLocked": "As configurações ficam bloqueadas depois da geração da tabela.",
     "removePlayers": "Remova participantes até ficar com {{size}}.",
     "settingsSaved": "Configurações salvas.",
     "backupExported": "Backup JSON exportado."
@@ -265,7 +264,6 @@
     "rounds": "Rodadas do formato",
     "quickNote": "Modo rápido: final e disputa de 3º lugar continuam em 6 games.",
     "save": "Salvar configurações",
-    "locked": "Bloqueado após gerar a tabela.",
     "rules": {
       "kicker": "REGRAS AUTOMÁTICAS",
       "title": "Como a tabela é montada",
