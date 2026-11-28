@@ -97,6 +97,10 @@
           }
         </ul>
       }
+      <div class="profile-import">
+        <label class="button secondary file-button" [attr.aria-label]="t('library.import')"
+          >{{ t('library.import') }}<input type="file" accept="application/json,.json" (change)="importBackup($event)" hidden /></label>
+      </div>
     </div>
     <div class="profile-section profile-prefs">
       <span class="card-kicker">{{ t('theme.kicker') }}</span>

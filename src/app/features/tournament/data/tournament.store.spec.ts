@@ -528,14 +528,11 @@ describe('TournamentStore: the rules form', () => {
     expect(scheduled.hooks.save).not.toHaveBeenCalled();
   });
 
-  it('refuses to save after the schedule exists, and says so', () => {
+  it('allows saving after the schedule exists for gamesToWin changes', () => {
     const { store, hooks } = setup();
     store.saveSettings();
-    expect(hooks.notify).toHaveBeenCalledWith(
-      'As configurações ficam bloqueadas depois da geração da tabela.',
-      'error',
-    );
-    expect(hooks.save).not.toHaveBeenCalled();
+    expect(hooks.save).toHaveBeenCalledWith('Configurações salvas.');
+    expect(hooks.notify).not.toHaveBeenCalled();
   });
 
   it('saves a trimmed name and the rounds of the format, and tells analytics', () => {

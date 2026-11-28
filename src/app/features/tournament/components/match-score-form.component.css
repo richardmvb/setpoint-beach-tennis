@@ -111,16 +111,6 @@
   }
 }
 
-.team-names {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-}
-
-:host-context(.final-match) .match-teams {
-  margin-top: 15px;
-}
-
 .inline-score:focus {
   border-color: var(--green-2);
   outline: 0;
@@ -130,6 +120,21 @@
 .inline-score:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+.match-teams.invalid-score .inline-score {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.team-names {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+:host-context(.final-match) .match-teams {
+  margin-top: 15px;
 }
 
 .team-names b app-player-avatar {

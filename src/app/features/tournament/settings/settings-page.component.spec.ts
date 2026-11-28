@@ -42,11 +42,10 @@ const unscheduled = (overrides: Partial<TournamentState> = {}) =>
   tournamentState({ players: namedPlayers(8), analyticsId: 'a1', ...overrides });
 
 describe('SettingsPageComponent: the rules', () => {
-  it('locks the form once the schedule exists', async () => {
+  it('locks the form once the schedule exists (except gamesToWin and button)', async () => {
     await show(storedTournament());
     expect(screen.getByLabelText<HTMLInputElement>('Nome do torneio').disabled).toBe(true);
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Salvar configurações' }).disabled).toBe(true);
-    expect(screen.getByText('Bloqueado após gerar a tabela.')).toBeTruthy();
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Salvar configurações' }).disabled).toBe(false);
     expect(screen.getByText('Como a tabela é montada')).toBeTruthy();
     expect(screen.getByText('Nenhuma dupla de parceiros se repete.')).toBeTruthy();
   });

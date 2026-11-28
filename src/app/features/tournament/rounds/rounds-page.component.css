@@ -126,6 +126,11 @@
   margin: 5px 0 0;
 }
 
+.tournament-config {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
 .empty-rounds h2 {
   margin: 12px 0 5px;
 }

@@ -28,6 +28,7 @@
     "rounds": "rodadas",
     "duration": "duração",
     "time": "tempo",
+    "gamesWinFormat": "Vencer com {{ games }} games",
     "tabsLabel": "Rodadas do torneio",
     "round": "RODADA",
     "roundOf": "RODADA {{ number }} DE {{ total }}",

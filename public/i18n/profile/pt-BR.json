@@ -34,7 +34,8 @@
     "kicker": "MEUS TORNEIOS",
     "viewAll": "Ver todos ({{ count }})",
     "empty": "Nenhum torneio salvo ainda. Eles aparecem aqui assim que a tabela for gerada.",
-    "inUse": "Em uso"
+    "inUse": "Em uso",
+    "import": "Importar backup"
   },
   "theme": {
     "kicker": "TEMA",

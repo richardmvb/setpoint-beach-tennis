@@ -259,8 +259,8 @@ export class StorageService {
             Array.isArray(match.teamB) &&
             match.teamB.length === 2 &&
             [...match.teamA, ...match.teamB].every((id) => typeof id === 'string') &&
-            (match.scoreA === null || (Number.isInteger(match.scoreA) && match.scoreA >= 0 && match.scoreA <= 6)) &&
-            (match.scoreB === null || (Number.isInteger(match.scoreB) && match.scoreB >= 0 && match.scoreB <= 6)),
+            (match.scoreA === null || (Number.isInteger(match.scoreA) && match.scoreA >= 0 && match.scoreA <= 7)) &&
+            (match.scoreB === null || (Number.isInteger(match.scoreB) && match.scoreB >= 0 && match.scoreB <= 7)),
         ),
     );
     if (!validRounds) return false;
@@ -304,5 +304,25 @@ export class StorageService {
           ),
       )
     );
+  }
+
+  saveDrafts(tournamentKey: string, drafts: Record<string, unknown>): void {
+    try {
+      const draftKey = `setpoint.drafts.${tournamentKey}`;
+      this.session.setItem(draftKey, JSON.stringify(drafts));
+    } catch {
+      /* session storage unavailable or full */
+    }
+  }
+
+  loadDrafts(tournamentKey: string): Record<string, unknown> | null {
+    try {
+      const draftKey = `setpoint.drafts.${tournamentKey}`;
+      const raw = this.session.getItem(draftKey);
+      if (!raw) return null;
+      return JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
   }
 }

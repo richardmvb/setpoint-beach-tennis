@@ -58,4 +58,12 @@ export class ProfileDialogComponent {
   protected openTournament(id: string): void {
     this.ref.close({ kind: 'open', id });
   }
+
+  protected importBackup(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // So the same file can be chosen again.
+    input.value = '';
+    if (file) this.ref.close({ kind: 'import', file });
+  }
 }

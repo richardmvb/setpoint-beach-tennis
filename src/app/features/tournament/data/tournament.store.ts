@@ -4,6 +4,7 @@ import { TranslocoService } from '@jsverse/transloco';
 import { interval, Subject } from 'rxjs';
 import { CurrentTournament } from '../../../core/current-tournament';
 import { TournamentPersistence } from '../../../core/tournament-persistence';
+import { StorageService } from '../../../core/storage.service';
 import { Notices } from '../../../core/notices';
 import {
   calculateFinalLiveScore,
@@ -171,6 +172,7 @@ export class TournamentStore {
   private readonly shareCard = inject(ShareCardService);
   private readonly shareSession = inject(ShareResultsSession);
   private readonly transloco = inject(TranslocoService);
+  private readonly storage = inject(StorageService);
   private readonly standingsMemo = createStandingsMemo();
 
   readonly state = this.tournament.state;
@@ -286,6 +288,8 @@ export class TournamentStore {
   });
 
   constructor() {
+    // Load drafts from storage
+    this.loadDrafts();
     // The elapsed time of the tournament ticks once a second while it runs.
     interval(1000)
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
@@ -357,6 +361,7 @@ export class TournamentStore {
         ...drafts,
         [match.id]: { ...next, baseA: match.scoreA, baseB: match.scoreB, tournament: this.tournamentKey() },
       }));
+      this.saveDrafts();
       return;
     }
     this.dropDraft(match.id);
@@ -535,6 +540,8 @@ export class TournamentStore {
 
   setGamesToWin(gamesToWin: number): void {
     this.tournament.update((state) => withGamesToWin(state, gamesToWin));
+    // Save immediately when gamesToWin changes, so scores stay consistent
+    this.persistence.save();
   }
 
   changeSize(size: number): void {
@@ -571,16 +578,22 @@ export class TournamentStore {
   }
 
   saveSettings(): void {
+    // Allow gamesToWin changes even after schedule generation, but lock other settings
     if (this.hasSchedule()) {
-      this.notices.show(this.transloco.translate('notices.settingsLocked', {}, 'organizer/pt-BR'), 'error');
-      return;
+      const size = this.state().size;
+      if (this.state().players.length > size) {
+        this.notices.show(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
+        return;
+      }
+      // Only save (don't block); gamesToWin can be changed without breaking existing scores
+    } else {
+      const size = this.state().size;
+      if (this.state().players.length > size) {
+        this.notices.show(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
+        return;
+      }
+      this.tournament.update((state) => withRequiredRounds(withTrimmedName(state)));
     }
-    const size = this.state().size;
-    if (this.state().players.length > size) {
-      this.notices.show(this.transloco.translate('notices.removePlayers', { size }, 'organizer/pt-BR'), 'error');
-      return;
-    }
-    this.tournament.update((state) => withRequiredRounds(withTrimmedName(state)));
     this.persistence.save(this.transloco.translate('notices.settingsSaved', {}, 'organizer/pt-BR'));
     const saved = this.state();
     this.analytics.capture('tournament_settings_saved', {
@@ -656,6 +669,7 @@ export class TournamentStore {
               ? this.finals.createMixedDirect(male, female)
               : this.finals.create(this.standings());
       this.drafts.set({});
+      this.saveDrafts();
       this.tournament.update((current) => ({ ...current, finals: stage }));
       this.persistence.save(
         this.fixedPairsMode()
@@ -712,5 +726,18 @@ export class TournamentStore {
   private dropDraft(matchId: string): void {
     if (!(matchId in this.drafts())) return;
     this.drafts.update(({ [matchId]: _dropped, ...rest }) => rest);
+    this.saveDrafts();
+  }
+
+  private saveDrafts(): void {
+    this.storage.saveDrafts(this.tournamentKey(), this.drafts());
+  }
+
+  private loadDrafts(): void {
+    const key = this.tournamentKey();
+    const loaded = this.storage.loadDrafts(key);
+    if (loaded && Object.keys(loaded).length > 0) {
+      this.drafts.set(loaded as Record<string, Draft>);
+    }
   }
 }

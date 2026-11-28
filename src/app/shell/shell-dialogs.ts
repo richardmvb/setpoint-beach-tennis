@@ -71,6 +71,7 @@ export class ShellDialogs {
     }
     if (result?.kind === 'library') void this.openLibrary();
     else if (result?.kind === 'open') await this.lifecycle.openSaved(result.id);
+    else if (result?.kind === 'import') void this.lifecycle.importBackup(result.file);
     else if (welcome && afterWelcome) window.setTimeout(afterWelcome, 250);
   }
 

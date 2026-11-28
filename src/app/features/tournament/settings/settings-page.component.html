@@ -137,7 +137,6 @@
           name="games"
           [ngModel]="store.state().gamesToWin"
           (ngModelChange)="store.setGamesToWin($event)"
-          [disabled]="store.hasSchedule()"
         >
           @for (games of store.availableGamesToWin(); track games) {
             <option [ngValue]="games">{{ games === 3 ? t('gamesQuick') : t('gamesCount', { count: games }) }}</option>
@@ -152,12 +151,9 @@
     @if (store.state().gamesToWin === 3) {
       <p class="muted quick-format-note">{{ t('quickNote') }}</p>
     }
-    <button uiButton variant="primary" type="button" (click)="store.saveSettings()" [disabled]="store.hasSchedule()">
+    <button uiButton variant="primary" type="button" (click)="store.saveSettings()">
       {{ t('save') }}
     </button>
-    @if (store.hasSchedule()) {
-      <p class="muted helper-text">{{ t('locked') }}</p>
-    }
   </article>
   <article uiCard class="settings-info">
     <span class="card-kicker">{{ t('rules.kicker') }}</span>

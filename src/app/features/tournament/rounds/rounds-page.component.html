@@ -146,6 +146,7 @@
         <div>
           <span class="card-kicker">{{ t('roundOf', { number: round.number, total: store.state().rounds.length }) }}</span>
           <h2>{{ round.matches.length === 1 ? t('matchesOne') : t('matchesMany', { count: round.matches.length }) }}</h2>
+          <p class="muted tournament-config">{{ t('gamesWinFormat', { games: store.state().gamesToWin }) }}</p>
         </div>
         <span class="mini-tag">{{
           t('resultsCount', { done: store.roundMatchesDone(store.selectedRound()), total: round.matches.length })

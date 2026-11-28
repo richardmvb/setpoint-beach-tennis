@@ -255,6 +255,38 @@
   list-style: none;
 }
 
+.profile-import {
+  display: grid;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.profile-import .file-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.profile-import .file-button:hover {
+  background: var(--orange-soft);
+}
+
+.profile-import .file-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .profile-recent-item:hover {
   border-color: var(--orange);
 }

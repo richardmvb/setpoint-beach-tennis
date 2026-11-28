@@ -31,7 +31,7 @@ export interface ProfileDialogData {
 }
 
 /** What the panel closes with when the organizer goes on to the saved tournaments. */
-export type ProfileDialogResult = { kind: 'library' } | { kind: 'open'; id: string };
+export type ProfileDialogResult = { kind: 'library' } | { kind: 'open'; id: string } | { kind: 'import'; file: File };
 
 /**
  * The profile panel's state and actions. Provided by `ProfileDialogComponent`, so it lives and dies with the panel.
